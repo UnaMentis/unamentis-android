@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- Exclude API keys and sensitive data from backups -->
+    <exclude domain="sharedpref" path="encrypted_prefs.xml" />
+    <exclude domain="sharedpref" path="api_keys.xml" />
+    <exclude domain="database" path="unamentis.db" />
+</full-backup-content>

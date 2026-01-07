@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">UnaMentis</string>
+
+    <!-- Tab Navigation -->
+    <string name="tab_session">Session</string>
+    <string name="tab_curriculum">Curriculum</string>
+    <string name="tab_todo">To-Do</string>
+    <string name="tab_history">History</string>
+    <string name="tab_analytics">Analytics</string>
+    <string name="tab_settings">Settings</string>
+
+    <!-- Session Screen -->
+    <string name="session_start">Tap to start session</string>
+    <string name="session_listening">Listening…</string>
+    <string name="session_thinking">Thinking…</string>
+    <string name="session_speaking">Speaking…</string>
+    <string name="session_paused">Paused</string>
+    <string name="slide_to_stop">Slide to stop</string>
+    <string name="mute">Mute</string>
+    <string name="pause">Pause</string>
+
+    <!-- Content Descriptions (Accessibility) -->
+    <string name="cd_mute_button">Mute microphone</string>
+    <string name="cd_pause_button">Pause session</string>
+    <string name="cd_stop_button">Stop session</string>
+</resources>
