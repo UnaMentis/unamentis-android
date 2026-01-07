@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.UnaMentis" parent="android:Theme.Material.Light.NoActionBar">
+        <!-- Material 3 dynamic color will be applied via Compose -->
+    </style>
+</resources>
