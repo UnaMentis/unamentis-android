@@ -7,10 +7,10 @@
     },
     "gradle-mcp-server": {
       "type": "stdio",
-      "command": "java",
+      "command": "/usr/local/opt/openjdk@17/bin/java",
       "args": [
         "-jar",
-        "~/mcp-servers/gradle-mcp-server/gradle-mcp-server-all.jar"
+        "/Users/cygoerdt/mcp-servers/gradle-mcp-server/gradle-mcp-server-all.jar"
       ]
     }
   }
