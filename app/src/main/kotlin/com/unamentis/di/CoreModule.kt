@@ -10,7 +10,8 @@ import com.unamentis.data.model.TTSService
 import com.unamentis.data.model.VADService
 import com.unamentis.data.repository.CurriculumRepository
 import com.unamentis.data.repository.TopicProgressRepository
-import com.unamentis.services.vad.SileroVADService
+import com.unamentis.services.vad.SileroOnnxVADService
+import com.unamentis.services.vad.SimpleVADService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -47,15 +48,26 @@ object CoreModule {
 
     /**
      * Provides the VADService for voice activity detection.
+     *
+     * Priority order:
+     * 1. Silero VAD (ONNX) - Neural network-based, high accuracy
+     * 2. SimpleVAD - Amplitude-based fallback
      */
     @Provides
     @Singleton
     fun provideVADService(@ApplicationContext context: Context): VADService {
-        return SileroVADService(context).also { vad ->
-            try {
+        // Try Silero VAD (ONNX) first - highest accuracy
+        return try {
+            SileroOnnxVADService(context).also { vad ->
                 vad.initialize()
-            } catch (e: Exception) {
-                android.util.Log.w("CoreModule", "VAD initialization failed, VAD will return no-speech by default", e)
+                android.util.Log.i("CoreModule", "Using Silero VAD (ONNX)")
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("CoreModule", "Silero ONNX VAD failed, falling back to SimpleVAD", e)
+            // Fall back to simple amplitude-based VAD
+            SimpleVADService().also { vad ->
+                vad.initialize()
+                android.util.Log.i("CoreModule", "Using SimpleVAD (amplitude-based fallback)")
             }
         }
     }

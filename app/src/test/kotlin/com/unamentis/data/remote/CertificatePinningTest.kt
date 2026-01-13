@@ -1,6 +1,8 @@
 package com.unamentis.data.remote
 
+import com.unamentis.BuildConfig
 import org.junit.Assert.*
+import org.junit.Assume.assumeTrue
 import org.junit.Test
 
 /**
@@ -28,10 +30,25 @@ class CertificatePinningTest {
 
     @Test
     fun certificatePinning_isDisabledInDebug() {
-        // In test builds (which are debug builds), pinning should be disabled
+        // This test only applies to debug builds - skip in release builds
+        assumeTrue("Test only runs in debug builds", BuildConfig.DEBUG)
+
+        // In debug builds, pinning should be disabled
         // This allows testing with mock servers and proxy tools
         assertFalse(
             "Certificate pinning should be disabled in debug builds",
+            CertificatePinning.isEnabled()
+        )
+    }
+
+    @Test
+    fun certificatePinning_isEnabledInRelease() {
+        // This test only applies to release builds - skip in debug builds
+        assumeTrue("Test only runs in release builds", !BuildConfig.DEBUG)
+
+        // In release builds, pinning should be enabled for security
+        assertTrue(
+            "Certificate pinning should be enabled in release builds",
             CertificatePinning.isEnabled()
         )
     }

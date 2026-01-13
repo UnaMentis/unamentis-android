@@ -32,6 +32,7 @@ kotlinxSerialization = "1.7.3"
 # ML/AI
 tensorflowLite = "2.16.1"
 tensorflowLiteGpu = "2.16.1"
+onnxRuntime = "1.17.0"
 
 # DataStore & Security
 datastore = "1.1.1"
@@ -95,6 +96,9 @@ kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-
 # TensorFlow Lite (VAD, ML)
 tensorflow-lite = { group = "org.tensorflow", name = "tensorflow-lite", version.ref = "tensorflowLite" }
 tensorflow-lite-gpu = { group = "org.tensorflow", name = "tensorflow-lite-gpu", version.ref = "tensorflowLiteGpu" }
+
+# ONNX Runtime (Silero VAD)
+onnxruntime-android = { group = "com.microsoft.onnxruntime", name = "onnxruntime-android", version.ref = "onnxRuntime" }
 
 # DataStore (Preferences)
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }

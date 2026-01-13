@@ -132,6 +132,9 @@ dependencies {
     implementation(libs.tensorflow.lite)
     implementation(libs.tensorflow.lite.gpu)
 
+    // ONNX Runtime (Silero VAD)
+    implementation(libs.onnxruntime.android)
+
     // DataStore (Preferences)
     implementation(libs.androidx.datastore.preferences)
 
