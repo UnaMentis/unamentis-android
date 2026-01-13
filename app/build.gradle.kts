@@ -12,6 +12,7 @@ plugins {
 android {
     namespace = "com.unamentis"
     compileSdk = libs.versions.androidCompileSdk.get().toInt()
+    ndkVersion = "26.1.10909125"
 
     defaultConfig {
         applicationId = "com.unamentis"
@@ -32,6 +33,16 @@ android {
 
         // Enable NNAPI for TensorFlow Lite acceleration
         buildConfigField("boolean", "ENABLE_NNAPI", "true")
+
+        // CMake configuration for native code
+        externalNativeBuild {
+            cmake {
+                cppFlags += "-std=c++17"
+                arguments += listOf(
+                    "-DANDROID_STL=c++_shared"
+                )
+            }
+        }
     }
 
     buildTypes {
@@ -67,6 +78,7 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+        prefab = true  // Enable prefab for Oboe
     }
 
     packaging {
@@ -134,6 +146,9 @@ dependencies {
 
     // ONNX Runtime (Silero VAD)
     implementation(libs.onnxruntime.android)
+
+    // Oboe (Low-latency audio)
+    implementation(libs.oboe)
 
     // DataStore (Preferences)
     implementation(libs.androidx.datastore.preferences)

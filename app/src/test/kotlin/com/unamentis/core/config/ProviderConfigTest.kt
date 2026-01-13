@@ -151,13 +151,24 @@ class ProviderConfigTest {
 
     @Test
     @Ignore("Requires AndroidKeyStore - run as instrumentation test")
-    fun `BALANCED preset configures correct providers`() = runTest {
-        providerConfig.applyPreset(ConfigurationPreset.BALANCED)
+    fun `FREE preset configures correct providers`() = runTest {
+        providerConfig.applyPreset(ConfigurationPreset.FREE)
+
+        assertEquals("Android", providerConfig.selectedSTTProvider.first())
+        assertEquals("Android", providerConfig.selectedTTSProvider.first())
+        assertEquals("PatchPanel", providerConfig.selectedLLMProvider.first())
+        assertEquals("COST", providerConfig.costPreference.first())
+    }
+
+    @Test
+    @Ignore("Requires AndroidKeyStore - run as instrumentation test")
+    fun `PREMIUM preset configures correct providers`() = runTest {
+        providerConfig.applyPreset(ConfigurationPreset.PREMIUM)
 
         assertEquals("Deepgram", providerConfig.selectedSTTProvider.first())
         assertEquals("ElevenLabs", providerConfig.selectedTTSProvider.first())
         assertEquals("PatchPanel", providerConfig.selectedLLMProvider.first())
-        assertEquals("BALANCED", providerConfig.costPreference.first())
+        assertEquals("QUALITY", providerConfig.costPreference.first())
     }
 
     @Test
@@ -223,8 +234,9 @@ class ProviderConfigTest {
     @Test
     fun `ConfigurationPreset enum has all expected values`() {
         val presets = ConfigurationPreset.values()
-        assertEquals(4, presets.size)
-        assertTrue(presets.contains(ConfigurationPreset.BALANCED))
+        assertEquals(5, presets.size)
+        assertTrue(presets.contains(ConfigurationPreset.FREE))
+        assertTrue(presets.contains(ConfigurationPreset.PREMIUM))
         assertTrue(presets.contains(ConfigurationPreset.LOW_LATENCY))
         assertTrue(presets.contains(ConfigurationPreset.COST_OPTIMIZED))
         assertTrue(presets.contains(ConfigurationPreset.OFFLINE))

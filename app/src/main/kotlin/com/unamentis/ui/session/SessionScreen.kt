@@ -1,5 +1,9 @@
 package com.unamentis.ui.session
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -13,8 +17,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.unamentis.data.model.SessionState
@@ -46,6 +52,37 @@ fun SessionScreen(
     viewModel: SessionViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+
+    // Track if we have microphone permission
+    var hasMicPermission by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.RECORD_AUDIO
+            ) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+
+    // Permission request launcher
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        hasMicPermission = isGranted
+        if (isGranted) {
+            // Permission granted, start the session
+            viewModel.startSession()
+        }
+    }
+
+    // Function to handle start with permission check
+    val onStartWithPermission: () -> Unit = {
+        if (hasMicPermission) {
+            viewModel.startSession()
+        } else {
+            permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -58,7 +95,7 @@ fun SessionScreen(
         bottomBar = {
             SessionControlBar(
                 uiState = uiState,
-                onStart = { viewModel.startSession() },
+                onStart = onStartWithPermission,
                 onPause = { viewModel.pauseSession() },
                 onResume = { viewModel.resumeSession() },
                 onStop = { viewModel.stopSession() }

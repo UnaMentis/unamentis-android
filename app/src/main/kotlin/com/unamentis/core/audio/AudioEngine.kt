@@ -205,10 +205,13 @@ class AudioEngine {
 
     /**
      * Called from native code when audio is captured.
+     * This method is invoked from the native audio thread via JNI.
      * Do not call directly.
+     *
+     * @param audioData Captured audio samples (float, -1.0 to 1.0)
      */
     @Suppress("unused")
-    private fun onAudioCaptured(audioData: FloatArray) {
+    fun onNativeAudioData(audioData: FloatArray) {
         updateAudioLevel(audioData)
         captureCallback?.invoke(audioData)
     }

@@ -30,6 +30,11 @@ class ProviderConfig(private val context: Context) {
     // DataStore for non-sensitive preferences
     private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "provider_config")
 
+    // Regular SharedPreferences for synchronous access (same underlying file as DataStore)
+    private val syncPrefs by lazy {
+        context.getSharedPreferences("provider_config_sync", Context.MODE_PRIVATE)
+    }
+
     // EncryptedSharedPreferences for API keys
     private val encryptedPrefs by lazy {
         val masterKey = MasterKey.Builder(context)
@@ -65,24 +70,52 @@ class ProviderConfig(private val context: Context) {
     }
 
     /**
-     * Get selected STT provider name.
+     * Get selected STT provider name (as Flow for reactive updates).
+     * Defaults to "Android" for free on-device recognition.
      */
     val selectedSTTProvider: Flow<String> = context.dataStore.data.map { prefs ->
-        prefs[PreferenceKeys.SELECTED_STT_PROVIDER] ?: "Deepgram"
+        prefs[PreferenceKeys.SELECTED_STT_PROVIDER] ?: "Android"
     }
 
     /**
-     * Get selected TTS provider name.
+     * Get selected TTS provider name (as Flow for reactive updates).
+     * Defaults to "Android" for free on-device speech synthesis.
      */
     val selectedTTSProvider: Flow<String> = context.dataStore.data.map { prefs ->
-        prefs[PreferenceKeys.SELECTED_TTS_PROVIDER] ?: "ElevenLabs"
+        prefs[PreferenceKeys.SELECTED_TTS_PROVIDER] ?: "Android"
     }
 
     /**
-     * Get selected LLM provider name.
+     * Get selected LLM provider name (as Flow for reactive updates).
      */
     val selectedLLMProvider: Flow<String> = context.dataStore.data.map { prefs ->
         prefs[PreferenceKeys.SELECTED_LLM_PROVIDER] ?: "PatchPanel"
+    }
+
+    // Synchronous getters for Hilt dependency injection
+    // These use SharedPreferences directly for synchronous access
+
+    /**
+     * Get STT provider synchronously (for dependency injection).
+     * Defaults to "Android" for free on-device recognition.
+     */
+    fun getSTTProvider(): String {
+        return syncPrefs.getString(PreferenceKeys.SELECTED_STT_PROVIDER.name, "Android") ?: "Android"
+    }
+
+    /**
+     * Get TTS provider synchronously (for dependency injection).
+     * Defaults to "Android" for free on-device speech synthesis.
+     */
+    fun getTTSProvider(): String {
+        return syncPrefs.getString(PreferenceKeys.SELECTED_TTS_PROVIDER.name, "Android") ?: "Android"
+    }
+
+    /**
+     * Get LLM provider synchronously (for dependency injection).
+     */
+    fun getLLMProvider(): String {
+        return syncPrefs.getString(PreferenceKeys.SELECTED_LLM_PROVIDER.name, "PatchPanel") ?: "PatchPanel"
     }
 
     /**
@@ -96,14 +129,22 @@ class ProviderConfig(private val context: Context) {
      * Get configuration preset.
      */
     val configurationPreset: Flow<ConfigurationPreset> = context.dataStore.data.map { prefs ->
-        val presetName = prefs[PreferenceKeys.CONFIGURATION_PRESET] ?: "BALANCED"
-        ConfigurationPreset.valueOf(presetName)
+        val presetName = prefs[PreferenceKeys.CONFIGURATION_PRESET] ?: "FREE"
+        try {
+            ConfigurationPreset.valueOf(presetName)
+        } catch (e: IllegalArgumentException) {
+            // Handle old preset names (e.g., "BALANCED" -> "FREE")
+            ConfigurationPreset.FREE
+        }
     }
 
     /**
      * Set selected STT provider.
      */
     suspend fun setSTTProvider(providerName: String) {
+        // Write to sync prefs for immediate availability
+        syncPrefs.edit().putString(PreferenceKeys.SELECTED_STT_PROVIDER.name, providerName).apply()
+        // Also write to DataStore for reactive updates
         context.dataStore.edit { prefs ->
             prefs[PreferenceKeys.SELECTED_STT_PROVIDER] = providerName
         }
@@ -113,6 +154,9 @@ class ProviderConfig(private val context: Context) {
      * Set selected TTS provider.
      */
     suspend fun setTTSProvider(providerName: String) {
+        // Write to sync prefs for immediate availability
+        syncPrefs.edit().putString(PreferenceKeys.SELECTED_TTS_PROVIDER.name, providerName).apply()
+        // Also write to DataStore for reactive updates
         context.dataStore.edit { prefs ->
             prefs[PreferenceKeys.SELECTED_TTS_PROVIDER] = providerName
         }
@@ -122,6 +166,9 @@ class ProviderConfig(private val context: Context) {
      * Set selected LLM provider.
      */
     suspend fun setLLMProvider(providerName: String) {
+        // Write to sync prefs for immediate availability
+        syncPrefs.edit().putString(PreferenceKeys.SELECTED_LLM_PROVIDER.name, providerName).apply()
+        // Also write to DataStore for reactive updates
         context.dataStore.edit { prefs ->
             prefs[PreferenceKeys.SELECTED_LLM_PROVIDER] = providerName
         }
@@ -140,6 +187,13 @@ class ProviderConfig(private val context: Context) {
      * Apply a configuration preset.
      */
     suspend fun applyPreset(preset: ConfigurationPreset) {
+        // Write to sync prefs for immediate availability
+        syncPrefs.edit()
+            .putString(PreferenceKeys.SELECTED_STT_PROVIDER.name, preset.sttProvider)
+            .putString(PreferenceKeys.SELECTED_TTS_PROVIDER.name, preset.ttsProvider)
+            .putString(PreferenceKeys.SELECTED_LLM_PROVIDER.name, preset.llmProvider)
+            .apply()
+        // Also write to DataStore for reactive updates
         context.dataStore.edit { prefs ->
             prefs[PreferenceKeys.CONFIGURATION_PRESET] = preset.name
             prefs[PreferenceKeys.SELECTED_STT_PROVIDER] = preset.sttProvider
@@ -247,10 +301,10 @@ class ProviderConfig(private val context: Context) {
  * Configuration presets for different use cases.
  *
  * Each preset configures providers optimized for:
- * - BALANCED: Balance of quality, cost, and latency
+ * - FREE: Use free on-device services (default for new users)
+ * - PREMIUM: High-quality cloud services (Deepgram, ElevenLabs)
  * - LOW_LATENCY: Minimize latency for real-time interaction
- * - COST_OPTIMIZED: Minimize cost while maintaining quality
- * - OFFLINE: Use only on-device providers
+ * - OFFLINE: Use only on-device providers (same as FREE)
  */
 enum class ConfigurationPreset(
     val sttProvider: String,
@@ -258,11 +312,17 @@ enum class ConfigurationPreset(
     val llmProvider: String,
     val costPreference: String
 ) {
-    BALANCED(
+    FREE(
+        sttProvider = "Android",
+        ttsProvider = "Android",
+        llmProvider = "PatchPanel",
+        costPreference = "COST"
+    ),
+    PREMIUM(
         sttProvider = "Deepgram",
         ttsProvider = "ElevenLabs",
         llmProvider = "PatchPanel",
-        costPreference = "BALANCED"
+        costPreference = "QUALITY"
     ),
     LOW_LATENCY(
         sttProvider = "Deepgram",

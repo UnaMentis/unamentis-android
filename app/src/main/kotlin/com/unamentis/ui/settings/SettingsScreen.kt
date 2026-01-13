@@ -140,15 +140,15 @@ private fun PresetSection(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             PresetChip(
-                preset = ConfigurationPreset.BALANCED,
-                isSelected = currentPreset == ConfigurationPreset.BALANCED,
-                onClick = { onPresetSelected(ConfigurationPreset.BALANCED) },
+                preset = ConfigurationPreset.FREE,
+                isSelected = currentPreset == ConfigurationPreset.FREE,
+                onClick = { onPresetSelected(ConfigurationPreset.FREE) },
                 modifier = Modifier.weight(1f)
             )
             PresetChip(
-                preset = ConfigurationPreset.LOW_LATENCY,
-                isSelected = currentPreset == ConfigurationPreset.LOW_LATENCY,
-                onClick = { onPresetSelected(ConfigurationPreset.LOW_LATENCY) },
+                preset = ConfigurationPreset.PREMIUM,
+                isSelected = currentPreset == ConfigurationPreset.PREMIUM,
+                onClick = { onPresetSelected(ConfigurationPreset.PREMIUM) },
                 modifier = Modifier.weight(1f)
             )
         }

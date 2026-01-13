@@ -32,7 +32,7 @@ class SettingsViewModel @Inject constructor(
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = ConfigurationPreset.BALANCED
+            initialValue = ConfigurationPreset.FREE
         )
 
     /**
@@ -42,14 +42,14 @@ class SettingsViewModel @Inject constructor(
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = "Deepgram"
+            initialValue = "Android"
         )
 
     val selectedTTSProvider: StateFlow<String> = providerConfig.selectedTTSProvider
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = "ElevenLabs"
+            initialValue = "Android"
         )
 
     val selectedLLMProvider: StateFlow<String> = providerConfig.selectedLLMProvider
@@ -200,11 +200,11 @@ class SettingsViewModel @Inject constructor(
  * UI state for Settings screen.
  */
 data class SettingsUiState(
-    val currentPreset: ConfigurationPreset = ConfigurationPreset.BALANCED,
-    val selectedSTTProvider: String = "Deepgram",
-    val selectedTTSProvider: String = "ElevenLabs",
+    val currentPreset: ConfigurationPreset = ConfigurationPreset.FREE,
+    val selectedSTTProvider: String = "Android",
+    val selectedTTSProvider: String = "Android",
     val selectedLLMProvider: String = "PatchPanel",
-    val costPreference: String = "BALANCED",
+    val costPreference: String = "COST",
     val hasDeepgramKey: Boolean = false,
     val hasElevenLabsKey: Boolean = false,
     val hasOpenAIKey: Boolean = false,

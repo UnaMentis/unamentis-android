@@ -12,8 +12,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 find_library(log-lib log)
 find_library(android-lib android)
 
-# Oboe library (will be added via Gradle dependency)
-# For now, we'll create a placeholder that can be replaced with actual Oboe integration
+# Find Oboe package (provided via prefab)
+find_package(oboe REQUIRED CONFIG)
 
 # Audio engine native implementation
 add_library(
@@ -28,7 +28,7 @@ target_link_libraries(
     audio_engine
     ${log-lib}
     ${android-lib}
-    # oboe will be added here once we integrate the library
+    oboe::oboe
 )
 
 # Include directories

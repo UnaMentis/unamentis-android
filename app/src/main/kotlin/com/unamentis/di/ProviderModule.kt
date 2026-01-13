@@ -153,6 +153,9 @@ object ProviderModule {
 
     /**
      * Provide default STT service based on configuration.
+     *
+     * Defaults to free Android on-device STT.
+     * Users can switch to Deepgram (paid) in settings for better quality.
      */
     @Provides
     @Singleton
@@ -161,13 +164,19 @@ object ProviderModule {
         @Named("AndroidSTT") android: STTService,
         config: ProviderConfig
     ): STTService {
-        // TODO: Read from config.selectedSTTProvider flow
-        // For now, default to Deepgram
-        return deepgram
+        // Use Android STT by default (free, on-device)
+        // Deepgram available as premium option
+        return when (config.getSTTProvider()) {
+            "Deepgram" -> deepgram
+            else -> android
+        }
     }
 
     /**
      * Provide default TTS service based on configuration.
+     *
+     * Defaults to free Android on-device TTS.
+     * Users can switch to ElevenLabs (paid) in settings for better quality.
      */
     @Provides
     @Singleton
@@ -176,9 +185,12 @@ object ProviderModule {
         @Named("AndroidTTS") android: TTSService,
         config: ProviderConfig
     ): TTSService {
-        // TODO: Read from config.selectedTTSProvider flow
-        // For now, default to ElevenLabs
-        return elevenlabs
+        // Use Android TTS by default (free, on-device)
+        // ElevenLabs available as premium option
+        return when (config.getTTSProvider()) {
+            "ElevenLabs" -> elevenlabs
+            else -> android
+        }
     }
 
     /**

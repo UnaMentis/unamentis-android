@@ -12,12 +12,12 @@ import java.nio.FloatBuffer
  * Silero VAD implementation using ONNX Runtime.
  *
  * This is the recommended VAD implementation for Android, using the official
- * Silero VAD ONNX model for high-accuracy voice activity detection.
+ * Silero VAD v5 ONNX model for high-accuracy voice activity detection.
  *
- * Model specifications:
+ * Model specifications (Silero VAD v5):
  * - Input: Audio chunks (512 samples at 16kHz = 32ms frames)
- * - Output: Speech probability (0.0 - 1.0)
- * - Stateful: Uses hidden states (h, c) for temporal context
+ * - Inputs: "input" (audio), "state" (hidden state), "sr" (sample rate)
+ * - Outputs: "output" (probability), "stateN" (next hidden state)
  *
  * @property context Application context for loading model from assets
  * @property threshold Speech detection threshold (default: 0.5)
@@ -30,12 +30,22 @@ class SileroOnnxVADService(
     private var ortEnvironment: OrtEnvironment? = null
     private var ortSession: OrtSession? = null
 
-    // Hidden states for the LSTM - Silero VAD is stateful
-    private var hState: FloatArray = FloatArray(2 * 1 * 64) // 2 layers, batch 1, 64 hidden
-    private var cState: FloatArray = FloatArray(2 * 1 * 64)
+    // State tensor for Silero VAD v5 - shape: [2, 1, 128]
+    // 2 layers, batch size 1, 128 hidden units
+    private var state: FloatArray = FloatArray(2 * 1 * 128)
 
-    // Sample rate state (required by Silero VAD v5)
+    // Sample rate (required by Silero VAD v5)
     private val sampleRate: Long = 16000L
+
+    // Audio buffer to accumulate samples until we have FRAME_SIZE
+    private val audioBuffer = FloatArray(FRAME_SIZE)
+    private var bufferPosition = 0
+
+    // Last VAD result (returned when buffer isn't full yet)
+    private var lastResult = VADResult(isSpeech = false, confidence = 0f)
+
+    // Counter for periodic logging
+    private var inferenceCount = 0
 
     companion object {
         private const val MODEL_FILENAME = "silero_vad.onnx"
@@ -65,7 +75,15 @@ class SileroOnnxVADService(
 
             ortSession = ortEnvironment?.createSession(modelBytes, sessionOptions)
 
-            // Reset hidden states
+            // Log model input/output names for debugging
+            ortSession?.let { session ->
+                val inputNames = session.inputNames.joinToString()
+                val outputNames = session.outputNames.joinToString()
+                android.util.Log.i(TAG, "Model inputs: $inputNames")
+                android.util.Log.i(TAG, "Model outputs: $outputNames")
+            }
+
+            // Reset state
             resetStates()
 
             android.util.Log.i(TAG, "Silero VAD (ONNX) loaded successfully")
@@ -76,18 +94,22 @@ class SileroOnnxVADService(
     }
 
     /**
-     * Reset the LSTM hidden states.
+     * Reset the hidden state and audio buffer.
      * Call this when starting a new audio stream/session.
      */
     fun resetStates() {
-        hState = FloatArray(2 * 1 * 64)
-        cState = FloatArray(2 * 1 * 64)
+        state = FloatArray(2 * 1 * 128)
+        bufferPosition = 0
+        lastResult = VADResult(isSpeech = false, confidence = 0f)
     }
 
     /**
      * Process audio samples and detect speech.
      *
-     * @param samples Audio samples (float, -1.0 to 1.0). Must be 512 samples.
+     * This method buffers incoming audio until we have FRAME_SIZE (512) samples,
+     * then runs VAD inference. Returns the last result while buffering.
+     *
+     * @param samples Audio samples (float, -1.0 to 1.0). Any size is accepted.
      * @return VAD result with speech detection and confidence
      */
     override fun processAudio(samples: FloatArray): VADResult {
@@ -99,78 +121,91 @@ class SileroOnnxVADService(
             return VADResult(isSpeech = false, confidence = 0f)
         }
 
-        if (samples.size != FRAME_SIZE) {
-            android.util.Log.w(
-                TAG,
-                "Invalid frame size: ${samples.size}, expected $FRAME_SIZE"
-            )
-            return VADResult(isSpeech = false, confidence = 0f)
+        // Add samples to buffer
+        var samplesOffset = 0
+        while (samplesOffset < samples.size) {
+            val samplesToAdd = minOf(samples.size - samplesOffset, FRAME_SIZE - bufferPosition)
+            System.arraycopy(samples, samplesOffset, audioBuffer, bufferPosition, samplesToAdd)
+            bufferPosition += samplesToAdd
+            samplesOffset += samplesToAdd
+
+            // Process when buffer is full
+            if (bufferPosition >= FRAME_SIZE) {
+                lastResult = processFullBuffer(session, env)
+                bufferPosition = 0
+            }
         }
 
+        return lastResult
+    }
+
+    /**
+     * Process a full 512-sample buffer through the VAD model.
+     */
+    private fun processFullBuffer(session: OrtSession, env: OrtEnvironment): VADResult {
         return try {
-            // Prepare input tensors
-            // Input shape: [batch_size, chunk_size] = [1, 512]
+            // Prepare input tensors for Silero VAD v5
+
+            // Audio input: shape [1, 512]
             val inputShape = longArrayOf(1, FRAME_SIZE.toLong())
             val inputTensor = OnnxTensor.createTensor(
                 env,
-                FloatBuffer.wrap(samples),
+                FloatBuffer.wrap(audioBuffer),
                 inputShape
             )
 
-            // Sample rate tensor: scalar int64
+            // State tensor: shape [2, 1, 128]
+            val stateShape = longArrayOf(2, 1, 128)
+            val stateTensor = OnnxTensor.createTensor(
+                env,
+                FloatBuffer.wrap(state),
+                stateShape
+            )
+
+            // Sample rate tensor: shape [1]
             val srTensor = OnnxTensor.createTensor(
                 env,
                 longArrayOf(sampleRate)
             )
 
-            // Hidden state tensors: [num_layers, batch_size, hidden_size] = [2, 1, 64]
-            val stateShape = longArrayOf(2, 1, 64)
-            val hTensor = OnnxTensor.createTensor(
-                env,
-                FloatBuffer.wrap(hState),
-                stateShape
-            )
-            val cTensor = OnnxTensor.createTensor(
-                env,
-                FloatBuffer.wrap(cState),
-                stateShape
-            )
-
-            // Run inference
+            // Run inference with correct input names for v5
             val inputs = mapOf(
                 "input" to inputTensor,
-                "sr" to srTensor,
-                "h" to hTensor,
-                "c" to cTensor
+                "state" to stateTensor,
+                "sr" to srTensor
             )
 
             val results = session.run(inputs)
 
             // Extract outputs
-            // Output: speech probability [1, 1]
+            // Output: speech probability
             val outputTensor = results.get("output").get() as OnnxTensor
             val probability = outputTensor.floatBuffer.get(0)
 
-            // Update hidden states for next call
-            val hnTensor = results.get("hn").get() as OnnxTensor
-            val cnTensor = results.get("cn").get() as OnnxTensor
-
-            hnTensor.floatBuffer.get(hState)
-            cnTensor.floatBuffer.get(cState)
+            // Update state for next call
+            val stateNTensor = results.get("stateN").get() as OnnxTensor
+            stateNTensor.floatBuffer.get(state)
 
             // Clean up tensors
             inputTensor.close()
+            stateTensor.close()
             srTensor.close()
-            hTensor.close()
-            cTensor.close()
             results.close()
 
+            inferenceCount++
+            val isSpeech = probability > threshold
+
+            // Log periodically or when speech detected
+            if (isSpeech || inferenceCount % 100 == 0) {
+                android.util.Log.d(TAG, "VAD: isSpeech=$isSpeech, confidence=${"%.4f".format(probability)}")
+            }
             VADResult(
-                isSpeech = probability > threshold,
+                isSpeech = isSpeech,
                 confidence = probability
             )
         } catch (e: Exception) {
             android.util.Log.e(TAG, "Inference failed", e)
+            e.printStackTrace()
             VADResult(isSpeech = false, confidence = 0f)
         }
     }
