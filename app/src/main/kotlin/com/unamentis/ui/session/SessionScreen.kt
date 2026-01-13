@@ -51,7 +51,7 @@ fun SessionScreen(
         topBar = {
             SessionTopBar(
                 sessionState = uiState.sessionState,
-                totalTurns = uiState.totalTurns,
+                turnCount = uiState.turnCount,
                 isSessionActive = uiState.isSessionActive
             )
         },
@@ -99,7 +99,7 @@ fun SessionScreen(
 @Composable
 private fun SessionTopBar(
     sessionState: SessionState,
-    totalTurns: Int,
+    turnCount: Int,
     isSessionActive: Boolean
 ) {
     TopAppBar(
@@ -111,7 +111,7 @@ private fun SessionTopBar(
                 )
                 if (isSessionActive) {
                     Text(
-                        text = "$totalTurns turns",
+                        text = "$turnCount turns",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -276,7 +276,7 @@ private fun TranscriptBubble(entry: TranscriptEntry) {
                 modifier = Modifier.padding(12.dp)
             ) {
                 Text(
-                    text = entry.content,
+                    text = entry.text,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface
                 )

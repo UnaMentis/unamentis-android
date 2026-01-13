@@ -1,5 +1,6 @@
 package com.unamentis.core.audio
 
+import kotlin.math.pow
 import kotlin.math.sqrt
 
 /**
@@ -63,7 +64,7 @@ object AudioUtils {
      * @param gainDb Gain in decibels
      */
     fun applyGain(samples: FloatArray, gainDb: Float) {
-        val gainLinear = kotlin.math.pow(10.0, (gainDb / 20.0).toDouble()).toFloat()
+        val gainLinear = 10.0.pow(gainDb / 20.0).toFloat()
         for (i in samples.indices) {
             samples[i] *= gainLinear
         }

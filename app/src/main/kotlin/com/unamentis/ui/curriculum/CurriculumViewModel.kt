@@ -80,37 +80,47 @@ class CurriculumViewModel @Inject constructor(
 
     /**
      * Combined UI state.
+     * Using nested combines since Kotlin Flow only supports up to 5 arguments.
      */
     val uiState: StateFlow<CurriculumUiState> = combine(
-        selectedTab,
-        serverCurricula,
-        localCurricula,
-        searchQuery,
-        isLoading,
-        error,
-        downloadProgress
-    ) { tab, server, local, query, loading, errorMsg, progress ->
+        combine(selectedTab, serverCurricula, localCurricula) { tab, server, local ->
+            Triple(tab, server, local)
+        },
+        combine(searchQuery, isLoading, error, downloadProgress) { query, loading, errorMsg, progress ->
+            CurriculumUiStatePartial(query, loading, errorMsg, progress)
+        }
+    ) { (tab, server, local), partial ->
         val displayedCurricula = when (tab) {
             CurriculumTab.SERVER -> server
             CurriculumTab.LOCAL -> local
         }.filter { curriculum ->
-            if (query.isBlank()) true
-            else curriculum.title.contains(query, ignoreCase = true) ||
-                    curriculum.topics.any { it.title.contains(query, ignoreCase = true) }
+            if (partial.searchQuery.isBlank()) true
+            else curriculum.title.contains(partial.searchQuery, ignoreCase = true) ||
+                    curriculum.topics.any { it.title.contains(partial.searchQuery, ignoreCase = true) }
         }
 
         CurriculumUiState(
             selectedTab = tab,
             curricula = displayedCurricula,
-            searchQuery = query,
-            isLoading = loading,
-            error = errorMsg,
-            downloadProgress = progress
+            searchQuery = partial.searchQuery,
+            isLoading = partial.isLoading,
+            error = partial.error,
+            downloadProgress = partial.downloadProgress
         )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = CurriculumUiState()
+    )
+
+    /**
+     * Helper data class for partial UI state.
+     */
+    private data class CurriculumUiStatePartial(
+        val searchQuery: String,
+        val isLoading: Boolean,
+        val error: String?,
+        val downloadProgress: Map<String, Float>
     )
 
     /**

@@ -154,14 +154,21 @@ class AndroidSTTService(
         speechRecognizer?.startListening(intent)
 
         awaitClose {
-            stopStreaming()
+            doStopStreaming()
         }
     }
 
     /**
-     * Stop streaming and release recognizer.
+     * Stop streaming and release recognizer (suspend version).
      */
     override suspend fun stopStreaming() {
+        doStopStreaming()
+    }
+
+    /**
+     * Internal non-suspend stop implementation.
+     */
+    private fun doStopStreaming() {
         speechRecognizer?.stopListening()
         speechRecognizer?.destroy()
         speechRecognizer = null

@@ -235,7 +235,7 @@ private fun SessionCard(
             ) {
                 MetadataChip(
                     icon = Icons.Default.Chat,
-                    text = "${session.totalTurns} turns"
+                    text = "${session.turnCount} turns"
                 )
 
                 session.endTime?.let { endTime ->
@@ -369,7 +369,7 @@ private fun SessionInfoCard(session: Session) {
                 val durationMinutes = ((it - session.startTime) / 1000 / 60).toInt()
                 InfoRow(label = "Duration", value = "${durationMinutes} minutes")
             }
-            InfoRow(label = "Total Turns", value = session.totalTurns.toString())
+            InfoRow(label = "Total Turns", value = session.turnCount.toString())
         }
     }
 }
@@ -432,7 +432,7 @@ private fun TranscriptEntryCard(entry: TranscriptEntry) {
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(
-                    text = entry.content,
+                    text = entry.text,
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Text(

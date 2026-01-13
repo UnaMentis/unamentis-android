@@ -93,20 +93,27 @@ class CurriculumEngine @Inject constructor(
         _currentTopic.value = topic
 
         // Load or create progress
-        val progress = topicProgressRepository.getProgress(curriculum.id, topicId)
-            ?: TopicProgress(
-                curriculumId = curriculum.id,
-                topicId = topicId,
-                currentSegmentIndex = 0,
-                completedSegments = emptyList(),
-                masteryLevel = 0.0f,
-                lastAccessedTime = System.currentTimeMillis()
-            )
+        val existingProgress = topicProgressRepository.getProgressByTopic(topicId)
+        val progress = existingProgress ?: TopicProgress(
+            curriculumId = curriculum.id,
+            topicId = topicId,
+            completedSegments = emptyList(),
+            masteryLevel = 0.0f,
+            lastAccessedAt = System.currentTimeMillis(),
+            currentSegmentId = topic.transcript.firstOrNull()?.id
+        )
 
         _topicProgress.value = progress
-        _currentSegmentIndex.value = progress.currentSegmentIndex
 
-        Log.i("CurriculumEngine", "Topic loaded: ${topic.title} (segment ${progress.currentSegmentIndex})")
+        // Find segment index from segment ID
+        val segmentIndex = if (progress.currentSegmentId != null) {
+            topic.transcript.indexOfFirst { it.id == progress.currentSegmentId }.takeIf { it >= 0 } ?: 0
+        } else {
+            0
+        }
+        _currentSegmentIndex.value = segmentIndex
+
+        Log.i("CurriculumEngine", "Topic loaded: ${topic.title} (segment $segmentIndex)")
     }
 
     /**
@@ -118,7 +125,7 @@ class CurriculumEngine @Inject constructor(
 
         val nextIndex = _currentSegmentIndex.value + 1
 
-        if (nextIndex >= topic.transcriptSegments.size) {
+        if (nextIndex >= topic.transcript.size) {
             // Topic complete
             Log.i("CurriculumEngine", "Topic completed: ${topic.title}")
             markTopicComplete()
@@ -126,7 +133,7 @@ class CurriculumEngine @Inject constructor(
         }
 
         // Check if next segment is a stopping point
-        val nextSegment = topic.transcriptSegments[nextIndex]
+        val nextSegment = topic.transcript[nextIndex]
         if (nextSegment.stoppingPoint != null) {
             Log.i("CurriculumEngine", "Stopping point reached: ${nextSegment.stoppingPoint.type}")
             // Don't auto-advance, wait for user action
@@ -161,7 +168,7 @@ class CurriculumEngine @Inject constructor(
     suspend fun goToSegment(segmentIndex: Int) {
         val topic = _currentTopic.value ?: return
 
-        if (segmentIndex < 0 || segmentIndex >= topic.transcriptSegments.size) {
+        if (segmentIndex < 0 || segmentIndex >= topic.transcript.size) {
             Log.w("CurriculumEngine", "Invalid segment index: $segmentIndex")
             return
         }
@@ -176,17 +183,19 @@ class CurriculumEngine @Inject constructor(
      * Mark the current segment as completed.
      */
     suspend fun markSegmentComplete() {
+        val topic = _currentTopic.value ?: return
         val progress = _topicProgress.value ?: return
         val segmentIndex = _currentSegmentIndex.value
+        val segment = topic.transcript.getOrNull(segmentIndex) ?: return
 
         val updatedCompleted = progress.completedSegments.toMutableList()
-        if (segmentIndex !in updatedCompleted) {
-            updatedCompleted.add(segmentIndex)
+        if (segment.id !in updatedCompleted) {
+            updatedCompleted.add(segment.id)
         }
 
         _topicProgress.value = progress.copy(
             completedSegments = updatedCompleted,
-            lastAccessedTime = System.currentTimeMillis()
+            lastAccessedAt = System.currentTimeMillis()
         )
 
         updateProgress()
@@ -200,7 +209,7 @@ class CurriculumEngine @Inject constructor(
 
         _topicProgress.value = progress.copy(
             masteryLevel = 1.0f,
-            lastAccessedTime = System.currentTimeMillis()
+            lastAccessedAt = System.currentTimeMillis()
         )
 
         updateProgress()
@@ -226,7 +235,7 @@ class CurriculumEngine @Inject constructor(
 
         _topicProgress.value = progress.copy(
             masteryLevel = newMastery,
-            lastAccessedTime = System.currentTimeMillis()
+            lastAccessedAt = System.currentTimeMillis()
         )
 
         updateProgress()
@@ -241,17 +250,22 @@ class CurriculumEngine @Inject constructor(
         val topic = _currentTopic.value ?: return null
         val segmentIndex = _currentSegmentIndex.value
 
-        if (segmentIndex >= topic.transcriptSegments.size) return null
+        if (segmentIndex >= topic.transcript.size) return null
 
-        val segment = topic.transcriptSegments[segmentIndex]
+        val segment = topic.transcript[segmentIndex]
+
+        // Look up visual asset if referenced
+        val visualAsset = segment.visualAssetId?.let { assetId ->
+            topic.visualAssets.find { it.id == assetId }
+        }
 
         return CurriculumContext(
             topicTitle = topic.title,
             segmentIndex = segmentIndex,
-            totalSegments = topic.transcriptSegments.size,
+            totalSegments = topic.transcript.size,
             learningObjectives = topic.learningObjectives,
             currentSegment = segment,
-            visualAssets = segment.visualAssets
+            visualAsset = visualAsset
         )
     }
 
@@ -261,7 +275,7 @@ class CurriculumEngine @Inject constructor(
     fun getCurrentSegment(): TranscriptSegment? {
         val topic = _currentTopic.value ?: return null
         val index = _currentSegmentIndex.value
-        return topic.transcriptSegments.getOrNull(index)
+        return topic.transcript.getOrNull(index)
     }
 
     /**
@@ -293,10 +307,13 @@ class CurriculumEngine @Inject constructor(
      * Update progress in database.
      */
     private suspend fun updateProgress() {
+        val topic = _currentTopic.value ?: return
         val progress = _topicProgress.value ?: return
+        val currentSegment = topic.transcript.getOrNull(_currentSegmentIndex.value)
+
         val updatedProgress = progress.copy(
-            currentSegmentIndex = _currentSegmentIndex.value,
-            lastAccessedTime = System.currentTimeMillis()
+            currentSegmentId = currentSegment?.id,
+            lastAccessedAt = System.currentTimeMillis()
         )
         _topicProgress.value = updatedProgress
         topicProgressRepository.saveProgress(updatedProgress)
@@ -309,10 +326,10 @@ class CurriculumEngine @Inject constructor(
         val topic = _currentTopic.value ?: return 0f
         val progress = _topicProgress.value ?: return 0f
 
-        if (topic.transcriptSegments.isEmpty()) return 0f
+        if (topic.transcript.isEmpty()) return 0f
 
         val completedCount = progress.completedSegments.size
-        val totalCount = topic.transcriptSegments.size
+        val totalCount = topic.transcript.size
 
         return (completedCount.toFloat() / totalCount.toFloat()) * 100f
     }
@@ -324,7 +341,7 @@ class CurriculumEngine @Inject constructor(
         val curriculum = _currentCurriculum.value ?: return emptyList()
 
         return curriculum.topics.map { topic ->
-            val progress = topicProgressRepository.getProgress(curriculum.id, topic.id)
+            val progress = topicProgressRepository.getProgressByTopic(topic.id)
             topic to progress
         }
     }
@@ -349,5 +366,5 @@ data class CurriculumContext(
     val totalSegments: Int,
     val learningObjectives: List<String>,
     val currentSegment: TranscriptSegment,
-    val visualAssets: List<VisualAsset>
+    val visualAsset: VisualAsset?
 )

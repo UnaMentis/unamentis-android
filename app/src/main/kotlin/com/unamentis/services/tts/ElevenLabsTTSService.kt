@@ -150,14 +150,21 @@ class ElevenLabsTTSService(
         })
 
         awaitClose {
-            stop()
+            doStop()
         }
     }
 
     /**
-     * Stop synthesis and close WebSocket connection.
+     * Stop synthesis and close WebSocket connection (suspend version).
      */
     override suspend fun stop() {
+        doStop()
+    }
+
+    /**
+     * Internal non-suspend stop implementation.
+     */
+    private fun doStop() {
         webSocket?.close(1000, "Client closing")
         webSocket = null
     }

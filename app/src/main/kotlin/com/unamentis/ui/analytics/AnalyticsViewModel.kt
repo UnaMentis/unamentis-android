@@ -58,7 +58,7 @@ class AnalyticsViewModel @Inject constructor(
             isInRange(sessionDate, range)
         }
 
-        val totalTurns = filtered.sumOf { it.totalTurns }
+        val totalTurns = filtered.sumOf { it.turnCount }
         val avgE2ELatency = filtered
             .flatMap { telemetryEngine.getSessionMetrics(it.id) }
             .map { it.e2eLatency }
@@ -184,7 +184,7 @@ class AnalyticsViewModel @Inject constructor(
             DailyStats(
                 date = date,
                 sessionCount = sessionsOnDate.size,
-                totalTurns = sessionsOnDate.sumOf { it.totalTurns }
+                totalTurns = sessionsOnDate.sumOf { it.turnCount }
             )
         }.reversed()
     }.stateIn(
@@ -201,16 +201,15 @@ class AnalyticsViewModel @Inject constructor(
         quickStats,
         latencyBreakdown,
         costBreakdown,
-        sessionTrends,
-        isLoading
-    ) { range, stats, latency, cost, trends, loading ->
+        sessionTrends
+    ) { range, stats, latency, cost, trends ->
         AnalyticsUiState(
             timeRange = range,
             quickStats = stats,
             latencyBreakdown = latency,
             costBreakdown = cost,
             sessionTrends = trends,
-            isLoading = loading
+            isLoading = false
         )
     }.stateIn(
         scope = viewModelScope,

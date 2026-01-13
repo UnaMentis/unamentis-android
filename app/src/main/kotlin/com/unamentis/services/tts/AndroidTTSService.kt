@@ -158,14 +158,21 @@ class AndroidTTSService(
         }
 
         awaitClose {
-            stop()
+            doStop()
         }
     }
 
     /**
-     * Stop synthesis and release resources.
+     * Stop synthesis and release resources (suspend version).
      */
     override suspend fun stop() {
+        doStop()
+    }
+
+    /**
+     * Internal non-suspend stop implementation.
+     */
+    private fun doStop() {
         tts?.stop()
     }
 

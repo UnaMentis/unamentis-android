@@ -6,7 +6,7 @@ import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -49,7 +49,7 @@ class ApiClientTest {
     }
 
     @Test
-    fun `getCurricula returns list of curricula`() = runBlocking {
+    fun `getCurricula returns list of curricula`() = runTest {
         // Given
         val mockResponse = """
             [
@@ -87,7 +87,7 @@ class ApiClientTest {
     }
 
     @Test
-    fun `uploadMetrics sends correct request`() = runBlocking {
+    fun `uploadMetrics sends correct request`() = runTest {
         // Given
         val metrics = MetricsUploadRequest(
             clientId = "test-client",
@@ -133,7 +133,7 @@ class ApiClientTest {
     }
 
     @Test
-    fun `sendLog handles failures gracefully`() = runBlocking {
+    fun `sendLog handles failures gracefully`() = runTest {
         // Given
         val logEntry = LogEntry(
             level = "INFO",

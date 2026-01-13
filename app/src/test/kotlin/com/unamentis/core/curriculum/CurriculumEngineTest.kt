@@ -27,59 +27,60 @@ class CurriculumEngineTest {
         id = "curriculum-1",
         title = "Introduction to Physics",
         description = "Basic physics concepts",
-        author = "Dr. Smith",
         version = "1.0",
         topics = listOf(
             Topic(
                 id = "topic-1",
                 title = "Newton's Laws",
-                description = "Laws of motion",
-                learningObjectives = listOf("Understand F=ma", "Apply to real scenarios"),
-                transcriptSegments = listOf(
+                orderIndex = 0,
+                transcript = listOf(
                     TranscriptSegment(
-                        segmentId = "seg-1",
-                        speaker = "tutor",
-                        text = "Let's learn about Newton's first law.",
-                        timestamp = 0,
-                        visualAssets = emptyList(),
-                        stoppingPoint = null
+                        id = "seg-1",
+                        type = "content",
+                        content = "Let's learn about Newton's first law.",
+                        spokenText = null,
+                        stoppingPoint = null,
+                        visualAssetId = null
                     ),
                     TranscriptSegment(
-                        segmentId = "seg-2",
-                        speaker = "tutor",
-                        text = "An object at rest stays at rest.",
-                        timestamp = 5000,
-                        visualAssets = emptyList(),
-                        stoppingPoint = null
+                        id = "seg-2",
+                        type = "content",
+                        content = "An object at rest stays at rest.",
+                        spokenText = null,
+                        stoppingPoint = null,
+                        visualAssetId = null
                     ),
                     TranscriptSegment(
-                        segmentId = "seg-3",
-                        speaker = "tutor",
-                        text = "Let's test your understanding.",
-                        timestamp = 10000,
-                        visualAssets = emptyList(),
+                        id = "seg-3",
+                        type = "checkpoint",
+                        content = "Let's test your understanding.",
+                        spokenText = null,
                         stoppingPoint = StoppingPoint(
-                            type = StoppingPointType.QUIZ,
-                            title = "Quiz: Newton's First Law"
-                        )
+                            type = "quiz",
+                            prompt = "What is Newton's First Law?"
+                        ),
+                        visualAssetId = null
                     )
-                )
+                ),
+                description = "Laws of motion",
+                learningObjectives = listOf("Understand F=ma", "Apply to real scenarios")
             ),
             Topic(
                 id = "topic-2",
                 title = "Energy and Work",
-                description = "Energy concepts",
-                learningObjectives = listOf("Define kinetic energy", "Calculate work"),
-                transcriptSegments = listOf(
+                orderIndex = 1,
+                transcript = listOf(
                     TranscriptSegment(
-                        segmentId = "seg-4",
-                        speaker = "tutor",
-                        text = "Energy is the capacity to do work.",
-                        timestamp = 0,
-                        visualAssets = emptyList(),
-                        stoppingPoint = null
+                        id = "seg-4",
+                        type = "content",
+                        content = "Energy is the capacity to do work.",
+                        spokenText = null,
+                        stoppingPoint = null,
+                        visualAssetId = null
                     )
-                )
+                ),
+                description = "Energy concepts",
+                learningObjectives = listOf("Define kinetic energy", "Calculate work")
             )
         )
     )
@@ -90,7 +91,7 @@ class CurriculumEngineTest {
         topicProgressRepository = mockk(relaxed = true)
 
         coEvery { curriculumRepository.getCurriculumById(any()) } returns testCurriculum
-        coEvery { topicProgressRepository.getProgress(any(), any()) } returns null
+        coEvery { topicProgressRepository.getProgressByTopic(any()) } returns null
         coEvery { topicProgressRepository.saveProgress(any()) } just Runs
 
         curriculumEngine = CurriculumEngine(
@@ -127,7 +128,6 @@ class CurriculumEngineTest {
         val progress = curriculumEngine.topicProgress.value
         assertNotNull(progress)
         assertEquals("topic-1", progress!!.topicId)
-        assertEquals(0, progress.currentSegmentIndex)
         assertEquals(0.0f, progress.masteryLevel, 0.001f)
     }
 
@@ -136,20 +136,20 @@ class CurriculumEngineTest {
         val existingProgress = TopicProgress(
             curriculumId = "curriculum-1",
             topicId = "topic-1",
-            currentSegmentIndex = 2,
-            completedSegments = listOf(0, 1),
+            completedSegments = listOf("seg-1", "seg-2"),
             masteryLevel = 0.75f,
-            lastAccessedTime = System.currentTimeMillis()
+            lastAccessedAt = System.currentTimeMillis(),
+            currentSegmentId = "seg-3"
         )
 
         coEvery {
-            topicProgressRepository.getProgress("curriculum-1", "topic-1")
+            topicProgressRepository.getProgressByTopic("topic-1")
         } returns existingProgress
 
         curriculumEngine.loadCurriculum("curriculum-1")
 
         assertEquals(2, curriculumEngine.currentSegmentIndex.value)
-        assertEquals(0.75f, curriculumEngine.topicProgress.value?.masteryLevel, 0.001f)
+        assertEquals(0.75f, curriculumEngine.topicProgress.value?.masteryLevel ?: 0f, 0.001f)
     }
 
     @Test
@@ -179,7 +179,7 @@ class CurriculumEngineTest {
         // Should be at stopping point
         assertTrue(curriculumEngine.isAtStoppingPoint())
         assertNotNull(curriculumEngine.getCurrentStoppingPoint())
-        assertEquals(StoppingPointType.QUIZ, curriculumEngine.getCurrentStoppingPoint()?.type)
+        assertEquals("quiz", curriculumEngine.getCurrentStoppingPoint()?.type)
     }
 
     @Test
@@ -198,21 +198,26 @@ class CurriculumEngineTest {
     }
 
     @Test
-    fun `advanceSegment at end of topic marks topic complete`() = runTest {
+    fun `advanceSegment at end of topic marks topic complete and loads next`() = runTest {
+        // Capture saved progress to verify mastery was set to 1.0
+        val savedProgresses = mutableListOf<TopicProgress>()
+        coEvery { topicProgressRepository.saveProgress(capture(savedProgresses)) } just Runs
+
         curriculumEngine.loadCurriculum("curriculum-1")
 
         // Jump to last segment
-        val lastIndex = testCurriculum.topics[0].transcriptSegments.size - 1
+        val lastIndex = testCurriculum.topics[0].transcript.size - 1
         curriculumEngine.goToSegment(lastIndex)
 
         // Advance past end
         curriculumEngine.advanceSegment()
 
-        // Should have mastery level 1.0
-        assertEquals(1.0f, curriculumEngine.topicProgress.value?.masteryLevel, 0.001f)
-
         // Should auto-load next topic
         assertEquals("topic-2", curriculumEngine.currentTopic.value?.id)
+
+        // Verify that topic-1 was saved with mastery 1.0 before auto-loading topic-2
+        val topic1Progress = savedProgresses.find { it.topicId == "topic-1" && it.masteryLevel == 1.0f }
+        assertNotNull("Topic 1 should have been saved with mastery 1.0", topic1Progress)
     }
 
     @Test
@@ -263,7 +268,7 @@ class CurriculumEngineTest {
         curriculumEngine.markSegmentComplete()
 
         val progress = curriculumEngine.topicProgress.value
-        assertTrue(progress!!.completedSegments.contains(0))
+        assertTrue(progress!!.completedSegments.contains("seg-1"))
     }
 
     @Test
@@ -299,11 +304,11 @@ class CurriculumEngineTest {
 
         // Try to go above 1.0
         curriculumEngine.updateMastery(2.0f)
-        assertEquals(1.0f, curriculumEngine.topicProgress.value?.masteryLevel, 0.001f)
+        assertEquals(1.0f, curriculumEngine.topicProgress.value?.masteryLevel ?: 0f, 0.001f)
 
         // Try to go below 0.0
         curriculumEngine.updateMastery(-5.0f)
-        assertEquals(0.0f, curriculumEngine.topicProgress.value?.masteryLevel, 0.001f)
+        assertEquals(0.0f, curriculumEngine.topicProgress.value?.masteryLevel ?: 0f, 0.001f)
     }
 
     @Test
@@ -326,8 +331,8 @@ class CurriculumEngineTest {
         val segment = curriculumEngine.getCurrentSegment()
 
         assertNotNull(segment)
-        assertEquals("seg-1", segment!!.segmentId)
-        assertEquals("Let's learn about Newton's first law.", segment.text)
+        assertEquals("seg-1", segment!!.id)
+        assertEquals("Let's learn about Newton's first law.", segment.content)
     }
 
     @Test

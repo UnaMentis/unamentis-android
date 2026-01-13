@@ -3,6 +3,9 @@ package com.unamentis.di
 import android.content.Context
 import com.unamentis.BuildConfig
 import com.unamentis.data.local.AppDatabase
+import com.unamentis.data.local.dao.CurriculumDao
+import com.unamentis.data.local.dao.SessionDao
+import com.unamentis.data.local.dao.TopicProgressDao
 import com.unamentis.data.remote.ApiClient
 import com.unamentis.data.remote.CertificatePinning
 import dagger.Module
@@ -30,6 +33,33 @@ object AppModule {
     @Singleton
     fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
         return AppDatabase.getInstance(context)
+    }
+
+    /**
+     * Provides the SessionDao.
+     */
+    @Provides
+    @Singleton
+    fun provideSessionDao(database: AppDatabase): SessionDao {
+        return database.sessionDao()
+    }
+
+    /**
+     * Provides the CurriculumDao.
+     */
+    @Provides
+    @Singleton
+    fun provideCurriculumDao(database: AppDatabase): CurriculumDao {
+        return database.curriculumDao()
+    }
+
+    /**
+     * Provides the TopicProgressDao.
+     */
+    @Provides
+    @Singleton
+    fun provideTopicProgressDao(database: AppDatabase): TopicProgressDao {
+        return database.topicProgressDao()
     }
 
     /**

@@ -92,7 +92,7 @@ class SessionViewModel @Inject constructor(
             canResume = state == SessionState.PAUSED,
             canStop = session != null,
             transcript = transcriptList,
-            totalTurns = session?.totalTurns ?: 0,
+            turnCount = session?.turnCount ?: 0,
             metrics = sessionMetrics,
             statusMessage = getStatusMessage(state)
         )
@@ -183,7 +183,7 @@ data class SessionUiState(
     val canResume: Boolean = false,
     val canStop: Boolean = false,
     val transcript: List<TranscriptEntry> = emptyList(),
-    val totalTurns: Int = 0,
+    val turnCount: Int = 0,
     val metrics: SessionMetrics = SessionMetrics(),
     val statusMessage: String = "Ready to start"
 )

@@ -125,11 +125,11 @@ class AudioUtilsTest {
         val floatSamples = floatArrayOf(0.0f, 0.5f, -0.5f, 1.0f, -1.0f)
         val pcm = AudioUtils.floatToPcm(floatSamples)
 
-        assertEquals(0, pcm[0])
-        assertEquals(16383, pcm[1])
-        assertEquals(-16383, pcm[2])
-        assertEquals(32767, pcm[3])
-        assertEquals(-32767, pcm[4])
+        assertEquals(0.toShort(), pcm[0])
+        assertEquals(16383.toShort(), pcm[1])
+        assertEquals((-16383).toShort(), pcm[2])
+        assertEquals(32767.toShort(), pcm[3])
+        assertEquals((-32767).toShort(), pcm[4])
     }
 
     @Test
@@ -138,8 +138,8 @@ class AudioUtilsTest {
         val pcm = AudioUtils.floatToPcm(floatSamples)
 
         // Should clamp to valid range
-        assertEquals(32767, pcm[0])
-        assertEquals(-32767, pcm[1])
+        assertEquals(32767.toShort(), pcm[0])
+        assertEquals((-32767).toShort(), pcm[1])
     }
 
     @Test

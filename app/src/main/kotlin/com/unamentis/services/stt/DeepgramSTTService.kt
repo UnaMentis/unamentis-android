@@ -118,7 +118,7 @@ class DeepgramSTTService(
         })
 
         awaitClose {
-            stopStreaming()
+            doStopStreaming()
         }
     }
 
@@ -132,9 +132,16 @@ class DeepgramSTTService(
     }
 
     /**
-     * Stop streaming and close WebSocket connection.
+     * Stop streaming and close WebSocket connection (suspend version).
      */
     override suspend fun stopStreaming() {
+        doStopStreaming()
+    }
+
+    /**
+     * Internal non-suspend stop implementation.
+     */
+    private fun doStopStreaming() {
         webSocket?.close(1000, "Client closing")
         webSocket = null
     }

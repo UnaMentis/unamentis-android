@@ -43,10 +43,10 @@ class SessionRepository @Inject constructor(
     }
 
     /**
-     * Get sessions for a specific curriculum.
+     * Get sessions for a specific topic.
      */
-    fun getSessionsByCurriculum(curriculumId: String): Flow<List<Session>> {
-        return sessionDao.getSessionsByCurriculum(curriculumId).map { entities ->
+    fun getSessionsByTopic(topicId: String): Flow<List<Session>> {
+        return sessionDao.getSessionsByTopic(topicId).map { entities ->
             entities.map { it.toModel() }
         }
     }
@@ -54,10 +54,8 @@ class SessionRepository @Inject constructor(
     /**
      * Get transcript for a specific session.
      */
-    fun getTranscript(sessionId: String): Flow<List<TranscriptEntry>> {
-        return sessionDao.getTranscriptEntries(sessionId).map { entities ->
-            entities.map { it.toModel() }
-        }
+    suspend fun getTranscript(sessionId: String): List<TranscriptEntry> {
+        return sessionDao.getTranscriptBySessionId(sessionId).map { it.toModel() }
     }
 
     /**
@@ -68,10 +66,24 @@ class SessionRepository @Inject constructor(
     }
 
     /**
-     * Update a session.
+     * Update session statistics.
      */
-    suspend fun updateSession(session: Session) {
-        sessionDao.updateSession(session.toEntity())
+    suspend fun updateSessionStats(
+        sessionId: String,
+        endTime: Long,
+        durationSeconds: Long,
+        turnCount: Int,
+        interruptionCount: Int,
+        totalCost: Double
+    ) {
+        sessionDao.updateSessionStats(
+            id = sessionId,
+            endTime = endTime,
+            durationSeconds = durationSeconds,
+            turnCount = turnCount,
+            interruptionCount = interruptionCount,
+            totalCost = totalCost
+        )
     }
 
     /**
@@ -82,41 +94,18 @@ class SessionRepository @Inject constructor(
     }
 
     /**
-     * Save multiple transcript entries.
-     */
-    suspend fun saveTranscriptEntries(entries: List<TranscriptEntry>) {
-        sessionDao.insertTranscriptEntries(entries.map { it.toEntity() })
-    }
-
-    /**
      * Delete a session and its transcript.
      */
     suspend fun deleteSession(sessionId: String) {
         sessionDao.deleteSession(sessionId)
-        sessionDao.deleteTranscriptEntries(sessionId)
     }
 
     /**
-     * Get total number of sessions.
+     * Delete all sessions.
      */
-    suspend fun getSessionCount(): Int {
-        return sessionDao.getSessionCount()
-    }
-
-    /**
-     * Get total number of turns across all sessions.
-     */
-    suspend fun getTotalTurns(): Int {
-        return sessionDao.getTotalTurns()
-    }
-
-    /**
-     * Get sessions within a date range.
-     */
-    fun getSessionsInRange(startTime: Long, endTime: Long): Flow<List<Session>> {
-        return sessionDao.getSessionsInRange(startTime, endTime).map { entities ->
-            entities.map { it.toModel() }
-        }
+    suspend fun deleteAllSessions() {
+        sessionDao.deleteAllTranscriptEntries()
+        sessionDao.deleteAllSessions()
     }
 
     /**
@@ -124,18 +113,20 @@ class SessionRepository @Inject constructor(
      */
     suspend fun exportSessionAsJson(sessionId: String): String {
         val session = getSessionById(sessionId) ?: return "{}"
-        val transcript = sessionDao.getTranscriptEntries(sessionId)
-            .map { entities -> entities.map { it.toModel() } }
+        val transcript = getTranscript(sessionId)
 
-        // TODO: Serialize to JSON using kotlinx.serialization
         return buildString {
             appendLine("{")
             appendLine("  \"sessionId\": \"${session.id}\",")
             appendLine("  \"startTime\": ${session.startTime},")
             appendLine("  \"endTime\": ${session.endTime},")
-            appendLine("  \"totalTurns\": ${session.totalTurns},")
+            appendLine("  \"turnCount\": ${session.turnCount},")
             appendLine("  \"transcript\": [")
-            // Add transcript entries
+            transcript.forEachIndexed { index, entry ->
+                append("    {\"role\": \"${entry.role}\", \"text\": \"${entry.text}\", \"timestamp\": ${entry.timestamp}}")
+                if (index < transcript.lastIndex) append(",")
+                appendLine()
+            }
             appendLine("  ]")
             appendLine("}")
         }
@@ -146,20 +137,22 @@ class SessionRepository @Inject constructor(
      */
     suspend fun exportSessionAsText(sessionId: String): String {
         val session = getSessionById(sessionId) ?: return ""
-        val transcriptEntities = sessionDao.getTranscriptEntries(sessionId)
+        val transcript = getTranscript(sessionId)
 
         return buildString {
             appendLine("Session: ${session.id}")
             appendLine("Date: ${java.util.Date(session.startTime)}")
-            appendLine("Total Turns: ${session.totalTurns}")
+            appendLine("Turn Count: ${session.turnCount}")
             appendLine()
             appendLine("Transcript:")
-            appendLine("=" .repeat(50))
+            appendLine("=".repeat(50))
             appendLine()
 
-            // Collect transcript synchronously for export
-            // Note: This is simplified - in production would use first() on Flow
-            appendLine("(Transcript entries would be listed here)")
+            transcript.forEach { entry ->
+                val speaker = if (entry.role == "user") "User" else "Assistant"
+                appendLine("[$speaker] ${entry.text}")
+                appendLine()
+            }
         }
     }
 }
@@ -170,11 +163,14 @@ class SessionRepository @Inject constructor(
 private fun Session.toEntity(): SessionEntity {
     return SessionEntity(
         id = id,
+        topicId = topicId,
         curriculumId = curriculumId,
-        currentTopicId = currentTopicId,
         startTime = startTime,
         endTime = endTime,
-        totalTurns = totalTurns
+        durationSeconds = durationSeconds,
+        turnCount = turnCount,
+        interruptionCount = interruptionCount,
+        totalCost = totalCost
     )
 }
 
@@ -184,11 +180,14 @@ private fun Session.toEntity(): SessionEntity {
 private fun SessionEntity.toModel(): Session {
     return Session(
         id = id,
+        topicId = topicId,
         curriculumId = curriculumId,
-        currentTopicId = currentTopicId,
         startTime = startTime,
         endTime = endTime,
-        totalTurns = totalTurns
+        durationSeconds = durationSeconds,
+        turnCount = turnCount,
+        interruptionCount = interruptionCount,
+        totalCost = totalCost
     )
 }
 
@@ -200,8 +199,9 @@ private fun TranscriptEntry.toEntity(): TranscriptEntryEntity {
         id = id,
         sessionId = sessionId,
         role = role,
-        content = content,
-        timestamp = timestamp
+        text = text,
+        timestamp = timestamp,
+        metadata = metadata
     )
 }
 
@@ -213,7 +213,8 @@ private fun TranscriptEntryEntity.toModel(): TranscriptEntry {
         id = id,
         sessionId = sessionId,
         role = role,
-        content = content,
-        timestamp = timestamp
+        text = text,
+        timestamp = timestamp,
+        metadata = metadata
     )
 }

@@ -3,7 +3,7 @@ package com.unamentis.core.session
 import com.unamentis.core.audio.AudioEngine
 import com.unamentis.core.curriculum.CurriculumEngine
 import com.unamentis.data.model.*
-import com.unamentis.services.vad.VADService
+// VADService is defined in com.unamentis.data.model.Providers
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import android.util.Log
@@ -93,7 +93,8 @@ class SessionManager(
      * @param topicId Optional specific topic to start with
      */
     suspend fun startSession(curriculumId: String? = null, topicId: String? = null) {
-        if (_sessionState.value != SessionState.IDLE) {
+        // Block if state is not IDLE or if there's already an active session
+        if (_sessionState.value != SessionState.IDLE || _currentSession.value != null) {
             Log.w("SessionManager", "Cannot start session: already active")
             return
         }
@@ -104,10 +105,10 @@ class SessionManager(
         val session = Session(
             id = UUID.randomUUID().toString(),
             curriculumId = curriculumId,
-            currentTopicId = topicId,
+            topicId = topicId,
             startTime = System.currentTimeMillis(),
             endTime = null,
-            totalTurns = 0
+            turnCount = 0
         )
         _currentSession.value = session
 
@@ -221,7 +222,7 @@ class SessionManager(
             id = UUID.randomUUID().toString(),
             sessionId = _currentSession.value?.id ?: "",
             role = "user",
-            content = text,
+            text = text,
             timestamp = System.currentTimeMillis()
         )
         addToTranscript(userEntry)
@@ -380,7 +381,7 @@ class SessionManager(
             id = UUID.randomUUID().toString(),
             sessionId = _currentSession.value?.id ?: "",
             role = "user",
-            content = text,
+            text = text,
             timestamp = System.currentTimeMillis()
         )
         addToTranscript(userEntry)
@@ -519,7 +520,7 @@ class SessionManager(
             id = UUID.randomUUID().toString(),
             sessionId = _currentSession.value?.id ?: "",
             role = "assistant",
-            content = fullResponse,
+            text = fullResponse,
             timestamp = System.currentTimeMillis()
         )
         addToTranscript(aiEntry)
@@ -527,7 +528,7 @@ class SessionManager(
         // Update session metrics
         _currentSession.value?.let { session ->
             _currentSession.value = session.copy(
-                totalTurns = session.totalTurns + 1
+                turnCount = session.turnCount + 1
             )
         }
 
@@ -579,9 +580,12 @@ class SessionManager(
         ttsJob?.cancel()
         vadJob?.cancel()
 
-        sttService.stopStreaming()
-        llmService.stop()
-        ttsService.stop()
+        // Launch coroutine to stop services asynchronously
+        scope.launch {
+            runCatching { sttService.stopStreaming() }
+            runCatching { llmService.stop() }
+            runCatching { ttsService.stop() }
+        }
     }
 
     /**

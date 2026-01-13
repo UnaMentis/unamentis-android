@@ -47,36 +47,29 @@ class HistoryViewModel @Inject constructor(
     /**
      * Selected session details.
      */
-    val selectedSession: StateFlow<Session?> = selectedSessionId
-        .flatMapLatest { id ->
-            if (id != null) {
-                sessionRepository.getSessionById(id)
-            } else {
-                flowOf(null)
-            }
-        }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = null
-        )
+    private val _selectedSession = MutableStateFlow<Session?>(null)
+    val selectedSession: StateFlow<Session?> = _selectedSession.asStateFlow()
 
     /**
      * Transcript for selected session.
      */
-    val transcript: StateFlow<List<TranscriptEntry>> = selectedSessionId
-        .flatMapLatest { id ->
-            if (id != null) {
-                sessionRepository.getTranscriptEntries(id)
-            } else {
-                flowOf(emptyList())
+    private val _transcript = MutableStateFlow<List<TranscriptEntry>>(emptyList())
+    val transcript: StateFlow<List<TranscriptEntry>> = _transcript.asStateFlow()
+
+    init {
+        // Load session details when selection changes
+        viewModelScope.launch {
+            selectedSessionId.collect { id ->
+                if (id != null) {
+                    _selectedSession.value = sessionRepository.getSessionById(id)
+                    _transcript.value = sessionRepository.getTranscript(id)
+                } else {
+                    _selectedSession.value = null
+                    _transcript.value = emptyList()
+                }
             }
         }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
+    }
 
     /**
      * Combined UI state.
@@ -134,13 +127,13 @@ class HistoryViewModel @Inject constructor(
             appendLine("  \"topicId\": ${session.topicId?.let { "\"$it\"" } ?: "null"},")
             appendLine("  \"startTime\": ${session.startTime},")
             appendLine("  \"endTime\": ${session.endTime},")
-            appendLine("  \"totalTurns\": ${session.totalTurns},")
+            appendLine("  \"turnCount\": ${session.turnCount},")
             appendLine("  \"transcript\": [")
             transcript.forEachIndexed { index, entry ->
                 appendLine("    {")
                 appendLine("      \"id\": \"${entry.id}\",")
                 appendLine("      \"role\": \"${entry.role}\",")
-                appendLine("      \"content\": \"${entry.content.replace("\"", "\\\"")}\",")
+                appendLine("      \"text\": \"${entry.text.replace("\"", "\\\"")}\",")
                 appendLine("      \"timestamp\": ${entry.timestamp}")
                 append("    }")
                 if (index < transcript.size - 1) appendLine(",")
@@ -166,7 +159,7 @@ class HistoryViewModel @Inject constructor(
             session.endTime?.let {
                 appendLine("End Time: ${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date(it))}")
             }
-            appendLine("Total Turns: ${session.totalTurns}")
+            appendLine("Turn Count: ${session.turnCount}")
             appendLine()
             appendLine("Transcript")
             appendLine("-" * 50)
@@ -176,7 +169,7 @@ class HistoryViewModel @Inject constructor(
                 val role = if (entry.role == "user") "You" else "AI Tutor"
                 val timestamp = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date(entry.timestamp))
                 appendLine("[$timestamp] $role:")
-                appendLine(entry.content)
+                appendLine(entry.text)
                 appendLine()
             }
         }

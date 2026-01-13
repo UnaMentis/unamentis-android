@@ -476,7 +476,7 @@ private fun TopicCard(
 
             // Segment count
             Text(
-                text = "${topic.transcriptSegments.size} segments",
+                text = "${topic.transcript.size} segments",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

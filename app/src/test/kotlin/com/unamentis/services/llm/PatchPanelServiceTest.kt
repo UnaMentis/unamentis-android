@@ -3,12 +3,13 @@ package com.unamentis.services.llm
 import com.unamentis.data.model.LLMMessage
 import com.unamentis.data.model.LLMService
 import com.unamentis.data.model.LLMToken
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
@@ -46,7 +47,8 @@ class PatchPanelServiceTest {
     }
 
     @Test
-    fun `routes tutoring task to Anthropic with QUALITY preference`() = runBlocking {
+    fun `routes tutoring task to OpenAI with BALANCED preference`() = runTest {
+        // With BALANCED preference, TUTORING routes to OpenAI first
         val messages = listOf(
             LLMMessage(role = "system", content = "You are a tutor for mathematics."),
             LLMMessage(role = "user", content = "Explain quadratic equations.")
@@ -59,17 +61,17 @@ class PatchPanelServiceTest {
         )
 
         every {
-            mockAnthropic.streamCompletion(any(), any(), any())
+            mockOpenAI.streamCompletion(any(), any(), any())
         } returns flowOf(*expectedTokens.toTypedArray())
 
         val tokens = patchPanel.streamCompletion(messages).toList()
 
         assertEquals(expectedTokens, tokens)
-        verify { mockAnthropic.streamCompletion(messages, 0.7f, 500) }
+        verify { mockOpenAI.streamCompletion(messages, 0.7f, 500) }
     }
 
     @Test
-    fun `routes summarization task to OpenAI with BALANCED preference`() = runBlocking {
+    fun `routes summarization task to OpenAI with BALANCED preference`() = runTest {
         val messages = listOf(
             LLMMessage(role = "system", content = "Summarize the following text."),
             LLMMessage(role = "user", content = "Long text here...")
@@ -91,7 +93,7 @@ class PatchPanelServiceTest {
     }
 
     @Test
-    fun `falls back to OpenAI if Anthropic unavailable`() = runBlocking {
+    fun `falls back to OpenAI if Anthropic unavailable`() = runTest {
         val providersWithoutAnthropic = mapOf(
             "OpenAI" to mockOpenAI,
             "Ollama" to mockOllama
@@ -119,7 +121,7 @@ class PatchPanelServiceTest {
     }
 
     @Test
-    fun `stop delegates to current provider`() = runBlocking {
+    fun `stop delegates to current provider`() = runTest {
         val messages = listOf(
             LLMMessage(role = "user", content = "Test")
         )
@@ -131,7 +133,7 @@ class PatchPanelServiceTest {
         patchPanel.streamCompletion(messages).toList()
         patchPanel.stop()
 
-        verify { mockOpenAI.stop() }
+        coVerify { mockOpenAI.stop() }
     }
 
     @Test
@@ -162,41 +164,41 @@ class PatchPanelServiceTest {
     }
 
     @Test
-    fun `extracts TUTORING task type from system message`() = runBlocking {
+    fun `extracts TUTORING task type from system message`() = runTest {
         val messages = listOf(
             LLMMessage(role = "system", content = "You are a tutor for physics."),
             LLMMessage(role = "user", content = "Explain gravity.")
         )
 
         every {
-            mockAnthropic.streamCompletion(any(), any(), any())
+            mockOpenAI.streamCompletion(any(), any(), any())
         } returns flowOf(LLMToken(content = "Gravity", isDone = false))
 
         patchPanel.streamCompletion(messages).toList()
 
-        // Should route to Anthropic (TUTORING + BALANCED defaults to Anthropic)
-        verify { mockAnthropic.streamCompletion(any(), any(), any()) }
+        // Should route to OpenAI (TUTORING + BALANCED defaults to OpenAI first)
+        verify { mockOpenAI.streamCompletion(any(), any(), any()) }
     }
 
     @Test
-    fun `extracts PLANNING task type from system message`() = runBlocking {
+    fun `extracts PLANNING task type from system message`() = runTest {
         val messages = listOf(
             LLMMessage(role = "system", content = "Create a study plan for the user."),
             LLMMessage(role = "user", content = "I want to learn calculus.")
         )
 
         every {
-            mockAnthropic.streamCompletion(any(), any(), any())
+            mockOpenAI.streamCompletion(any(), any(), any())
         } returns flowOf(LLMToken(content = "Study plan:", isDone = false))
 
         patchPanel.streamCompletion(messages).toList()
 
-        // Should route to Anthropic (PLANNING + BALANCED)
-        verify { mockAnthropic.streamCompletion(any(), any(), any()) }
+        // Should route to OpenAI (PLANNING + BALANCED defaults to OpenAI first)
+        verify { mockOpenAI.streamCompletion(any(), any(), any()) }
     }
 
     @Test(expected = IllegalStateException::class)
-    fun `throws exception if no providers available`() = runBlocking {
+    fun `throws exception if no providers available`() = runTest {
         val emptyPatchPanel = PatchPanelService(emptyMap())
 
         val messages = listOf(

@@ -19,8 +19,6 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
-import java.util.Locale
-import java.util.concurrent.TimeUnit
 import javax.inject.Named
 import javax.inject.Singleton
 
@@ -31,26 +29,13 @@ import javax.inject.Singleton
  * - STT services (Deepgram, Android)
  * - TTS services (ElevenLabs, Android)
  * - LLM services (OpenAI, Anthropic, PatchPanel)
- * - OkHttpClient for networking
  * - ProviderConfig for configuration management
+ *
+ * Note: OkHttpClient is provided by AppModule.
  */
 @Module
 @InstallIn(SingletonComponent::class)
 object ProviderModule {
-
-    /**
-     * Provide OkHttpClient for all HTTP/WebSocket connections.
-     */
-    @Provides
-    @Singleton
-    fun provideOkHttpClient(): OkHttpClient {
-        return OkHttpClient.Builder()
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .readTimeout(60, TimeUnit.SECONDS)
-            .writeTimeout(60, TimeUnit.SECONDS)
-            .pingInterval(30, TimeUnit.SECONDS) // Keep WebSocket connections alive
-            .build()
-    }
 
     /**
      * Provide ProviderConfig for configuration management.
@@ -116,16 +101,7 @@ object ProviderModule {
     fun provideAndroidTTSService(
         @ApplicationContext context: Context
     ): TTSService {
-        // Initialize TextToSpeech synchronously (Hilt provides on background thread)
-        val tts = TextToSpeech(context) { status ->
-            if (status == TextToSpeech.SUCCESS) {
-                // Set US English as default
-                android.util.Log.i("TTS", "TextToSpeech initialized successfully")
-            } else {
-                android.util.Log.e("TTS", "TextToSpeech initialization failed")
-            }
-        }
-        return AndroidTTSService(tts)
+        return AndroidTTSService(context)
     }
 
     // LLM Service Providers

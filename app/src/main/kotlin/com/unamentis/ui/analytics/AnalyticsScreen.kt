@@ -1,6 +1,7 @@
 package com.unamentis.ui.analytics
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -553,6 +554,3 @@ private fun ExportDialog(
         }
     )
 }
-
-// Missing import for background modifier
-import androidx.compose.foundation.background
