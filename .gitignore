@@ -11,6 +11,9 @@ local.properties
 # MCP configuration (contains machine-specific paths)
 .mcp.json
 
+# Claude Code settings (contains machine-specific paths)
+.claude/settings.json
+
 # Android Studio
 *.iml
 .idea/
