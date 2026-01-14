@@ -32,17 +32,19 @@ import com.unamentis.data.model.Todo
         SessionEntity::class,
         TranscriptEntryEntity::class,
         TopicProgressEntity::class,
-        Todo::class
+        Todo::class,
     ],
     version = 2,
-    exportSchema = false
+    exportSchema = false,
 )
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
-
     abstract fun curriculumDao(): CurriculumDao
+
     abstract fun sessionDao(): SessionDao
+
     abstract fun topicProgressDao(): TopicProgressDao
+
     abstract fun todoDao(): TodoDao
 
     companion object {
@@ -57,13 +59,14 @@ abstract class AppDatabase : RoomDatabase() {
          */
         fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
-                val instance = Room.databaseBuilder(
-                    context.applicationContext,
-                    AppDatabase::class.java,
-                    "unamentis.db"
-                )
-                    .fallbackToDestructiveMigration()
-                    .build()
+                val instance =
+                    Room.databaseBuilder(
+                        context.applicationContext,
+                        AppDatabase::class.java,
+                        "unamentis.db",
+                    )
+                        .fallbackToDestructiveMigration()
+                        .build()
                 INSTANCE = instance
                 instance
             }
@@ -78,7 +81,7 @@ abstract class AppDatabase : RoomDatabase() {
         fun createInMemory(context: Context): AppDatabase {
             return Room.inMemoryDatabaseBuilder(
                 context.applicationContext,
-                AppDatabase::class.java
+                AppDatabase::class.java,
             )
                 .allowMainThreadQueries() // Only for tests
                 .build()

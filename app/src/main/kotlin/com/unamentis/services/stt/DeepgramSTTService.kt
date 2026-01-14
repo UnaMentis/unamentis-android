@@ -35,16 +35,16 @@ class DeepgramSTTService(
     private val model: String = "nova-2",
     private val language: String = "en-US",
     private val smartFormat: Boolean = true,
-    private val client: OkHttpClient
+    private val client: OkHttpClient,
 ) : STTService {
-
     override val providerName: String = "Deepgram"
 
     private var webSocket: WebSocket? = null
-    private val json = Json {
-        ignoreUnknownKeys = true
-        isLenient = true
-    }
+    private val json =
+        Json {
+            ignoreUnknownKeys = true
+            isLenient = true
+        }
 
     /**
      * Start streaming transcription.
@@ -54,73 +54,93 @@ class DeepgramSTTService(
      *
      * Audio data should be sent via the WebSocket using sendAudioData().
      */
-    override fun startStreaming(): Flow<STTResult> = callbackFlow {
-        val url = buildWebSocketUrl()
+    override fun startStreaming(): Flow<STTResult> =
+        callbackFlow {
+            val url = buildWebSocketUrl()
 
-        val request = Request.Builder()
-            .url(url)
-            .addHeader("Authorization", "Token $apiKey")
-            .build()
+            val request =
+                Request.Builder()
+                    .url(url)
+                    .addHeader("Authorization", "Token $apiKey")
+                    .build()
 
-        val startTime = System.currentTimeMillis()
+            val startTime = System.currentTimeMillis()
 
-        webSocket = client.newWebSocket(request, object : WebSocketListener() {
-            override fun onOpen(webSocket: WebSocket, response: Response) {
-                android.util.Log.i("DeepgramSTT", "WebSocket connection opened")
+            webSocket =
+                client.newWebSocket(
+                    request,
+                    object : WebSocketListener() {
+                        override fun onOpen(
+                            webSocket: WebSocket,
+                            response: Response,
+                        ) {
+                            android.util.Log.i("DeepgramSTT", "WebSocket connection opened")
+                        }
+
+                        override fun onMessage(
+                            webSocket: WebSocket,
+                            text: String,
+                        ) {
+                            try {
+                                val response = json.decodeFromString<DeepgramResponse>(text)
+                                val latency = System.currentTimeMillis() - startTime
+
+                                response.channel?.alternatives?.firstOrNull()?.let { alternative ->
+                                    val isFinal = response.is_final ?: false
+                                    val confidence = alternative.confidence?.toFloat() ?: 1.0f
+
+                                    trySend(
+                                        STTResult(
+                                            text = alternative.transcript,
+                                            isFinal = isFinal,
+                                            confidence = confidence,
+                                            latencyMs = latency,
+                                        ),
+                                    )
+                                }
+                            } catch (e: Exception) {
+                                android.util.Log.e("DeepgramSTT", "Failed to parse response", e)
+                            }
+                        }
+
+                        override fun onFailure(
+                            webSocket: WebSocket,
+                            t: Throwable,
+                            response: Response?,
+                        ) {
+                            // Check if failure is due to certificate pinning
+                            if (t is javax.net.ssl.SSLPeerUnverifiedException) {
+                                android.util.Log.e(
+                                    "DeepgramSTT",
+                                    "Certificate pinning failed for Deepgram. This may indicate a MITM attack or certificate rotation.",
+                                    t,
+                                )
+                                close(
+                                    SecurityException(
+                                        "Network security validation failed. Please check your connection.",
+                                    ),
+                                )
+                            } else {
+                                android.util.Log.e("DeepgramSTT", "WebSocket error", t)
+                                close(t)
+                            }
+                        }
+
+                        override fun onClosed(
+                            webSocket: WebSocket,
+                            code: Int,
+                            reason: String,
+                        ) {
+                            android.util.Log.i("DeepgramSTT", "WebSocket closed: $code - $reason")
+                            close()
+                        }
+                    },
+                )
+
+            awaitClose {
+                doStopStreaming()
             }
-
-            override fun onMessage(webSocket: WebSocket, text: String) {
-                try {
-                    val response = json.decodeFromString<DeepgramResponse>(text)
-                    val latency = System.currentTimeMillis() - startTime
-
-                    response.channel?.alternatives?.firstOrNull()?.let { alternative ->
-                        val isFinal = response.is_final ?: false
-                        val confidence = alternative.confidence?.toFloat() ?: 1.0f
-
-                        trySend(
-                            STTResult(
-                                text = alternative.transcript,
-                                isFinal = isFinal,
-                                confidence = confidence,
-                                latencyMs = latency
-                            )
-                        )
-                    }
-                } catch (e: Exception) {
-                    android.util.Log.e("DeepgramSTT", "Failed to parse response", e)
-                }
-            }
-
-            override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                // Check if failure is due to certificate pinning
-                if (t is javax.net.ssl.SSLPeerUnverifiedException) {
-                    android.util.Log.e(
-                        "DeepgramSTT",
-                        "Certificate pinning failed for Deepgram. This may indicate a MITM attack or certificate rotation.",
-                        t
-                    )
-                    close(
-                        SecurityException(
-                            "Network security validation failed. Please check your connection."
-                        )
-                    )
-                } else {
-                    android.util.Log.e("DeepgramSTT", "WebSocket error", t)
-                    close(t)
-                }
-            }
-
-            override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-                android.util.Log.i("DeepgramSTT", "WebSocket closed: $code - $reason")
-                close()
-            }
-        })
-
-        awaitClose {
-            doStopStreaming()
         }
-    }
 
     /**
      * Send audio data to Deepgram for transcription.
@@ -147,13 +167,14 @@ class DeepgramSTTService(
     }
 
     private fun buildWebSocketUrl(): String {
-        val params = mutableListOf(
-            "model=$model",
-            "language=$language",
-            "encoding=linear16",
-            "sample_rate=16000",
-            "channels=1"
-        )
+        val params =
+            mutableListOf(
+                "model=$model",
+                "language=$language",
+                "encoding=linear16",
+                "sample_rate=16000",
+                "channels=1",
+            )
 
         if (smartFormat) {
             params.add("smart_format=true")
@@ -168,17 +189,17 @@ class DeepgramSTTService(
     @Serializable
     private data class DeepgramResponse(
         val channel: Channel? = null,
-        val is_final: Boolean? = null
+        val is_final: Boolean? = null,
     )
 
     @Serializable
     private data class Channel(
-        val alternatives: List<Alternative>? = null
+        val alternatives: List<Alternative>? = null,
     )
 
     @Serializable
     private data class Alternative(
         val transcript: String,
-        val confidence: Double? = null
+        val confidence: Double? = null,
     )
 }

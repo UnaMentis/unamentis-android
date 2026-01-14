@@ -16,7 +16,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -48,9 +47,7 @@ import java.util.*
  * - Control bar (action buttons)
  */
 @Composable
-fun SessionScreen(
-    viewModel: SessionViewModel = hiltViewModel()
-) {
+fun SessionScreen(viewModel: SessionViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
@@ -59,21 +56,22 @@ fun SessionScreen(
         mutableStateOf(
             ContextCompat.checkSelfPermission(
                 context,
-                Manifest.permission.RECORD_AUDIO
-            ) == PackageManager.PERMISSION_GRANTED
+                Manifest.permission.RECORD_AUDIO,
+            ) == PackageManager.PERMISSION_GRANTED,
         )
     }
 
     // Permission request launcher
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        hasMicPermission = isGranted
-        if (isGranted) {
-            // Permission granted, start the session
-            viewModel.startSession()
+    val permissionLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestPermission(),
+        ) { isGranted ->
+            hasMicPermission = isGranted
+            if (isGranted) {
+                // Permission granted, start the session
+                viewModel.startSession()
+            }
         }
-    }
 
     // Function to handle start with permission check
     val onStartWithPermission: () -> Unit = {
@@ -89,7 +87,7 @@ fun SessionScreen(
             SessionTopBar(
                 sessionState = uiState.sessionState,
                 turnCount = uiState.turnCount,
-                isSessionActive = uiState.isSessionActive
+                isSessionActive = uiState.isSessionActive,
             )
         },
         bottomBar = {
@@ -98,31 +96,32 @@ fun SessionScreen(
                 onStart = onStartWithPermission,
                 onPause = { viewModel.pauseSession() },
                 onResume = { viewModel.resumeSession() },
-                onStop = { viewModel.stopSession() }
+                onStop = { viewModel.stopSession() },
             )
-        }
+        },
     ) { paddingValues ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
         ) {
             // Status indicator
             SessionStatusIndicator(
                 statusMessage = uiState.statusMessage,
-                sessionState = uiState.sessionState
+                sessionState = uiState.sessionState,
             )
 
             // Transcript display
             TranscriptDisplay(
                 transcript = uiState.transcript,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             )
 
             // Metrics display (when session active)
             if (uiState.isSessionActive) {
                 MetricsDisplay(
-                    metrics = uiState.metrics
+                    metrics = uiState.metrics,
                 )
             }
         }
@@ -137,20 +136,20 @@ fun SessionScreen(
 private fun SessionTopBar(
     sessionState: SessionState,
     turnCount: Int,
-    isSessionActive: Boolean
+    isSessionActive: Boolean,
 ) {
     TopAppBar(
         title = {
             Column {
                 Text(
                     text = "Session",
-                    style = MaterialTheme.typography.titleLarge
+                    style = MaterialTheme.typography.titleLarge,
                 )
                 if (isSessionActive) {
                     Text(
                         text = "$turnCount turns",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -160,16 +159,16 @@ private fun SessionTopBar(
             Surface(
                 shape = RoundedCornerShape(12.dp),
                 color = getStateColor(sessionState),
-                modifier = Modifier.padding(end = 16.dp)
+                modifier = Modifier.padding(end = 16.dp),
             ) {
                 Text(
                     text = sessionState.name,
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onPrimary
+                    color = MaterialTheme.colorScheme.onPrimary,
                 )
             }
-        }
+        },
     )
 }
 
@@ -179,27 +178,27 @@ private fun SessionTopBar(
 @Composable
 private fun SessionStatusIndicator(
     statusMessage: String,
-    sessionState: SessionState
+    sessionState: SessionState,
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surfaceVariant
+        color = MaterialTheme.colorScheme.surfaceVariant,
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
                 imageVector = getStateIcon(sessionState),
                 contentDescription = null,
                 tint = getStateColor(sessionState),
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(20.dp),
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = statusMessage,
                 style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
             )
         }
     }
@@ -211,7 +210,7 @@ private fun SessionStatusIndicator(
 @Composable
 private fun TranscriptDisplay(
     transcript: List<TranscriptEntry>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val listState = rememberLazyListState()
 
@@ -226,37 +225,38 @@ private fun TranscriptDisplay(
         // Empty state
         Box(
             modifier = modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Icon(
                     imageVector = Icons.Default.Mic,
                     contentDescription = null,
                     modifier = Modifier.size(64.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                 )
                 Text(
                     text = "Start a session to begin",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
     } else {
         LazyColumn(
-            modifier = modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp),
+            modifier =
+                modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp),
             state = listState,
             verticalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(vertical = 16.dp)
+            contentPadding = PaddingValues(vertical = 16.dp),
         ) {
             items(
                 items = transcript,
-                key = { it.id }
+                key = { it.id },
             ) { entry ->
                 TranscriptBubble(entry = entry)
             }
@@ -272,50 +272,52 @@ private fun TranscriptBubble(entry: TranscriptEntry) {
     val isUser = entry.role == "user"
     val alignment = if (isUser) Alignment.End else Alignment.Start
 
-    val bubbleColor = if (isUser) {
-        if (MaterialTheme.colorScheme.surface == MaterialTheme.colorScheme.background) {
-            UserBubbleLight
+    val bubbleColor =
+        if (isUser) {
+            if (MaterialTheme.colorScheme.surface == MaterialTheme.colorScheme.background) {
+                UserBubbleLight
+            } else {
+                UserBubbleDark
+            }
         } else {
-            UserBubbleDark
+            if (MaterialTheme.colorScheme.surface == MaterialTheme.colorScheme.background) {
+                AssistantBubbleLight
+            } else {
+                AssistantBubbleDark
+            }
         }
-    } else {
-        if (MaterialTheme.colorScheme.surface == MaterialTheme.colorScheme.background) {
-            AssistantBubbleLight
-        } else {
-            AssistantBubbleDark
-        }
-    }
 
     Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = alignment
+        horizontalAlignment = alignment,
     ) {
         // Role label
         Text(
             text = if (isUser) "You" else "AI Tutor",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
         )
 
         // Message bubble
         Surface(
-            shape = RoundedCornerShape(
-                topStart = 16.dp,
-                topEnd = 16.dp,
-                bottomStart = if (isUser) 16.dp else 4.dp,
-                bottomEnd = if (isUser) 4.dp else 16.dp
-            ),
+            shape =
+                RoundedCornerShape(
+                    topStart = 16.dp,
+                    topEnd = 16.dp,
+                    bottomStart = if (isUser) 16.dp else 4.dp,
+                    bottomEnd = if (isUser) 4.dp else 16.dp,
+                ),
             color = bubbleColor,
-            modifier = Modifier.widthIn(max = 300.dp)
+            modifier = Modifier.widthIn(max = 300.dp),
         ) {
             Column(
-                modifier = Modifier.padding(12.dp)
+                modifier = Modifier.padding(12.dp),
             ) {
                 Text(
                     text = entry.text,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
 
                 // Timestamp
@@ -323,7 +325,7 @@ private fun TranscriptBubble(entry: TranscriptEntry) {
                     text = formatTimestamp(entry.timestamp),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    modifier = Modifier.padding(top = 4.dp)
+                    modifier = Modifier.padding(top = 4.dp),
                 )
             }
         }
@@ -337,11 +339,11 @@ private fun TranscriptBubble(entry: TranscriptEntry) {
 private fun MetricsDisplay(metrics: com.unamentis.core.session.SessionMetrics) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surfaceVariant
+        color = MaterialTheme.colorScheme.surfaceVariant,
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
+            horizontalArrangement = Arrangement.SpaceEvenly,
         ) {
             MetricItem(label = "TTFT", value = "${metrics.llmTTFT}ms")
             MetricItem(label = "TTFB", value = "${metrics.ttsTTFB}ms")
@@ -354,17 +356,20 @@ private fun MetricsDisplay(metrics: com.unamentis.core.session.SessionMetrics) {
  * Individual metric item.
  */
 @Composable
-private fun MetricItem(label: String, value: String) {
+private fun MetricItem(
+    label: String,
+    value: String,
+) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
             text = value,
             style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
         )
     }
 }
@@ -378,23 +383,23 @@ private fun SessionControlBar(
     onStart: () -> Unit,
     onPause: () -> Unit,
     onResume: () -> Unit,
-    onStop: () -> Unit
+    onStop: () -> Unit,
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 8.dp
+        shadowElevation = 8.dp,
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             // Start button
             if (uiState.canStart) {
                 Button(
                     onClick = onStart,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 ) {
                     Icon(Icons.Default.PlayArrow, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
@@ -406,7 +411,7 @@ private fun SessionControlBar(
             if (uiState.canPause) {
                 FilledTonalButton(
                     onClick = onPause,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 ) {
                     Icon(Icons.Default.Pause, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
@@ -418,7 +423,7 @@ private fun SessionControlBar(
             if (uiState.canResume) {
                 Button(
                     onClick = onResume,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 ) {
                     Icon(Icons.Default.PlayArrow, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
@@ -430,7 +435,7 @@ private fun SessionControlBar(
             if (uiState.canStop) {
                 OutlinedButton(
                     onClick = onStop,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 ) {
                     Icon(Icons.Default.Stop, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))

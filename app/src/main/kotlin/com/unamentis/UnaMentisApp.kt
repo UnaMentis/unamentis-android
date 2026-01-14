@@ -11,7 +11,6 @@ import dagger.hilt.android.HiltAndroidApp
  */
 @HiltAndroidApp
 class UnaMentisApp : Application() {
-
     override fun onCreate() {
         super.onCreate()
 

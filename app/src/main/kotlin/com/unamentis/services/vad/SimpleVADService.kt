@@ -2,7 +2,6 @@ package com.unamentis.services.vad
 
 import com.unamentis.data.model.VADResult
 import com.unamentis.data.model.VADService
-import kotlin.math.abs
 import kotlin.math.sqrt
 
 /**
@@ -22,9 +21,8 @@ import kotlin.math.sqrt
  */
 class SimpleVADService(
     private val threshold: Float = 0.02f,
-    private val hangoverFrames: Int = 5
+    private val hangoverFrames: Int = 5,
 ) : VADService {
-
     private var noiseFloor: Float = 0.01f
     private var speechFrameCount: Int = 0
     private var hangoverCount: Int = 0
@@ -94,15 +92,16 @@ class SimpleVADService(
         val confirmedSpeech = speechFrameCount >= MIN_SPEECH_FRAMES || hangoverCount > 0
 
         // Calculate confidence based on how far above threshold
-        val confidence = if (confirmedSpeech) {
-            ((rms - noiseFloor) / (dynamicThreshold - noiseFloor + 0.001f)).coerceIn(0.5f, 1f)
-        } else {
-            (rms / dynamicThreshold).coerceIn(0f, 0.5f)
-        }
+        val confidence =
+            if (confirmedSpeech) {
+                ((rms - noiseFloor) / (dynamicThreshold - noiseFloor + 0.001f)).coerceIn(0.5f, 1f)
+            } else {
+                (rms / dynamicThreshold).coerceIn(0f, 0.5f)
+            }
 
         return VADResult(
             isSpeech = confirmedSpeech,
-            confidence = confidence
+            confidence = confidence,
         )
     }
 

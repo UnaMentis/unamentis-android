@@ -1,7 +1,6 @@
 package com.unamentis.di
 
 import android.content.Context
-import android.speech.tts.TextToSpeech
 import com.unamentis.core.config.ProviderConfig
 import com.unamentis.data.model.LLMService
 import com.unamentis.data.model.STTService
@@ -36,14 +35,13 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object ProviderModule {
-
     /**
      * Provide ProviderConfig for configuration management.
      */
     @Provides
     @Singleton
     fun provideProviderConfig(
-        @ApplicationContext context: Context
+        @ApplicationContext context: Context,
     ): ProviderConfig {
         return ProviderConfig(context)
     }
@@ -58,7 +56,7 @@ object ProviderModule {
     @Named("DeepgramSTT")
     fun provideDeepgramSTTService(
         client: OkHttpClient,
-        config: ProviderConfig
+        config: ProviderConfig,
     ): STTService {
         val apiKey = config.getDeepgramApiKey() ?: ""
         return DeepgramSTTService(apiKey = apiKey, client = client)
@@ -71,7 +69,7 @@ object ProviderModule {
     @Singleton
     @Named("AndroidSTT")
     fun provideAndroidSTTService(
-        @ApplicationContext context: Context
+        @ApplicationContext context: Context,
     ): STTService {
         return AndroidSTTService(context)
     }
@@ -86,7 +84,7 @@ object ProviderModule {
     @Named("ElevenLabsTTS")
     fun provideElevenLabsTTSService(
         client: OkHttpClient,
-        config: ProviderConfig
+        config: ProviderConfig,
     ): TTSService {
         val apiKey = config.getElevenLabsApiKey() ?: ""
         return ElevenLabsTTSService(apiKey = apiKey, client = client)
@@ -99,7 +97,7 @@ object ProviderModule {
     @Singleton
     @Named("AndroidTTS")
     fun provideAndroidTTSService(
-        @ApplicationContext context: Context
+        @ApplicationContext context: Context,
     ): TTSService {
         return AndroidTTSService(context)
     }
@@ -114,7 +112,7 @@ object ProviderModule {
     @Named("OpenAILLM")
     fun provideOpenAILLMService(
         client: OkHttpClient,
-        config: ProviderConfig
+        config: ProviderConfig,
     ): LLMService {
         val apiKey = config.getOpenAIApiKey() ?: ""
         return OpenAILLMService(apiKey = apiKey, client = client)
@@ -128,7 +126,7 @@ object ProviderModule {
     @Named("AnthropicLLM")
     fun provideAnthropicLLMService(
         client: OkHttpClient,
-        config: ProviderConfig
+        config: ProviderConfig,
     ): LLMService {
         val apiKey = config.getAnthropicApiKey() ?: ""
         return AnthropicLLMService(apiKey = apiKey, client = client)
@@ -142,12 +140,13 @@ object ProviderModule {
     @Named("PatchPanelLLM")
     fun providePatchPanelService(
         @Named("OpenAILLM") openai: LLMService,
-        @Named("AnthropicLLM") anthropic: LLMService
+        @Named("AnthropicLLM") anthropic: LLMService,
     ): LLMService {
-        val providers = mapOf(
-            "OpenAI" to openai,
-            "Anthropic" to anthropic
-        )
+        val providers =
+            mapOf(
+                "OpenAI" to openai,
+                "Anthropic" to anthropic,
+            )
         return PatchPanelService(providers)
     }
 
@@ -162,7 +161,7 @@ object ProviderModule {
     fun provideDefaultSTTService(
         @Named("DeepgramSTT") deepgram: STTService,
         @Named("AndroidSTT") android: STTService,
-        config: ProviderConfig
+        config: ProviderConfig,
     ): STTService {
         // Use Android STT by default (free, on-device)
         // Deepgram available as premium option
@@ -183,7 +182,7 @@ object ProviderModule {
     fun provideDefaultTTSService(
         @Named("ElevenLabsTTS") elevenlabs: TTSService,
         @Named("AndroidTTS") android: TTSService,
-        config: ProviderConfig
+        config: ProviderConfig,
     ): TTSService {
         // Use Android TTS by default (free, on-device)
         // ElevenLabs available as premium option
@@ -202,7 +201,7 @@ object ProviderModule {
         @Named("PatchPanelLLM") patchPanel: LLMService,
         @Named("OpenAILLM") openai: LLMService,
         @Named("AnthropicLLM") anthropic: LLMService,
-        config: ProviderConfig
+        config: ProviderConfig,
     ): LLMService {
         // TODO: Read from config.selectedLLMProvider flow
         // For now, default to PatchPanel

@@ -12,22 +12,23 @@ import org.junit.Test
  * Verifies serialization, deserialization, and data integrity.
  */
 class CurriculumTest {
-
-    private val json = Json {
-        ignoreUnknownKeys = true
-        isLenient = true
-    }
+    private val json =
+        Json {
+            ignoreUnknownKeys = true
+            isLenient = true
+        }
 
     @Test
     fun `curriculum serialization works correctly`() {
         // Given
-        val curriculum = Curriculum(
-            id = "test-curriculum-001",
-            title = "Test Curriculum",
-            description = "A test curriculum",
-            version = "1.0.0",
-            topics = emptyList()
-        )
+        val curriculum =
+            Curriculum(
+                id = "test-curriculum-001",
+                title = "Test Curriculum",
+                description = "A test curriculum",
+                version = "1.0.0",
+                topics = emptyList(),
+            )
 
         // When
         val jsonString = json.encodeToString(curriculum)
@@ -41,7 +42,8 @@ class CurriculumTest {
     @Test
     fun `curriculum deserialization works correctly`() {
         // Given
-        val jsonString = """
+        val jsonString =
+            """
             {
                 "id": "test-curriculum-001",
                 "title": "Test Curriculum",
@@ -49,7 +51,7 @@ class CurriculumTest {
                 "version": "1.0.0",
                 "topics": []
             }
-        """.trimIndent()
+            """.trimIndent()
 
         // When
         val curriculum = json.decodeFromString<Curriculum>(jsonString)
@@ -64,18 +66,20 @@ class CurriculumTest {
     @Test
     fun `topic with transcript segments serializes correctly`() {
         // Given
-        val topic = Topic(
-            id = "topic-001",
-            title = "Introduction",
-            orderIndex = 0,
-            transcript = listOf(
-                TranscriptSegment(
-                    id = "seg-001",
-                    type = "content",
-                    content = "Welcome to the course."
-                )
+        val topic =
+            Topic(
+                id = "topic-001",
+                title = "Introduction",
+                orderIndex = 0,
+                transcript =
+                    listOf(
+                        TranscriptSegment(
+                            id = "seg-001",
+                            type = "content",
+                            content = "Welcome to the course.",
+                        ),
+                    ),
             )
-        )
 
         // When
         val jsonString = json.encodeToString(topic)
@@ -89,18 +93,20 @@ class CurriculumTest {
     @Test
     fun `stopping point with expected concepts works correctly`() {
         // Given
-        val stoppingPoint = StoppingPoint(
-            type = "quiz",
-            prompt = "What is the capital of France?",
-            expectedConcepts = listOf("Paris", "France")
-        )
+        val stoppingPoint =
+            StoppingPoint(
+                type = "quiz",
+                prompt = "What is the capital of France?",
+                expectedConcepts = listOf("Paris", "France"),
+            )
 
-        val segment = TranscriptSegment(
-            id = "seg-002",
-            type = "checkpoint",
-            content = "Let's test your knowledge.",
-            stoppingPoint = stoppingPoint
-        )
+        val segment =
+            TranscriptSegment(
+                id = "seg-002",
+                type = "checkpoint",
+                content = "Let's test your knowledge.",
+                stoppingPoint = stoppingPoint,
+            )
 
         // When
         val jsonString = json.encodeToString(segment)

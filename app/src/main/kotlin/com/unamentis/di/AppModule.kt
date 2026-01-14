@@ -25,13 +25,14 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
-
     /**
      * Provides the Room database instance.
      */
     @Provides
     @Singleton
-    fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
+    fun provideAppDatabase(
+        @ApplicationContext context: Context,
+    ): AppDatabase {
         return AppDatabase.getInstance(context)
     }
 
@@ -71,13 +72,15 @@ object AppModule {
     @Provides
     @Singleton
     fun provideOkHttpClient(): OkHttpClient {
-        val loggingInterceptor = HttpLoggingInterceptor().apply {
-            level = if (BuildConfig.DEBUG) {
-                HttpLoggingInterceptor.Level.BODY
-            } else {
-                HttpLoggingInterceptor.Level.NONE
+        val loggingInterceptor =
+            HttpLoggingInterceptor().apply {
+                level =
+                    if (BuildConfig.DEBUG) {
+                        HttpLoggingInterceptor.Level.BODY
+                    } else {
+                        HttpLoggingInterceptor.Level.NONE
+                    }
             }
-        }
 
         return OkHttpClient.Builder()
             .connectTimeout(10, TimeUnit.SECONDS)
@@ -117,12 +120,12 @@ object AppModule {
     fun provideApiClient(
         @ApplicationContext context: Context,
         okHttpClient: OkHttpClient,
-        json: Json
+        json: Json,
     ): ApiClient {
         return ApiClient(
             context = context,
             okHttpClient = okHttpClient,
-            json = json
+            json = json,
         )
     }
 }

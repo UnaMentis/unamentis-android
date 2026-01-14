@@ -20,7 +20,6 @@ import org.junit.runner.RunWith
 @HiltAndroidTest
 @RunWith(AndroidJUnit4::class)
 class NavigationFlowTest {
-
     @get:Rule(order = 0)
     val hiltRule = HiltAndroidRule(this)
 
@@ -42,13 +41,14 @@ class NavigationFlowTest {
     @Test
     fun navigation_switchToAllTabs_succeeds() {
         // Navigate to each tab in sequence
-        val tabs = listOf(
-            "Curriculum",
-            "Settings",
-            "Analytics",
-            "History",
-            "To-Do"
-        )
+        val tabs =
+            listOf(
+                "Curriculum",
+                "Settings",
+                "Analytics",
+                "History",
+                "To-Do",
+            )
 
         tabs.forEach { tabName ->
             composeTestRule.onNodeWithText(tabName).performClick()
@@ -195,14 +195,15 @@ class NavigationFlowTest {
 
     @Test
     fun navigation_allTabsAccessible_fromBottomNav() {
-        val tabs = listOf(
-            "Session",
-            "Curriculum",
-            "Settings",
-            "Analytics",
-            "History",
-            "To-Do"
-        )
+        val tabs =
+            listOf(
+                "Session",
+                "Curriculum",
+                "Settings",
+                "Analytics",
+                "History",
+                "To-Do",
+            )
 
         // Verify all tabs are present in bottom navigation
         tabs.forEach { tabName ->

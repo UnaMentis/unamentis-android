@@ -32,9 +32,8 @@ class ApiClient(
     private val okHttpClient: OkHttpClient,
     private val json: Json,
     private val logServerUrl: String = "http://10.0.2.2:8765",
-    private val managementUrl: String = "http://10.0.2.2:8766"
+    private val managementUrl: String = "http://10.0.2.2:8766",
 ) {
-
     private val deviceId: String by lazy {
         UUID.randomUUID().toString()
     }
@@ -51,21 +50,23 @@ class ApiClient(
      * @return List of curriculum summaries
      * @throws IOException if network request fails
      */
-    suspend fun getCurricula(): List<CurriculumSummary> = withContext(Dispatchers.IO) {
-        val request = Request.Builder()
-            .url("$managementUrl/api/curricula")
-            .get()
-            .addClientHeaders()
-            .build()
+    suspend fun getCurricula(): List<CurriculumSummary> =
+        withContext(Dispatchers.IO) {
+            val request =
+                Request.Builder()
+                    .url("$managementUrl/api/curricula")
+                    .get()
+                    .addClientHeaders()
+                    .build()
 
-        okHttpClient.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) {
-                throw IOException("API error: ${response.code} ${response.message}")
+            okHttpClient.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    throw IOException("API error: ${response.code} ${response.message}")
+                }
+                val body = response.body?.string() ?: throw IOException("Empty response body")
+                json.decodeFromString<List<CurriculumSummary>>(body)
             }
-            val body = response.body?.string() ?: throw IOException("Empty response body")
-            json.decodeFromString<List<CurriculumSummary>>(body)
         }
-    }
 
     /**
      * Get full curriculum with all content.
@@ -76,24 +77,26 @@ class ApiClient(
      * @return Complete curriculum with assets
      * @throws IOException if network request fails
      */
-    suspend fun getCurriculumFullWithAssets(id: String): Curriculum = withContext(Dispatchers.IO) {
-        val request = Request.Builder()
-            .url("$managementUrl/api/curricula/$id/full-with-assets")
-            .get()
-            .addClientHeaders()
-            .build()
+    suspend fun getCurriculumFullWithAssets(id: String): Curriculum =
+        withContext(Dispatchers.IO) {
+            val request =
+                Request.Builder()
+                    .url("$managementUrl/api/curricula/$id/full-with-assets")
+                    .get()
+                    .addClientHeaders()
+                    .build()
 
-        okHttpClient.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) {
-                throw IOException("API error: ${response.code} ${response.message}")
+            okHttpClient.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    throw IOException("API error: ${response.code} ${response.message}")
+                }
+                val body = response.body?.string() ?: throw IOException("Empty response body")
+                // The response has "curriculum" and "assets" fields, we extract curriculum
+                val fullResponse = json.decodeFromString<Map<String, Any>>(body)
+                val curriculumJson = json.encodeToString(fullResponse["curriculum"])
+                json.decodeFromString<Curriculum>(curriculumJson)
             }
-            val body = response.body?.string() ?: throw IOException("Empty response body")
-            // The response has "curriculum" and "assets" fields, we extract curriculum
-            val fullResponse = json.decodeFromString<Map<String, Any>>(body)
-            val curriculumJson = json.encodeToString(fullResponse["curriculum"])
-            json.decodeFromString<Curriculum>(curriculumJson)
         }
-    }
 
     /**
      * Upload session metrics.
@@ -109,11 +112,12 @@ class ApiClient(
             val bodyJson = json.encodeToString(metrics)
             val requestBody = bodyJson.toRequestBody("application/json".toMediaType())
 
-            val request = Request.Builder()
-                .url("$managementUrl/api/metrics")
-                .post(requestBody)
-                .addClientHeaders()
-                .build()
+            val request =
+                Request.Builder()
+                    .url("$managementUrl/api/metrics")
+                    .post(requestBody)
+                    .addClientHeaders()
+                    .build()
 
             okHttpClient.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
@@ -138,11 +142,12 @@ class ApiClient(
             val bodyJson = json.encodeToString(heartbeat)
             val requestBody = bodyJson.toRequestBody("application/json".toMediaType())
 
-            val request = Request.Builder()
-                .url("$managementUrl/api/clients/heartbeat")
-                .post(requestBody)
-                .addClientHeaders()
-                .build()
+            val request =
+                Request.Builder()
+                    .url("$managementUrl/api/clients/heartbeat")
+                    .post(requestBody)
+                    .addClientHeaders()
+                    .build()
 
             okHttpClient.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
@@ -160,28 +165,30 @@ class ApiClient(
      *
      * @param logEntry Log entry to send
      */
-    suspend fun sendLog(logEntry: LogEntry) = withContext(Dispatchers.IO) {
-        try {
-            val bodyJson = json.encodeToString(logEntry)
-            val requestBody = bodyJson.toRequestBody("application/json".toMediaType())
+    suspend fun sendLog(logEntry: LogEntry) =
+        withContext(Dispatchers.IO) {
+            try {
+                val bodyJson = json.encodeToString(logEntry)
+                val requestBody = bodyJson.toRequestBody("application/json".toMediaType())
 
-            val request = Request.Builder()
-                .url("$logServerUrl/log")
-                .post(requestBody)
-                .build()
+                val request =
+                    Request.Builder()
+                        .url("$logServerUrl/log")
+                        .post(requestBody)
+                        .build()
 
-            okHttpClient.newCall(request).execute().use { response ->
-                // Silently fail - don't want logging to crash the app
-                if (!response.isSuccessful) {
-                    // Log to Android logcat but don't throw
-                    android.util.Log.w("ApiClient", "Log upload failed: ${response.code}")
+                okHttpClient.newCall(request).execute().use { response ->
+                    // Silently fail - don't want logging to crash the app
+                    if (!response.isSuccessful) {
+                        // Log to Android logcat but don't throw
+                        android.util.Log.w("ApiClient", "Log upload failed: ${response.code}")
+                    }
                 }
+            } catch (e: Exception) {
+                // Silently fail logging errors
+                android.util.Log.w("ApiClient", "Failed to send log: ${e.message}")
             }
-        } catch (e: Exception) {
-            // Silently fail logging errors
-            android.util.Log.w("ApiClient", "Failed to send log: ${e.message}")
         }
-    }
 
     /**
      * Add client identification headers to request.

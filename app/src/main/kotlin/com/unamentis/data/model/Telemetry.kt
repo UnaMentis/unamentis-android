@@ -16,7 +16,7 @@ enum class LatencyType {
     TTS_TTFB,
 
     /** End-to-end turn latency (user stops speaking → AI starts speaking) */
-    E2E_TURN
+    E2E_TURN,
 }
 
 /**
@@ -63,7 +63,7 @@ data class SessionMetrics(
     val llmCost: Double,
     val totalCost: Double,
     val thermalThrottleEvents: Int,
-    val networkDegradations: Int
+    val networkDegradations: Int,
 )
 
 /**
@@ -76,7 +76,7 @@ data class SessionMetrics(
 data class LatencyMeasurement(
     val type: LatencyType,
     val durationMs: Long,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
 )
 
 /**
@@ -91,7 +91,7 @@ data class CostRecord(
     val provider: String,
     val costUsd: Double,
     val timestamp: Long = System.currentTimeMillis(),
-    val metadata: Map<String, String> = emptyMap()
+    val metadata: Map<String, String> = emptyMap(),
 )
 
 /**
@@ -108,7 +108,7 @@ enum class DeviceTier {
     MINIMUM,
 
     /** Below minimum requirements */
-    UNSUPPORTED
+    UNSUPPORTED,
 }
 
 /**
@@ -125,5 +125,5 @@ enum class ThermalStatus {
     SERIOUS,
 
     /** Severe throttling, reduce workload */
-    CRITICAL
+    CRITICAL,
 }

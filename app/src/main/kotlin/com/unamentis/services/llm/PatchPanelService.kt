@@ -1,10 +1,10 @@
 package com.unamentis.services.llm
 
+import android.util.Log
 import com.unamentis.data.model.LLMMessage
 import com.unamentis.data.model.LLMService
 import com.unamentis.data.model.LLMToken
 import kotlinx.coroutines.flow.Flow
-import android.util.Log
 
 /**
  * Intelligent LLM routing service that selects the optimal provider
@@ -27,9 +27,8 @@ import android.util.Log
  */
 class PatchPanelService(
     private val providers: Map<String, LLMService>,
-    private val routingTable: RoutingTable = RoutingTable.default()
+    private val routingTable: RoutingTable = RoutingTable.default(),
 ) : LLMService {
-
     override val providerName: String = "PatchPanel"
 
     private var currentProvider: LLMService? = null
@@ -48,16 +47,17 @@ class PatchPanelService(
     override fun streamCompletion(
         messages: List<LLMMessage>,
         temperature: Float,
-        maxTokens: Int
+        maxTokens: Int,
     ): Flow<LLMToken> {
         // Extract task type from system message or use default
         val taskType = extractTaskType(messages)
-        val context = RoutingContext(
-            taskType = taskType,
-            deviceTier = DeviceTier.STANDARD, // TODO: Get from DeviceCapabilityDetector
-            networkQuality = NetworkQuality.GOOD, // TODO: Get from NetworkMonitor
-            costPreference = CostPreference.BALANCED // TODO: Get from settings
-        )
+        val context =
+            RoutingContext(
+                taskType = taskType,
+                deviceTier = DeviceTier.STANDARD, // TODO: Get from DeviceCapabilityDetector
+                networkQuality = NetworkQuality.GOOD, // TODO: Get from NetworkMonitor
+                costPreference = CostPreference.BALANCED, // TODO: Get from settings
+            )
 
         // Select provider based on routing rules
         val selectedProvider = selectProvider(context)
@@ -113,39 +113,39 @@ class PatchPanelService(
  * Task type classification for routing decisions.
  */
 enum class TaskType {
-    TUTORING,           // Long-form educational dialogue
-    PLANNING,           // Creating study plans, lesson plans
-    SUMMARIZATION,      // Condensing information
-    ASSESSMENT,         // Evaluating understanding
-    SIMPLE_RESPONSE     // Quick questions, confirmations
+    TUTORING, // Long-form educational dialogue
+    PLANNING, // Creating study plans, lesson plans
+    SUMMARIZATION, // Condensing information
+    ASSESSMENT, // Evaluating understanding
+    SIMPLE_RESPONSE, // Quick questions, confirmations
 }
 
 /**
  * Device capability tier.
  */
 enum class DeviceTier {
-    FLAGSHIP,   // High-end devices (8GB+ RAM, flagship SoC)
-    STANDARD,   // Mid-range devices (4-8GB RAM)
-    MINIMUM     // Entry-level devices (<4GB RAM)
+    FLAGSHIP, // High-end devices (8GB+ RAM, flagship SoC)
+    STANDARD, // Mid-range devices (4-8GB RAM)
+    MINIMUM, // Entry-level devices (<4GB RAM)
 }
 
 /**
  * Network quality assessment.
  */
 enum class NetworkQuality {
-    EXCELLENT,  // WiFi or 5G
-    GOOD,       // 4G LTE
-    POOR,       // 3G or weak signal
-    OFFLINE     // No connectivity
+    EXCELLENT, // WiFi or 5G
+    GOOD, // 4G LTE
+    POOR, // 3G or weak signal
+    OFFLINE, // No connectivity
 }
 
 /**
  * Cost optimization preference.
  */
 enum class CostPreference {
-    QUALITY,    // Prioritize best quality regardless of cost
-    BALANCED,   // Balance quality and cost
-    COST        // Minimize cost
+    QUALITY, // Prioritize best quality regardless of cost
+    BALANCED, // Balance quality and cost
+    COST, // Minimize cost
 }
 
 /**
@@ -155,7 +155,7 @@ data class RoutingContext(
     val taskType: TaskType,
     val deviceTier: DeviceTier,
     val networkQuality: NetworkQuality,
-    val costPreference: CostPreference
+    val costPreference: CostPreference,
 )
 
 /**
@@ -165,7 +165,7 @@ data class RoutingContext(
  * The first available provider in the list is selected.
  */
 data class RoutingTable(
-    val rules: Map<TaskType, Map<CostPreference, List<String>>>
+    val rules: Map<TaskType, Map<CostPreference, List<String>>>,
 ) {
     companion object {
         /**
@@ -176,35 +176,42 @@ data class RoutingTable(
          * - Balanced: GPT-4o-mini > Claude Haiku > Ollama
          * - Cost: Ollama > On-Device > GPT-4o-mini
          */
-        fun default() = RoutingTable(
-            rules = mapOf(
-                TaskType.TUTORING to mapOf(
-                    CostPreference.QUALITY to listOf("Anthropic", "OpenAI"),
-                    CostPreference.BALANCED to listOf("OpenAI", "Anthropic", "Ollama"),
-                    CostPreference.COST to listOf("Ollama", "OnDevice", "OpenAI")
-                ),
-                TaskType.PLANNING to mapOf(
-                    CostPreference.QUALITY to listOf("Anthropic", "OpenAI"),
-                    CostPreference.BALANCED to listOf("OpenAI", "Anthropic"),
-                    CostPreference.COST to listOf("OpenAI", "Ollama")
-                ),
-                TaskType.SUMMARIZATION to mapOf(
-                    CostPreference.QUALITY to listOf("OpenAI", "Anthropic"),
-                    CostPreference.BALANCED to listOf("OpenAI", "Ollama"),
-                    CostPreference.COST to listOf("Ollama", "OnDevice", "OpenAI")
-                ),
-                TaskType.ASSESSMENT to mapOf(
-                    CostPreference.QUALITY to listOf("Anthropic", "OpenAI"),
-                    CostPreference.BALANCED to listOf("OpenAI", "Anthropic"),
-                    CostPreference.COST to listOf("OpenAI", "Anthropic")
-                ),
-                TaskType.SIMPLE_RESPONSE to mapOf(
-                    CostPreference.QUALITY to listOf("OpenAI", "Anthropic"),
-                    CostPreference.BALANCED to listOf("OpenAI", "Ollama"),
-                    CostPreference.COST to listOf("Ollama", "OnDevice", "OpenAI")
-                )
+        fun default() =
+            RoutingTable(
+                rules =
+                    mapOf(
+                        TaskType.TUTORING to
+                            mapOf(
+                                CostPreference.QUALITY to listOf("Anthropic", "OpenAI"),
+                                CostPreference.BALANCED to listOf("OpenAI", "Anthropic", "Ollama"),
+                                CostPreference.COST to listOf("Ollama", "OnDevice", "OpenAI"),
+                            ),
+                        TaskType.PLANNING to
+                            mapOf(
+                                CostPreference.QUALITY to listOf("Anthropic", "OpenAI"),
+                                CostPreference.BALANCED to listOf("OpenAI", "Anthropic"),
+                                CostPreference.COST to listOf("OpenAI", "Ollama"),
+                            ),
+                        TaskType.SUMMARIZATION to
+                            mapOf(
+                                CostPreference.QUALITY to listOf("OpenAI", "Anthropic"),
+                                CostPreference.BALANCED to listOf("OpenAI", "Ollama"),
+                                CostPreference.COST to listOf("Ollama", "OnDevice", "OpenAI"),
+                            ),
+                        TaskType.ASSESSMENT to
+                            mapOf(
+                                CostPreference.QUALITY to listOf("Anthropic", "OpenAI"),
+                                CostPreference.BALANCED to listOf("OpenAI", "Anthropic"),
+                                CostPreference.COST to listOf("OpenAI", "Anthropic"),
+                            ),
+                        TaskType.SIMPLE_RESPONSE to
+                            mapOf(
+                                CostPreference.QUALITY to listOf("OpenAI", "Anthropic"),
+                                CostPreference.BALANCED to listOf("OpenAI", "Ollama"),
+                                CostPreference.COST to listOf("Ollama", "OnDevice", "OpenAI"),
+                            ),
+                    ),
             )
-        )
     }
 
     /**

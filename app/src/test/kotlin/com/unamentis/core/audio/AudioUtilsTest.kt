@@ -12,7 +12,6 @@ import kotlin.math.sin
  * peak detection, normalization, and format conversion.
  */
 class AudioUtilsTest {
-
     @Test
     fun `calculateRMS returns zero for empty array`() {
         val rms = AudioUtils.calculateRMS(floatArrayOf())
@@ -32,9 +31,10 @@ class AudioUtilsTest {
     @Test
     fun `calculateRMS returns correct value for sine wave`() {
         // Generate one period of sine wave at 0.707 peak amplitude
-        val samples = FloatArray(1000) { i ->
-            (0.707 * sin(2 * Math.PI * i / 1000.0)).toFloat()
-        }
+        val samples =
+            FloatArray(1000) { i ->
+                (0.707 * sin(2 * Math.PI * i / 1000.0)).toFloat()
+            }
         val rms = AudioUtils.calculateRMS(samples)
 
         // RMS of sine wave is peak / sqrt(2) ≈ 0.707 / 1.414 ≈ 0.5

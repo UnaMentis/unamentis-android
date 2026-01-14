@@ -27,7 +27,7 @@ data class SessionEntity(
     val durationSeconds: Long = 0,
     val turnCount: Int = 0,
     val interruptionCount: Int = 0,
-    val totalCost: Double = 0.0
+    val totalCost: Double = 0.0,
 )
 
 /**
@@ -48,5 +48,5 @@ data class TranscriptEntryEntity(
     val role: String,
     val text: String,
     val timestamp: Long,
-    val metadata: Map<String, String> = emptyMap()
+    val metadata: Map<String, String> = emptyMap(),
 )

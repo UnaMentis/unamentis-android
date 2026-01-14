@@ -14,34 +14,35 @@ import org.junit.Test
  * Tests curriculum browsing, downloading, searching, and detail views.
  */
 class CurriculumScreenTest {
-
     @get:Rule
     val composeTestRule = createComposeRule()
 
-    private val testCurriculum = Curriculum(
-        id = "physics-101",
-        title = "Introduction to Physics",
-        description = "Learn the fundamentals of classical mechanics and thermodynamics",
-        author = "Dr. Jane Smith",
-        version = "1.0.0",
-        topics = listOf(
-            Topic(
-                id = "topic-1",
-                title = "Newton's Laws",
-                objectives = listOf("Understand F=ma", "Apply to real-world scenarios"),
-                segments = emptyList()
-            ),
-            Topic(
-                id = "topic-2",
-                title = "Thermodynamics",
-                objectives = listOf("Learn heat transfer", "Understand entropy"),
-                segments = emptyList()
-            )
-        ),
-        isDownloaded = false,
-        downloadProgress = 0f,
-        lastUpdated = System.currentTimeMillis()
-    )
+    private val testCurriculum =
+        Curriculum(
+            id = "physics-101",
+            title = "Introduction to Physics",
+            description = "Learn the fundamentals of classical mechanics and thermodynamics",
+            author = "Dr. Jane Smith",
+            version = "1.0.0",
+            topics =
+                listOf(
+                    Topic(
+                        id = "topic-1",
+                        title = "Newton's Laws",
+                        objectives = listOf("Understand F=ma", "Apply to real-world scenarios"),
+                        segments = emptyList(),
+                    ),
+                    Topic(
+                        id = "topic-2",
+                        title = "Thermodynamics",
+                        objectives = listOf("Learn heat transfer", "Understand entropy"),
+                        segments = emptyList(),
+                    ),
+                ),
+            isDownloaded = false,
+            downloadProgress = 0f,
+            lastUpdated = System.currentTimeMillis(),
+        )
 
     @Test
     fun curriculumScreen_initialState_showsServerCurricula() {
@@ -97,7 +98,7 @@ class CurriculumScreenTest {
             UnaMentisTheme {
                 CurriculumScreen(
                     serverCurricula = curricula,
-                    onCurriculumClick = { detailOpened = true }
+                    onCurriculumClick = { detailOpened = true },
                 )
             }
         }
@@ -147,7 +148,7 @@ class CurriculumScreenTest {
             UnaMentisTheme {
                 CurriculumScreen(
                     serverCurricula = curricula,
-                    onDownload = { downloadTriggered = true }
+                    onDownload = { downloadTriggered = true },
                 )
             }
         }
@@ -161,9 +162,10 @@ class CurriculumScreenTest {
 
     @Test
     fun curriculumScreen_downloadProgress_displaysProgress() {
-        val downloadingCurriculum = testCurriculum.copy(
-            downloadProgress = 0.45f
-        )
+        val downloadingCurriculum =
+            testCurriculum.copy(
+                downloadProgress = 0.45f,
+            )
         val curricula = listOf(downloadingCurriculum)
 
         composeTestRule.setContent {
@@ -179,10 +181,11 @@ class CurriculumScreenTest {
 
     @Test
     fun curriculumScreen_downloadedCurriculum_showsCheckmark() {
-        val downloadedCurriculum = testCurriculum.copy(
-            isDownloaded = true,
-            downloadProgress = 1.0f
-        )
+        val downloadedCurriculum =
+            testCurriculum.copy(
+                isDownloaded = true,
+                downloadProgress = 1.0f,
+            )
         val curricula = listOf(downloadedCurriculum)
 
         composeTestRule.setContent {
@@ -198,17 +201,18 @@ class CurriculumScreenTest {
     @Test
     fun curriculumScreen_downloadedTab_showsOnlyDownloaded() {
         val downloaded = testCurriculum.copy(isDownloaded = true)
-        val notDownloaded = testCurriculum.copy(
-            id = "physics-102",
-            title = "Advanced Physics",
-            isDownloaded = false
-        )
+        val notDownloaded =
+            testCurriculum.copy(
+                id = "physics-102",
+                title = "Advanced Physics",
+                isDownloaded = false,
+            )
 
         composeTestRule.setContent {
             UnaMentisTheme {
                 CurriculumScreen(
                     serverCurricula = listOf(downloaded, notDownloaded),
-                    downloadedCurricula = listOf(downloaded)
+                    downloadedCurricula = listOf(downloaded),
                 )
             }
         }
@@ -223,13 +227,14 @@ class CurriculumScreenTest {
 
     @Test
     fun curriculumScreen_search_filtersCurricula() {
-        val curricula = listOf(
-            testCurriculum,
-            testCurriculum.copy(
-                id = "chemistry-101",
-                title = "Introduction to Chemistry"
+        val curricula =
+            listOf(
+                testCurriculum,
+                testCurriculum.copy(
+                    id = "chemistry-101",
+                    title = "Introduction to Chemistry",
+                ),
             )
-        )
 
         composeTestRule.setContent {
             UnaMentisTheme {
@@ -276,7 +281,7 @@ class CurriculumScreenTest {
             UnaMentisTheme {
                 CurriculumScreen(
                     isLoading = false,
-                    errorMessage = "Failed to fetch curricula. Check your connection."
+                    errorMessage = "Failed to fetch curricula. Check your connection.",
                 )
             }
         }
@@ -294,7 +299,7 @@ class CurriculumScreenTest {
             UnaMentisTheme {
                 CurriculumScreen(
                     errorMessage = "Network error",
-                    onRetry = { refreshTriggered = true }
+                    onRetry = { refreshTriggered = true },
                 )
             }
         }
@@ -315,7 +320,7 @@ class CurriculumScreenTest {
             UnaMentisTheme {
                 CurriculumScreen(
                     downloadedCurricula = listOf(downloaded),
-                    onDelete = { deleteConfirmed = true }
+                    onDelete = { deleteConfirmed = true },
                 )
             }
         }
@@ -336,18 +341,19 @@ class CurriculumScreenTest {
 
     @Test
     fun curriculumScreen_adaptiveLayout_phone() {
-        val curricula = List(10) { index ->
-            testCurriculum.copy(
-                id = "curriculum-$index",
-                title = "Curriculum $index"
-            )
-        }
+        val curricula =
+            List(10) { index ->
+                testCurriculum.copy(
+                    id = "curriculum-$index",
+                    title = "Curriculum $index",
+                )
+            }
 
         composeTestRule.setContent {
             UnaMentisTheme {
                 CurriculumScreen(
                     serverCurricula = curricula,
-                    isTablet = false
+                    isTablet = false,
                 )
             }
         }
@@ -358,18 +364,19 @@ class CurriculumScreenTest {
 
     @Test
     fun curriculumScreen_adaptiveLayout_tablet() {
-        val curricula = List(10) { index ->
-            testCurriculum.copy(
-                id = "curriculum-$index",
-                title = "Curriculum $index"
-            )
-        }
+        val curricula =
+            List(10) { index ->
+                testCurriculum.copy(
+                    id = "curriculum-$index",
+                    title = "Curriculum $index",
+                )
+            }
 
         composeTestRule.setContent {
             UnaMentisTheme {
                 CurriculumScreen(
                     serverCurricula = curricula,
-                    isTablet = true
+                    isTablet = true,
                 )
             }
         }
@@ -382,10 +389,11 @@ class CurriculumScreenTest {
 
     @Test
     fun curriculumScreen_sortOptions_changeSorting() {
-        val curricula = listOf(
-            testCurriculum.copy(id = "a", title = "Zebra"),
-            testCurriculum.copy(id = "b", title = "Apple")
-        )
+        val curricula =
+            listOf(
+                testCurriculum.copy(id = "a", title = "Zebra"),
+                testCurriculum.copy(id = "b", title = "Apple"),
+            )
 
         composeTestRule.setContent {
             UnaMentisTheme {

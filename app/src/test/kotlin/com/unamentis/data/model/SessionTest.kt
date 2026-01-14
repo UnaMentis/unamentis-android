@@ -9,7 +9,6 @@ import org.junit.Test
  * Verifies session state transitions and data integrity.
  */
 class SessionTest {
-
     @Test
     fun `session state enum has correct values`() {
         // Verify all expected states exist
@@ -26,13 +25,14 @@ class SessionTest {
     fun `transcript entry creation works correctly`() {
         // Given
         val timestamp = System.currentTimeMillis()
-        val entry = TranscriptEntry(
-            id = "entry-001",
-            sessionId = "session-001",
-            role = "user",
-            text = "Hello, how are you?",
-            timestamp = timestamp
-        )
+        val entry =
+            TranscriptEntry(
+                id = "entry-001",
+                sessionId = "session-001",
+                role = "user",
+                text = "Hello, how are you?",
+                timestamp = timestamp,
+            )
 
         // Then
         assertEquals("entry-001", entry.id)
@@ -45,26 +45,28 @@ class SessionTest {
     @Test
     fun `session with transcript entries works correctly`() {
         // Given
-        val session = Session(
-            id = "session-001",
-            startTime = System.currentTimeMillis(),
-            transcript = listOf(
-                TranscriptEntry(
-                    id = "entry-001",
-                    sessionId = "session-001",
-                    role = "user",
-                    text = "Hello",
-                    timestamp = System.currentTimeMillis()
-                ),
-                TranscriptEntry(
-                    id = "entry-002",
-                    sessionId = "session-001",
-                    role = "assistant",
-                    text = "Hi there!",
-                    timestamp = System.currentTimeMillis()
-                )
+        val session =
+            Session(
+                id = "session-001",
+                startTime = System.currentTimeMillis(),
+                transcript =
+                    listOf(
+                        TranscriptEntry(
+                            id = "entry-001",
+                            sessionId = "session-001",
+                            role = "user",
+                            text = "Hello",
+                            timestamp = System.currentTimeMillis(),
+                        ),
+                        TranscriptEntry(
+                            id = "entry-002",
+                            sessionId = "session-001",
+                            role = "assistant",
+                            text = "Hi there!",
+                            timestamp = System.currentTimeMillis(),
+                        ),
+                    ),
             )
-        )
 
         // Then
         assertEquals(2, session.transcript.size)
@@ -75,14 +77,15 @@ class SessionTest {
     @Test
     fun `topic progress tracks mastery correctly`() {
         // Given
-        val progress = TopicProgress(
-            topicId = "topic-001",
-            curriculumId = "curriculum-001",
-            timeSpentSeconds = 1800, // 30 minutes
-            masteryLevel = 0.75f, // 75% mastery
-            lastAccessedAt = System.currentTimeMillis(),
-            completedSegments = listOf("seg-001", "seg-002", "seg-003")
-        )
+        val progress =
+            TopicProgress(
+                topicId = "topic-001",
+                curriculumId = "curriculum-001",
+                timeSpentSeconds = 1800, // 30 minutes
+                masteryLevel = 0.75f, // 75% mastery
+                lastAccessedAt = System.currentTimeMillis(),
+                completedSegments = listOf("seg-001", "seg-002", "seg-003"),
+            )
 
         // Then
         assertEquals(0.75f, progress.masteryLevel, 0.001f)

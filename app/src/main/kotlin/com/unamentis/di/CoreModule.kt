@@ -34,7 +34,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object CoreModule {
-
     /**
      * Provides the AudioEngine for low-latency audio capture and playback.
      */
@@ -55,7 +54,9 @@ object CoreModule {
      */
     @Provides
     @Singleton
-    fun provideVADService(@ApplicationContext context: Context): VADService {
+    fun provideVADService(
+        @ApplicationContext context: Context,
+    ): VADService {
         // Try Silero VAD (ONNX) first - highest accuracy
         return try {
             SileroOnnxVADService(context).also { vad ->
@@ -79,7 +80,7 @@ object CoreModule {
     @Singleton
     fun provideCurriculumEngine(
         curriculumRepository: CurriculumRepository,
-        topicProgressRepository: TopicProgressRepository
+        topicProgressRepository: TopicProgressRepository,
     ): CurriculumEngine {
         return CurriculumEngine(curriculumRepository, topicProgressRepository)
     }
@@ -105,7 +106,7 @@ object CoreModule {
         ttsService: TTSService,
         llmService: LLMService,
         curriculumEngine: CurriculumEngine,
-        scope: CoroutineScope
+        scope: CoroutineScope,
     ): SessionManager {
         return SessionManager(
             audioEngine = audioEngine,
@@ -114,7 +115,7 @@ object CoreModule {
             ttsService = ttsService,
             llmService = llmService,
             curriculumEngine = curriculumEngine,
-            scope = scope
+            scope = scope,
         )
     }
 }

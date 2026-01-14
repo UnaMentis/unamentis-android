@@ -36,9 +36,7 @@ import java.util.*
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HistoryScreen(
-    viewModel: HistoryViewModel = hiltViewModel()
-) {
+fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showExportDialog by remember { mutableStateOf(false) }
     var exportFormat by remember { mutableStateOf(ExportFormat.JSON) }
@@ -62,29 +60,29 @@ fun HistoryScreen(
                         IconButton(onClick = { showDeleteDialog = true }) {
                             Icon(Icons.Default.Delete, contentDescription = "Delete")
                         }
-                    }
+                    },
                 )
             } else {
                 // List view top bar
                 TopAppBar(
-                    title = { Text("History") }
+                    title = { Text("History") },
                 )
             }
-        }
+        },
     ) { paddingValues ->
         if (uiState.selectedSession != null) {
             // Detail view
             SessionDetailView(
                 session = uiState.selectedSession!!,
                 transcript = uiState.transcript,
-                modifier = Modifier.padding(paddingValues)
+                modifier = Modifier.padding(paddingValues),
             )
         } else {
             // List view
             SessionListView(
                 sessions = uiState.sessions,
                 onSessionClick = { viewModel.selectSession(it.id) },
-                modifier = Modifier.padding(paddingValues)
+                modifier = Modifier.padding(paddingValues),
             )
         }
     }
@@ -96,20 +94,23 @@ fun HistoryScreen(
             onFormatChange = { exportFormat = it },
             onDismiss = { showExportDialog = false },
             onExport = {
-                val exported = when (exportFormat) {
-                    ExportFormat.JSON -> viewModel.exportAsJson(
-                        uiState.selectedSession!!,
-                        uiState.transcript
-                    )
-                    ExportFormat.TEXT -> viewModel.exportAsText(
-                        uiState.selectedSession!!,
-                        uiState.transcript
-                    )
-                }
+                val exported =
+                    when (exportFormat) {
+                        ExportFormat.JSON ->
+                            viewModel.exportAsJson(
+                                uiState.selectedSession!!,
+                                uiState.transcript,
+                            )
+                        ExportFormat.TEXT ->
+                            viewModel.exportAsText(
+                                uiState.selectedSession!!,
+                                uiState.transcript,
+                            )
+                    }
                 // In a real app, this would save to file or share
                 showExportDialog = false
                 exported
-            }
+            },
         )
     }
 
@@ -124,7 +125,7 @@ fun HistoryScreen(
                     onClick = {
                         viewModel.deleteSession(uiState.selectedSession!!.id)
                         showDeleteDialog = false
-                    }
+                    },
                 ) {
                     Text("Delete", color = MaterialTheme.colorScheme.error)
                 }
@@ -133,7 +134,7 @@ fun HistoryScreen(
                 TextButton(onClick = { showDeleteDialog = false }) {
                     Text("Cancel")
                 }
-            }
+            },
         )
     }
 }
@@ -145,33 +146,33 @@ fun HistoryScreen(
 private fun SessionListView(
     sessions: List<Session>,
     onSessionClick: (Session) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     if (sessions.isEmpty()) {
         // Empty state
         Box(
             modifier = modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Icon(
                     imageVector = Icons.Default.History,
                     contentDescription = null,
                     modifier = Modifier.size(64.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                 )
                 Text(
                     text = "No sessions yet",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
                     text = "Start a session to see it here",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -179,15 +180,15 @@ private fun SessionListView(
         LazyColumn(
             modifier = modifier.fillMaxSize(),
             contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             items(
                 items = sessions,
-                key = { it.id }
+                key = { it.id },
             ) { session ->
                 SessionCard(
                     session = session,
-                    onClick = { onSessionClick(session) }
+                    onClick = { onSessionClick(session) },
                 )
             }
         }
@@ -200,49 +201,49 @@ private fun SessionListView(
 @Composable
 private fun SessionCard(
     session: Session,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     Card(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             // Title and date
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = session.curriculumId?.let { "Curriculum Session" } ?: "Free Session",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
 
                 Text(
                     text = formatDate(session.startTime),
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
             // Metadata
             Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 MetadataChip(
                     icon = Icons.Default.Chat,
-                    text = "${session.turnCount} turns"
+                    text = "${session.turnCount} turns",
                 )
 
                 session.endTime?.let { endTime ->
                     val durationMinutes = ((endTime - session.startTime) / 1000 / 60).toInt()
                     MetadataChip(
                         icon = Icons.Default.Timer,
-                        text = "${durationMinutes}min"
+                        text = "${durationMinutes}min",
                     )
                 }
             }
@@ -252,7 +253,7 @@ private fun SessionCard(
                 Text(
                     text = "Topic: $it",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
                 )
             }
         }
@@ -265,22 +266,22 @@ private fun SessionCard(
 @Composable
 private fun MetadataChip(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
-    text: String
+    text: String,
 ) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
             modifier = Modifier.size(16.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
             text = text,
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -292,12 +293,12 @@ private fun MetadataChip(
 private fun SessionDetailView(
     session: Session,
     transcript: List<TranscriptEntry>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         // Session info card
         item {
@@ -309,7 +310,7 @@ private fun SessionDetailView(
             Text(
                 text = "Transcript",
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
         }
 
@@ -320,13 +321,13 @@ private fun SessionDetailView(
                     text = "No transcript available",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 32.dp)
+                    modifier = Modifier.padding(vertical = 32.dp),
                 )
             }
         } else {
             items(
                 items = transcript,
-                key = { it.id }
+                key = { it.id },
             ) { entry ->
                 TranscriptEntryCard(entry = entry)
             }
@@ -342,12 +343,12 @@ private fun SessionInfoCard(session: Session) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
                 text = "Session Information",
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
             )
 
             InfoRow(label = "Session ID", value = session.id.take(8) + "...")
@@ -359,15 +360,15 @@ private fun SessionInfoCard(session: Session) {
             }
             InfoRow(
                 label = "Start Time",
-                value = formatDateTime(session.startTime)
+                value = formatDateTime(session.startTime),
             )
             session.endTime?.let {
                 InfoRow(
                     label = "End Time",
-                    value = formatDateTime(it)
+                    value = formatDateTime(it),
                 )
                 val durationMinutes = ((it - session.startTime) / 1000 / 60).toInt()
-                InfoRow(label = "Duration", value = "${durationMinutes} minutes")
+                InfoRow(label = "Duration", value = "$durationMinutes minutes")
             }
             InfoRow(label = "Total Turns", value = session.turnCount.toString())
         }
@@ -378,20 +379,23 @@ private fun SessionInfoCard(session: Session) {
  * Info row component.
  */
 @Composable
-private fun InfoRow(label: String, value: String) {
+private fun InfoRow(
+    label: String,
+    value: String,
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Text(
             text = label,
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
             text = value,
             style = MaterialTheme.typography.bodySmall,
-            fontWeight = FontWeight.Medium
+            fontWeight = FontWeight.Medium,
         )
     }
 }
@@ -406,39 +410,41 @@ private fun TranscriptEntryCard(entry: TranscriptEntry) {
 
     Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = alignment
+        horizontalAlignment = alignment,
     ) {
         // Role label
         Text(
             text = if (isUser) "You" else "AI Tutor",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
         )
 
         // Message card
         Card(
             modifier = Modifier.fillMaxWidth(0.85f),
-            colors = CardDefaults.cardColors(
-                containerColor = if (isUser) {
-                    MaterialTheme.colorScheme.primaryContainer
-                } else {
-                    MaterialTheme.colorScheme.secondaryContainer
-                }
-            )
+            colors =
+                CardDefaults.cardColors(
+                    containerColor =
+                        if (isUser) {
+                            MaterialTheme.colorScheme.primaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.secondaryContainer
+                        },
+                ),
         ) {
             Column(
                 modifier = Modifier.padding(12.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Text(
                     text = entry.text,
-                    style = MaterialTheme.typography.bodyMedium
+                    style = MaterialTheme.typography.bodyMedium,
                 )
                 Text(
                     text = formatTime(entry.timestamp),
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -453,7 +459,7 @@ private fun ExportDialog(
     format: ExportFormat,
     onFormatChange: (ExportFormat) -> Unit,
     onDismiss: () -> Unit,
-    onExport: () -> String
+    onExport: () -> String,
 ) {
     var exportedContent by remember { mutableStateOf<String?>(null) }
 
@@ -464,36 +470,37 @@ private fun ExportDialog(
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
                     text = "Select export format:",
-                    style = MaterialTheme.typography.bodyMedium
+                    style = MaterialTheme.typography.bodyMedium,
                 )
 
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     FilterChip(
                         selected = format == ExportFormat.JSON,
                         onClick = { onFormatChange(ExportFormat.JSON) },
-                        label = { Text("JSON") }
+                        label = { Text("JSON") },
                     )
                     FilterChip(
                         selected = format == ExportFormat.TEXT,
                         onClick = { onFormatChange(ExportFormat.TEXT) },
-                        label = { Text("Text") }
+                        label = { Text("Text") },
                     )
                 }
 
                 if (exportedContent != null) {
                     Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 300.dp),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 300.dp),
                         shape = RoundedCornerShape(8.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant
+                        color = MaterialTheme.colorScheme.surfaceVariant,
                     ) {
                         Text(
                             text = exportedContent!!,
                             style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(12.dp)
+                            modifier = Modifier.padding(12.dp),
                         )
                     }
                 }
@@ -503,7 +510,7 @@ private fun ExportDialog(
             TextButton(
                 onClick = {
                     exportedContent = onExport()
-                }
+                },
             ) {
                 Text(if (exportedContent == null) "Preview" else "Close")
             }
@@ -512,7 +519,7 @@ private fun ExportDialog(
             TextButton(onClick = onDismiss) {
                 Text("Cancel")
             }
-        }
+        },
     )
 }
 
@@ -521,7 +528,7 @@ private fun ExportDialog(
  */
 enum class ExportFormat {
     JSON,
-    TEXT
+    TEXT,
 }
 
 /**

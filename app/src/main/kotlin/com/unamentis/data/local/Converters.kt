@@ -11,11 +11,11 @@ import kotlinx.serialization.json.Json
  * for storage in SQLite.
  */
 class Converters {
-
-    private val json = Json {
-        ignoreUnknownKeys = true
-        isLenient = true
-    }
+    private val json =
+        Json {
+            ignoreUnknownKeys = true
+            isLenient = true
+        }
 
     @TypeConverter
     fun fromStringList(value: String): List<String> {

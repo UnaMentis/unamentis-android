@@ -16,7 +16,6 @@ import org.junit.Test
  * Tests user interactions, state visualization, and transcript display.
  */
 class SessionScreenTest {
-
     @get:Rule
     val composeTestRule = createComposeRule()
 
@@ -55,7 +54,7 @@ class SessionScreenTest {
         composeTestRule.setContent {
             UnaMentisTheme {
                 SessionScreen(
-                    onStartSession = { startClicked = true }
+                    onStartSession = { startClicked = true },
                 )
             }
         }
@@ -69,28 +68,29 @@ class SessionScreenTest {
 
     @Test
     fun sessionScreen_activeSession_displaysTranscript() {
-        val testTranscript = listOf(
-            TranscriptEntry(
-                id = "1",
-                sessionId = "session1",
-                role = "user",
-                text = "Hello, I want to learn about physics",
-                timestamp = System.currentTimeMillis()
-            ),
-            TranscriptEntry(
-                id = "2",
-                sessionId = "session1",
-                role = "assistant",
-                text = "Great! Let's explore the fundamentals of physics together.",
-                timestamp = System.currentTimeMillis()
+        val testTranscript =
+            listOf(
+                TranscriptEntry(
+                    id = "1",
+                    sessionId = "session1",
+                    role = "user",
+                    text = "Hello, I want to learn about physics",
+                    timestamp = System.currentTimeMillis(),
+                ),
+                TranscriptEntry(
+                    id = "2",
+                    sessionId = "session1",
+                    role = "assistant",
+                    text = "Great! Let's explore the fundamentals of physics together.",
+                    timestamp = System.currentTimeMillis(),
+                ),
             )
-        )
 
         composeTestRule.setContent {
             UnaMentisTheme {
                 SessionScreen(
                     sessionState = SessionState.AI_SPEAKING,
-                    transcript = testTranscript
+                    transcript = testTranscript,
                 )
             }
         }
@@ -109,7 +109,7 @@ class SessionScreenTest {
                 SessionScreen(
                     sessionState = SessionState.USER_SPEAKING,
                     isPaused = false,
-                    onPauseSession = { pauseClicked = true }
+                    onPauseSession = { pauseClicked = true },
                 )
             }
         }
@@ -130,7 +130,7 @@ class SessionScreenTest {
                 SessionScreen(
                     sessionState = SessionState.PAUSED,
                     isPaused = true,
-                    onResumeSession = { resumeClicked = true }
+                    onResumeSession = { resumeClicked = true },
                 )
             }
         }
@@ -151,7 +151,7 @@ class SessionScreenTest {
                 SessionScreen(
                     sessionState = SessionState.USER_SPEAKING,
                     isMuted = false,
-                    onToggleMute = { muteClicked = true }
+                    onToggleMute = { muteClicked = true },
                 )
             }
         }
@@ -171,7 +171,7 @@ class SessionScreenTest {
             UnaMentisTheme {
                 SessionScreen(
                     sessionState = SessionState.AI_SPEAKING,
-                    onStopSession = { stopClicked = true }
+                    onStopSession = { stopClicked = true },
                 )
             }
         }
@@ -188,16 +188,17 @@ class SessionScreenTest {
 
     @Test
     fun sessionScreen_stateIndicator_displaysCorrectState() {
-        val states = listOf(
-            SessionState.IDLE to "Idle",
-            SessionState.USER_SPEAKING to "Listening...",
-            SessionState.PROCESSING_UTTERANCE to "Processing...",
-            SessionState.AI_THINKING to "Thinking...",
-            SessionState.AI_SPEAKING to "Speaking...",
-            SessionState.INTERRUPTED to "Interrupted",
-            SessionState.PAUSED to "Paused",
-            SessionState.ERROR to "Error"
-        )
+        val states =
+            listOf(
+                SessionState.IDLE to "Idle",
+                SessionState.USER_SPEAKING to "Listening...",
+                SessionState.PROCESSING_UTTERANCE to "Processing...",
+                SessionState.AI_THINKING to "Thinking...",
+                SessionState.AI_SPEAKING to "Speaking...",
+                SessionState.INTERRUPTED to "Interrupted",
+                SessionState.PAUSED to "Paused",
+                SessionState.ERROR to "Error",
+            )
 
         states.forEach { (state, expectedText) ->
             composeTestRule.setContent {
@@ -217,7 +218,7 @@ class SessionScreenTest {
             UnaMentisTheme {
                 SessionScreen(
                     sessionState = SessionState.USER_SPEAKING,
-                    audioLevel = 0.75f
+                    audioLevel = 0.75f,
                 )
             }
         }
@@ -228,21 +229,22 @@ class SessionScreenTest {
 
     @Test
     fun sessionScreen_transcript_scrollsToLatestMessage() {
-        val longTranscript = List(20) { index ->
-            TranscriptEntry(
-                id = index.toString(),
-                sessionId = "session1",
-                role = if (index % 2 == 0) "user" else "assistant",
-                text = "Message $index",
-                timestamp = System.currentTimeMillis() + index * 1000
-            )
-        }
+        val longTranscript =
+            List(20) { index ->
+                TranscriptEntry(
+                    id = index.toString(),
+                    sessionId = "session1",
+                    role = if (index % 2 == 0) "user" else "assistant",
+                    text = "Message $index",
+                    timestamp = System.currentTimeMillis() + index * 1000,
+                )
+            }
 
         composeTestRule.setContent {
             UnaMentisTheme {
                 SessionScreen(
                     sessionState = SessionState.AI_SPEAKING,
-                    transcript = longTranscript
+                    transcript = longTranscript,
                 )
             }
         }
@@ -257,7 +259,7 @@ class SessionScreenTest {
             UnaMentisTheme {
                 SessionScreen(
                     sessionState = SessionState.ERROR,
-                    errorMessage = "Connection lost. Please check your network."
+                    errorMessage = "Connection lost. Please check your network.",
                 )
             }
         }
@@ -273,7 +275,7 @@ class SessionScreenTest {
                 SessionScreen(
                     sessionState = SessionState.AI_SPEAKING,
                     e2eLatencyMs = 450L,
-                    totalCostCents = 2.5
+                    totalCostCents = 2.5,
                 )
             }
         }
@@ -289,15 +291,16 @@ class SessionScreenTest {
             UnaMentisTheme(darkTheme = true) {
                 SessionScreen(
                     sessionState = SessionState.USER_SPEAKING,
-                    transcript = listOf(
-                        TranscriptEntry(
-                            id = "1",
-                            sessionId = "session1",
-                            role = "user",
-                            text = "Test message",
-                            timestamp = System.currentTimeMillis()
-                        )
-                    )
+                    transcript =
+                        listOf(
+                            TranscriptEntry(
+                                id = "1",
+                                sessionId = "session1",
+                                role = "user",
+                                text = "Test message",
+                                timestamp = System.currentTimeMillis(),
+                            ),
+                        ),
                 )
             }
         }
@@ -308,21 +311,22 @@ class SessionScreenTest {
 
     @Test
     fun sessionScreen_rotation_preservesState() {
-        val testTranscript = listOf(
-            TranscriptEntry(
-                id = "1",
-                sessionId = "session1",
-                role = "user",
-                text = "This should survive rotation",
-                timestamp = System.currentTimeMillis()
+        val testTranscript =
+            listOf(
+                TranscriptEntry(
+                    id = "1",
+                    sessionId = "session1",
+                    role = "user",
+                    text = "This should survive rotation",
+                    timestamp = System.currentTimeMillis(),
+                ),
             )
-        )
 
         composeTestRule.setContent {
             UnaMentisTheme {
                 SessionScreen(
                     sessionState = SessionState.AI_SPEAKING,
-                    transcript = testTranscript
+                    transcript = testTranscript,
                 )
             }
         }
@@ -354,7 +358,7 @@ class SessionScreenTest {
             UnaMentisTheme {
                 SessionScreen(
                     sessionState = SessionState.AI_SPEAKING,
-                    currentVisualAsset = "https://example.com/diagram.png"
+                    currentVisualAsset = "https://example.com/diagram.png",
                 )
             }
         }

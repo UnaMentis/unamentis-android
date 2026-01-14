@@ -3,13 +3,8 @@ package com.unamentis.benchmark
 import androidx.benchmark.junit4.BenchmarkRule
 import androidx.benchmark.junit4.measureRepeated
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.unamentis.core.audio.AudioEngine
-import com.unamentis.core.session.SessionManager
 import com.unamentis.data.model.SessionState
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -27,7 +22,6 @@ import kotlin.system.measureTimeMillis
  */
 @RunWith(AndroidJUnit4::class)
 class SessionBenchmarkTest {
-
     @get:Rule
     val benchmarkRule = BenchmarkRule()
 
@@ -60,19 +54,21 @@ class SessionBenchmarkTest {
     @Test
     fun benchmark_stateTransitions() {
         benchmarkRule.measureRepeated {
-            val transitions = listOf(
-                SessionState.IDLE to SessionState.USER_SPEAKING,
-                SessionState.USER_SPEAKING to SessionState.PROCESSING_UTTERANCE,
-                SessionState.PROCESSING_UTTERANCE to SessionState.AI_THINKING,
-                SessionState.AI_THINKING to SessionState.AI_SPEAKING,
-                SessionState.AI_SPEAKING to SessionState.USER_SPEAKING
-            )
+            val transitions =
+                listOf(
+                    SessionState.IDLE to SessionState.USER_SPEAKING,
+                    SessionState.USER_SPEAKING to SessionState.PROCESSING_UTTERANCE,
+                    SessionState.PROCESSING_UTTERANCE to SessionState.AI_THINKING,
+                    SessionState.AI_THINKING to SessionState.AI_SPEAKING,
+                    SessionState.AI_SPEAKING to SessionState.USER_SPEAKING,
+                )
 
             transitions.forEach { (from, to) ->
-                val duration = measureTimeMillis {
-                    // Simulate state transition
-                    val state = to
-                }
+                val duration =
+                    measureTimeMillis {
+                        // Simulate state transition
+                        val state = to
+                    }
 
                 assert(duration < 50) {
                     "State transition $from -> $to took ${duration}ms, target is <50ms"
@@ -90,11 +86,12 @@ class SessionBenchmarkTest {
         benchmarkRule.measureRepeated {
             val audioData = FloatArray(512) { (it * 0.001f) } // 32ms at 16kHz
 
-            val duration = measureTimeMillis {
-                // Simulate audio preprocessing
-                val rms = calculateRMS(audioData)
-                val normalized = audioData.map { it / rms }.toFloatArray()
-            }
+            val duration =
+                measureTimeMillis {
+                    // Simulate audio preprocessing
+                    val rms = calculateRMS(audioData)
+                    val normalized = audioData.map { it / rms }.toFloatArray()
+                }
 
             assert(duration < 50) { "Audio processing took ${duration}ms, target is <50ms" }
         }
@@ -109,12 +106,13 @@ class SessionBenchmarkTest {
         benchmarkRule.measureRepeated {
             val transcript = mutableListOf<String>()
 
-            val duration = measureTimeMillis {
-                // Add 100 transcript entries
-                repeat(100) {
-                    transcript.add("Test message $it")
+            val duration =
+                measureTimeMillis {
+                    // Add 100 transcript entries
+                    repeat(100) {
+                        transcript.add("Test message $it")
+                    }
                 }
-            }
 
             val averagePerEntry = duration / 100
             assert(averagePerEntry < 20) {
@@ -189,29 +187,32 @@ class SessionBenchmarkTest {
     @Test
     fun benchmark_concurrentProcessing() {
         benchmarkRule.measureRepeated {
-            val duration = measureTimeMillis {
-                // Simulate concurrent audio processing and LLM generation
-                val audioThread = Thread {
-                    repeat(10) {
-                        val audioData = FloatArray(512) { (it * 0.001f) }
-                        calculateRMS(audioData)
-                        Thread.sleep(10)
-                    }
+            val duration =
+                measureTimeMillis {
+                    // Simulate concurrent audio processing and LLM generation
+                    val audioThread =
+                        Thread {
+                            repeat(10) {
+                                val audioData = FloatArray(512) { (it * 0.001f) }
+                                calculateRMS(audioData)
+                                Thread.sleep(10)
+                            }
+                        }
+
+                    val llmThread =
+                        Thread {
+                            repeat(10) {
+                                // Simulate token generation
+                                Thread.sleep(15)
+                            }
+                        }
+
+                    audioThread.start()
+                    llmThread.start()
+
+                    audioThread.join()
+                    llmThread.join()
                 }
-
-                val llmThread = Thread {
-                    repeat(10) {
-                        // Simulate token generation
-                        Thread.sleep(15)
-                    }
-                }
-
-                audioThread.start()
-                llmThread.start()
-
-                audioThread.join()
-                llmThread.join()
-            }
 
             assert(duration < 500) {
                 "Concurrent processing took ${duration}ms, target is <500ms"
@@ -227,16 +228,18 @@ class SessionBenchmarkTest {
     fun benchmark_databaseOperations() {
         benchmarkRule.measureRepeated {
             // Insert operation
-            val insertDuration = measureTimeMillis {
-                // Simulate Room insert (use actual Room in real test)
-                Thread.sleep(10) // Realistic insert time
-            }
+            val insertDuration =
+                measureTimeMillis {
+                    // Simulate Room insert (use actual Room in real test)
+                    Thread.sleep(10) // Realistic insert time
+                }
 
             // Query operation
-            val queryDuration = measureTimeMillis {
-                // Simulate Room query
-                Thread.sleep(15) // Realistic query time
-            }
+            val queryDuration =
+                measureTimeMillis {
+                    // Simulate Room query
+                    Thread.sleep(15) // Realistic query time
+                }
 
             assert(insertDuration < 50) {
                 "Database insert took ${insertDuration}ms, target is <50ms"
@@ -250,9 +253,10 @@ class SessionBenchmarkTest {
     // Helper functions
 
     private fun calculateRMS(audioData: FloatArray): Float {
-        val sumSquares = audioData.fold(0.0) { acc, sample ->
-            acc + (sample * sample)
-        }
+        val sumSquares =
+            audioData.fold(0.0) { acc, sample ->
+                acc + (sample * sample)
+            }
         return kotlin.math.sqrt(sumSquares / audioData.size).toFloat()
     }
 }

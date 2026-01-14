@@ -19,51 +19,42 @@ import kotlinx.serialization.Serializable
 data class Todo(
     @PrimaryKey
     val id: String,
-
     /**
      * Task title/description.
      */
     val title: String,
-
     /**
      * Additional notes or details.
      */
     val notes: String? = null,
-
     /**
      * Priority level.
      */
     val priority: TodoPriority = TodoPriority.MEDIUM,
-
     /**
      * Current status.
      */
     val status: TodoStatus = TodoStatus.ACTIVE,
-
     /**
      * Optional session ID context.
      */
     val sessionId: String? = null,
-
     /**
      * Optional topic ID context.
      */
     val topicId: String? = null,
-
     /**
      * Creation timestamp (milliseconds since epoch).
      */
     val createdAt: Long = System.currentTimeMillis(),
-
     /**
      * Completion timestamp (null if not completed).
      */
     val completedAt: Long? = null,
-
     /**
      * Last updated timestamp.
      */
-    val updatedAt: Long = System.currentTimeMillis()
+    val updatedAt: Long = System.currentTimeMillis(),
 )
 
 /**
@@ -72,7 +63,7 @@ data class Todo(
 enum class TodoPriority {
     LOW,
     MEDIUM,
-    HIGH
+    HIGH,
 }
 
 /**
@@ -81,5 +72,5 @@ enum class TodoPriority {
 enum class TodoStatus {
     ACTIVE,
     COMPLETED,
-    ARCHIVED
+    ARCHIVED,
 }

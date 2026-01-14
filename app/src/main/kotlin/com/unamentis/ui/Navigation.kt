@@ -26,10 +26,15 @@ import com.unamentis.ui.todo.TodoScreen
  */
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
     data object Session : Screen("session", "Session", Icons.Default.Mic)
+
     data object Curriculum : Screen("curriculum", "Curriculum", Icons.Default.Book)
+
     data object Todo : Screen("todo", "To-Do", Icons.Default.Checklist)
+
     data object History : Screen("history", "History", Icons.Default.History)
+
     data object Analytics : Screen("analytics", "Analytics", Icons.Default.Analytics)
+
     data object Settings : Screen("settings", "Settings", Icons.Default.Settings)
 }
 
@@ -39,14 +44,15 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
 @Composable
 fun UnaMentisNavHost() {
     val navController = rememberNavController()
-    val items = listOf(
-        Screen.Session,
-        Screen.Curriculum,
-        Screen.Todo,
-        Screen.History,
-        Screen.Analytics,
-        Screen.Settings
-    )
+    val items =
+        listOf(
+            Screen.Session,
+            Screen.Curriculum,
+            Screen.Todo,
+            Screen.History,
+            Screen.Analytics,
+            Screen.Settings,
+        )
 
     Scaffold(
         bottomBar = {
@@ -70,16 +76,16 @@ fun UnaMentisNavHost() {
                                 // Restore state when reselecting a previously selected item
                                 restoreState = true
                             }
-                        }
+                        },
                     )
                 }
             }
-        }
+        },
     ) { innerPadding ->
         NavHost(
             navController = navController,
             startDestination = Screen.Session.route,
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier.padding(innerPadding),
         ) {
             composable(Screen.Session.route) { SessionScreen() }
             composable(Screen.Curriculum.route) { CurriculumScreen() }

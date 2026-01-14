@@ -15,7 +15,6 @@ import org.junit.Test
  * Tests configuration management, provider selection, and user interactions.
  */
 class SettingsScreenTest {
-
     @get:Rule
     val composeTestRule = createComposeRule()
 
@@ -23,25 +22,26 @@ class SettingsScreenTest {
 
     @Before
     fun setup() {
-        testConfig = AppConfig(
-            sttProvider = ApiProvider.DEEPGRAM,
-            ttsProvider = ApiProvider.ELEVENLABS,
-            llmProvider = ApiProvider.OPENAI,
-            deepgramApiKey = "",
-            elevenLabsApiKey = "",
-            openAiApiKey = "",
-            anthropicApiKey = "",
-            groqApiKey = "",
-            assemblyAiApiKey = "",
-            serverBaseUrl = "http://10.0.2.2:8766",
-            logServerUrl = "http://10.0.2.2:8765",
-            audioSampleRate = 16000,
-            audioBufferSize = 1024,
-            vadThreshold = 0.5f,
-            vadSensitivity = 0.7f,
-            silenceThresholdMs = 1500L,
-            bargeInConfirmationMs = 600L
-        )
+        testConfig =
+            AppConfig(
+                sttProvider = ApiProvider.DEEPGRAM,
+                ttsProvider = ApiProvider.ELEVENLABS,
+                llmProvider = ApiProvider.OPENAI,
+                deepgramApiKey = "",
+                elevenLabsApiKey = "",
+                openAiApiKey = "",
+                anthropicApiKey = "",
+                groqApiKey = "",
+                assemblyAiApiKey = "",
+                serverBaseUrl = "http://10.0.2.2:8766",
+                logServerUrl = "http://10.0.2.2:8765",
+                audioSampleRate = 16000,
+                audioBufferSize = 1024,
+                vadThreshold = 0.5f,
+                vadSensitivity = 0.7f,
+                silenceThresholdMs = 1500L,
+                bargeInConfirmationMs = 600L,
+            )
     }
 
     @Test
@@ -70,7 +70,7 @@ class SettingsScreenTest {
                     config = testConfig,
                     onConfigUpdate = { newConfig ->
                         updatedProvider = newConfig.sttProvider
-                    }
+                    },
                 )
             }
         }
@@ -95,7 +95,7 @@ class SettingsScreenTest {
                     config = testConfig,
                     onConfigUpdate = { newConfig ->
                         updatedProvider = newConfig.ttsProvider
-                    }
+                    },
                 )
             }
         }
@@ -120,7 +120,7 @@ class SettingsScreenTest {
                     config = testConfig,
                     onConfigUpdate = { newConfig ->
                         updatedProvider = newConfig.llmProvider
-                    }
+                    },
                 )
             }
         }
@@ -160,7 +160,7 @@ class SettingsScreenTest {
                     config = testConfig,
                     onConfigUpdate = { newConfig ->
                         updatedKey = newConfig.openAiApiKey
-                    }
+                    },
                 )
             }
         }
@@ -196,7 +196,7 @@ class SettingsScreenTest {
                     config = testConfig,
                     onConfigUpdate = { newConfig ->
                         updatedThreshold = newConfig.vadThreshold
-                    }
+                    },
                 )
             }
         }
@@ -220,7 +220,7 @@ class SettingsScreenTest {
             UnaMentisTheme {
                 SettingsScreen(
                     config = testConfig,
-                    onConfigUpdate = { configUpdated = true }
+                    onConfigUpdate = { configUpdated = true },
                 )
             }
         }
@@ -242,7 +242,7 @@ class SettingsScreenTest {
                     config = testConfig,
                     onConfigUpdate = { newConfig ->
                         updatedConfig = newConfig
-                    }
+                    },
                 )
             }
         }
@@ -266,7 +266,7 @@ class SettingsScreenTest {
                     config = testConfig,
                     onConfigUpdate = { newConfig ->
                         updatedConfig = newConfig
-                    }
+                    },
                 )
             }
         }
@@ -289,7 +289,7 @@ class SettingsScreenTest {
                     config = testConfig,
                     onConfigUpdate = { newConfig ->
                         updatedUrl = newConfig.serverBaseUrl
-                    }
+                    },
                 )
             }
         }
@@ -310,7 +310,7 @@ class SettingsScreenTest {
             UnaMentisTheme {
                 SettingsScreen(
                     config = testConfig,
-                    showDebugInfo = true
+                    showDebugInfo = true,
                 )
             }
         }
@@ -345,7 +345,7 @@ class SettingsScreenTest {
             UnaMentisTheme {
                 SettingsScreen(
                     config = testConfig,
-                    onResetToDefaults = { resetTriggered = true }
+                    onResetToDefaults = { resetTriggered = true },
                 )
             }
         }
@@ -423,7 +423,7 @@ class SettingsScreenTest {
                     config = testConfig,
                     onConfigUpdate = { newConfig ->
                         updatedMs = newConfig.bargeInConfirmationMs
-                    }
+                    },
                 )
             }
         }

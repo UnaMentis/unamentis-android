@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.Flow
  */
 @Dao
 interface TopicProgressDao {
-
     /**
      * Get progress for all topics in a curriculum.
      *
@@ -51,9 +50,13 @@ interface TopicProgressDao {
         SET timeSpentSeconds = timeSpentSeconds + :additionalSeconds,
             lastAccessedAt = :timestamp
         WHERE topicId = :topicId
-        """
+        """,
     )
-    suspend fun updateTimeSpent(topicId: String, additionalSeconds: Long, timestamp: Long)
+    suspend fun updateTimeSpent(
+        topicId: String,
+        additionalSeconds: Long,
+        timestamp: Long,
+    )
 
     /**
      * Update mastery level.
@@ -62,7 +65,10 @@ interface TopicProgressDao {
      * @param masteryLevel New mastery level (0.0 - 1.0)
      */
     @Query("UPDATE topic_progress SET masteryLevel = :masteryLevel WHERE topicId = :topicId")
-    suspend fun updateMasteryLevel(topicId: String, masteryLevel: Float)
+    suspend fun updateMasteryLevel(
+        topicId: String,
+        masteryLevel: Float,
+    )
 
     /**
      * Delete progress for a topic.

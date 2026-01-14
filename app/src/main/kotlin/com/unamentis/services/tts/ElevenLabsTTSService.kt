@@ -38,16 +38,16 @@ class ElevenLabsTTSService(
     private val model: String = "eleven_monolingual_v1",
     private val stability: Float = 0.5f,
     private val similarityBoost: Float = 0.75f,
-    private val client: OkHttpClient
+    private val client: OkHttpClient,
 ) : TTSService {
-
     override val providerName: String = "ElevenLabs"
 
     private var webSocket: WebSocket? = null
-    private val json = Json {
-        ignoreUnknownKeys = true
-        isLenient = true
-    }
+    private val json =
+        Json {
+            ignoreUnknownKeys = true
+            isLenient = true
+        }
 
     /**
      * Synthesize text to audio stream.
@@ -58,101 +58,126 @@ class ElevenLabsTTSService(
      * @param text Text to synthesize
      * @return Flow of audio chunks (PCM 16-bit, 16kHz, mono)
      */
-    override fun synthesize(text: String): Flow<TTSAudioChunk> = callbackFlow {
-        val url = "wss://api.elevenlabs.io/v1/text-to-speech/$voiceId/stream-input?model_id=$model"
+    override fun synthesize(text: String): Flow<TTSAudioChunk> =
+        callbackFlow {
+            val url = "wss://api.elevenlabs.io/v1/text-to-speech/$voiceId/stream-input?model_id=$model"
 
-        val request = Request.Builder()
-            .url(url)
-            .addHeader("xi-api-key", apiKey)
-            .build()
+            val request =
+                Request.Builder()
+                    .url(url)
+                    .addHeader("xi-api-key", apiKey)
+                    .build()
 
-        var isFirstChunk = true
-        val startTime = System.currentTimeMillis()
+            var isFirstChunk = true
+            val startTime = System.currentTimeMillis()
 
-        webSocket = client.newWebSocket(request, object : WebSocketListener() {
-            override fun onOpen(webSocket: WebSocket, response: Response) {
-                android.util.Log.i("ElevenLabsTTS", "WebSocket connection opened")
+            webSocket =
+                client.newWebSocket(
+                    request,
+                    object : WebSocketListener() {
+                        override fun onOpen(
+                            webSocket: WebSocket,
+                            response: Response,
+                        ) {
+                            android.util.Log.i("ElevenLabsTTS", "WebSocket connection opened")
 
-                // Send configuration and text
-                val config = ElevenLabsConfig(
-                    text = text,
-                    voiceSettings = VoiceSettings(
-                        stability = stability,
-                        similarityBoost = similarityBoost
-                    )
+                            // Send configuration and text
+                            val config =
+                                ElevenLabsConfig(
+                                    text = text,
+                                    voiceSettings =
+                                        VoiceSettings(
+                                            stability = stability,
+                                            similarityBoost = similarityBoost,
+                                        ),
+                                )
+
+                            val configJson = json.encodeToString(config)
+                            webSocket.send(configJson)
+                        }
+
+                        override fun onMessage(
+                            webSocket: WebSocket,
+                            bytes: ByteString,
+                        ) {
+                            val audioData = bytes.toByteArray()
+
+                            if (isFirstChunk) {
+                                val ttfb = System.currentTimeMillis() - startTime
+                                android.util.Log.i("ElevenLabsTTS", "TTFB: ${ttfb}ms")
+                                isFirstChunk = false
+
+                                trySend(
+                                    TTSAudioChunk(
+                                        audioData = audioData,
+                                        isFirst = true,
+                                        isLast = false,
+                                    ),
+                                )
+                            } else {
+                                trySend(
+                                    TTSAudioChunk(
+                                        audioData = audioData,
+                                        isFirst = false,
+                                        isLast = false,
+                                    ),
+                                )
+                            }
+                        }
+
+                        override fun onMessage(
+                            webSocket: WebSocket,
+                            text: String,
+                        ) {
+                            // Handle JSON messages (errors, metadata, etc.)
+                            try {
+                                val response = json.decodeFromString<ElevenLabsResponse>(text)
+
+                                if (response.isFinal == true) {
+                                    // Send final empty chunk to signal completion
+                                    trySend(
+                                        TTSAudioChunk(
+                                            audioData = byteArrayOf(),
+                                            isFirst = false,
+                                            isLast = true,
+                                        ),
+                                    )
+                                    close()
+                                }
+
+                                if (response.error != null) {
+                                    android.util.Log.e("ElevenLabsTTS", "Server error: ${response.error}")
+                                    close(Exception(response.error))
+                                }
+                            } catch (e: Exception) {
+                                android.util.Log.w("ElevenLabsTTS", "Non-JSON message: $text")
+                            }
+                        }
+
+                        override fun onFailure(
+                            webSocket: WebSocket,
+                            t: Throwable,
+                            response: Response?,
+                        ) {
+                            android.util.Log.e("ElevenLabsTTS", "WebSocket error", t)
+                            close(t)
+                        }
+
+                        override fun onClosed(
+                            webSocket: WebSocket,
+                            code: Int,
+                            reason: String,
+                        ) {
+                            android.util.Log.i("ElevenLabsTTS", "WebSocket closed: $code - $reason")
+                            close()
+                        }
+                    },
                 )
 
-                val configJson = json.encodeToString(config)
-                webSocket.send(configJson)
+            awaitClose {
+                doStop()
             }
-
-            override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
-                val audioData = bytes.toByteArray()
-
-                if (isFirstChunk) {
-                    val ttfb = System.currentTimeMillis() - startTime
-                    android.util.Log.i("ElevenLabsTTS", "TTFB: ${ttfb}ms")
-                    isFirstChunk = false
-
-                    trySend(
-                        TTSAudioChunk(
-                            audioData = audioData,
-                            isFirst = true,
-                            isLast = false
-                        )
-                    )
-                } else {
-                    trySend(
-                        TTSAudioChunk(
-                            audioData = audioData,
-                            isFirst = false,
-                            isLast = false
-                        )
-                    )
-                }
-            }
-
-            override fun onMessage(webSocket: WebSocket, text: String) {
-                // Handle JSON messages (errors, metadata, etc.)
-                try {
-                    val response = json.decodeFromString<ElevenLabsResponse>(text)
-
-                    if (response.isFinal == true) {
-                        // Send final empty chunk to signal completion
-                        trySend(
-                            TTSAudioChunk(
-                                audioData = byteArrayOf(),
-                                isFirst = false,
-                                isLast = true
-                            )
-                        )
-                        close()
-                    }
-
-                    if (response.error != null) {
-                        android.util.Log.e("ElevenLabsTTS", "Server error: ${response.error}")
-                        close(Exception(response.error))
-                    }
-                } catch (e: Exception) {
-                    android.util.Log.w("ElevenLabsTTS", "Non-JSON message: $text")
-                }
-            }
-
-            override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                android.util.Log.e("ElevenLabsTTS", "WebSocket error", t)
-                close(t)
-            }
-
-            override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-                android.util.Log.i("ElevenLabsTTS", "WebSocket closed: $code - $reason")
-                close()
-            }
-        })
-
-        awaitClose {
-            doStop()
         }
-    }
 
     /**
      * Stop synthesis and close WebSocket connection (suspend version).
@@ -173,18 +198,18 @@ class ElevenLabsTTSService(
     @Serializable
     private data class ElevenLabsConfig(
         val text: String,
-        val voiceSettings: VoiceSettings? = null
+        val voiceSettings: VoiceSettings? = null,
     )
 
     @Serializable
     private data class VoiceSettings(
         val stability: Float,
-        val similarityBoost: Float
+        val similarityBoost: Float,
     )
 
     @Serializable
     private data class ElevenLabsResponse(
         val isFinal: Boolean? = null,
-        val error: String? = null
+        val error: String? = null,
     )
 }

@@ -38,9 +38,7 @@ import java.util.*
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TodoScreen(
-    viewModel: TodoViewModel = hiltViewModel()
-) {
+fun TodoScreen(viewModel: TodoViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showCreateDialog by remember { mutableStateOf(false) }
     var editingTodo by remember { mutableStateOf<Todo?>(null) }
@@ -48,7 +46,7 @@ fun TodoScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("To-Do") }
+                title = { Text("To-Do") },
             )
         },
         floatingActionButton = {
@@ -57,29 +55,30 @@ fun TodoScreen(
                     Icon(Icons.Default.Add, contentDescription = "Add todo")
                 }
             }
-        }
+        },
     ) { paddingValues ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
         ) {
             // Filter tabs
             TabRow(selectedTabIndex = uiState.selectedTab.ordinal) {
                 Tab(
                     selected = uiState.selectedTab == TodoFilter.ACTIVE,
                     onClick = { viewModel.selectTab(TodoFilter.ACTIVE) },
-                    text = { Text("Active") }
+                    text = { Text("Active") },
                 )
                 Tab(
                     selected = uiState.selectedTab == TodoFilter.COMPLETED,
                     onClick = { viewModel.selectTab(TodoFilter.COMPLETED) },
-                    text = { Text("Completed") }
+                    text = { Text("Completed") },
                 )
                 Tab(
                     selected = uiState.selectedTab == TodoFilter.ARCHIVED,
                     onClick = { viewModel.selectTab(TodoFilter.ARCHIVED) },
-                    text = { Text("Archived") }
+                    text = { Text("Archived") },
                 )
             }
 
@@ -95,7 +94,7 @@ fun TodoScreen(
                     }
                 },
                 onArchive = { viewModel.archiveTodo(it.id) },
-                onDelete = { viewModel.deleteTodo(it.id) }
+                onDelete = { viewModel.deleteTodo(it.id) },
             )
         }
     }
@@ -108,7 +107,7 @@ fun TodoScreen(
             onSave = { title, notes, priority ->
                 viewModel.createTodo(title, notes, priority)
                 showCreateDialog = false
-            }
+            },
         )
     }
 
@@ -122,11 +121,11 @@ fun TodoScreen(
                     editingTodo!!.copy(
                         title = title,
                         notes = notes,
-                        priority = priority
-                    )
+                        priority = priority,
+                    ),
                 )
                 editingTodo = null
-            }
+            },
         )
     }
 }
@@ -140,28 +139,28 @@ private fun TodoList(
     onTodoClick: (Todo) -> Unit,
     onToggleComplete: (Todo) -> Unit,
     onArchive: (Todo) -> Unit,
-    onDelete: (Todo) -> Unit
+    onDelete: (Todo) -> Unit,
 ) {
     if (todos.isEmpty()) {
         // Empty state
         Box(
             modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Icon(
                     imageVector = Icons.Default.CheckCircle,
                     contentDescription = null,
                     modifier = Modifier.size(64.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                 )
                 Text(
                     text = "No tasks",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
@@ -169,18 +168,18 @@ private fun TodoList(
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             items(
                 items = todos,
-                key = { it.id }
+                key = { it.id },
             ) { todo ->
                 TodoCard(
                     todo = todo,
                     onClick = { onTodoClick(todo) },
                     onToggleComplete = { onToggleComplete(todo) },
                     onArchive = { onArchive(todo) },
-                    onDelete = { onDelete(todo) }
+                    onDelete = { onDelete(todo) },
                 )
             }
         }
@@ -197,32 +196,32 @@ private fun TodoCard(
     onClick: () -> Unit,
     onToggleComplete: () -> Unit,
     onArchive: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
 ) {
     var showMenu by remember { mutableStateOf(false) }
 
     Card(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(
                     modifier = Modifier.weight(1f),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     // Checkbox
                     Checkbox(
                         checked = todo.status == TodoStatus.COMPLETED,
-                        onCheckedChange = { onToggleComplete() }
+                        onCheckedChange = { onToggleComplete() },
                     )
 
                     // Priority indicator
@@ -233,12 +232,18 @@ private fun TodoCard(
                         text = todo.title,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        textDecoration = if (todo.status == TodoStatus.COMPLETED) {
-                            TextDecoration.LineThrough
-                        } else null,
-                        color = if (todo.status == TodoStatus.COMPLETED) {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        } else MaterialTheme.colorScheme.onSurface
+                        textDecoration =
+                            if (todo.status == TodoStatus.COMPLETED) {
+                                TextDecoration.LineThrough
+                            } else {
+                                null
+                            },
+                        color =
+                            if (todo.status == TodoStatus.COMPLETED) {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            } else {
+                                MaterialTheme.colorScheme.onSurface
+                            },
                     )
                 }
 
@@ -250,7 +255,7 @@ private fun TodoCard(
 
                     DropdownMenu(
                         expanded = showMenu,
-                        onDismissRequest = { showMenu = false }
+                        onDismissRequest = { showMenu = false },
                     ) {
                         if (todo.status != TodoStatus.ARCHIVED) {
                             DropdownMenuItem(
@@ -259,7 +264,7 @@ private fun TodoCard(
                                     onArchive()
                                     showMenu = false
                                 },
-                                leadingIcon = { Icon(Icons.Default.Archive, null) }
+                                leadingIcon = { Icon(Icons.Default.Archive, null) },
                             )
                         }
                         DropdownMenuItem(
@@ -272,9 +277,9 @@ private fun TodoCard(
                                 Icon(
                                     Icons.Default.Delete,
                                     null,
-                                    tint = MaterialTheme.colorScheme.error
+                                    tint = MaterialTheme.colorScheme.error,
                                 )
-                            }
+                            },
                         )
                     }
                 }
@@ -285,25 +290,25 @@ private fun TodoCard(
                 Text(
                     text = todo.notes,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
             // Metadata
             Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Text(
                     text = "Created ${formatDate(todo.createdAt)}",
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
 
                 if (todo.completedAt != null) {
                     Text(
                         text = "Completed ${formatDate(todo.completedAt)}",
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary
+                        color = MaterialTheme.colorScheme.primary,
                     )
                 }
             }
@@ -316,21 +321,22 @@ private fun TodoCard(
  */
 @Composable
 private fun PriorityBadge(priority: TodoPriority) {
-    val (color, text) = when (priority) {
-        TodoPriority.HIGH -> MaterialTheme.colorScheme.error to "H"
-        TodoPriority.MEDIUM -> MaterialTheme.colorScheme.secondary to "M"
-        TodoPriority.LOW -> MaterialTheme.colorScheme.outline to "L"
-    }
+    val (color, text) =
+        when (priority) {
+            TodoPriority.HIGH -> MaterialTheme.colorScheme.error to "H"
+            TodoPriority.MEDIUM -> MaterialTheme.colorScheme.secondary to "M"
+            TodoPriority.LOW -> MaterialTheme.colorScheme.outline to "L"
+        }
 
     Surface(
         shape = MaterialTheme.shapes.small,
-        color = color
+        color = color,
     ) {
         Text(
             text = text,
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onError,
-            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
         )
     }
 }
@@ -342,7 +348,7 @@ private fun PriorityBadge(priority: TodoPriority) {
 private fun TodoEditDialog(
     todo: Todo?,
     onDismiss: () -> Unit,
-    onSave: (String, String?, TodoPriority) -> Unit
+    onSave: (String, String?, TodoPriority) -> Unit,
 ) {
     var title by remember { mutableStateOf(todo?.title ?: "") }
     var notes by remember { mutableStateOf(todo?.notes ?: "") }
@@ -358,7 +364,7 @@ private fun TodoEditDialog(
                     onValueChange = { title = it },
                     label = { Text("Title") },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 )
 
                 OutlinedTextField(
@@ -367,19 +373,19 @@ private fun TodoEditDialog(
                     label = { Text("Notes (optional)") },
                     minLines = 3,
                     maxLines = 5,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 )
 
                 // Priority selector
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
                         text = "Priority",
-                        style = MaterialTheme.typography.labelMedium
+                        style = MaterialTheme.typography.labelMedium,
                     )
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         TodoPriority.entries.forEach { p ->
                             FilterChip(
@@ -391,9 +397,9 @@ private fun TodoEditDialog(
                                             TodoPriority.LOW -> "Low"
                                             TodoPriority.MEDIUM -> "Medium"
                                             TodoPriority.HIGH -> "High"
-                                        }
+                                        },
                                     )
-                                }
+                                },
                             )
                         }
                     }
@@ -407,7 +413,7 @@ private fun TodoEditDialog(
                         onSave(title, notes.takeIf { it.isNotBlank() }, priority)
                     }
                 },
-                enabled = title.isNotBlank()
+                enabled = title.isNotBlank(),
             ) {
                 Text("Save")
             }
@@ -416,7 +422,7 @@ private fun TodoEditDialog(
             TextButton(onClick = onDismiss) {
                 Text("Cancel")
             }
-        }
+        },
     )
 }
 

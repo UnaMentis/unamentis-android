@@ -25,7 +25,6 @@ import javax.net.ssl.SSLPeerUnverifiedException
  */
 @RunWith(AndroidJUnit4::class)
 class CertificatePinningIntegrationTest {
-
     /**
      * Test that certificate pinning is properly configured.
      */
@@ -37,7 +36,7 @@ class CertificatePinningIntegrationTest {
         val domains = pinner.pins.map { it.pattern }.toSet()
         assertTrue(
             "At least one domain should be configured",
-            domains.isNotEmpty()
+            domains.isNotEmpty(),
         )
     }
 
@@ -51,7 +50,7 @@ class CertificatePinningIntegrationTest {
         // In test builds (debug), pinning should be disabled
         assertFalse(
             "Certificate pinning should be disabled in debug builds",
-            CertificatePinning.isEnabled()
+            CertificatePinning.isEnabled(),
         )
     }
 
@@ -70,16 +69,18 @@ class CertificatePinningIntegrationTest {
             return
         }
 
-        val client = OkHttpClient.Builder()
-            .certificatePinner(CertificatePinning.pinner)
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .readTimeout(10, TimeUnit.SECONDS)
-            .build()
+        val client =
+            OkHttpClient.Builder()
+                .certificatePinner(CertificatePinning.pinner)
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(10, TimeUnit.SECONDS)
+                .build()
 
         try {
-            val request = Request.Builder()
-                .url("https://api.openai.com/v1/models")
-                .build()
+            val request =
+                Request.Builder()
+                    .url("https://api.openai.com/v1/models")
+                    .build()
 
             val response = client.newCall(request).execute()
 
@@ -87,7 +88,7 @@ class CertificatePinningIntegrationTest {
             // Both indicate the certificate was validated successfully
             assertTrue(
                 "Valid certificate should allow connection (got ${response.code})",
-                response.isSuccessful || response.code == 401 || response.code == 403
+                response.isSuccessful || response.code == 401 || response.code == 403,
             )
         } catch (e: SSLPeerUnverifiedException) {
             fail("Valid OpenAI certificate should be accepted: ${e.message}")
@@ -103,23 +104,25 @@ class CertificatePinningIntegrationTest {
             return
         }
 
-        val client = OkHttpClient.Builder()
-            .certificatePinner(CertificatePinning.pinner)
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .readTimeout(10, TimeUnit.SECONDS)
-            .build()
+        val client =
+            OkHttpClient.Builder()
+                .certificatePinner(CertificatePinning.pinner)
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(10, TimeUnit.SECONDS)
+                .build()
 
         try {
-            val request = Request.Builder()
-                .url("https://api.deepgram.com/v1/projects")
-                .build()
+            val request =
+                Request.Builder()
+                    .url("https://api.deepgram.com/v1/projects")
+                    .build()
 
             val response = client.newCall(request).execute()
 
             // Accept any response that indicates certificate was validated
             assertTrue(
                 "Valid certificate should allow connection (got ${response.code})",
-                response.code in 200..499
+                response.code in 200..499,
             )
         } catch (e: SSLPeerUnverifiedException) {
             fail("Valid Deepgram certificate should be accepted: ${e.message}")
@@ -135,23 +138,25 @@ class CertificatePinningIntegrationTest {
             return
         }
 
-        val client = OkHttpClient.Builder()
-            .certificatePinner(CertificatePinning.pinner)
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .readTimeout(10, TimeUnit.SECONDS)
-            .build()
+        val client =
+            OkHttpClient.Builder()
+                .certificatePinner(CertificatePinning.pinner)
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(10, TimeUnit.SECONDS)
+                .build()
 
         try {
-            val request = Request.Builder()
-                .url("https://api.anthropic.com/v1/messages")
-                .build()
+            val request =
+                Request.Builder()
+                    .url("https://api.anthropic.com/v1/messages")
+                    .build()
 
             val response = client.newCall(request).execute()
 
             // Accept any response that indicates certificate was validated
             assertTrue(
                 "Valid certificate should allow connection (got ${response.code})",
-                response.code in 200..499
+                response.code in 200..499,
             )
         } catch (e: SSLPeerUnverifiedException) {
             fail("Valid Anthropic certificate should be accepted: ${e.message}")
@@ -167,22 +172,25 @@ class CertificatePinningIntegrationTest {
     @Test
     fun invalidCertificate_rejectsConnection() {
         // Create a pinner with an intentionally wrong pin
-        val incorrectPinner = CertificatePinner.Builder()
-            .add("api.openai.com", "sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=") // Wrong pin
-            .build()
+        val incorrectPinner =
+            CertificatePinner.Builder()
+                .add("api.openai.com", "sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=") // Wrong pin
+                .build()
 
-        val client = OkHttpClient.Builder()
-            .certificatePinner(incorrectPinner)
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .readTimeout(10, TimeUnit.SECONDS)
-            .build()
+        val client =
+            OkHttpClient.Builder()
+                .certificatePinner(incorrectPinner)
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(10, TimeUnit.SECONDS)
+                .build()
 
         var sslExceptionThrown = false
 
         try {
-            val request = Request.Builder()
-                .url("https://api.openai.com/v1/models")
-                .build()
+            val request =
+                Request.Builder()
+                    .url("https://api.openai.com/v1/models")
+                    .build()
 
             client.newCall(request).execute()
         } catch (e: SSLPeerUnverifiedException) {
@@ -192,7 +200,7 @@ class CertificatePinningIntegrationTest {
 
         assertTrue(
             "Invalid certificate pin should reject connection with SSLPeerUnverifiedException",
-            sslExceptionThrown
+            sslExceptionThrown,
         )
     }
 
@@ -208,26 +216,29 @@ class CertificatePinningIntegrationTest {
             return
         }
 
-        val client = OkHttpClient.Builder()
-            .certificatePinner(CertificatePinning.pinner)
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .readTimeout(10, TimeUnit.SECONDS)
-            .build()
+        val client =
+            OkHttpClient.Builder()
+                .certificatePinner(CertificatePinning.pinner)
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(10, TimeUnit.SECONDS)
+                .build()
 
-        val domains = mapOf(
-            "api.deepgram.com" to "https://api.deepgram.com/v1/projects",
-            "api.assemblyai.com" to "https://api.assemblyai.com/v2/transcript",
-            "api.groq.com" to "https://api.groq.com/openai/v1/models",
-            "api.elevenlabs.io" to "https://api.elevenlabs.io/v1/voices",
-            "api.openai.com" to "https://api.openai.com/v1/models",
-            "api.anthropic.com" to "https://api.anthropic.com/v1/messages"
-        )
+        val domains =
+            mapOf(
+                "api.deepgram.com" to "https://api.deepgram.com/v1/projects",
+                "api.assemblyai.com" to "https://api.assemblyai.com/v2/transcript",
+                "api.groq.com" to "https://api.groq.com/openai/v1/models",
+                "api.elevenlabs.io" to "https://api.elevenlabs.io/v1/voices",
+                "api.openai.com" to "https://api.openai.com/v1/models",
+                "api.anthropic.com" to "https://api.anthropic.com/v1/messages",
+            )
 
         domains.forEach { (domain, url) ->
             try {
-                val request = Request.Builder()
-                    .url(url)
-                    .build()
+                val request =
+                    Request.Builder()
+                        .url(url)
+                        .build()
 
                 val response = client.newCall(request).execute()
 
@@ -235,20 +246,22 @@ class CertificatePinningIntegrationTest {
                 // (Even 401/403 means we connected successfully)
                 assertTrue(
                     "$domain should be reachable (got ${response.code})",
-                    response.code in 200..499
+                    response.code in 200..499,
                 )
             } catch (e: SSLPeerUnverifiedException) {
-                fail("$domain certificate validation failed. This may indicate:\n" +
+                fail(
+                    "$domain certificate validation failed. This may indicate:\n" +
                         "1. Incorrect certificate pins\n" +
                         "2. Certificate rotation by provider\n" +
                         "3. MITM attack\n" +
-                        "Error: ${e.message}")
+                        "Error: ${e.message}",
+                )
             } catch (e: Exception) {
                 // Network errors are acceptable (offline, DNS failure, etc.)
                 // But log them for debugging
                 android.util.Log.w(
                     "CertPinningTest",
-                    "$domain not reachable (network error): ${e.message}"
+                    "$domain not reachable (network error): ${e.message}",
                 )
             }
         }
@@ -263,7 +276,7 @@ class CertificatePinningIntegrationTest {
     fun allDomains_haveBackupPins() {
         assertTrue(
             "All domains should have backup pins for certificate rotation",
-            CertificatePinning.hasBackupPins()
+            CertificatePinning.hasBackupPins(),
         )
     }
 
@@ -279,17 +292,19 @@ class CertificatePinningIntegrationTest {
         }
 
         // Client with pinning
-        val pinnedClient = OkHttpClient.Builder()
-            .certificatePinner(CertificatePinning.pinner)
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .readTimeout(10, TimeUnit.SECONDS)
-            .build()
+        val pinnedClient =
+            OkHttpClient.Builder()
+                .certificatePinner(CertificatePinning.pinner)
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(10, TimeUnit.SECONDS)
+                .build()
 
         // Client without pinning
-        val unpinnedClient = OkHttpClient.Builder()
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .readTimeout(10, TimeUnit.SECONDS)
-            .build()
+        val unpinnedClient =
+            OkHttpClient.Builder()
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(10, TimeUnit.SECONDS)
+                .build()
 
         val url = "https://api.openai.com/v1/models"
 
@@ -318,7 +333,7 @@ class CertificatePinningIntegrationTest {
         // Certificate pinning should add minimal overhead (<100ms acceptable)
         assertTrue(
             "Certificate pinning overhead should be minimal, but was ${overhead}ms",
-            overhead < 100 || pinnedDuration < 1000 // Allow if both are fast
+            overhead < 100 || pinnedDuration < 1000, // Allow if both are fast
         )
     }
 }

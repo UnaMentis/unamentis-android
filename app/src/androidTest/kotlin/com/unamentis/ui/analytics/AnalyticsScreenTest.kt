@@ -13,24 +13,24 @@ import org.junit.Test
  * Tests metrics display, charts, filtering, and export functionality.
  */
 class AnalyticsScreenTest {
-
     @get:Rule
     val composeTestRule = createComposeRule()
 
-    private val testMetrics = SessionMetrics(
-        sessionId = "session-1",
-        timestamp = System.currentTimeMillis(),
-        e2eLatencyMs = 450L,
-        sttLatencyMs = 80L,
-        llmTTFTMs = 150L,
-        ttsTTFBMs = 120L,
-        totalCostCents = 2.5,
-        sttCostCents = 0.5,
-        llmCostCents = 1.5,
-        ttsCostCents = 0.5,
-        turnCount = 42,
-        totalDurationMs = 1800000L // 30 minutes
-    )
+    private val testMetrics =
+        SessionMetrics(
+            sessionId = "session-1",
+            timestamp = System.currentTimeMillis(),
+            e2eLatencyMs = 450L,
+            sttLatencyMs = 80L,
+            llmTTFTMs = 150L,
+            ttsTTFBMs = 120L,
+            totalCostCents = 2.5,
+            sttCostCents = 0.5,
+            llmCostCents = 1.5,
+            ttsCostCents = 0.5,
+            turnCount = 42,
+            totalDurationMs = 1800000L, // 30 minutes
+        )
 
     @Test
     fun analyticsScreen_initialState_displaysQuickStats() {
@@ -132,7 +132,7 @@ class AnalyticsScreenTest {
             UnaMentisTheme {
                 AnalyticsScreen(
                     metrics = metrics,
-                    onTimeRangeChange = { filterChanged = true }
+                    onTimeRangeChange = { filterChanged = true },
                 )
             }
         }
@@ -149,13 +149,14 @@ class AnalyticsScreenTest {
 
     @Test
     fun analyticsScreen_sessionHistory_displaysTrend() {
-        val multipleMetrics = List(10) { index ->
-            testMetrics.copy(
-                sessionId = "session-$index",
-                timestamp = System.currentTimeMillis() - (index * 86400000L), // Days apart
-                e2eLatencyMs = 400L + (index * 10L)
-            )
-        }
+        val multipleMetrics =
+            List(10) { index ->
+                testMetrics.copy(
+                    sessionId = "session-$index",
+                    timestamp = System.currentTimeMillis() - (index * 86400000L), // Days apart
+                    e2eLatencyMs = 400L + (index * 10L),
+                )
+            }
 
         composeTestRule.setContent {
             UnaMentisTheme {
@@ -177,7 +178,7 @@ class AnalyticsScreenTest {
             UnaMentisTheme {
                 AnalyticsScreen(
                     metrics = metrics,
-                    onExport = { exportTriggered = true }
+                    onExport = { exportTriggered = true },
                 )
             }
         }
@@ -222,12 +223,13 @@ class AnalyticsScreenTest {
 
     @Test
     fun analyticsScreen_percentileStats_showsP50AndP99() {
-        val multipleMetrics = List(100) { index ->
-            testMetrics.copy(
-                sessionId = "session-$index",
-                e2eLatencyMs = 300L + (index * 5L) // 300ms to 795ms
-            )
-        }
+        val multipleMetrics =
+            List(100) { index ->
+                testMetrics.copy(
+                    sessionId = "session-$index",
+                    e2eLatencyMs = 300L + (index * 5L), // 300ms to 795ms
+                )
+            }
 
         composeTestRule.setContent {
             UnaMentisTheme {
@@ -243,10 +245,11 @@ class AnalyticsScreenTest {
     @Test
     fun analyticsScreen_performanceTarget_showsIndicator() {
         val fastMetrics = testMetrics.copy(e2eLatencyMs = 400L) // Under 500ms target
-        val slowMetrics = testMetrics.copy(
-            sessionId = "session-2",
-            e2eLatencyMs = 600L // Over 500ms target
-        )
+        val slowMetrics =
+            testMetrics.copy(
+                sessionId = "session-2",
+                e2eLatencyMs = 600L, // Over 500ms target
+            )
 
         composeTestRule.setContent {
             UnaMentisTheme {
@@ -279,11 +282,12 @@ class AnalyticsScreenTest {
             UnaMentisTheme {
                 AnalyticsScreen(
                     metrics = listOf(testMetrics),
-                    providerUsage = mapOf(
-                        "Deepgram" to 45,
-                        "ElevenLabs" to 32,
-                        "OpenAI" to 23
-                    )
+                    providerUsage =
+                        mapOf(
+                            "Deepgram" to 45,
+                            "ElevenLabs" to 32,
+                            "OpenAI" to 23,
+                        ),
                 )
             }
         }
@@ -305,7 +309,7 @@ class AnalyticsScreenTest {
                 AnalyticsScreen(
                     metrics = metrics,
                     chartType = chartType,
-                    onChartTypeChange = { chartType = it }
+                    onChartTypeChange = { chartType = it },
                 )
             }
         }
@@ -363,7 +367,7 @@ class AnalyticsScreenTest {
             UnaMentisTheme {
                 AnalyticsScreen(
                     metrics = metrics,
-                    onRefresh = { refreshTriggered = true }
+                    onRefresh = { refreshTriggered = true },
                 )
             }
         }

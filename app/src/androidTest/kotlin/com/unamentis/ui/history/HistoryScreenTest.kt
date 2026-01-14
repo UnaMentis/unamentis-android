@@ -14,39 +14,40 @@ import org.junit.Test
  * Tests session history display, filtering, detail view, and export.
  */
 class HistoryScreenTest {
-
     @get:Rule
     val composeTestRule = createComposeRule()
 
-    private val testSession = SessionEntity(
-        id = "session-1",
-        curriculumId = "physics-101",
-        curriculumTitle = "Introduction to Physics",
-        startTime = System.currentTimeMillis() - 3600000, // 1 hour ago
-        endTime = System.currentTimeMillis(),
-        durationMs = 3600000L,
-        turnCount = 42,
-        totalCostCents = 5.5,
-        avgE2ELatencyMs = 450L,
-        completed = true
-    )
-
-    private val testTranscript = listOf(
-        TranscriptEntry(
-            id = "1",
-            sessionId = "session-1",
-            role = "user",
-            text = "Explain Newton's First Law",
-            timestamp = System.currentTimeMillis() - 3600000
-        ),
-        TranscriptEntry(
-            id = "2",
-            sessionId = "session-1",
-            role = "assistant",
-            text = "Newton's First Law states that an object at rest stays at rest...",
-            timestamp = System.currentTimeMillis() - 3500000
+    private val testSession =
+        SessionEntity(
+            id = "session-1",
+            curriculumId = "physics-101",
+            curriculumTitle = "Introduction to Physics",
+            startTime = System.currentTimeMillis() - 3600000, // 1 hour ago
+            endTime = System.currentTimeMillis(),
+            durationMs = 3600000L,
+            turnCount = 42,
+            totalCostCents = 5.5,
+            avgE2ELatencyMs = 450L,
+            completed = true,
         )
-    )
+
+    private val testTranscript =
+        listOf(
+            TranscriptEntry(
+                id = "1",
+                sessionId = "session-1",
+                role = "user",
+                text = "Explain Newton's First Law",
+                timestamp = System.currentTimeMillis() - 3600000,
+            ),
+            TranscriptEntry(
+                id = "2",
+                sessionId = "session-1",
+                role = "assistant",
+                text = "Newton's First Law states that an object at rest stays at rest...",
+                timestamp = System.currentTimeMillis() - 3500000,
+            ),
+        )
 
     @Test
     fun historyScreen_initialState_displaysSessionList() {
@@ -100,7 +101,7 @@ class HistoryScreenTest {
             UnaMentisTheme {
                 HistoryScreen(
                     sessions = sessions,
-                    onSessionClick = { detailOpened = true }
+                    onSessionClick = { detailOpened = true },
                 )
             }
         }
@@ -118,7 +119,7 @@ class HistoryScreenTest {
             UnaMentisTheme {
                 SessionDetailScreen(
                     session = testSession,
-                    transcript = testTranscript
+                    transcript = testTranscript,
                 )
             }
         }
@@ -135,7 +136,7 @@ class HistoryScreenTest {
             UnaMentisTheme {
                 SessionDetailScreen(
                     session = testSession,
-                    transcript = testTranscript
+                    transcript = testTranscript,
                 )
             }
         }
@@ -157,7 +158,7 @@ class HistoryScreenTest {
                 SessionDetailScreen(
                     session = testSession,
                     transcript = testTranscript,
-                    onExport = { exportTriggered = true }
+                    onExport = { exportTriggered = true },
                 )
             }
         }
@@ -175,7 +176,7 @@ class HistoryScreenTest {
             UnaMentisTheme {
                 SessionDetailScreen(
                     session = testSession,
-                    transcript = testTranscript
+                    transcript = testTranscript,
                 )
             }
         }
@@ -197,7 +198,7 @@ class HistoryScreenTest {
             UnaMentisTheme {
                 HistoryScreen(
                     sessions = sessions,
-                    onDelete = { deleteConfirmed = true }
+                    onDelete = { deleteConfirmed = true },
                 )
             }
         }
@@ -217,11 +218,12 @@ class HistoryScreenTest {
     @Test
     fun historyScreen_filter_showsOnlyCompleted() {
         val completed = testSession.copy(completed = true)
-        val incomplete = testSession.copy(
-            id = "session-2",
-            curriculumTitle = "Advanced Physics",
-            completed = false
-        )
+        val incomplete =
+            testSession.copy(
+                id = "session-2",
+                curriculumTitle = "Advanced Physics",
+                completed = false,
+            )
         val sessions = listOf(completed, incomplete)
 
         composeTestRule.setContent {
@@ -248,7 +250,7 @@ class HistoryScreenTest {
             UnaMentisTheme {
                 HistoryScreen(
                     sessions = sessions,
-                    onSortChange = { sortChanged = true }
+                    onSortChange = { sortChanged = true },
                 )
             }
         }
@@ -265,13 +267,14 @@ class HistoryScreenTest {
 
     @Test
     fun historyScreen_search_filtersSessionsByTitle() {
-        val sessions = listOf(
-            testSession,
-            testSession.copy(
-                id = "session-2",
-                curriculumTitle = "Introduction to Chemistry"
+        val sessions =
+            listOf(
+                testSession,
+                testSession.copy(
+                    id = "session-2",
+                    curriculumTitle = "Introduction to Chemistry",
+                ),
             )
-        )
 
         composeTestRule.setContent {
             UnaMentisTheme {
@@ -303,14 +306,16 @@ class HistoryScreenTest {
 
     @Test
     fun historyScreen_groupByDate_organizesessions() {
-        val today = testSession.copy(
-            id = "session-today",
-            startTime = System.currentTimeMillis()
-        )
-        val yesterday = testSession.copy(
-            id = "session-yesterday",
-            startTime = System.currentTimeMillis() - 86400000L
-        )
+        val today =
+            testSession.copy(
+                id = "session-today",
+                startTime = System.currentTimeMillis(),
+            )
+        val yesterday =
+            testSession.copy(
+                id = "session-yesterday",
+                startTime = System.currentTimeMillis() - 86400000L,
+            )
         val sessions = listOf(today, yesterday)
 
         composeTestRule.setContent {
@@ -326,12 +331,13 @@ class HistoryScreenTest {
 
     @Test
     fun historyScreen_sessionStats_showsAggregate() {
-        val multipleSessions = List(10) { index ->
-            testSession.copy(
-                id = "session-$index",
-                durationMs = 1800000L + (index * 60000L)
-            )
-        }
+        val multipleSessions =
+            List(10) { index ->
+                testSession.copy(
+                    id = "session-$index",
+                    durationMs = 1800000L + (index * 60000L),
+                )
+            }
 
         composeTestRule.setContent {
             UnaMentisTheme {
@@ -353,7 +359,7 @@ class HistoryScreenTest {
                 SessionDetailScreen(
                     session = testSession,
                     transcript = testTranscript,
-                    onShare = { shareTriggered = true }
+                    onShare = { shareTriggered = true },
                 )
             }
         }
@@ -367,12 +373,13 @@ class HistoryScreenTest {
 
     @Test
     fun historyScreen_scrolling_loadsMoreSessions() {
-        val manySessions = List(50) { index ->
-            testSession.copy(
-                id = "session-$index",
-                curriculumTitle = "Session $index"
-            )
-        }
+        val manySessions =
+            List(50) { index ->
+                testSession.copy(
+                    id = "session-$index",
+                    curriculumTitle = "Session $index",
+                )
+            }
 
         composeTestRule.setContent {
             UnaMentisTheme {

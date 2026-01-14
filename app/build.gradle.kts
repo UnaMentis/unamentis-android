@@ -38,9 +38,10 @@ android {
         externalNativeBuild {
             cmake {
                 cppFlags += "-std=c++17"
-                arguments += listOf(
-                    "-DANDROID_STL=c++_shared"
-                )
+                arguments +=
+                    listOf(
+                        "-DANDROID_STL=c++_shared",
+                    )
             }
         }
     }
@@ -51,7 +52,7 @@ android {
             isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
         }
         debug {
@@ -68,17 +69,18 @@ android {
 
     kotlinOptions {
         jvmTarget = "17"
-        freeCompilerArgs += listOf(
-            "-opt-in=kotlin.RequiresOptIn",
-            "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
-            "-opt-in=kotlinx.coroutines.FlowPreview"
-        )
+        freeCompilerArgs +=
+            listOf(
+                "-opt-in=kotlin.RequiresOptIn",
+                "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
+                "-opt-in=kotlinx.coroutines.FlowPreview",
+            )
     }
 
     buildFeatures {
         compose = true
         buildConfig = true
-        prefab = true  // Enable prefab for Oboe
+        prefab = true // Enable prefab for Oboe
     }
 
     packaging {

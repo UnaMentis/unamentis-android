@@ -14,7 +14,6 @@ import org.junit.Test
  * so we test using the helper methods in CertificatePinning instead.
  */
 class CertificatePinningTest {
-
     @Test
     fun certificatePinner_isNotNull() {
         assertNotNull("CertificatePinner should not be null", CertificatePinning.pinner)
@@ -37,7 +36,7 @@ class CertificatePinningTest {
         // This allows testing with mock servers and proxy tools
         assertFalse(
             "Certificate pinning should be disabled in debug builds",
-            CertificatePinning.isEnabled()
+            CertificatePinning.isEnabled(),
         )
     }
 
@@ -49,7 +48,7 @@ class CertificatePinningTest {
         // In release builds, pinning should be enabled for security
         assertTrue(
             "Certificate pinning should be enabled in release builds",
-            CertificatePinning.isEnabled()
+            CertificatePinning.isEnabled(),
         )
     }
 
@@ -76,7 +75,7 @@ class CertificatePinningTest {
         pinner.pins.forEach { pin ->
             assertTrue(
                 "Pin should use SHA-256 format",
-                pin.toString().contains("sha256/")
+                pin.toString().contains("sha256/"),
             )
         }
     }
@@ -96,17 +95,17 @@ class CertificatePinningTest {
 
         assertTrue(
             "All STT provider domains should be pinned",
-            domains.containsAll(sttDomains)
+            domains.containsAll(sttDomains),
         )
 
         assertTrue(
             "All TTS provider domains should be pinned",
-            domains.containsAll(ttsDomains)
+            domains.containsAll(ttsDomains),
         )
 
         assertTrue(
             "All LLM provider domains should be pinned",
-            domains.containsAll(llmDomains)
+            domains.containsAll(llmDomains),
         )
     }
 
@@ -118,17 +117,17 @@ class CertificatePinningTest {
         // (These are for local development with management console and log server)
         assertFalse(
             "localhost should not be pinned",
-            domains.contains("localhost")
+            domains.contains("localhost"),
         )
 
         assertFalse(
             "10.0.2.2 should not be pinned",
-            domains.contains("10.0.2.2")
+            domains.contains("10.0.2.2"),
         )
 
         assertFalse(
             "127.0.0.1 should not be pinned",
-            domains.contains("127.0.0.1")
+            domains.contains("127.0.0.1"),
         )
     }
 
@@ -146,7 +145,7 @@ class CertificatePinningTest {
         domains.forEach { domain ->
             assertTrue(
                 "All pinned domains should be external cloud APIs, found: $domain",
-                domain.startsWith("api.")
+                domain.startsWith("api."),
             )
         }
     }

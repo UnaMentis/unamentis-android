@@ -7,7 +7,6 @@ import kotlin.math.sqrt
  * Utility functions for audio processing.
  */
 object AudioUtils {
-
     /**
      * Calculate Root Mean Square (RMS) amplitude of audio samples.
      *
@@ -52,7 +51,10 @@ object AudioUtils {
      * @param referenceLevel Reference level (default: 1.0)
      * @return Amplitude in decibels (negative values, -∞ to 0 dB)
      */
-    fun rmsToDecibels(rms: Float, referenceLevel: Float = 1.0f): Float {
+    fun rmsToDecibels(
+        rms: Float,
+        referenceLevel: Float = 1.0f,
+    ): Float {
         if (rms <= 0f) return Float.NEGATIVE_INFINITY
         return 20 * kotlin.math.log10(rms / referenceLevel)
     }
@@ -63,7 +65,10 @@ object AudioUtils {
      * @param samples Audio samples to modify
      * @param gainDb Gain in decibels
      */
-    fun applyGain(samples: FloatArray, gainDb: Float) {
+    fun applyGain(
+        samples: FloatArray,
+        gainDb: Float,
+    ) {
         val gainLinear = 10.0.pow(gainDb / 20.0).toFloat()
         for (i in samples.indices) {
             samples[i] *= gainLinear
@@ -76,7 +81,10 @@ object AudioUtils {
      * @param samples Audio samples to modify
      * @param targetRms Target RMS level (0.0 to 1.0)
      */
-    fun normalize(samples: FloatArray, targetRms: Float = 0.5f) {
+    fun normalize(
+        samples: FloatArray,
+        targetRms: Float = 0.5f,
+    ) {
         val currentRms = calculateRMS(samples)
         if (currentRms > 0f) {
             val gain = targetRms / currentRms
@@ -122,7 +130,10 @@ object AudioUtils {
      * @param threshold RMS threshold for silence (default: 0.01)
      * @return true if samples are below silence threshold
      */
-    fun isSilence(samples: FloatArray, threshold: Float = 0.01f): Boolean {
+    fun isSilence(
+        samples: FloatArray,
+        threshold: Float = 0.01f,
+    ): Boolean {
         return calculateRMS(samples) < threshold
     }
 }

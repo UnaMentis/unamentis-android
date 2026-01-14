@@ -12,7 +12,6 @@ import kotlinx.coroutines.flow.Flow
  */
 @Dao
 interface SessionDao {
-
     /**
      * Get all sessions ordered by start time (most recent first).
      *
@@ -66,7 +65,7 @@ interface SessionDao {
             interruptionCount = :interruptionCount,
             totalCost = :totalCost
         WHERE id = :id
-        """
+        """,
     )
     suspend fun updateSessionStats(
         id: String,
@@ -74,7 +73,7 @@ interface SessionDao {
         durationSeconds: Long,
         turnCount: Int,
         interruptionCount: Int,
-        totalCost: Double
+        totalCost: Double,
     )
 
     /**

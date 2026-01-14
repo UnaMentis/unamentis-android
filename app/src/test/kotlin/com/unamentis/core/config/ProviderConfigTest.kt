@@ -26,7 +26,6 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(manifest = Config.NONE, sdk = [28])
 class ProviderConfigTest {
-
     private lateinit var context: Context
     private lateinit var providerConfig: ProviderConfig
 
@@ -41,63 +40,71 @@ class ProviderConfigTest {
 
     @Test
     @Ignore("Requires AndroidKeyStore - run as instrumentation test")
-    fun `default STT provider is Deepgram`() = runTest {
-        val provider = providerConfig.selectedSTTProvider.first()
-        assertEquals("Deepgram", provider)
-    }
+    fun `default STT provider is Deepgram`() =
+        runTest {
+            val provider = providerConfig.selectedSTTProvider.first()
+            assertEquals("Deepgram", provider)
+        }
 
     @Test
     @Ignore("Requires AndroidKeyStore - run as instrumentation test")
-    fun `default TTS provider is ElevenLabs`() = runTest {
-        val provider = providerConfig.selectedTTSProvider.first()
-        assertEquals("ElevenLabs", provider)
-    }
+    fun `default TTS provider is ElevenLabs`() =
+        runTest {
+            val provider = providerConfig.selectedTTSProvider.first()
+            assertEquals("ElevenLabs", provider)
+        }
 
     @Test
     @Ignore("Requires AndroidKeyStore - run as instrumentation test")
-    fun `default LLM provider is PatchPanel`() = runTest {
-        val provider = providerConfig.selectedLLMProvider.first()
-        assertEquals("PatchPanel", provider)
-    }
+    fun `default LLM provider is PatchPanel`() =
+        runTest {
+            val provider = providerConfig.selectedLLMProvider.first()
+            assertEquals("PatchPanel", provider)
+        }
 
     @Test
     @Ignore("Requires AndroidKeyStore - run as instrumentation test")
-    fun `default cost preference is BALANCED`() = runTest {
-        val preference = providerConfig.costPreference.first()
-        assertEquals("BALANCED", preference)
-    }
+    fun `default cost preference is BALANCED`() =
+        runTest {
+            val preference = providerConfig.costPreference.first()
+            assertEquals("BALANCED", preference)
+        }
 
     @Test
     @Ignore("Requires AndroidKeyStore - run as instrumentation test")
-    fun `can set and retrieve STT provider`() = runTest {
-        providerConfig.setSTTProvider("Android")
-        val provider = providerConfig.selectedSTTProvider.first()
-        assertEquals("Android", provider)
-    }
+    fun `can set and retrieve STT provider`() =
+        runTest {
+            providerConfig.setSTTProvider("Android")
+            val provider = providerConfig.selectedSTTProvider.first()
+            assertEquals("Android", provider)
+        }
 
     @Test
     @Ignore("Requires AndroidKeyStore - run as instrumentation test")
-    fun `can set and retrieve TTS provider`() = runTest {
-        providerConfig.setTTSProvider("Android")
-        val provider = providerConfig.selectedTTSProvider.first()
-        assertEquals("Android", provider)
-    }
+    fun `can set and retrieve TTS provider`() =
+        runTest {
+            providerConfig.setTTSProvider("Android")
+            val provider = providerConfig.selectedTTSProvider.first()
+            assertEquals("Android", provider)
+        }
 
     @Test
     @Ignore("Requires AndroidKeyStore - run as instrumentation test")
-    fun `can set and retrieve LLM provider`() = runTest {
-        providerConfig.setLLMProvider("OpenAI")
-        val provider = providerConfig.selectedLLMProvider.first()
-        assertEquals("OpenAI", provider)
-    }
+    fun `can set and retrieve LLM provider`() =
+        runTest {
+            providerConfig.setLLMProvider("OpenAI")
+            val provider = providerConfig.selectedLLMProvider.first()
+            assertEquals("OpenAI", provider)
+        }
 
     @Test
     @Ignore("Requires AndroidKeyStore - run as instrumentation test")
-    fun `can set and retrieve cost preference`() = runTest {
-        providerConfig.setCostPreference("QUALITY")
-        val preference = providerConfig.costPreference.first()
-        assertEquals("QUALITY", preference)
-    }
+    fun `can set and retrieve cost preference`() =
+        runTest {
+            providerConfig.setCostPreference("QUALITY")
+            val preference = providerConfig.costPreference.first()
+            assertEquals("QUALITY", preference)
+        }
 
     @Test
     @Ignore("Requires AndroidKeyStore - run as instrumentation test")
@@ -151,70 +158,76 @@ class ProviderConfigTest {
 
     @Test
     @Ignore("Requires AndroidKeyStore - run as instrumentation test")
-    fun `FREE preset configures correct providers`() = runTest {
-        providerConfig.applyPreset(ConfigurationPreset.FREE)
+    fun `FREE preset configures correct providers`() =
+        runTest {
+            providerConfig.applyPreset(ConfigurationPreset.FREE)
 
-        assertEquals("Android", providerConfig.selectedSTTProvider.first())
-        assertEquals("Android", providerConfig.selectedTTSProvider.first())
-        assertEquals("PatchPanel", providerConfig.selectedLLMProvider.first())
-        assertEquals("COST", providerConfig.costPreference.first())
-    }
-
-    @Test
-    @Ignore("Requires AndroidKeyStore - run as instrumentation test")
-    fun `PREMIUM preset configures correct providers`() = runTest {
-        providerConfig.applyPreset(ConfigurationPreset.PREMIUM)
-
-        assertEquals("Deepgram", providerConfig.selectedSTTProvider.first())
-        assertEquals("ElevenLabs", providerConfig.selectedTTSProvider.first())
-        assertEquals("PatchPanel", providerConfig.selectedLLMProvider.first())
-        assertEquals("QUALITY", providerConfig.costPreference.first())
-    }
+            assertEquals("Android", providerConfig.selectedSTTProvider.first())
+            assertEquals("Android", providerConfig.selectedTTSProvider.first())
+            assertEquals("PatchPanel", providerConfig.selectedLLMProvider.first())
+            assertEquals("COST", providerConfig.costPreference.first())
+        }
 
     @Test
     @Ignore("Requires AndroidKeyStore - run as instrumentation test")
-    fun `LOW_LATENCY preset configures correct providers`() = runTest {
-        providerConfig.applyPreset(ConfigurationPreset.LOW_LATENCY)
+    fun `PREMIUM preset configures correct providers`() =
+        runTest {
+            providerConfig.applyPreset(ConfigurationPreset.PREMIUM)
 
-        assertEquals("Deepgram", providerConfig.selectedSTTProvider.first())
-        assertEquals("ElevenLabs", providerConfig.selectedTTSProvider.first())
-        assertEquals("OpenAI", providerConfig.selectedLLMProvider.first())
-        assertEquals("QUALITY", providerConfig.costPreference.first())
-    }
-
-    @Test
-    @Ignore("Requires AndroidKeyStore - run as instrumentation test")
-    fun `COST_OPTIMIZED preset configures correct providers`() = runTest {
-        providerConfig.applyPreset(ConfigurationPreset.COST_OPTIMIZED)
-
-        assertEquals("Android", providerConfig.selectedSTTProvider.first())
-        assertEquals("Android", providerConfig.selectedTTSProvider.first())
-        assertEquals("PatchPanel", providerConfig.selectedLLMProvider.first())
-        assertEquals("COST", providerConfig.costPreference.first())
-    }
+            assertEquals("Deepgram", providerConfig.selectedSTTProvider.first())
+            assertEquals("ElevenLabs", providerConfig.selectedTTSProvider.first())
+            assertEquals("PatchPanel", providerConfig.selectedLLMProvider.first())
+            assertEquals("QUALITY", providerConfig.costPreference.first())
+        }
 
     @Test
     @Ignore("Requires AndroidKeyStore - run as instrumentation test")
-    fun `OFFLINE preset configures correct providers`() = runTest {
-        providerConfig.applyPreset(ConfigurationPreset.OFFLINE)
+    fun `LOW_LATENCY preset configures correct providers`() =
+        runTest {
+            providerConfig.applyPreset(ConfigurationPreset.LOW_LATENCY)
 
-        assertEquals("Android", providerConfig.selectedSTTProvider.first())
-        assertEquals("Android", providerConfig.selectedTTSProvider.first())
-        assertEquals("OnDevice", providerConfig.selectedLLMProvider.first())
-        assertEquals("COST", providerConfig.costPreference.first())
-    }
+            assertEquals("Deepgram", providerConfig.selectedSTTProvider.first())
+            assertEquals("ElevenLabs", providerConfig.selectedTTSProvider.first())
+            assertEquals("OpenAI", providerConfig.selectedLLMProvider.first())
+            assertEquals("QUALITY", providerConfig.costPreference.first())
+        }
+
+    @Test
+    @Ignore("Requires AndroidKeyStore - run as instrumentation test")
+    fun `COST_OPTIMIZED preset configures correct providers`() =
+        runTest {
+            providerConfig.applyPreset(ConfigurationPreset.COST_OPTIMIZED)
+
+            assertEquals("Android", providerConfig.selectedSTTProvider.first())
+            assertEquals("Android", providerConfig.selectedTTSProvider.first())
+            assertEquals("PatchPanel", providerConfig.selectedLLMProvider.first())
+            assertEquals("COST", providerConfig.costPreference.first())
+        }
+
+    @Test
+    @Ignore("Requires AndroidKeyStore - run as instrumentation test")
+    fun `OFFLINE preset configures correct providers`() =
+        runTest {
+            providerConfig.applyPreset(ConfigurationPreset.OFFLINE)
+
+            assertEquals("Android", providerConfig.selectedSTTProvider.first())
+            assertEquals("Android", providerConfig.selectedTTSProvider.first())
+            assertEquals("OnDevice", providerConfig.selectedLLMProvider.first())
+            assertEquals("COST", providerConfig.costPreference.first())
+        }
 
     @Test
     @Ignore("Requires AndroidKeyStore and single DataStore instance - run as instrumentation test")
-    fun `configuration preset persists across instances`() = runTest {
-        providerConfig.applyPreset(ConfigurationPreset.LOW_LATENCY)
+    fun `configuration preset persists across instances`() =
+        runTest {
+            providerConfig.applyPreset(ConfigurationPreset.LOW_LATENCY)
 
-        // Create new instance with same context
-        val newConfig = ProviderConfig(context)
-        val preset = newConfig.configurationPreset.first()
+            // Create new instance with same context
+            val newConfig = ProviderConfig(context)
+            val preset = newConfig.configurationPreset.first()
 
-        assertEquals(ConfigurationPreset.LOW_LATENCY, preset)
-    }
+            assertEquals(ConfigurationPreset.LOW_LATENCY, preset)
+        }
 
     @Test
     @Ignore("Requires AndroidKeyStore - run as instrumentation test")

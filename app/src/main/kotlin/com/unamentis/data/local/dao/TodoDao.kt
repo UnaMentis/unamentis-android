@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.Flow
  */
 @Dao
 interface TodoDao {
-
     /**
      * Get all todos as a Flow.
      */

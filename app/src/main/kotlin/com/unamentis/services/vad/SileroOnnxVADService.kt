@@ -24,9 +24,8 @@ import java.nio.FloatBuffer
  */
 class SileroOnnxVADService(
     private val context: Context,
-    private val threshold: Float = 0.5f
+    private val threshold: Float = 0.5f,
 ) : VADService {
-
     private var ortEnvironment: OrtEnvironment? = null
     private var ortSession: OrtSession? = null
 
@@ -66,12 +65,13 @@ class SileroOnnxVADService(
             val modelBytes = context.assets.open(MODEL_FILENAME).use { it.readBytes() }
 
             // Create session options
-            val sessionOptions = OrtSession.SessionOptions().apply {
-                // Enable optimizations
-                setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT)
-                // Use single thread for inference (VAD is lightweight)
-                setIntraOpNumThreads(1)
-            }
+            val sessionOptions =
+                OrtSession.SessionOptions().apply {
+                    // Enable optimizations
+                    setOptimizationLevel(OrtSession.SessionOptions.OptLevel.ALL_OPT)
+                    // Use single thread for inference (VAD is lightweight)
+                    setIntraOpNumThreads(1)
+                }
 
             ortSession = ortEnvironment?.createSession(modelBytes, sessionOptions)
 
@@ -142,38 +142,45 @@ class SileroOnnxVADService(
     /**
      * Process a full 512-sample buffer through the VAD model.
      */
-    private fun processFullBuffer(session: OrtSession, env: OrtEnvironment): VADResult {
+    private fun processFullBuffer(
+        session: OrtSession,
+        env: OrtEnvironment,
+    ): VADResult {
         return try {
             // Prepare input tensors for Silero VAD v5
 
             // Audio input: shape [1, 512]
             val inputShape = longArrayOf(1, FRAME_SIZE.toLong())
-            val inputTensor = OnnxTensor.createTensor(
-                env,
-                FloatBuffer.wrap(audioBuffer),
-                inputShape
-            )
+            val inputTensor =
+                OnnxTensor.createTensor(
+                    env,
+                    FloatBuffer.wrap(audioBuffer),
+                    inputShape,
+                )
 
             // State tensor: shape [2, 1, 128]
             val stateShape = longArrayOf(2, 1, 128)
-            val stateTensor = OnnxTensor.createTensor(
-                env,
-                FloatBuffer.wrap(state),
-                stateShape
-            )
+            val stateTensor =
+                OnnxTensor.createTensor(
+                    env,
+                    FloatBuffer.wrap(state),
+                    stateShape,
+                )
 
             // Sample rate tensor: shape [1]
-            val srTensor = OnnxTensor.createTensor(
-                env,
-                longArrayOf(sampleRate)
-            )
+            val srTensor =
+                OnnxTensor.createTensor(
+                    env,
+                    longArrayOf(sampleRate),
+                )
 
             // Run inference with correct input names for v5
-            val inputs = mapOf(
-                "input" to inputTensor,
-                "state" to stateTensor,
-                "sr" to srTensor
-            )
+            val inputs =
+                mapOf(
+                    "input" to inputTensor,
+                    "state" to stateTensor,
+                    "sr" to srTensor,
+                )
 
             val results = session.run(inputs)
 
@@ -201,7 +208,7 @@ class SileroOnnxVADService(
             }
             VADResult(
                 isSpeech = isSpeech,
-                confidence = probability
+                confidence = probability,
             )
         } catch (e: Exception) {
             android.util.Log.e(TAG, "Inference failed", e)

@@ -13,21 +13,21 @@ import org.junit.Test
  * Tests todo CRUD operations, filtering, and context resume functionality.
  */
 class TodoScreenTest {
-
     @get:Rule
     val composeTestRule = createComposeRule()
 
-    private val testTodo = Todo(
-        id = "todo-1",
-        title = "Review Newton's Laws",
-        description = "Go over the three laws of motion",
-        isCompleted = false,
-        isArchived = false,
-        context = "Discussed in session session-42",
-        sessionId = "session-42",
-        createdAt = System.currentTimeMillis(),
-        completedAt = null
-    )
+    private val testTodo =
+        Todo(
+            id = "todo-1",
+            title = "Review Newton's Laws",
+            description = "Go over the three laws of motion",
+            isCompleted = false,
+            isArchived = false,
+            context = "Discussed in session session-42",
+            sessionId = "session-42",
+            createdAt = System.currentTimeMillis(),
+            completedAt = null,
+        )
 
     @Test
     fun todoScreen_initialState_displaysFilterTabs() {
@@ -75,12 +75,13 @@ class TodoScreenTest {
     @Test
     fun todoScreen_completedTab_showsOnlyCompleted() {
         val active = testTodo.copy(isCompleted = false)
-        val completed = testTodo.copy(
-            id = "todo-2",
-            title = "Practice kinematics",
-            isCompleted = true,
-            completedAt = System.currentTimeMillis()
-        )
+        val completed =
+            testTodo.copy(
+                id = "todo-2",
+                title = "Practice kinematics",
+                isCompleted = true,
+                completedAt = System.currentTimeMillis(),
+            )
         val todos = listOf(active, completed)
 
         composeTestRule.setContent {
@@ -100,11 +101,12 @@ class TodoScreenTest {
     @Test
     fun todoScreen_archivedTab_showsOnlyArchived() {
         val active = testTodo.copy(isArchived = false)
-        val archived = testTodo.copy(
-            id = "todo-2",
-            title = "Old assignment",
-            isArchived = true
-        )
+        val archived =
+            testTodo.copy(
+                id = "todo-2",
+                title = "Old assignment",
+                isArchived = true,
+            )
         val todos = listOf(active, archived)
 
         composeTestRule.setContent {
@@ -146,7 +148,7 @@ class TodoScreenTest {
             UnaMentisTheme {
                 AddTodoSheet(
                     onSave = { todoCreated = true },
-                    onDismiss = {}
+                    onDismiss = {},
                 )
             }
         }
@@ -175,7 +177,7 @@ class TodoScreenTest {
             UnaMentisTheme {
                 TodoScreen(
                     todos = todos,
-                    onEdit = { todoUpdated = true }
+                    onEdit = { todoUpdated = true },
                 )
             }
         }
@@ -205,7 +207,7 @@ class TodoScreenTest {
             UnaMentisTheme {
                 TodoScreen(
                     todos = todos,
-                    onToggleComplete = { completionToggled = true }
+                    onToggleComplete = { completionToggled = true },
                 )
             }
         }
@@ -226,7 +228,7 @@ class TodoScreenTest {
             UnaMentisTheme {
                 TodoScreen(
                     todos = todos,
-                    onDelete = { deleteConfirmed = true }
+                    onDelete = { deleteConfirmed = true },
                 )
             }
         }
@@ -251,7 +253,7 @@ class TodoScreenTest {
             UnaMentisTheme {
                 TodoScreen(
                     todos = todos,
-                    onArchive = { archiveTriggered = true }
+                    onArchive = { archiveTriggered = true },
                 )
             }
         }
@@ -276,7 +278,7 @@ class TodoScreenTest {
             UnaMentisTheme {
                 TodoScreen(
                     todos = todos,
-                    onResumeContext = { resumeTriggered = true }
+                    onResumeContext = { resumeTriggered = true },
                 )
             }
         }
@@ -303,13 +305,14 @@ class TodoScreenTest {
 
     @Test
     fun todoScreen_search_filtersTodosByTitle() {
-        val todos = listOf(
-            testTodo,
-            testTodo.copy(
-                id = "todo-2",
-                title = "Study thermodynamics"
+        val todos =
+            listOf(
+                testTodo,
+                testTodo.copy(
+                    id = "todo-2",
+                    title = "Study thermodynamics",
+                ),
             )
-        )
 
         composeTestRule.setContent {
             UnaMentisTheme {
@@ -335,7 +338,7 @@ class TodoScreenTest {
             UnaMentisTheme {
                 TodoScreen(
                     todos = todos,
-                    onSortChange = { sortChanged = true }
+                    onSortChange = { sortChanged = true },
                 )
             }
         }
@@ -358,7 +361,7 @@ class TodoScreenTest {
             UnaMentisTheme {
                 AddTodoSheet(
                     onSave = { todoCreated = true },
-                    onDismiss = {}
+                    onDismiss = {},
                 )
             }
         }
@@ -373,11 +376,12 @@ class TodoScreenTest {
 
     @Test
     fun todoScreen_completedCount_showsProgress() {
-        val todos = listOf(
-            testTodo.copy(id = "1", isCompleted = true),
-            testTodo.copy(id = "2", isCompleted = true),
-            testTodo.copy(id = "3", isCompleted = false)
-        )
+        val todos =
+            listOf(
+                testTodo.copy(id = "1", isCompleted = true),
+                testTodo.copy(id = "2", isCompleted = true),
+                testTodo.copy(id = "3", isCompleted = false),
+            )
 
         composeTestRule.setContent {
             UnaMentisTheme {
@@ -392,15 +396,16 @@ class TodoScreenTest {
     @Test
     fun todoScreen_bulkActions_selectMultiple() {
         var bulkActionTriggered = false
-        val todos = List(5) { index ->
-            testTodo.copy(id = "todo-$index", title = "Todo $index")
-        }
+        val todos =
+            List(5) { index ->
+                testTodo.copy(id = "todo-$index", title = "Todo $index")
+            }
 
         composeTestRule.setContent {
             UnaMentisTheme {
                 TodoScreen(
                     todos = todos,
-                    onBulkAction = { bulkActionTriggered = true }
+                    onBulkAction = { bulkActionTriggered = true },
                 )
             }
         }

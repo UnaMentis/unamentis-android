@@ -29,7 +29,7 @@ data class CurriculumSummary(
     val ageRange: String? = null,
     val keywords: List<String> = emptyList(),
     val hasVisualAssets: Boolean = false,
-    val visualAssetCount: Int = 0
+    val visualAssetCount: Int = 0,
 )
 
 /**
@@ -49,7 +49,7 @@ data class ClientHeartbeat(
     val appVersion: String,
     val status: String,
     val currentSessionId: String? = null,
-    val config: ClientConfig
+    val config: ClientConfig,
 )
 
 /**
@@ -63,7 +63,7 @@ data class ClientHeartbeat(
 data class ClientConfig(
     val sttProvider: String,
     val ttsProvider: String,
-    val llmProvider: String
+    val llmProvider: String,
 )
 
 /**
@@ -77,7 +77,7 @@ data class ClientConfig(
 data class HeartbeatResponse(
     val status: String,
     val serverTime: String,
-    val configUpdates: ClientConfig? = null
+    val configUpdates: ClientConfig? = null,
 )
 
 /**
@@ -101,7 +101,7 @@ data class LogEntry(
     val file: String = "",
     val function: String = "",
     val line: Int = 0,
-    val metadata: Map<String, String> = emptyMap()
+    val metadata: Map<String, String> = emptyMap(),
 )
 
 /**
@@ -128,7 +128,7 @@ data class MetricsUploadRequest(
     val llmCost: Double,
     val totalCost: Double,
     val thermalThrottleEvents: Int,
-    val networkDegradations: Int
+    val networkDegradations: Int,
 )
 
 /**
@@ -140,5 +140,5 @@ data class MetricsUploadRequest(
 @Serializable
 data class MetricsUploadResponse(
     val status: String,
-    val id: String? = null
+    val id: String? = null,
 )

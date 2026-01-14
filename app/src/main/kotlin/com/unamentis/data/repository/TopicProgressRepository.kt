@@ -19,65 +19,72 @@ import javax.inject.Singleton
  * @property topicProgressDao Room DAO for topic progress data
  */
 @Singleton
-class TopicProgressRepository @Inject constructor(
-    private val topicProgressDao: TopicProgressDao
-) {
+class TopicProgressRepository
+    @Inject
+    constructor(
+        private val topicProgressDao: TopicProgressDao,
+    ) {
+        /**
+         * Get progress for all topics in a curriculum.
+         */
+        fun getProgressByCurriculum(curriculumId: String): Flow<List<TopicProgress>> {
+            return topicProgressDao.getProgressByCurriculum(curriculumId).map { entities ->
+                entities.map { it.toModel() }
+            }
+        }
 
-    /**
-     * Get progress for all topics in a curriculum.
-     */
-    fun getProgressByCurriculum(curriculumId: String): Flow<List<TopicProgress>> {
-        return topicProgressDao.getProgressByCurriculum(curriculumId).map { entities ->
-            entities.map { it.toModel() }
+        /**
+         * Get progress for a specific topic.
+         */
+        suspend fun getProgressByTopic(topicId: String): TopicProgress? {
+            return topicProgressDao.getProgressByTopic(topicId)?.toModel()
+        }
+
+        /**
+         * Save or update topic progress.
+         */
+        suspend fun saveProgress(progress: TopicProgress) {
+            topicProgressDao.insertProgress(progress.toEntity())
+        }
+
+        /**
+         * Update time spent on a topic.
+         */
+        suspend fun updateTimeSpent(
+            topicId: String,
+            additionalSeconds: Long,
+        ) {
+            topicProgressDao.updateTimeSpent(
+                topicId = topicId,
+                additionalSeconds = additionalSeconds,
+                timestamp = System.currentTimeMillis(),
+            )
+        }
+
+        /**
+         * Update mastery level for a topic.
+         */
+        suspend fun updateMasteryLevel(
+            topicId: String,
+            masteryLevel: Float,
+        ) {
+            topicProgressDao.updateMasteryLevel(topicId, masteryLevel.coerceIn(0f, 1f))
+        }
+
+        /**
+         * Delete progress for a topic.
+         */
+        suspend fun deleteProgress(topicId: String) {
+            topicProgressDao.deleteProgress(topicId)
+        }
+
+        /**
+         * Delete all progress.
+         */
+        suspend fun deleteAllProgress() {
+            topicProgressDao.deleteAllProgress()
         }
     }
-
-    /**
-     * Get progress for a specific topic.
-     */
-    suspend fun getProgressByTopic(topicId: String): TopicProgress? {
-        return topicProgressDao.getProgressByTopic(topicId)?.toModel()
-    }
-
-    /**
-     * Save or update topic progress.
-     */
-    suspend fun saveProgress(progress: TopicProgress) {
-        topicProgressDao.insertProgress(progress.toEntity())
-    }
-
-    /**
-     * Update time spent on a topic.
-     */
-    suspend fun updateTimeSpent(topicId: String, additionalSeconds: Long) {
-        topicProgressDao.updateTimeSpent(
-            topicId = topicId,
-            additionalSeconds = additionalSeconds,
-            timestamp = System.currentTimeMillis()
-        )
-    }
-
-    /**
-     * Update mastery level for a topic.
-     */
-    suspend fun updateMasteryLevel(topicId: String, masteryLevel: Float) {
-        topicProgressDao.updateMasteryLevel(topicId, masteryLevel.coerceIn(0f, 1f))
-    }
-
-    /**
-     * Delete progress for a topic.
-     */
-    suspend fun deleteProgress(topicId: String) {
-        topicProgressDao.deleteProgress(topicId)
-    }
-
-    /**
-     * Delete all progress.
-     */
-    suspend fun deleteAllProgress() {
-        topicProgressDao.deleteAllProgress()
-    }
-}
 
 /**
  * Extension: Convert TopicProgressEntity to model.
@@ -90,7 +97,7 @@ private fun TopicProgressEntity.toModel(): TopicProgress {
         masteryLevel = masteryLevel,
         lastAccessedAt = lastAccessedAt,
         completedSegments = completedSegments,
-        currentSegmentId = currentSegmentId
+        currentSegmentId = currentSegmentId,
     )
 }
 
@@ -105,6 +112,6 @@ private fun TopicProgress.toEntity(): TopicProgressEntity {
         masteryLevel = masteryLevel,
         lastAccessedAt = lastAccessedAt,
         completedSegments = completedSegments,
-        currentSegmentId = currentSegmentId
+        currentSegmentId = currentSegmentId,
     )
 }

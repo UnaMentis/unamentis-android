@@ -26,7 +26,6 @@ import kotlinx.coroutines.flow.map
  * @property context Application context
  */
 class ProviderConfig(private val context: Context) {
-
     // DataStore for non-sensitive preferences
     private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "provider_config")
 
@@ -37,16 +36,17 @@ class ProviderConfig(private val context: Context) {
 
     // EncryptedSharedPreferences for API keys
     private val encryptedPrefs by lazy {
-        val masterKey = MasterKey.Builder(context)
-            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-            .build()
+        val masterKey =
+            MasterKey.Builder(context)
+                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                .build()
 
         EncryptedSharedPreferences.create(
             context,
             "api_keys",
             masterKey,
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM,
         )
     }
 
@@ -73,24 +73,27 @@ class ProviderConfig(private val context: Context) {
      * Get selected STT provider name (as Flow for reactive updates).
      * Defaults to "Android" for free on-device recognition.
      */
-    val selectedSTTProvider: Flow<String> = context.dataStore.data.map { prefs ->
-        prefs[PreferenceKeys.SELECTED_STT_PROVIDER] ?: "Android"
-    }
+    val selectedSTTProvider: Flow<String> =
+        context.dataStore.data.map { prefs ->
+            prefs[PreferenceKeys.SELECTED_STT_PROVIDER] ?: "Android"
+        }
 
     /**
      * Get selected TTS provider name (as Flow for reactive updates).
      * Defaults to "Android" for free on-device speech synthesis.
      */
-    val selectedTTSProvider: Flow<String> = context.dataStore.data.map { prefs ->
-        prefs[PreferenceKeys.SELECTED_TTS_PROVIDER] ?: "Android"
-    }
+    val selectedTTSProvider: Flow<String> =
+        context.dataStore.data.map { prefs ->
+            prefs[PreferenceKeys.SELECTED_TTS_PROVIDER] ?: "Android"
+        }
 
     /**
      * Get selected LLM provider name (as Flow for reactive updates).
      */
-    val selectedLLMProvider: Flow<String> = context.dataStore.data.map { prefs ->
-        prefs[PreferenceKeys.SELECTED_LLM_PROVIDER] ?: "PatchPanel"
-    }
+    val selectedLLMProvider: Flow<String> =
+        context.dataStore.data.map { prefs ->
+            prefs[PreferenceKeys.SELECTED_LLM_PROVIDER] ?: "PatchPanel"
+        }
 
     // Synchronous getters for Hilt dependency injection
     // These use SharedPreferences directly for synchronous access
@@ -121,22 +124,24 @@ class ProviderConfig(private val context: Context) {
     /**
      * Get cost preference.
      */
-    val costPreference: Flow<String> = context.dataStore.data.map { prefs ->
-        prefs[PreferenceKeys.COST_PREFERENCE] ?: "BALANCED"
-    }
+    val costPreference: Flow<String> =
+        context.dataStore.data.map { prefs ->
+            prefs[PreferenceKeys.COST_PREFERENCE] ?: "BALANCED"
+        }
 
     /**
      * Get configuration preset.
      */
-    val configurationPreset: Flow<ConfigurationPreset> = context.dataStore.data.map { prefs ->
-        val presetName = prefs[PreferenceKeys.CONFIGURATION_PRESET] ?: "FREE"
-        try {
-            ConfigurationPreset.valueOf(presetName)
-        } catch (e: IllegalArgumentException) {
-            // Handle old preset names (e.g., "BALANCED" -> "FREE")
-            ConfigurationPreset.FREE
+    val configurationPreset: Flow<ConfigurationPreset> =
+        context.dataStore.data.map { prefs ->
+            val presetName = prefs[PreferenceKeys.CONFIGURATION_PRESET] ?: "FREE"
+            try {
+                ConfigurationPreset.valueOf(presetName)
+            } catch (e: IllegalArgumentException) {
+                // Handle old preset names (e.g., "BALANCED" -> "FREE")
+                ConfigurationPreset.FREE
+            }
         }
-    }
 
     /**
      * Set selected STT provider.
@@ -310,36 +315,36 @@ enum class ConfigurationPreset(
     val sttProvider: String,
     val ttsProvider: String,
     val llmProvider: String,
-    val costPreference: String
+    val costPreference: String,
 ) {
     FREE(
         sttProvider = "Android",
         ttsProvider = "Android",
         llmProvider = "PatchPanel",
-        costPreference = "COST"
+        costPreference = "COST",
     ),
     PREMIUM(
         sttProvider = "Deepgram",
         ttsProvider = "ElevenLabs",
         llmProvider = "PatchPanel",
-        costPreference = "QUALITY"
+        costPreference = "QUALITY",
     ),
     LOW_LATENCY(
         sttProvider = "Deepgram",
         ttsProvider = "ElevenLabs",
         llmProvider = "OpenAI",
-        costPreference = "QUALITY"
+        costPreference = "QUALITY",
     ),
     COST_OPTIMIZED(
         sttProvider = "Android",
         ttsProvider = "Android",
         llmProvider = "PatchPanel",
-        costPreference = "COST"
+        costPreference = "COST",
     ),
     OFFLINE(
         sttProvider = "Android",
         ttsProvider = "Android",
         llmProvider = "OnDevice",
-        costPreference = "COST"
-    )
+        costPreference = "COST",
+    ),
 }
