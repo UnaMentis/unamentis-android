@@ -12,6 +12,12 @@
         "-jar",
         "/Users/cygoerdt/mcp-servers/gradle-mcp-server/gradle-mcp-server-all.jar"
       ]
+    },
+    "slack": {
+      "command": "./scripts/mcp-slack.sh"
+    },
+    "trello": {
+      "command": "./scripts/mcp-trello.sh"
     }
   }
 }
