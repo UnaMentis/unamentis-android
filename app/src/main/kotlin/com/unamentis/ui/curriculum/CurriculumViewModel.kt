@@ -3,9 +3,16 @@ package com.unamentis.ui.curriculum
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.unamentis.data.model.Curriculum
+import com.unamentis.data.remote.CurriculumSummary
+import com.unamentis.data.repository.ConnectionState
 import com.unamentis.data.repository.CurriculumRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -17,6 +24,12 @@ import javax.inject.Inject
  * - Handle curriculum downloads with progress tracking
  * - Manage search and filtering
  * - Expose curriculum state to UI
+ * - Handle server connection state
+ *
+ * Server connectivity:
+ * - Connects to management console on port 8766 (same as iOS app)
+ * - Shows connection status to user
+ * - Gracefully handles server unavailability
  *
  * @property curriculumRepository Repository for curriculum data
  */
@@ -39,16 +52,19 @@ class CurriculumViewModel
         val selectedTab: StateFlow<CurriculumTab> = _selectedTab.asStateFlow()
 
         /**
-         * Loading state.
+         * Loading state (from repository).
          */
-        private val _isLoading = MutableStateFlow(false)
-        val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+        val isLoading: StateFlow<Boolean> = curriculumRepository.isLoading
 
         /**
-         * Error state.
+         * Error state (from repository).
          */
-        private val _error = MutableStateFlow<String?>(null)
-        val error: StateFlow<String?> = _error.asStateFlow()
+        val error: StateFlow<String?> = curriculumRepository.lastError
+
+        /**
+         * Connection state (from repository).
+         */
+        val connectionState: StateFlow<ConnectionState> = curriculumRepository.connectionState
 
         /**
          * Download progress by curriculum ID (0.0 to 1.0).
@@ -57,19 +73,13 @@ class CurriculumViewModel
         val downloadProgress: StateFlow<Map<String, Float>> = _downloadProgress.asStateFlow()
 
         /**
-         * Server curricula list.
+         * Server curricula summaries (available for download).
          */
-        private val serverCurricula: StateFlow<List<Curriculum>> =
-            curriculumRepository
-                .getServerCurricula()
-                .stateIn(
-                    scope = viewModelScope,
-                    started = SharingStarted.WhileSubscribed(5000),
-                    initialValue = emptyList(),
-                )
+        val serverCurriculaSummaries: StateFlow<List<CurriculumSummary>> =
+            curriculumRepository.serverCurriculaSummaries
 
         /**
-         * Local curricula list.
+         * Local curricula list (downloaded).
          */
         private val localCurricula: StateFlow<List<Curriculum>> =
             curriculumRepository
@@ -82,22 +92,20 @@ class CurriculumViewModel
 
         /**
          * Combined UI state.
-         * Using nested combines since Kotlin Flow only supports up to 5 arguments.
          */
         val uiState: StateFlow<CurriculumUiState> =
             combine(
-                combine(selectedTab, serverCurricula, localCurricula) { tab, server, local ->
+                combine(selectedTab, serverCurriculaSummaries, localCurricula) { tab, server, local ->
                     Triple(tab, server, local)
                 },
                 combine(searchQuery, isLoading, error, downloadProgress) { query, loading, errorMsg, progress ->
                     CurriculumUiStatePartial(query, loading, errorMsg, progress)
                 },
-            ) { (tab, server, local), partial ->
-                val displayedCurricula =
-                    when (tab) {
-                        CurriculumTab.SERVER -> server
-                        CurriculumTab.LOCAL -> local
-                    }.filter { curriculum ->
+                connectionState,
+            ) { (tab, serverSummaries, local), partial, connState ->
+                // Filter local curricula by search
+                val filteredLocal =
+                    local.filter { curriculum ->
                         if (partial.searchQuery.isBlank()) {
                             true
                         } else {
@@ -106,13 +114,31 @@ class CurriculumViewModel
                         }
                     }
 
+                // Filter server summaries by search
+                val filteredServer =
+                    serverSummaries.filter { summary ->
+                        if (partial.searchQuery.isBlank()) {
+                            true
+                        } else {
+                            summary.title.contains(partial.searchQuery, ignoreCase = true) ||
+                                summary.description.contains(partial.searchQuery, ignoreCase = true) ||
+                                summary.keywords.any { it.contains(partial.searchQuery, ignoreCase = true) }
+                        }
+                    }
+
+                // Get IDs of locally downloaded curricula
+                val downloadedIds = local.map { it.id }.toSet()
+
                 CurriculumUiState(
                     selectedTab = tab,
-                    curricula = displayedCurricula,
+                    serverCurricula = filteredServer,
+                    localCurricula = filteredLocal,
+                    downloadedCurriculumIds = downloadedIds,
                     searchQuery = partial.searchQuery,
                     isLoading = partial.isLoading,
                     error = partial.error,
                     downloadProgress = partial.downloadProgress,
+                    connectionState = connState,
                 )
             }.stateIn(
                 scope = viewModelScope,
@@ -131,24 +157,35 @@ class CurriculumViewModel
         )
 
         /**
-         * Refresh curriculum lists.
+         * Refresh curriculum lists from server.
+         *
+         * Fetches available curricula from the management console.
+         * If the server is not running, shows an appropriate error message.
          */
         fun refresh() {
             viewModelScope.launch {
-                _isLoading.value = true
-                _error.value = null
-                try {
-                    curriculumRepository.refreshCurricula()
-                } catch (e: Exception) {
-                    _error.value = "Failed to refresh: ${e.message}"
-                } finally {
-                    _isLoading.value = false
-                }
+                curriculumRepository.refreshCurricula()
+            }
+        }
+
+        /**
+         * Check server connection.
+         *
+         * Verifies connectivity to the management console.
+         */
+        fun checkConnection() {
+            viewModelScope.launch {
+                curriculumRepository.checkServerConnection()
             }
         }
 
         /**
          * Download a curriculum from server.
+         *
+         * Fetches the full curriculum content from the management console
+         * and saves it to local storage.
+         *
+         * @param curriculumId The curriculum ID to download
          */
         fun downloadCurriculum(curriculumId: String) {
             viewModelScope.launch {
@@ -163,7 +200,6 @@ class CurriculumViewModel
                             }
                         }
                 } catch (e: Exception) {
-                    _error.value = "Download failed: ${e.message}"
                     _downloadProgress.value = _downloadProgress.value - curriculumId
                 }
             }
@@ -174,11 +210,7 @@ class CurriculumViewModel
          */
         fun deleteCurriculum(curriculumId: String) {
             viewModelScope.launch {
-                try {
-                    curriculumRepository.deleteCurriculum(curriculumId)
-                } catch (e: Exception) {
-                    _error.value = "Delete failed: ${e.message}"
-                }
+                curriculumRepository.deleteCurriculum(curriculumId)
             }
         }
 
@@ -200,11 +232,11 @@ class CurriculumViewModel
          * Clear error message.
          */
         fun clearError() {
-            _error.value = null
+            curriculumRepository.clearError()
         }
 
         init {
-            // Auto-refresh on initialization
+            // Auto-refresh on initialization (will show error if server not running)
             refresh()
         }
     }
@@ -213,7 +245,10 @@ class CurriculumViewModel
  * Curriculum tab selection.
  */
 enum class CurriculumTab {
+    /** Server tab - shows curricula available for download */
     SERVER,
+
+    /** Local tab - shows downloaded curricula */
     LOCAL,
 }
 
@@ -222,9 +257,45 @@ enum class CurriculumTab {
  */
 data class CurriculumUiState(
     val selectedTab: CurriculumTab = CurriculumTab.SERVER,
-    val curricula: List<Curriculum> = emptyList(),
+    val serverCurricula: List<CurriculumSummary> = emptyList(),
+    val localCurricula: List<Curriculum> = emptyList(),
+    val downloadedCurriculumIds: Set<String> = emptySet(),
     val searchQuery: String = "",
     val isLoading: Boolean = false,
     val error: String? = null,
     val downloadProgress: Map<String, Float> = emptyMap(),
-)
+    val connectionState: ConnectionState = ConnectionState.Unknown,
+) {
+    /**
+     * Check if a curriculum is already downloaded.
+     */
+    fun isDownloaded(curriculumId: String): Boolean = curriculumId in downloadedCurriculumIds
+
+    /**
+     * Check if a curriculum is currently downloading.
+     */
+    fun isDownloading(curriculumId: String): Boolean = curriculumId in downloadProgress
+
+    /**
+     * Get download progress for a curriculum (0.0 to 1.0).
+     */
+    fun getProgress(curriculumId: String): Float = downloadProgress[curriculumId] ?: 0f
+
+    /**
+     * Check if server is connected.
+     */
+    val isServerConnected: Boolean
+        get() = connectionState is ConnectionState.Connected
+
+    /**
+     * Check if server connection failed.
+     */
+    val isServerFailed: Boolean
+        get() = connectionState is ConnectionState.Failed
+
+    /**
+     * Get server connection error message.
+     */
+    val serverErrorMessage: String?
+        get() = (connectionState as? ConnectionState.Failed)?.message
+}

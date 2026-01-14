@@ -1,11 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Launcher icon background color -->
-    <color name="ic_launcher_background">#1976D2</color>
+    <!-- Launcher icon background color (white to match iOS app icon) -->
+    <color name="ic_launcher_background">#FFFFFF</color>
 
-    <!-- Primary brand colors -->
-    <color name="primary">#1976D2</color>
-    <color name="primary_dark">#1565C0</color>
-    <color name="primary_light">#42A5F5</color>
-    <color name="accent">#FF6D00</color>
+    <!-- Brand colors (from iOS logo) -->
+    <color name="brand_navy_dark">#1E3A5F</color>
+    <color name="brand_navy">#003D7A</color>
+    <color name="brand_teal">#00A884</color>
+    <color name="brand_teal_light">#4DB6AC</color>
+    <color name="brand_cyan_light">#B2EBF2</color>
+
+    <!-- Primary brand colors (for legacy XML layouts) -->
+    <color name="primary">#003D7A</color>
+    <color name="primary_dark">#1E3A5F</color>
+    <color name="primary_light">#00A884</color>
+    <color name="accent">#00A884</color>
+
+    <!-- iOS System colors (for feature parity) -->
+    <color name="ios_blue">#007AFF</color>
+    <color name="ios_green">#34C759</color>
+    <color name="ios_red">#FF3B30</color>
+    <color name="ios_orange">#FF9500</color>
+    <color name="ios_purple">#A855F7</color>
+    <color name="ios_gray">#8E8E93</color>
+    <color name="ios_gray6">#F2F2F7</color>
+
+    <!-- Semantic colors -->
+    <color name="success">#34C759</color>
+    <color name="warning">#FF9500</color>
+    <color name="error">#FF3B30</color>
+    <color name="info">#007AFF</color>
 </resources>

@@ -8,6 +8,10 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
 private val LightColorScheme =
@@ -77,16 +81,90 @@ private val DarkColorScheme =
     )
 
 /**
+ * Extended colors for UnaMentis app, matching iOS semantic colors.
+ *
+ * These colors provide semantic meaning beyond Material 3's color scheme,
+ * ensuring visual parity with the iOS app.
+ */
+@Immutable
+data class ExtendedColors(
+    // Brand colors
+    val brandNavy: Color = BrandNavy,
+    val brandNavyDark: Color = BrandNavyDark,
+    val brandTeal: Color = BrandTeal,
+    val brandTealLight: Color = BrandTealLight,
+    val brandCyanLight: Color = BrandCyanLight,
+
+    // Semantic status colors (matching iOS)
+    val success: Color = SuccessGreen,
+    val warning: Color = WarningOrange,
+    val info: Color = InfoBlue,
+    val destructive: Color = DestructiveRed,
+    val accent: Color = AccentPurple,
+
+    // Session control colors (matching iOS SessionControlComponents.swift)
+    val sessionStop: Color = SessionStopRed,
+    val sessionStopLight: Color = SessionStopRedLight,
+    val sessionStopMedium: Color = SessionStopRedMedium,
+    val sessionPause: Color = SessionPauseBlue,
+    val sessionPauseLight: Color = SessionPauseBlueLight,
+    val mutedLight: Color = MutedRedLight,
+
+    // Status indicator colors (matching iOS)
+    val statusCompleted: Color = StatusCompleted,
+    val statusPending: Color = StatusPending,
+    val statusInProgress: Color = StatusInProgress,
+    val statusFailed: Color = StatusFailed,
+
+    // Speech detection colors (matching iOS)
+    val speechDetected: Color = SpeechDetectedColor,
+    val noSpeech: Color = NoSpeechColor,
+
+    // Transcript bubble colors
+    val userBubble: Color = UserBubbleLight,
+    val assistantBubble: Color = AssistantBubbleLight,
+
+    // Audio visualization colors
+    val audioLevelLow: Color = AudioLevelLow,
+    val audioLevelMedium: Color = AudioLevelMedium,
+    val audioLevelHigh: Color = AudioLevelHigh,
+
+    // Onboarding colors (matching iOS OnboardingView.swift)
+    val onboardingWelcome: Color = OnboardingWelcome,
+    val onboardingCurriculum: Color = OnboardingCurriculum,
+    val onboardingOffline: Color = OnboardingOffline,
+    val onboardingHandsFree: Color = OnboardingHandsFree,
+)
+
+private val LightExtendedColors = ExtendedColors(
+    userBubble = UserBubbleLight,
+    assistantBubble = AssistantBubbleLight,
+)
+
+private val DarkExtendedColors = ExtendedColors(
+    userBubble = UserBubbleDark,
+    assistantBubble = AssistantBubbleDark,
+)
+
+val LocalExtendedColors = staticCompositionLocalOf { ExtendedColors() }
+
+/**
  * UnaMentis theme with support for light/dark modes and dynamic colors (Android 12+).
  *
+ * This theme provides:
+ * - Material 3 color scheme with brand colors
+ * - Extended semantic colors matching iOS for visual parity
+ * - Optional dynamic colors from system wallpaper (Android 12+)
+ *
  * @param darkTheme Whether to use dark theme colors
- * @param dynamicColor Whether to use dynamic colors from the system (Android 12+ only)
+ * @param dynamicColor Whether to use dynamic colors from the system (Android 12+ only).
+ *                     Set to false to always use UnaMentis brand colors.
  * @param content The composable content to apply the theme to
  */
 @Composable
 fun UnaMentisTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false, // Default to brand colors for consistency with iOS
     content: @Composable () -> Unit,
 ) {
     val colorScheme =
@@ -99,9 +177,26 @@ fun UnaMentisTheme(
             else -> LightColorScheme
         }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content,
-    )
+    val extendedColors = if (darkTheme) DarkExtendedColors else LightExtendedColors
+
+    CompositionLocalProvider(LocalExtendedColors provides extendedColors) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = Typography,
+            content = content,
+        )
+    }
 }
+
+/**
+ * Access extended colors from within a composable.
+ *
+ * Usage:
+ * ```kotlin
+ * val extendedColors = MaterialTheme.extendedColors
+ * Box(modifier = Modifier.background(extendedColors.success))
+ * ```
+ */
+val MaterialTheme.extendedColors: ExtendedColors
+    @Composable
+    get() = LocalExtendedColors.current

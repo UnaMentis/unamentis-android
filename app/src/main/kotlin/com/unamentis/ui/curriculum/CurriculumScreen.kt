@@ -1,12 +1,54 @@
 package com.unamentis.ui.curriculum
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Cloud
+import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -15,6 +57,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.unamentis.data.model.Curriculum
 import com.unamentis.data.model.Topic
+import com.unamentis.data.remote.CurriculumSummary
+import com.unamentis.data.repository.ConnectionState
 
 /**
  * Curriculum screen - Browse and download curricula.
@@ -24,13 +68,13 @@ import com.unamentis.data.model.Topic
  * - Search and filtering
  * - Download management with progress
  * - Curriculum detail view with topics
+ * - Server connection status display
  * - Adaptive layout for phone vs tablet
  *
- * Layout:
- * - Top bar with search
- * - Tab row (Server/Local)
- * - Curriculum list or detail view
- * - Pull-to-refresh
+ * Server connectivity:
+ * - Connects to management console on port 8766 (same as iOS app)
+ * - Shows connection status in UI
+ * - Gracefully handles server unavailability
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -71,6 +115,14 @@ fun CurriculumScreen(
                 )
             }
 
+            // Connection status banner (for server tab)
+            if (uiState.selectedTab == CurriculumTab.SERVER) {
+                ConnectionStatusBanner(
+                    connectionState = uiState.connectionState,
+                    onRetry = { viewModel.refresh() },
+                )
+            }
+
             // Error display
             if (uiState.error != null) {
                 ErrorBanner(
@@ -81,7 +133,7 @@ fun CurriculumScreen(
 
             // Content
             if (selectedCurriculum != null) {
-                // Detail view
+                // Detail view (for local curricula)
                 CurriculumDetailView(
                     curriculum = selectedCurriculum!!,
                     onBack = { selectedCurriculum = null },
@@ -90,14 +142,23 @@ fun CurriculumScreen(
                     },
                 )
             } else {
-                // List view
-                CurriculumListView(
-                    uiState = uiState,
-                    onCurriculumClick = { selectedCurriculum = it },
-                    onDownload = { viewModel.downloadCurriculum(it.id) },
-                    onDelete = { viewModel.deleteCurriculum(it.id) },
-                    onRefresh = { viewModel.refresh() },
-                )
+                // List view - different for server vs local
+                when (uiState.selectedTab) {
+                    CurriculumTab.SERVER -> {
+                        ServerCurriculaListView(
+                            uiState = uiState,
+                            onDownload = { viewModel.downloadCurriculum(it.id) },
+                            onRefresh = { viewModel.refresh() },
+                        )
+                    }
+                    CurriculumTab.LOCAL -> {
+                        LocalCurriculaListView(
+                            uiState = uiState,
+                            onCurriculumClick = { selectedCurriculum = it },
+                            onDelete = { viewModel.deleteCurriculum(it.id) },
+                        )
+                    }
+                }
             }
         }
     }
@@ -136,6 +197,98 @@ private fun CurriculumTopBar(
             )
         },
     )
+}
+
+/**
+ * Connection status banner for server tab.
+ */
+@Composable
+private fun ConnectionStatusBanner(
+    connectionState: ConnectionState,
+    onRetry: () -> Unit,
+) {
+    when (connectionState) {
+        is ConnectionState.Checking -> {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.surfaceVariant,
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp))
+                    Text(
+                        text = "Connecting to server...",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            }
+        }
+        is ConnectionState.Connected -> {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.primaryContainer,
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp),
+                    )
+                    Text(
+                        text = "Connected to management console",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    )
+                }
+            }
+        }
+        is ConnectionState.Failed -> {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.errorContainer,
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            Icons.Default.CloudOff,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(16.dp),
+                        )
+                        Text(
+                            text = connectionState.message,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                        )
+                    }
+                    TextButton(onClick = onRetry) {
+                        Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Retry")
+                    }
+                }
+            }
+        }
+        is ConnectionState.Unknown -> {
+            // Don't show anything
+        }
+    }
 }
 
 /**
@@ -179,17 +332,15 @@ private fun ErrorBanner(
 }
 
 /**
- * Curriculum list view with pull-to-refresh.
+ * Server curricula list view (shows CurriculumSummary items).
  */
 @Composable
-private fun CurriculumListView(
+private fun ServerCurriculaListView(
     uiState: CurriculumUiState,
-    onCurriculumClick: (Curriculum) -> Unit,
-    onDownload: (Curriculum) -> Unit,
-    onDelete: (Curriculum) -> Unit,
+    onDownload: (CurriculumSummary) -> Unit,
     onRefresh: () -> Unit,
 ) {
-    if (uiState.isLoading && uiState.curricula.isEmpty()) {
+    if (uiState.isLoading && uiState.serverCurricula.isEmpty()) {
         // Loading state
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -197,7 +348,7 @@ private fun CurriculumListView(
         ) {
             CircularProgressIndicator()
         }
-    } else if (uiState.curricula.isEmpty()) {
+    } else if (uiState.serverCurricula.isEmpty()) {
         // Empty state
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -208,50 +359,192 @@ private fun CurriculumListView(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Icon(
-                    imageVector =
-                        if (uiState.selectedTab == CurriculumTab.SERVER) {
-                            Icons.Default.Cloud
-                        } else {
-                            Icons.Default.Storage
-                        },
+                    imageVector = Icons.Default.Cloud,
                     contentDescription = null,
                     modifier = Modifier.size(64.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                 )
                 Text(
                     text =
-                        if (uiState.selectedTab == CurriculumTab.SERVER) {
-                            "No server curricula available"
+                        if (uiState.isServerFailed) {
+                            "Server not available"
                         } else {
-                            "No downloaded curricula"
+                            "No curricula available on server"
                         },
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                if (uiState.selectedTab == CurriculumTab.SERVER) {
-                    TextButton(onClick = onRefresh) {
-                        Text("Refresh")
-                    }
+                if (uiState.isServerFailed) {
+                    Text(
+                        text = "Start the management console on port 8766",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                TextButton(onClick = onRefresh) {
+                    Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Refresh")
                 }
             }
         }
     } else {
-        // Curriculum list
+        // Server curricula list
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             items(
-                items = uiState.curricula,
+                items = uiState.serverCurricula,
+                key = { it.id },
+            ) { summary ->
+                ServerCurriculumCard(
+                    summary = summary,
+                    isDownloaded = uiState.isDownloaded(summary.id),
+                    isDownloading = uiState.isDownloading(summary.id),
+                    downloadProgress = uiState.getProgress(summary.id),
+                    onDownload = { onDownload(summary) },
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Server curriculum card (from CurriculumSummary).
+ */
+@Composable
+private fun ServerCurriculumCard(
+    summary: CurriculumSummary,
+    isDownloaded: Boolean,
+    isDownloading: Boolean,
+    downloadProgress: Float,
+    onDownload: () -> Unit,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = summary.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        text = "${summary.topicCount} topics • v${summary.version}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
+                // Action button
+                when {
+                    isDownloading -> {
+                        CircularProgressIndicator(
+                            progress = { downloadProgress },
+                            modifier = Modifier.size(24.dp),
+                        )
+                    }
+                    isDownloaded -> {
+                        Icon(
+                            Icons.Default.CheckCircle,
+                            contentDescription = "Downloaded",
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                    else -> {
+                        IconButton(onClick = onDownload) {
+                            Icon(
+                                Icons.Default.Download,
+                                contentDescription = "Download",
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Description
+            if (summary.description.isNotBlank()) {
+                Text(
+                    text = summary.description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                )
+            }
+
+            // Download progress bar
+            if (isDownloading) {
+                LinearProgressIndicator(
+                    progress = { downloadProgress },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Local curricula list view (shows full Curriculum items).
+ */
+@Composable
+private fun LocalCurriculaListView(
+    uiState: CurriculumUiState,
+    onCurriculumClick: (Curriculum) -> Unit,
+    onDelete: (Curriculum) -> Unit,
+) {
+    if (uiState.localCurricula.isEmpty()) {
+        // Empty state
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Storage,
+                    contentDescription = null,
+                    modifier = Modifier.size(64.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                )
+                Text(
+                    text = "No downloaded curricula",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = "Download curricula from the Server tab",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    } else {
+        // Local curricula list
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            items(
+                items = uiState.localCurricula,
                 key = { it.id },
             ) { curriculum ->
-                CurriculumCard(
+                LocalCurriculumCard(
                     curriculum = curriculum,
-                    isLocal = uiState.selectedTab == CurriculumTab.LOCAL,
-                    downloadProgress = uiState.downloadProgress[curriculum.id],
                     onClick = { onCurriculumClick(curriculum) },
-                    onDownload = { onDownload(curriculum) },
                     onDelete = { onDelete(curriculum) },
                 )
             }
@@ -260,15 +553,12 @@ private fun CurriculumListView(
 }
 
 /**
- * Individual curriculum card.
+ * Local curriculum card (full Curriculum with click to view details).
  */
 @Composable
-private fun CurriculumCard(
+private fun LocalCurriculumCard(
     curriculum: Curriculum,
-    isLocal: Boolean,
-    downloadProgress: Float?,
     onClick: () -> Unit,
-    onDownload: () -> Unit,
     onDelete: () -> Unit,
 ) {
     Card(
@@ -297,36 +587,13 @@ private fun CurriculumCard(
                     )
                 }
 
-                // Action button
-                if (downloadProgress != null) {
-                    CircularProgressIndicator(
-                        progress = { downloadProgress },
-                        modifier = Modifier.size(24.dp),
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "Delete",
+                        tint = MaterialTheme.colorScheme.error,
                     )
-                } else if (isLocal) {
-                    IconButton(onClick = onDelete) {
-                        Icon(
-                            Icons.Default.Delete,
-                            contentDescription = "Delete",
-                            tint = MaterialTheme.colorScheme.error,
-                        )
-                    }
-                } else {
-                    IconButton(onClick = onDownload) {
-                        Icon(
-                            Icons.Default.Download,
-                            contentDescription = "Download",
-                        )
-                    }
                 }
-            }
-
-            // Download progress bar
-            if (downloadProgress != null) {
-                LinearProgressIndicator(
-                    progress = { downloadProgress },
-                    modifier = Modifier.fillMaxWidth(),
-                )
             }
         }
     }
@@ -348,7 +615,7 @@ private fun CurriculumDetailView(
             title = { Text(curriculum.title) },
             navigationIcon = {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                 }
             },
         )
