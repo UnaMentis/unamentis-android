@@ -4,7 +4,10 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import okhttp3.CertificatePinner
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import org.junit.Assert.*
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.concurrent.TimeUnit
@@ -331,9 +334,10 @@ class CertificatePinningIntegrationTest {
         val overhead = pinnedDuration - unpinnedDuration
 
         // Certificate pinning should add minimal overhead (<100ms acceptable)
+        // Allow if both are fast
         assertTrue(
             "Certificate pinning overhead should be minimal, but was ${overhead}ms",
-            overhead < 100 || pinnedDuration < 1000, // Allow if both are fast
+            overhead < 100 || pinnedDuration < 1000,
         )
     }
 }

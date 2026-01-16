@@ -94,14 +94,12 @@ data class ExtendedColors(
     val brandTeal: Color = BrandTeal,
     val brandTealLight: Color = BrandTealLight,
     val brandCyanLight: Color = BrandCyanLight,
-
     // Semantic status colors (matching iOS)
     val success: Color = SuccessGreen,
     val warning: Color = WarningOrange,
     val info: Color = InfoBlue,
     val destructive: Color = DestructiveRed,
     val accent: Color = AccentPurple,
-
     // Session control colors (matching iOS SessionControlComponents.swift)
     val sessionStop: Color = SessionStopRed,
     val sessionStopLight: Color = SessionStopRedLight,
@@ -109,26 +107,21 @@ data class ExtendedColors(
     val sessionPause: Color = SessionPauseBlue,
     val sessionPauseLight: Color = SessionPauseBlueLight,
     val mutedLight: Color = MutedRedLight,
-
     // Status indicator colors (matching iOS)
     val statusCompleted: Color = StatusCompleted,
     val statusPending: Color = StatusPending,
     val statusInProgress: Color = StatusInProgress,
     val statusFailed: Color = StatusFailed,
-
     // Speech detection colors (matching iOS)
     val speechDetected: Color = SpeechDetectedColor,
     val noSpeech: Color = NoSpeechColor,
-
     // Transcript bubble colors
     val userBubble: Color = UserBubbleLight,
     val assistantBubble: Color = AssistantBubbleLight,
-
     // Audio visualization colors
     val audioLevelLow: Color = AudioLevelLow,
     val audioLevelMedium: Color = AudioLevelMedium,
     val audioLevelHigh: Color = AudioLevelHigh,
-
     // Onboarding colors (matching iOS OnboardingView.swift)
     val onboardingWelcome: Color = OnboardingWelcome,
     val onboardingCurriculum: Color = OnboardingCurriculum,
@@ -136,15 +129,17 @@ data class ExtendedColors(
     val onboardingHandsFree: Color = OnboardingHandsFree,
 )
 
-private val LightExtendedColors = ExtendedColors(
-    userBubble = UserBubbleLight,
-    assistantBubble = AssistantBubbleLight,
-)
+private val LightExtendedColors =
+    ExtendedColors(
+        userBubble = UserBubbleLight,
+        assistantBubble = AssistantBubbleLight,
+    )
 
-private val DarkExtendedColors = ExtendedColors(
-    userBubble = UserBubbleDark,
-    assistantBubble = AssistantBubbleDark,
-)
+private val DarkExtendedColors =
+    ExtendedColors(
+        userBubble = UserBubbleDark,
+        assistantBubble = AssistantBubbleDark,
+    )
 
 val LocalExtendedColors = staticCompositionLocalOf { ExtendedColors() }
 
@@ -164,7 +159,8 @@ val LocalExtendedColors = staticCompositionLocalOf { ExtendedColors() }
 @Composable
 fun UnaMentisTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = false, // Default to brand colors for consistency with iOS
+    // Default to brand colors for consistency with iOS
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val colorScheme =

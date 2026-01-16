@@ -37,11 +37,12 @@ fun BrandLogo(
     Image(
         painter = painterResource(id = logoResource),
         contentDescription = null,
-        modifier = modifier
-            .height(size.height)
-            .semantics {
-                contentDescription = "UnaMentis logo"
-            },
+        modifier =
+            modifier
+                .height(size.height)
+                .semantics {
+                    contentDescription = "UnaMentis logo"
+                },
         contentScale = ContentScale.Fit,
     )
 }

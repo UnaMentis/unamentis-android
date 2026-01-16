@@ -137,13 +137,32 @@ If you tell the user "tests are passing" or "implementation is complete" when te
 
 If this command fails, fix the issues before proceeding.
 
+## Quality Gates
+
+Before any code is considered "done", it must pass these gates:
+
+1. **Compilation**: `./gradlew assembleDebug` succeeds
+2. **Lint**: `./scripts/lint.sh` passes with zero violations
+3. **Unit Tests**: `./scripts/test-quick.sh` passes with ALL tests green
+4. **Accessibility**: All interactive elements have content descriptions
+5. **Strings**: All user-facing text in `strings.xml`
+6. **Documentation**: Public APIs have KDoc comments
+
 ## Key Technical Requirements
 
 **Testing Philosophy (Real Over Mock):**
 - Only mock paid external APIs (LLM, STT, TTS, Embeddings)
 - Use real implementations for all internal services
 - Use in-memory Room database for testing
-- See specification for detailed testing philosophy
+- See `docs/TESTING.md` for detailed testing philosophy and guidelines
+- See `AGENTS.md` for complete AI development guidelines
+
+**Code Style Requirements:**
+- Follow `docs/ANDROID_STYLE_GUIDE.md` (MANDATORY)
+- Accessibility content descriptions on all interactive elements
+- Strings in `strings.xml` for all user-facing text
+- Tablet adaptive layouts using window size classes
+- Kotlin coroutine compliance (proper scope, cancellation)
 
 **Performance Targets:**
 - E2E turn latency: <500ms (median), <1000ms (P99)
@@ -178,9 +197,13 @@ Do NOT commit if this command fails. Fix the issues first.
 
 ## Key Documentation
 
+- `AGENTS.md` - AI development guidelines and testing philosophy
+- `docs/TESTING.md` - Comprehensive testing guide
+- `docs/ANDROID_STYLE_GUIDE.md` - Mandatory Android coding standards
 - `docs/DEV_ENVIRONMENT.md` - Developer environment setup guide
-- `SPECIFICATION.md` - Complete feature specification
-- `docs/API_REFERENCE.md` - Server API documentation
+- `ANDROID_PORT_SPECIFICATION.md` - Complete feature specification
+- `SECURITY.md` - Security policy and best practices
+- `CONTRIBUTING.md` - Contribution guidelines
 
 ## Project Structure
 
@@ -210,5 +233,13 @@ app/
 │   │   └── theme/      # Material 3 theming
 │   └── di/             # Hilt dependency injection
 ├── src/main/cpp/       # Native code (Oboe, llama.cpp)
-└── src/test/           # Unit tests
+├── src/test/kotlin/com/unamentis/
+│   ├── core/           # Unit tests for core logic
+│   ├── data/           # Data layer tests
+│   ├── services/       # Service tests
+│   └── helpers/        # Test utilities (MockServices, TestDataFactory)
+└── src/androidTest/kotlin/com/unamentis/
+    ├── ui/             # Compose UI tests
+    ├── data/local/     # Room database tests
+    └── benchmark/      # Performance benchmarks
 ```

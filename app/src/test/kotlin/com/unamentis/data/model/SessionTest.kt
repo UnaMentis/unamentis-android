@@ -81,8 +81,10 @@ class SessionTest {
             TopicProgress(
                 topicId = "topic-001",
                 curriculumId = "curriculum-001",
-                timeSpentSeconds = 1800, // 30 minutes
-                masteryLevel = 0.75f, // 75% mastery
+                // 30 minutes
+                timeSpentSeconds = 1800,
+                // 75% mastery
+                masteryLevel = 0.75f,
                 lastAccessedAt = System.currentTimeMillis(),
                 completedSegments = listOf("seg-001", "seg-002", "seg-003"),
             )

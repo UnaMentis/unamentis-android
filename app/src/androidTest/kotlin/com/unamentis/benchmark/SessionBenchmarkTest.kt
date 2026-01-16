@@ -1,11 +1,8 @@
 package com.unamentis.benchmark
 
-import androidx.benchmark.junit4.BenchmarkRule
-import androidx.benchmark.junit4.measureRepeated
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.unamentis.data.model.SessionState
 import kotlinx.coroutines.runBlocking
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import kotlin.system.measureTimeMillis
@@ -19,11 +16,14 @@ import kotlin.system.measureTimeMillis
  * - Session startup: <100ms
  * - State transitions: <50ms
  * - Memory usage: <300MB baseline
+ *
+ * Note: These are standard instrumented tests that measure performance.
+ * For micro-benchmarks with more precise timing, consider using a
+ * separate benchmark module with the Jetpack Benchmark library.
  */
 @RunWith(AndroidJUnit4::class)
 class SessionBenchmarkTest {
-    @get:Rule
-    val benchmarkRule = BenchmarkRule()
+    private val iterations = 10
 
     /**
      * Benchmark session startup time.
@@ -31,18 +31,15 @@ class SessionBenchmarkTest {
      */
     @Test
     fun benchmark_sessionStartup() {
-        benchmarkRule.measureRepeated {
-            val startTime = System.currentTimeMillis()
+        repeat(iterations) {
+            val duration =
+                measureTimeMillis {
+                    runBlocking {
+                        // Simulate session startup
+                        val sessionState = SessionState.IDLE
+                    }
+                }
 
-            // Simulate session startup
-            runBlocking {
-                // Create session manager (in real test, inject mocks)
-                val sessionState = SessionState.IDLE
-            }
-
-            val duration = System.currentTimeMillis() - startTime
-
-            // Assert meets target
             assert(duration < 100) { "Session startup took ${duration}ms, target is <100ms" }
         }
     }
@@ -53,7 +50,7 @@ class SessionBenchmarkTest {
      */
     @Test
     fun benchmark_stateTransitions() {
-        benchmarkRule.measureRepeated {
+        repeat(iterations) {
             val transitions =
                 listOf(
                     SessionState.IDLE to SessionState.USER_SPEAKING,
@@ -67,6 +64,7 @@ class SessionBenchmarkTest {
                 val duration =
                     measureTimeMillis {
                         // Simulate state transition
+                        @Suppress("UNUSED_VARIABLE")
                         val state = to
                     }
 
@@ -83,13 +81,15 @@ class SessionBenchmarkTest {
      */
     @Test
     fun benchmark_audioProcessing() {
-        benchmarkRule.measureRepeated {
+        repeat(iterations) {
             val audioData = FloatArray(512) { (it * 0.001f) } // 32ms at 16kHz
 
             val duration =
                 measureTimeMillis {
                     // Simulate audio preprocessing
                     val rms = calculateRMS(audioData)
+
+                    @Suppress("UNUSED_VARIABLE")
                     val normalized = audioData.map { it / rms }.toFloatArray()
                 }
 
@@ -103,7 +103,7 @@ class SessionBenchmarkTest {
      */
     @Test
     fun benchmark_transcriptProcessing() {
-        benchmarkRule.measureRepeated {
+        repeat(iterations) {
             val transcript = mutableListOf<String>()
 
             val duration =
@@ -129,7 +129,7 @@ class SessionBenchmarkTest {
     fun benchmark_memoryUsage() {
         val runtime = Runtime.getRuntime()
 
-        benchmarkRule.measureRepeated {
+        repeat(iterations) {
             runtime.gc()
             val initialMemory = runtime.totalMemory() - runtime.freeMemory()
 
@@ -158,7 +158,7 @@ class SessionBenchmarkTest {
     fun benchmark_e2eTurnLatency() {
         val latencies = mutableListOf<Long>()
 
-        benchmarkRule.measureRepeated {
+        repeat(iterations) {
             // Simulate 100 E2E turns with realistic component latencies
             repeat(100) {
                 val sttLatency = 80L // STT latency
@@ -186,7 +186,7 @@ class SessionBenchmarkTest {
      */
     @Test
     fun benchmark_concurrentProcessing() {
-        benchmarkRule.measureRepeated {
+        repeat(iterations) {
             val duration =
                 measureTimeMillis {
                     // Simulate concurrent audio processing and LLM generation
@@ -226,7 +226,7 @@ class SessionBenchmarkTest {
      */
     @Test
     fun benchmark_databaseOperations() {
-        benchmarkRule.measureRepeated {
+        repeat(iterations) {
             // Insert operation
             val insertDuration =
                 measureTimeMillis {

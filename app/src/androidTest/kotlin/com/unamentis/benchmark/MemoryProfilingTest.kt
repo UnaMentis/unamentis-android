@@ -263,7 +263,8 @@ class MemoryProfilingTest {
                         id = "entry_$i",
                         sessionId = "stress_test",
                         role = if (i % 2 == 0) "user" else "assistant",
-                        text = "A" * 500, // 500 character message
+                        // 500 character message
+                        text = "A".repeat(500),
                         timestamp = System.currentTimeMillis(),
                     ),
                 )

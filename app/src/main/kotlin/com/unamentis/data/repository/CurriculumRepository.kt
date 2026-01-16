@@ -128,15 +128,16 @@ class CurriculumRepository
                 Log.i(TAG, "Successfully fetched ${summaries.size} curricula from server")
                 true
             } catch (e: Exception) {
-                val errorMsg = when {
-                    e.message?.contains("Connection refused") == true ->
-                        "Server not running. Start the management console on port 8766."
-                    e.message?.contains("timeout") == true ->
-                        "Connection timed out. Check network and server status."
-                    e.message?.contains("Unable to resolve host") == true ->
-                        "Cannot reach server. Check network connection."
-                    else -> "Failed to connect: ${e.message}"
-                }
+                val errorMsg =
+                    when {
+                        e.message?.contains("Connection refused") == true ->
+                            "Server not running. Start the management console on port 8766."
+                        e.message?.contains("timeout") == true ->
+                            "Connection timed out. Check network and server status."
+                        e.message?.contains("Unable to resolve host") == true ->
+                            "Cannot reach server. Check network connection."
+                        else -> "Failed to connect: ${e.message}"
+                    }
                 Log.e(TAG, "Failed to fetch curricula: $errorMsg", e)
                 _connectionState.value = ConnectionState.Failed(errorMsg)
                 _lastError.value = errorMsg
