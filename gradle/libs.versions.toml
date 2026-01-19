@@ -45,6 +45,9 @@ securityCrypto = "1.1.0-alpha06"
 # Work Manager
 work = "2.9.0"
 
+# Glance (Compose Widgets)
+glance = "1.1.1"
+
 # Image Loading
 coil = "2.5.0"
 
@@ -125,6 +128,10 @@ androidx-security-crypto = { group = "androidx.security", name = "security-crypt
 
 # Work Manager (Background tasks)
 androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "work" }
+
+# Glance (Compose Widgets)
+androidx-glance-appwidget = { group = "androidx.glance", name = "glance-appwidget", version.ref = "glance" }
+androidx-glance-material3 = { group = "androidx.glance", name = "glance-material3", version.ref = "glance" }
 
 # Image Loading (Coil)
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }

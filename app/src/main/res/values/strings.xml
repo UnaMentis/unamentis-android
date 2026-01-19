@@ -73,6 +73,19 @@
     <string name="shortcut_todos_short">To-Dos</string>
     <string name="shortcut_todos_long">View your to-do list</string>
 
+    <!-- Widgets -->
+    <string name="widget_progress_title">Learning Progress</string>
+    <string name="widget_progress_description">Shows your learning progress, mastery level, and quick actions</string>
+    <string name="widget_quick_action_title">Quick Actions</string>
+    <string name="widget_quick_action_description">Quick access to start session, resume learning, and more</string>
+    <string name="widget_loading">Loading…</string>
+    <string name="widget_topics_label">Topics</string>
+    <string name="widget_time_label">Time</string>
+    <string name="widget_streak_label">Streak</string>
+    <string name="widget_resume_label">Resume</string>
+    <string name="widget_start_learning">Start Learning</string>
+    <string name="widget_quick_actions_title">Quick Actions</string>
+
     <!-- Common Actions -->
     <string name="back">Back</string>
     <string name="end">End</string>

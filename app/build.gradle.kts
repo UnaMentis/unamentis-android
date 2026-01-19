@@ -166,6 +166,10 @@ dependencies {
     // Work Manager (Background tasks)
     implementation(libs.androidx.work.runtime.ktx)
 
+    // Glance (Compose Widgets)
+    implementation(libs.androidx.glance.appwidget)
+    implementation(libs.androidx.glance.material3)
+
     // Unit Testing
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
