@@ -62,4 +62,14 @@
     <string name="onboarding_handsfree_tip1">Say \"Hey Google, talk to UnaMentis\"</string>
     <string name="onboarding_handsfree_tip2">Or \"Hey Google, start a lesson\"</string>
     <string name="onboarding_handsfree_tip3">Use headphones for best results</string>
+
+    <!-- Shortcuts -->
+    <string name="shortcut_start_session_short">Start Session</string>
+    <string name="shortcut_start_session_long">Start a new learning session</string>
+    <string name="shortcut_resume_short">Resume</string>
+    <string name="shortcut_resume_long">Resume learning where you left off</string>
+    <string name="shortcut_progress_short">Progress</string>
+    <string name="shortcut_progress_long">View your learning progress</string>
+    <string name="shortcut_todos_short">To-Dos</string>
+    <string name="shortcut_todos_long">View your to-do list</string>
 </resources>

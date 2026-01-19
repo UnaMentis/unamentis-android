@@ -134,6 +134,127 @@ class TelemetryEngine
         }
 
         /**
+         * Get cost breakdown by provider type (STT, TTS, LLM).
+         * Provider names are mapped to types based on known providers.
+         */
+        fun getCostBreakdownByType(sessionId: String): ProviderTypeCostBreakdown {
+            val costs = costRecords[sessionId] ?: return ProviderTypeCostBreakdown()
+
+            var sttCost = 0.0
+            var ttsCost = 0.0
+            var llmCost = 0.0
+
+            costs.forEach { record ->
+                when (record.metadata["type"]?.uppercase() ?: categorizeProvider(record.provider)) {
+                    "STT" -> sttCost += record.costUsd
+                    "TTS" -> ttsCost += record.costUsd
+                    "LLM" -> llmCost += record.costUsd
+                }
+            }
+
+            return ProviderTypeCostBreakdown(
+                sttCost = sttCost,
+                ttsCost = ttsCost,
+                llmCost = llmCost,
+                totalCost = sttCost + ttsCost + llmCost,
+            )
+        }
+
+        /**
+         * Get detailed cost breakdown by individual provider.
+         */
+        fun getCostBreakdownByProvider(sessionId: String): List<ProviderCost> {
+            val costs = costRecords[sessionId] ?: return emptyList()
+
+            return costs
+                .groupBy { it.provider }
+                .map { (provider, records) ->
+                    ProviderCost(
+                        providerName = provider,
+                        providerType =
+                            records.firstOrNull()?.metadata?.get("type")
+                                ?: categorizeProvider(provider),
+                        totalCost = records.sumOf { it.costUsd },
+                        requestCount = records.size,
+                    )
+                }
+                .sortedByDescending { it.totalCost }
+        }
+
+        /**
+         * Get aggregated cost breakdown across all sessions.
+         */
+        fun getAggregatedCostBreakdown(sessionIds: List<String>): ProviderTypeCostBreakdown {
+            var sttCost = 0.0
+            var ttsCost = 0.0
+            var llmCost = 0.0
+
+            sessionIds.forEach { sessionId ->
+                val breakdown = getCostBreakdownByType(sessionId)
+                sttCost += breakdown.sttCost
+                ttsCost += breakdown.ttsCost
+                llmCost += breakdown.llmCost
+            }
+
+            return ProviderTypeCostBreakdown(
+                sttCost = sttCost,
+                ttsCost = ttsCost,
+                llmCost = llmCost,
+                totalCost = sttCost + ttsCost + llmCost,
+            )
+        }
+
+        /**
+         * Get aggregated detailed provider breakdown across all sessions.
+         */
+        fun getAggregatedProviderBreakdown(sessionIds: List<String>): List<ProviderCost> {
+            val allCosts = sessionIds.flatMap { getCostBreakdownByProvider(it) }
+
+            return allCosts
+                .groupBy { it.providerName }
+                .map { (provider, costs) ->
+                    ProviderCost(
+                        providerName = provider,
+                        providerType = costs.firstOrNull()?.providerType ?: "UNKNOWN",
+                        totalCost = costs.sumOf { it.totalCost },
+                        requestCount = costs.sumOf { it.requestCount },
+                    )
+                }
+                .sortedByDescending { it.totalCost }
+        }
+
+        /**
+         * Categorize a provider name into STT, TTS, or LLM type.
+         */
+        private fun categorizeProvider(provider: String): String {
+            val normalized = provider.lowercase()
+            return when {
+                // STT providers
+                normalized.contains("deepgram") -> "STT"
+                normalized.contains("whisper") -> "STT"
+                normalized.contains("speechrecognizer") -> "STT"
+                normalized == "android" && normalized.contains("stt") -> "STT"
+
+                // TTS providers
+                normalized.contains("elevenlabs") -> "TTS"
+                normalized.contains("eleven_labs") -> "TTS"
+                normalized.contains("texttospeech") -> "TTS"
+                normalized == "android" && normalized.contains("tts") -> "TTS"
+
+                // LLM providers
+                normalized.contains("openai") -> "LLM"
+                normalized.contains("anthropic") -> "LLM"
+                normalized.contains("claude") -> "LLM"
+                normalized.contains("gpt") -> "LLM"
+                normalized.contains("patchpanel") -> "LLM"
+                normalized.contains("llama") -> "LLM"
+
+                // Default fallback based on common patterns
+                else -> "LLM"
+            }
+        }
+
+        /**
          * Clear all data for a session.
          */
         fun clearSession(sessionId: String) {
@@ -167,3 +288,23 @@ data class LatencyStats(
 
 // Re-export LatencyType for convenience
 typealias LatencyType = com.unamentis.data.model.LatencyType
+
+/**
+ * Cost breakdown by provider type (STT, TTS, LLM).
+ */
+data class ProviderTypeCostBreakdown(
+    val sttCost: Double = 0.0,
+    val ttsCost: Double = 0.0,
+    val llmCost: Double = 0.0,
+    val totalCost: Double = 0.0,
+)
+
+/**
+ * Cost information for a specific provider.
+ */
+data class ProviderCost(
+    val providerName: String,
+    val providerType: String,
+    val totalCost: Double,
+    val requestCount: Int,
+)

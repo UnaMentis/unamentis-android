@@ -29,6 +29,11 @@ enum class SettingsSection {
     PRESETS,
     PROVIDERS,
     RECORDING,
+    AUDIO,
+    VAD,
+    LLM,
+    TTS,
+    CURRICULUM,
     API_KEYS,
 }
 
@@ -56,6 +61,21 @@ fun SettingsScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
 
+    // Collect advanced settings
+    val sampleRate by viewModel.sampleRate.collectAsStateWithLifecycle()
+    val enableVoiceProcessing by viewModel.enableVoiceProcessing.collectAsStateWithLifecycle()
+    val enableEchoCancellation by viewModel.enableEchoCancellation.collectAsStateWithLifecycle()
+    val enableNoiseSuppression by viewModel.enableNoiseSuppression.collectAsStateWithLifecycle()
+    val vadThreshold by viewModel.vadThreshold.collectAsStateWithLifecycle()
+    val bargeInThreshold by viewModel.bargeInThreshold.collectAsStateWithLifecycle()
+    val enableBargeIn by viewModel.enableBargeIn.collectAsStateWithLifecycle()
+    val silenceThresholdMs by viewModel.silenceThresholdMs.collectAsStateWithLifecycle()
+    val llmTemperature by viewModel.llmTemperature.collectAsStateWithLifecycle()
+    val llmMaxTokens by viewModel.llmMaxTokens.collectAsStateWithLifecycle()
+    val ttsSpeakingRate by viewModel.ttsSpeakingRate.collectAsStateWithLifecycle()
+    val ttsPlaybackSpeed by viewModel.ttsPlaybackSpeed.collectAsStateWithLifecycle()
+    val autoContinueTopics by viewModel.autoContinueTopics.collectAsStateWithLifecycle()
+
     // Handle deep link to specific section
     LaunchedEffect(initialSection) {
         if (initialSection != null) {
@@ -64,7 +84,12 @@ fun SettingsScreen(
                     "PRESETS" -> 0
                     "PROVIDERS" -> 1
                     "RECORDING" -> 6
-                    "API_KEYS" -> 8
+                    "AUDIO" -> 8
+                    "VAD" -> 10
+                    "LLM" -> 12
+                    "TTS" -> 14
+                    "CURRICULUM" -> 16
+                    "API_KEYS" -> 18
                     else -> null
                 }
             sectionIndex?.let {
@@ -152,6 +177,102 @@ fun SettingsScreen(
                 RecordingModeSection(
                     currentMode = uiState.recordingMode,
                     onModeSelected = { viewModel.setRecordingMode(it) },
+                )
+            }
+
+            // Advanced Audio Settings section
+            item {
+                Text(
+                    text = "Audio Settings",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(top = 16.dp),
+                )
+            }
+
+            item {
+                AudioSettingsSection(
+                    sampleRate = sampleRate,
+                    onSampleRateChange = { viewModel.setSampleRate(it) },
+                    enableVoiceProcessing = enableVoiceProcessing,
+                    onVoiceProcessingChange = { viewModel.setEnableVoiceProcessing(it) },
+                    enableEchoCancellation = enableEchoCancellation,
+                    onEchoCancellationChange = { viewModel.setEnableEchoCancellation(it) },
+                    enableNoiseSuppression = enableNoiseSuppression,
+                    onNoiseSuppressionChange = { viewModel.setEnableNoiseSuppression(it) },
+                )
+            }
+
+            // VAD Settings section
+            item {
+                Text(
+                    text = "Voice Detection",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(top = 16.dp),
+                )
+            }
+
+            item {
+                VadSettingsSection(
+                    vadThreshold = vadThreshold,
+                    onVadThresholdChange = { viewModel.setVadThreshold(it) },
+                    bargeInThreshold = bargeInThreshold,
+                    onBargeInThresholdChange = { viewModel.setBargeInThreshold(it) },
+                    enableBargeIn = enableBargeIn,
+                    onEnableBargeInChange = { viewModel.setEnableBargeIn(it) },
+                    silenceThresholdMs = silenceThresholdMs,
+                    onSilenceThresholdChange = { viewModel.setSilenceThresholdMs(it) },
+                )
+            }
+
+            // LLM Settings section
+            item {
+                Text(
+                    text = "Language Model",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(top = 16.dp),
+                )
+            }
+
+            item {
+                LlmSettingsSection(
+                    temperature = llmTemperature,
+                    onTemperatureChange = { viewModel.setLlmTemperature(it) },
+                    maxTokens = llmMaxTokens,
+                    onMaxTokensChange = { viewModel.setLlmMaxTokens(it) },
+                )
+            }
+
+            // TTS Settings section
+            item {
+                Text(
+                    text = "Voice Output",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(top = 16.dp),
+                )
+            }
+
+            item {
+                TtsSettingsSection(
+                    speakingRate = ttsSpeakingRate,
+                    onSpeakingRateChange = { viewModel.setTtsSpeakingRate(it) },
+                    playbackSpeed = ttsPlaybackSpeed,
+                    onPlaybackSpeedChange = { viewModel.setTtsPlaybackSpeed(it) },
+                )
+            }
+
+            // Curriculum Playback section
+            item {
+                Text(
+                    text = "Curriculum Playback",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(top = 16.dp),
+                )
+            }
+
+            item {
+                CurriculumSettingsSection(
+                    autoContinueTopics = autoContinueTopics,
+                    onAutoContinueChange = { viewModel.setAutoContinueTopics(it) },
                 )
             }
 
@@ -535,5 +656,484 @@ private fun RecordingModeOption(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+    }
+}
+
+/**
+ * Audio settings section with sample rate and processing options.
+ */
+@Composable
+private fun AudioSettingsSection(
+    sampleRate: Int,
+    onSampleRateChange: (Int) -> Unit,
+    enableVoiceProcessing: Boolean,
+    onVoiceProcessingChange: (Boolean) -> Unit,
+    enableEchoCancellation: Boolean,
+    onEchoCancellationChange: (Boolean) -> Unit,
+    enableNoiseSuppression: Boolean,
+    onNoiseSuppressionChange: (Boolean) -> Unit,
+) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Icon(
+                    Icons.Default.Tune,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                Text(
+                    text = "Audio Quality",
+                    style = MaterialTheme.typography.titleSmall,
+                )
+            }
+
+            // Sample rate picker
+            Text(
+                text = "Sample Rate",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                listOf(16000, 24000, 48000).forEach { rate ->
+                    FilterChip(
+                        selected = sampleRate == rate,
+                        onClick = { onSampleRateChange(rate) },
+                        label = { Text("${rate / 1000} kHz") },
+                    )
+                }
+            }
+            Text(
+                text = "Higher rates sound better but use more data",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            HorizontalDivider()
+
+            // Toggle options
+            SettingsToggle(
+                title = "Voice Processing",
+                description = "Enhances voice clarity",
+                checked = enableVoiceProcessing,
+                onCheckedChange = onVoiceProcessingChange,
+            )
+
+            SettingsToggle(
+                title = "Echo Cancellation",
+                description = "Prevents microphone from picking up AI's voice",
+                checked = enableEchoCancellation,
+                onCheckedChange = onEchoCancellationChange,
+            )
+
+            SettingsToggle(
+                title = "Noise Suppression",
+                description = "Filters background noise",
+                checked = enableNoiseSuppression,
+                onCheckedChange = onNoiseSuppressionChange,
+            )
+        }
+    }
+}
+
+/**
+ * VAD (Voice Activity Detection) settings section.
+ */
+@Composable
+private fun VadSettingsSection(
+    vadThreshold: Float,
+    onVadThresholdChange: (Float) -> Unit,
+    bargeInThreshold: Float,
+    onBargeInThresholdChange: (Float) -> Unit,
+    enableBargeIn: Boolean,
+    onEnableBargeInChange: (Boolean) -> Unit,
+    silenceThresholdMs: Int,
+    onSilenceThresholdChange: (Int) -> Unit,
+) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Icon(
+                    Icons.Default.GraphicEq,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                Text(
+                    text = "Voice Detection Tuning",
+                    style = MaterialTheme.typography.titleSmall,
+                )
+            }
+
+            // VAD Threshold slider
+            Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = "Detection Threshold",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text(
+                        text = "%.2f".format(vadThreshold),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                Slider(
+                    value = vadThreshold,
+                    onValueChange = onVadThresholdChange,
+                    valueRange = 0.3f..0.9f,
+                )
+                Text(
+                    text = "Lower values detect quieter speech but may pick up noise",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            HorizontalDivider()
+
+            // Barge-in settings
+            SettingsToggle(
+                title = "Enable Interruptions",
+                description = "Speaking while AI talks will pause it to listen",
+                checked = enableBargeIn,
+                onCheckedChange = onEnableBargeInChange,
+            )
+
+            if (enableBargeIn) {
+                Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text(
+                            text = "Interruption Threshold",
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        Text(
+                            text = "%.2f".format(bargeInThreshold),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                    Slider(
+                        value = bargeInThreshold,
+                        onValueChange = onBargeInThresholdChange,
+                        valueRange = 0.5f..0.95f,
+                    )
+                    Text(
+                        text = "How loud you need to speak to interrupt the AI",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
+            HorizontalDivider()
+
+            // Silence threshold
+            Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = "Silence Timeout",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text(
+                        text = "${silenceThresholdMs}ms",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                Slider(
+                    value = silenceThresholdMs.toFloat(),
+                    onValueChange = { onSilenceThresholdChange(it.toInt()) },
+                    valueRange = 500f..3000f,
+                    steps = 4,
+                )
+                Text(
+                    text = "How long to wait in silence before ending your turn",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * LLM settings section with temperature and max tokens.
+ */
+@Composable
+private fun LlmSettingsSection(
+    temperature: Float,
+    onTemperatureChange: (Float) -> Unit,
+    maxTokens: Int,
+    onMaxTokensChange: (Int) -> Unit,
+) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Icon(
+                    Icons.Default.Psychology,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                Text(
+                    text = "Response Tuning",
+                    style = MaterialTheme.typography.titleSmall,
+                )
+            }
+
+            // Temperature slider
+            Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = "Temperature",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text(
+                        text = "%.1f".format(temperature),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                Slider(
+                    value = temperature,
+                    onValueChange = onTemperatureChange,
+                    valueRange = 0f..1f,
+                )
+                Text(
+                    text = "Controls creativity. Lower for factual, higher for creative.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            HorizontalDivider()
+
+            // Max tokens slider
+            Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = "Max Response Length",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text(
+                        text = "$maxTokens tokens",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                Slider(
+                    value = maxTokens.toFloat(),
+                    onValueChange = { onMaxTokensChange(it.toInt()) },
+                    valueRange = 256f..4096f,
+                    steps = 14,
+                )
+                Text(
+                    text = "Maximum response length. One token is roughly 4 characters.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * TTS settings section with speaking rate and playback speed.
+ */
+@Composable
+private fun TtsSettingsSection(
+    speakingRate: Float,
+    onSpeakingRateChange: (Float) -> Unit,
+    playbackSpeed: Float,
+    onPlaybackSpeedChange: (Float) -> Unit,
+) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Icon(
+                    Icons.Default.RecordVoiceOver,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                Text(
+                    text = "Voice Output Tuning",
+                    style = MaterialTheme.typography.titleSmall,
+                )
+            }
+
+            // Speaking rate slider
+            Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = "Speaking Rate",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text(
+                        text = "%.1fx".format(speakingRate),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                Slider(
+                    value = speakingRate,
+                    onValueChange = onSpeakingRateChange,
+                    valueRange = 0.5f..2.0f,
+                )
+                Text(
+                    text = "Adjust how fast the AI speaks",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            HorizontalDivider()
+
+            // Playback speed slider
+            Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = "Playback Speed",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text(
+                        text = "%.1fx".format(playbackSpeed),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                Slider(
+                    value = playbackSpeed,
+                    onValueChange = onPlaybackSpeedChange,
+                    valueRange = 0.5f..2.0f,
+                )
+                Text(
+                    text = "Speed up or slow down audio playback",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Curriculum playback settings section.
+ */
+@Composable
+private fun CurriculumSettingsSection(
+    autoContinueTopics: Boolean,
+    onAutoContinueChange: (Boolean) -> Unit,
+) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Icon(
+                    Icons.Default.PlaylistPlay,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                Text(
+                    text = "Session Behavior",
+                    style = MaterialTheme.typography.titleSmall,
+                )
+            }
+
+            SettingsToggle(
+                title = "Auto-continue to next topic",
+                description = "Automatically start the next topic when current one finishes",
+                checked = autoContinueTopics,
+                onCheckedChange = onAutoContinueChange,
+            )
+
+            Text(
+                text = "When a topic completes, seamlessly continue to the next topic in the curriculum with an audio announcement.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/**
+ * Reusable settings toggle row.
+ */
+@Composable
+private fun SettingsToggle(
+    title: String,
+    description: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+        )
     }
 }

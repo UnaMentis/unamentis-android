@@ -87,6 +87,68 @@ class SettingsViewModel
                     initialValue = RecordingMode.VAD,
                 )
 
+        // ==================== Advanced Audio Settings ====================
+
+        val sampleRate: StateFlow<Int> =
+            providerConfig.sampleRate
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 48000)
+
+        val enableVoiceProcessing: StateFlow<Boolean> =
+            providerConfig.enableVoiceProcessing
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+        val enableEchoCancellation: StateFlow<Boolean> =
+            providerConfig.enableEchoCancellation
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+        val enableNoiseSuppression: StateFlow<Boolean> =
+            providerConfig.enableNoiseSuppression
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+        // ==================== VAD Settings ====================
+
+        val vadThreshold: StateFlow<Float> =
+            providerConfig.vadThreshold
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.5f)
+
+        val bargeInThreshold: StateFlow<Float> =
+            providerConfig.bargeInThreshold
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.7f)
+
+        val enableBargeIn: StateFlow<Boolean> =
+            providerConfig.enableBargeIn
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+        val silenceThresholdMs: StateFlow<Int> =
+            providerConfig.silenceThresholdMs
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 1000)
+
+        // ==================== LLM Settings ====================
+
+        val llmTemperature: StateFlow<Float> =
+            providerConfig.llmTemperature
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.7f)
+
+        val llmMaxTokens: StateFlow<Int> =
+            providerConfig.llmMaxTokens
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 1024)
+
+        // ==================== TTS Settings ====================
+
+        val ttsSpeakingRate: StateFlow<Float> =
+            providerConfig.ttsSpeakingRate
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 1.0f)
+
+        val ttsPlaybackSpeed: StateFlow<Float> =
+            providerConfig.ttsPlaybackSpeed
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 1.0f)
+
+        // ==================== Curriculum Settings ====================
+
+        val autoContinueTopics: StateFlow<Boolean> =
+            providerConfig.autoContinueTopics
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
         /**
          * UI state combining all settings.
          */
@@ -167,6 +229,94 @@ class SettingsViewModel
         fun setRecordingMode(mode: RecordingMode) {
             viewModelScope.launch {
                 providerConfig.setRecordingMode(mode)
+            }
+        }
+
+        // ==================== Advanced Audio Settings Setters ====================
+
+        fun setSampleRate(rate: Int) {
+            viewModelScope.launch {
+                providerConfig.setSampleRate(rate)
+            }
+        }
+
+        fun setEnableVoiceProcessing(enabled: Boolean) {
+            viewModelScope.launch {
+                providerConfig.setEnableVoiceProcessing(enabled)
+            }
+        }
+
+        fun setEnableEchoCancellation(enabled: Boolean) {
+            viewModelScope.launch {
+                providerConfig.setEnableEchoCancellation(enabled)
+            }
+        }
+
+        fun setEnableNoiseSuppression(enabled: Boolean) {
+            viewModelScope.launch {
+                providerConfig.setEnableNoiseSuppression(enabled)
+            }
+        }
+
+        // ==================== VAD Settings Setters ====================
+
+        fun setVadThreshold(threshold: Float) {
+            viewModelScope.launch {
+                providerConfig.setVadThreshold(threshold)
+            }
+        }
+
+        fun setBargeInThreshold(threshold: Float) {
+            viewModelScope.launch {
+                providerConfig.setBargeInThreshold(threshold)
+            }
+        }
+
+        fun setEnableBargeIn(enabled: Boolean) {
+            viewModelScope.launch {
+                providerConfig.setEnableBargeIn(enabled)
+            }
+        }
+
+        fun setSilenceThresholdMs(thresholdMs: Int) {
+            viewModelScope.launch {
+                providerConfig.setSilenceThresholdMs(thresholdMs)
+            }
+        }
+
+        // ==================== LLM Settings Setters ====================
+
+        fun setLlmTemperature(temperature: Float) {
+            viewModelScope.launch {
+                providerConfig.setLlmTemperature(temperature)
+            }
+        }
+
+        fun setLlmMaxTokens(maxTokens: Int) {
+            viewModelScope.launch {
+                providerConfig.setLlmMaxTokens(maxTokens)
+            }
+        }
+
+        // ==================== TTS Settings Setters ====================
+
+        fun setTtsSpeakingRate(rate: Float) {
+            viewModelScope.launch {
+                providerConfig.setTtsSpeakingRate(rate)
+            }
+        }
+
+        fun setTtsPlaybackSpeed(speed: Float) {
+            viewModelScope.launch {
+                providerConfig.setTtsPlaybackSpeed(speed)
+            }
+        }
+
+        // ==================== Curriculum Settings Setters ====================
+
+        fun setAutoContinueTopics(enabled: Boolean) {
+            viewModelScope.launch {
+                providerConfig.setAutoContinueTopics(enabled)
             }
         }
 

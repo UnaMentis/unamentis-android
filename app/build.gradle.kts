@@ -130,6 +130,8 @@ dependencies {
     implementation(libs.hilt.android)
     ksp(libs.hilt.android.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
+    implementation(libs.androidx.hilt.work)
+    ksp(libs.androidx.hilt.compiler)
 
     // Room Database
     implementation(libs.androidx.room.runtime)
@@ -157,6 +159,12 @@ dependencies {
 
     // Security (Encrypted Preferences)
     implementation(libs.androidx.security.crypto)
+
+    // Image Loading (Coil)
+    implementation(libs.coil.compose)
+
+    // Work Manager (Background tasks)
+    implementation(libs.androidx.work.runtime.ktx)
 
     // Unit Testing
     testImplementation(libs.junit)

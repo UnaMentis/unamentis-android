@@ -48,6 +48,13 @@ interface TodoDao {
     fun getOverdueTodos(timestamp: Long): Flow<List<Todo>>
 
     /**
+     * Get all active todos with due dates (for notification worker).
+     * Returns a list, not a Flow, for one-time queries.
+     */
+    @Query("SELECT * FROM todos WHERE dueDate IS NOT NULL AND status = 'ACTIVE' ORDER BY dueDate ASC")
+    suspend fun getActiveTodosWithDueDates(): List<Todo>
+
+    /**
      * Get todos due within the next N days.
      */
     @Query(

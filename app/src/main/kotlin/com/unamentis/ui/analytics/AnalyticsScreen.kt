@@ -86,6 +86,11 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
                 CostBreakdownCard(breakdown = uiState.costBreakdown)
             }
 
+            // Provider-specific breakdown
+            item {
+                ProviderBreakdownCard(providers = uiState.providerBreakdown)
+            }
+
             // Session trends
             item {
                 SessionTrendsCard(trends = uiState.sessionTrends)
@@ -351,6 +356,104 @@ private fun CostLegendItem(
             text = "$label: ${'$'}${String.format("%.2f", cost)}",
             style = MaterialTheme.typography.bodySmall,
         )
+    }
+}
+
+/**
+ * Provider-specific breakdown card showing individual provider costs.
+ */
+@Composable
+private fun ProviderBreakdownCard(providers: List<ProviderCostItem>) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = "Provider Details",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
+
+            if (providers.isEmpty()) {
+                Text(
+                    text = "No provider data available",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 16.dp),
+                )
+            } else {
+                providers.forEach { provider ->
+                    ProviderCostRow(provider = provider)
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Single row for provider cost information.
+ */
+@Composable
+private fun ProviderCostRow(provider: ProviderCostItem) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // Type indicator chip
+            Surface(
+                shape = MaterialTheme.shapes.small,
+                color = getProviderTypeColor(provider.providerType),
+            ) {
+                Text(
+                    text = provider.providerType,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.White,
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                )
+            }
+
+            Column {
+                Text(
+                    text = provider.providerName,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                )
+                Text(
+                    text = "${provider.requestCount} requests",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
+        Text(
+            text = "${'$'}${String.format("%.4f", provider.totalCost)}",
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary,
+        )
+    }
+}
+
+/**
+ * Get color for provider type badge.
+ */
+@Composable
+private fun getProviderTypeColor(type: String): Color {
+    return when (type.uppercase()) {
+        "STT" -> MaterialTheme.colorScheme.primary
+        "TTS" -> MaterialTheme.colorScheme.secondary
+        "LLM" -> MaterialTheme.colorScheme.tertiary
+        else -> MaterialTheme.colorScheme.outline
     }
 }
 

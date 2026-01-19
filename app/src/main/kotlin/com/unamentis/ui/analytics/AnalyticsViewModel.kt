@@ -132,7 +132,7 @@ class AnalyticsViewModel
             )
 
         /**
-         * Cost breakdown by provider.
+         * Cost breakdown by provider type.
          */
         private val costBreakdown: StateFlow<CostBreakdown> =
             combine(
@@ -149,23 +149,53 @@ class AnalyticsViewModel
                         isInRange(sessionDate, range)
                     }
 
-                val metrics = filtered.flatMap { telemetryEngine.getSessionMetrics(it.id) }
-
-                // Aggregate costs by provider (simplified - assumes provider info in metrics)
-                val sttCost = metrics.sumOf { it.estimatedCost * 0.1 } // 10% of total
-                val ttsCost = metrics.sumOf { it.estimatedCost * 0.3 } // 30% of total
-                val llmCost = metrics.sumOf { it.estimatedCost * 0.6 } // 60% of total
+                // Use telemetry engine's aggregated cost breakdown by provider type
+                val sessionIds = filtered.map { it.id }
+                val breakdown = telemetryEngine.getAggregatedCostBreakdown(sessionIds)
 
                 CostBreakdown(
-                    sttCost = sttCost,
-                    ttsCost = ttsCost,
-                    llmCost = llmCost,
-                    totalCost = sttCost + ttsCost + llmCost,
+                    sttCost = breakdown.sttCost,
+                    ttsCost = breakdown.ttsCost,
+                    llmCost = breakdown.llmCost,
+                    totalCost = breakdown.totalCost,
                 )
             }.stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5000),
                 initialValue = CostBreakdown(),
+            )
+
+        /**
+         * Detailed provider breakdown with individual provider costs.
+         */
+        private val providerBreakdown: StateFlow<List<ProviderCostItem>> =
+            combine(
+                timeRange,
+                sessionRepository.getAllSessions(),
+            ) { range, sessions ->
+                val filtered =
+                    sessions.filter { session ->
+                        val sessionDate =
+                            LocalDate.ofInstant(
+                                java.time.Instant.ofEpochMilli(session.startTime),
+                                ZoneId.systemDefault(),
+                            )
+                        isInRange(sessionDate, range)
+                    }
+
+                val sessionIds = filtered.map { it.id }
+                telemetryEngine.getAggregatedProviderBreakdown(sessionIds).map { cost ->
+                    ProviderCostItem(
+                        providerName = cost.providerName,
+                        providerType = cost.providerType,
+                        totalCost = cost.totalCost,
+                        requestCount = cost.requestCount,
+                    )
+                }
+            }.stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = emptyList(),
             )
 
         /**
@@ -219,14 +249,15 @@ class AnalyticsViewModel
                 timeRange,
                 quickStats,
                 latencyBreakdown,
-                costBreakdown,
+                combine(costBreakdown, providerBreakdown) { cost, providers -> cost to providers },
                 sessionTrends,
-            ) { range, stats, latency, cost, trends ->
+            ) { range, stats, latency, (cost, providers), trends ->
                 AnalyticsUiState(
                     timeRange = range,
                     quickStats = stats,
                     latencyBreakdown = latency,
                     costBreakdown = cost,
+                    providerBreakdown = providers,
                     sessionTrends = trends,
                     isLoading = false,
                 )
@@ -268,7 +299,18 @@ class AnalyticsViewModel
                 appendLine("    \"ttsCost\": ${state.costBreakdown.ttsCost},")
                 appendLine("    \"llmCost\": ${state.costBreakdown.llmCost},")
                 appendLine("    \"totalCost\": ${state.costBreakdown.totalCost}")
-                appendLine("  }")
+                appendLine("  },")
+                appendLine("  \"providerBreakdown\": [")
+                state.providerBreakdown.forEachIndexed { index, provider ->
+                    val comma = if (index < state.providerBreakdown.lastIndex) "," else ""
+                    appendLine("    {")
+                    appendLine("      \"provider\": \"${provider.providerName}\",")
+                    appendLine("      \"type\": \"${provider.providerType}\",")
+                    appendLine("      \"cost\": ${provider.totalCost},")
+                    appendLine("      \"requests\": ${provider.requestCount}")
+                    appendLine("    }$comma")
+                }
+                appendLine("  ]")
                 append("}")
             }
         }
@@ -347,6 +389,17 @@ data class AnalyticsUiState(
     val quickStats: QuickStats = QuickStats(),
     val latencyBreakdown: LatencyBreakdown = LatencyBreakdown(),
     val costBreakdown: CostBreakdown = CostBreakdown(),
+    val providerBreakdown: List<ProviderCostItem> = emptyList(),
     val sessionTrends: List<DailyStats> = emptyList(),
     val isLoading: Boolean = false,
+)
+
+/**
+ * Cost breakdown for a specific provider.
+ */
+data class ProviderCostItem(
+    val providerName: String,
+    val providerType: String,
+    val totalCost: Double,
+    val requestCount: Int,
 )

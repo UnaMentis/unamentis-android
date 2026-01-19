@@ -53,6 +53,11 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="unamentis" />
             </intent-filter>
+
+            <!-- Shortcuts for Google Assistant and launcher -->
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
         </activity>
 
         <!-- Session Foreground Service -->

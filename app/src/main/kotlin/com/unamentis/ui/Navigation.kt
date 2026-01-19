@@ -1,5 +1,7 @@
 package com.unamentis.ui
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Analytics
@@ -26,9 +28,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
@@ -39,14 +38,19 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
+import com.unamentis.core.network.ConnectivityMonitor
 import com.unamentis.navigation.DeepLinkDestination
 import com.unamentis.navigation.DeepLinkRoutes
 import com.unamentis.ui.analytics.AnalyticsScreen
+import com.unamentis.ui.components.OfflineBanner
 import com.unamentis.ui.curriculum.CurriculumScreen
 import com.unamentis.ui.history.HistoryScreen
 import com.unamentis.ui.session.SessionScreen
 import com.unamentis.ui.settings.SettingsScreen
 import com.unamentis.ui.todo.TodoScreen
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 
 /**
  * Navigation destinations for the main bottom navigation.
@@ -110,11 +114,13 @@ val LocalScrollToTopHandler = compositionLocalOf { ScrollToTopHandler() }
 /**
  * Main navigation host for UnaMentis with bottom navigation and deep link support.
  *
+ * @param connectivityMonitor Monitor for network connectivity state
  * @param initialDeepLink Optional deep link destination to navigate to on launch
  * @param onDeepLinkConsumed Callback when the deep link has been handled
  */
 @Composable
 fun UnaMentisNavHost(
+    connectivityMonitor: ConnectivityMonitor,
     initialDeepLink: DeepLinkDestination? = null,
     onDeepLinkConsumed: () -> Unit = {},
 ) {
@@ -163,155 +169,165 @@ fun UnaMentisNavHost(
                 )
             },
         ) { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = Screen.Session.route,
-            modifier = Modifier.padding(innerPadding),
-        ) {
-            // Session tab with deep link support
-            composable(
-                route = Routes.SESSION,
-                deepLinks =
-                    listOf(
-                        navDeepLink { uriPattern = DeepLinkRoutes.URI_SESSION },
-                    ),
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding),
             ) {
-                SessionScreen()
-            }
+                // Offline banner at the top
+                OfflineBanner(connectivityMonitor = connectivityMonitor)
 
-            // Session start with curriculum/topic context
-            composable(
-                route = Routes.SESSION_START,
-                arguments =
-                    listOf(
-                        navArgument("curriculum_id") {
-                            type = NavType.StringType
-                            nullable = true
-                            defaultValue = null
-                        },
-                        navArgument("topic_id") {
-                            type = NavType.StringType
-                            nullable = true
-                            defaultValue = null
-                        },
-                    ),
-                deepLinks =
-                    listOf(
-                        navDeepLink {
-                            uriPattern = "${DeepLinkRoutes.URI_SESSION_START}?" +
-                                "${DeepLinkRoutes.PARAM_CURRICULUM_ID}={curriculum_id}&" +
-                                "${DeepLinkRoutes.PARAM_TOPIC_ID}={topic_id}"
-                        },
-                    ),
-            ) { backStackEntry ->
-                val curriculumId = backStackEntry.arguments?.getString("curriculum_id")
-                val topicId = backStackEntry.arguments?.getString("topic_id")
-                SessionScreen(
-                    initialCurriculumId = curriculumId,
-                    initialTopicId = topicId,
-                )
-            }
+                NavHost(
+                    navController = navController,
+                    startDestination = Screen.Session.route,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    // Session tab with deep link support
+                    composable(
+                        route = Routes.SESSION,
+                        deepLinks =
+                            listOf(
+                                navDeepLink { uriPattern = DeepLinkRoutes.URI_SESSION },
+                            ),
+                    ) {
+                        SessionScreen()
+                    }
 
-            // Curriculum tab with deep link support
-            composable(
-                route = Routes.CURRICULUM,
-                deepLinks =
-                    listOf(
-                        navDeepLink { uriPattern = DeepLinkRoutes.URI_CURRICULUM },
-                    ),
-            ) {
-                CurriculumScreen()
-            }
+                    // Session start with curriculum/topic context
+                    composable(
+                        route = Routes.SESSION_START,
+                        arguments =
+                            listOf(
+                                navArgument("curriculum_id") {
+                                    type = NavType.StringType
+                                    nullable = true
+                                    defaultValue = null
+                                },
+                                navArgument("topic_id") {
+                                    type = NavType.StringType
+                                    nullable = true
+                                    defaultValue = null
+                                },
+                            ),
+                        deepLinks =
+                            listOf(
+                                navDeepLink {
+                                    uriPattern = "${DeepLinkRoutes.URI_SESSION_START}?" +
+                                        "${DeepLinkRoutes.PARAM_CURRICULUM_ID}={curriculum_id}&" +
+                                        "${DeepLinkRoutes.PARAM_TOPIC_ID}={topic_id}"
+                                },
+                            ),
+                    ) { backStackEntry ->
+                        val curriculumId = backStackEntry.arguments?.getString("curriculum_id")
+                        val topicId = backStackEntry.arguments?.getString("topic_id")
+                        SessionScreen(
+                            initialCurriculumId = curriculumId,
+                            initialTopicId = topicId,
+                        )
+                    }
 
-            // Curriculum detail
-            composable(
-                route = Routes.CURRICULUM_DETAIL,
-                arguments =
-                    listOf(
-                        navArgument("id") { type = NavType.StringType },
-                    ),
-                deepLinks =
-                    listOf(
-                        navDeepLink { uriPattern = DeepLinkRoutes.URI_CURRICULUM_DETAIL },
-                    ),
-            ) { backStackEntry ->
-                val curriculumId = backStackEntry.arguments?.getString("id")
-                CurriculumScreen(initialCurriculumId = curriculumId)
-            }
+                    // Curriculum tab with deep link support
+                    composable(
+                        route = Routes.CURRICULUM,
+                        deepLinks =
+                            listOf(
+                                navDeepLink { uriPattern = DeepLinkRoutes.URI_CURRICULUM },
+                            ),
+                    ) {
+                        CurriculumScreen()
+                    }
 
-            // To-Do tab with deep link support
-            composable(
-                route = Routes.TODO,
-                deepLinks =
-                    listOf(
-                        navDeepLink { uriPattern = DeepLinkRoutes.URI_TODO },
-                    ),
-            ) {
-                TodoScreen()
-            }
+                    // Curriculum detail
+                    composable(
+                        route = Routes.CURRICULUM_DETAIL,
+                        arguments =
+                            listOf(
+                                navArgument("id") { type = NavType.StringType },
+                            ),
+                        deepLinks =
+                            listOf(
+                                navDeepLink { uriPattern = DeepLinkRoutes.URI_CURRICULUM_DETAIL },
+                            ),
+                    ) { backStackEntry ->
+                        val curriculumId = backStackEntry.arguments?.getString("id")
+                        CurriculumScreen(initialCurriculumId = curriculumId)
+                    }
 
-            // History tab with deep link support
-            composable(
-                route = Routes.HISTORY,
-                deepLinks =
-                    listOf(
-                        navDeepLink { uriPattern = DeepLinkRoutes.URI_HISTORY },
-                    ),
-            ) {
-                HistoryScreen()
-            }
+                    // To-Do tab with deep link support
+                    composable(
+                        route = Routes.TODO,
+                        deepLinks =
+                            listOf(
+                                navDeepLink { uriPattern = DeepLinkRoutes.URI_TODO },
+                            ),
+                    ) {
+                        TodoScreen()
+                    }
 
-            // History detail
-            composable(
-                route = Routes.HISTORY_DETAIL,
-                arguments =
-                    listOf(
-                        navArgument("id") { type = NavType.StringType },
-                    ),
-                deepLinks =
-                    listOf(
-                        navDeepLink { uriPattern = DeepLinkRoutes.URI_HISTORY_DETAIL },
-                    ),
-            ) { backStackEntry ->
-                val sessionId = backStackEntry.arguments?.getString("id")
-                HistoryScreen(initialSessionId = sessionId)
-            }
+                    // History tab with deep link support
+                    composable(
+                        route = Routes.HISTORY,
+                        deepLinks =
+                            listOf(
+                                navDeepLink { uriPattern = DeepLinkRoutes.URI_HISTORY },
+                            ),
+                    ) {
+                        HistoryScreen()
+                    }
 
-            // Analytics tab with deep link support
-            composable(
-                route = Routes.ANALYTICS,
-                deepLinks =
-                    listOf(
-                        navDeepLink { uriPattern = DeepLinkRoutes.URI_ANALYTICS },
-                    ),
-            ) {
-                AnalyticsScreen()
-            }
+                    // History detail
+                    composable(
+                        route = Routes.HISTORY_DETAIL,
+                        arguments =
+                            listOf(
+                                navArgument("id") { type = NavType.StringType },
+                            ),
+                        deepLinks =
+                            listOf(
+                                navDeepLink { uriPattern = DeepLinkRoutes.URI_HISTORY_DETAIL },
+                            ),
+                    ) { backStackEntry ->
+                        val sessionId = backStackEntry.arguments?.getString("id")
+                        HistoryScreen(initialSessionId = sessionId)
+                    }
 
-            // Settings tab with deep link support
-            composable(
-                route = Routes.SETTINGS,
-                arguments =
-                    listOf(
-                        navArgument("section") {
-                            type = NavType.StringType
-                            nullable = true
-                            defaultValue = null
-                        },
-                    ),
-                deepLinks =
-                    listOf(
-                        navDeepLink { uriPattern = DeepLinkRoutes.URI_SETTINGS },
-                        navDeepLink {
-                            uriPattern = "${DeepLinkRoutes.URI_SETTINGS}?" +
-                                "${DeepLinkRoutes.PARAM_SECTION}={section}"
-                        },
-                    ),
-            ) { backStackEntry ->
-                val section = backStackEntry.arguments?.getString("section")
-                SettingsScreen(initialSection = section)
+                    // Analytics tab with deep link support
+                    composable(
+                        route = Routes.ANALYTICS,
+                        deepLinks =
+                            listOf(
+                                navDeepLink { uriPattern = DeepLinkRoutes.URI_ANALYTICS },
+                            ),
+                    ) {
+                        AnalyticsScreen()
+                    }
+
+                    // Settings tab with deep link support
+                    composable(
+                        route = Routes.SETTINGS,
+                        arguments =
+                            listOf(
+                                navArgument("section") {
+                                    type = NavType.StringType
+                                    nullable = true
+                                    defaultValue = null
+                                },
+                            ),
+                        deepLinks =
+                            listOf(
+                                navDeepLink { uriPattern = DeepLinkRoutes.URI_SETTINGS },
+                                navDeepLink {
+                                    uriPattern = "${DeepLinkRoutes.URI_SETTINGS}?" +
+                                        "${DeepLinkRoutes.PARAM_SECTION}={section}"
+                                },
+                            ),
+                    ) { backStackEntry ->
+                        val section = backStackEntry.arguments?.getString("section")
+                        SettingsScreen(initialSection = section)
+                    }
+                }
             }
-        }
         }
     }
 }

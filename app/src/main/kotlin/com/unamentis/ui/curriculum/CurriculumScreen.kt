@@ -117,13 +117,13 @@ fun CurriculumScreen(
                     selected = uiState.selectedTab == CurriculumTab.SERVER,
                     onClick = { viewModel.selectTab(CurriculumTab.SERVER) },
                     text = { Text("Server") },
-                    icon = { Icon(Icons.Default.Cloud, contentDescription = null) },
+                    icon = { Icon(Icons.Default.Cloud, contentDescription = "Server curricula") },
                 )
                 Tab(
                     selected = uiState.selectedTab == CurriculumTab.LOCAL,
                     onClick = { viewModel.selectTab(CurriculumTab.LOCAL) },
                     text = { Text("Local") },
-                    icon = { Icon(Icons.Default.Storage, contentDescription = null) },
+                    icon = { Icon(Icons.Default.Storage, contentDescription = "Local curricula") },
                 )
             }
 
@@ -191,7 +191,7 @@ private fun CurriculumTopBar(
                 value = searchQuery,
                 onValueChange = onSearchQueryChange,
                 placeholder = { Text("Search curricula...") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
                 trailingIcon = {
                     if (searchQuery.isNotEmpty()) {
                         IconButton(onClick = { onSearchQueryChange("") }) {

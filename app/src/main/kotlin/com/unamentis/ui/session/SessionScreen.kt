@@ -444,7 +444,7 @@ private fun SessionControlBar(
                         onClick = onStart,
                         modifier = Modifier.weight(1f),
                     ) {
-                        Icon(Icons.Default.PlayArrow, contentDescription = null)
+                        Icon(Icons.Default.PlayArrow, contentDescription = "Start session")
                         Spacer(modifier = Modifier.width(8.dp))
                         Text("Start Session")
                     }
@@ -456,7 +456,7 @@ private fun SessionControlBar(
                         onClick = onPause,
                         modifier = Modifier.weight(1f),
                     ) {
-                        Icon(Icons.Default.Pause, contentDescription = null)
+                        Icon(Icons.Default.Pause, contentDescription = "Pause session")
                         Spacer(modifier = Modifier.width(8.dp))
                         Text("Pause")
                     }
@@ -468,7 +468,7 @@ private fun SessionControlBar(
                         onClick = onResume,
                         modifier = Modifier.weight(1f),
                     ) {
-                        Icon(Icons.Default.PlayArrow, contentDescription = null)
+                        Icon(Icons.Default.PlayArrow, contentDescription = "Resume session")
                         Spacer(modifier = Modifier.width(8.dp))
                         Text("Resume")
                     }
@@ -480,7 +480,7 @@ private fun SessionControlBar(
                         onClick = onStop,
                         modifier = Modifier.weight(1f),
                     ) {
-                        Icon(Icons.Default.Stop, contentDescription = null)
+                        Icon(Icons.Default.Stop, contentDescription = "Stop session")
                         Spacer(modifier = Modifier.width(8.dp))
                         Text("Stop")
                     }

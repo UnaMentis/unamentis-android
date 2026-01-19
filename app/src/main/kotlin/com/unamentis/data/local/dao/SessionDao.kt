@@ -138,4 +138,69 @@ interface SessionDao {
         id: String,
         isStarred: Boolean,
     )
+
+    /**
+     * Get sessions within a date range.
+     *
+     * @param startTimestamp Start of date range
+     * @param endTimestamp End of date range
+     * @return Flow of session list
+     */
+    @Query(
+        """
+        SELECT * FROM sessions
+        WHERE startTime >= :startTimestamp AND startTime <= :endTimestamp
+        ORDER BY startTime DESC
+        """,
+    )
+    fun getSessionsInDateRange(
+        startTimestamp: Long,
+        endTimestamp: Long,
+    ): Flow<List<SessionEntity>>
+
+    /**
+     * Get sessions by curriculum.
+     *
+     * @param curriculumId Curriculum identifier
+     * @return Flow of session list
+     */
+    @Query("SELECT * FROM sessions WHERE curriculumId = :curriculumId ORDER BY startTime DESC")
+    fun getSessionsByCurriculum(curriculumId: String): Flow<List<SessionEntity>>
+
+    /**
+     * Get sessions with minimum duration.
+     *
+     * @param minDurationSeconds Minimum duration in seconds
+     * @return Flow of session list
+     */
+    @Query("SELECT * FROM sessions WHERE durationSeconds >= :minDurationSeconds ORDER BY startTime DESC")
+    fun getSessionsByMinDuration(minDurationSeconds: Long): Flow<List<SessionEntity>>
+
+    /**
+     * Search transcript entries for text.
+     *
+     * @param query Search query
+     * @return List of sessions containing matching transcript entries
+     */
+    @Query(
+        """
+        SELECT DISTINCT s.* FROM sessions s
+        INNER JOIN transcript_entries t ON s.id = t.sessionId
+        WHERE t.text LIKE '%' || :query || '%'
+        ORDER BY s.startTime DESC
+        """,
+    )
+    fun searchSessionsByTranscript(query: String): Flow<List<SessionEntity>>
+
+    /**
+     * Get total session count.
+     */
+    @Query("SELECT COUNT(*) FROM sessions")
+    suspend fun getSessionCount(): Int
+
+    /**
+     * Get starred session count.
+     */
+    @Query("SELECT COUNT(*) FROM sessions WHERE isStarred = 1")
+    suspend fun getStarredSessionCount(): Int
 }

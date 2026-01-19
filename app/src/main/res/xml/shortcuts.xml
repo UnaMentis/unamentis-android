@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Start Session Shortcut -->
+    <shortcut
+        android:shortcutId="shortcut_start_session"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_mic"
+        android:shortcutShortLabel="@string/shortcut_start_session_short"
+        android:shortcutLongLabel="@string/shortcut_start_session_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.unamentis"
+            android:targetClass="com.unamentis.MainActivity"
+            android:data="unamentis://session" />
+        <categories android:name="android.shortcut.conversation" />
+        <capability-binding android:key="actions.intent.START_EXERCISE" />
+    </shortcut>
+
+    <!-- Resume Learning Shortcut -->
+    <shortcut
+        android:shortcutId="shortcut_resume_learning"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_play"
+        android:shortcutShortLabel="@string/shortcut_resume_short"
+        android:shortcutLongLabel="@string/shortcut_resume_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.unamentis"
+            android:targetClass="com.unamentis.MainActivity"
+            android:data="unamentis://session" />
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+
+    <!-- Show Progress Shortcut -->
+    <shortcut
+        android:shortcutId="shortcut_show_progress"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_analytics"
+        android:shortcutShortLabel="@string/shortcut_progress_short"
+        android:shortcutLongLabel="@string/shortcut_progress_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.unamentis"
+            android:targetClass="com.unamentis.MainActivity"
+            android:data="unamentis://analytics" />
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+
+    <!-- View To-Dos Shortcut -->
+    <shortcut
+        android:shortcutId="shortcut_view_todos"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_checklist"
+        android:shortcutShortLabel="@string/shortcut_todos_short"
+        android:shortcutLongLabel="@string/shortcut_todos_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.unamentis"
+            android:targetClass="com.unamentis.MainActivity"
+            android:data="unamentis://todo" />
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+</shortcuts>

@@ -30,4 +30,7 @@
     <color name="warning">#FF9500</color>
     <color name="error">#FF3B30</color>
     <color name="info">#007AFF</color>
+
+    <!-- Shortcut icon background -->
+    <color name="shortcut_background">#003D7A</color>
 </resources>

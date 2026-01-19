@@ -37,6 +37,18 @@ class TodoViewModel
         val selectedTab: StateFlow<TodoFilter> = _selectedTab.asStateFlow()
 
         /**
+         * Multi-select mode state.
+         */
+        private val _isSelectionMode = MutableStateFlow(false)
+        val isSelectionMode: StateFlow<Boolean> = _isSelectionMode.asStateFlow()
+
+        /**
+         * Set of selected todo IDs for batch operations.
+         */
+        private val _selectedTodoIds = MutableStateFlow<Set<String>>(emptySet())
+        val selectedTodoIds: StateFlow<Set<String>> = _selectedTodoIds.asStateFlow()
+
+        /**
          * All todos from database.
          */
         private val allTodos: Flow<List<Todo>> = database.todoDao().getAllTodos()
@@ -109,14 +121,16 @@ class TodoViewModel
             combine(
                 selectedTab,
                 filteredTodos,
-                aiSuggestedCount,
-                overdueCount,
-            ) { tab, todos, aiCount, overdue ->
+                combine(aiSuggestedCount, overdueCount) { ai, overdue -> ai to overdue },
+                combine(isSelectionMode, selectedTodoIds) { mode, ids -> mode to ids },
+            ) { tab, todos, (aiCount, overdue), (selectionMode, selectedIds) ->
                 TodoUiState(
                     selectedTab = tab,
                     todos = todos,
                     aiSuggestedCount = aiCount,
                     overdueCount = overdue,
+                    isSelectionMode = selectionMode,
+                    selectedTodoIds = selectedIds,
                 )
             }.stateIn(
                 scope = viewModelScope,
@@ -129,7 +143,153 @@ class TodoViewModel
          */
         fun selectTab(tab: TodoFilter) {
             _selectedTab.value = tab
+            // Clear selection when switching tabs
+            exitSelectionMode()
         }
+
+        // ==================== Selection Mode Methods ====================
+
+        /**
+         * Enter selection mode for batch operations.
+         */
+        fun enterSelectionMode() {
+            _isSelectionMode.value = true
+        }
+
+        /**
+         * Exit selection mode and clear all selections.
+         */
+        fun exitSelectionMode() {
+            _isSelectionMode.value = false
+            _selectedTodoIds.value = emptySet()
+        }
+
+        /**
+         * Toggle selection of a todo.
+         */
+        fun toggleTodoSelection(todoId: String) {
+            val currentSelection = _selectedTodoIds.value.toMutableSet()
+            if (todoId in currentSelection) {
+                currentSelection.remove(todoId)
+            } else {
+                currentSelection.add(todoId)
+            }
+            _selectedTodoIds.value = currentSelection
+
+            // Exit selection mode if no items selected
+            if (currentSelection.isEmpty()) {
+                _isSelectionMode.value = false
+            }
+        }
+
+        /**
+         * Select all currently visible todos.
+         */
+        fun selectAll() {
+            val visibleTodos = filteredTodos.value
+            _selectedTodoIds.value = visibleTodos.map { it.id }.toSet()
+        }
+
+        /**
+         * Clear all selections.
+         */
+        fun clearSelection() {
+            _selectedTodoIds.value = emptySet()
+        }
+
+        // ==================== Batch Operation Methods ====================
+
+        /**
+         * Complete all selected todos.
+         */
+        fun batchComplete() {
+            val selectedIds = _selectedTodoIds.value.toList()
+            if (selectedIds.isEmpty()) return
+
+            viewModelScope.launch {
+                val now = System.currentTimeMillis()
+                database.todoDao().updateStatusForIds(
+                    ids = selectedIds,
+                    status = TodoStatus.COMPLETED.name,
+                    updatedAt = now,
+                )
+                exitSelectionMode()
+            }
+        }
+
+        /**
+         * Archive all selected todos.
+         */
+        fun batchArchive() {
+            val selectedIds = _selectedTodoIds.value.toList()
+            if (selectedIds.isEmpty()) return
+
+            viewModelScope.launch {
+                val now = System.currentTimeMillis()
+                database.todoDao().updateStatusForIds(
+                    ids = selectedIds,
+                    status = TodoStatus.ARCHIVED.name,
+                    updatedAt = now,
+                )
+                exitSelectionMode()
+            }
+        }
+
+        /**
+         * Delete all selected todos.
+         */
+        fun batchDelete() {
+            val selectedIds = _selectedTodoIds.value.toList()
+            if (selectedIds.isEmpty()) return
+
+            viewModelScope.launch {
+                database.todoDao().deleteByIds(selectedIds)
+                exitSelectionMode()
+            }
+        }
+
+        /**
+         * Restore all selected todos to active status.
+         */
+        fun batchRestore() {
+            val selectedIds = _selectedTodoIds.value.toList()
+            if (selectedIds.isEmpty()) return
+
+            viewModelScope.launch {
+                val now = System.currentTimeMillis()
+                database.todoDao().updateStatusForIds(
+                    ids = selectedIds,
+                    status = TodoStatus.ACTIVE.name,
+                    updatedAt = now,
+                )
+                exitSelectionMode()
+            }
+        }
+
+        /**
+         * Update priority for all selected todos.
+         */
+        fun batchUpdatePriority(priority: TodoPriority) {
+            val selectedIds = _selectedTodoIds.value.toList()
+            if (selectedIds.isEmpty()) return
+
+            viewModelScope.launch {
+                selectedIds.forEach { id ->
+                    val todo = database.todoDao().getById(id)
+                    if (todo != null) {
+                        database.todoDao().update(
+                            todo.copy(
+                                priority = priority,
+                                updatedAt = System.currentTimeMillis(),
+                            ),
+                        )
+                    }
+                }
+                exitSelectionMode()
+            }
+        }
+
+        // ==================== Single Item CRUD Methods ====================
 
         /**
          * Create new todo.
@@ -330,4 +490,6 @@ data class TodoUiState(
     val todos: List<Todo> = emptyList(),
     val aiSuggestedCount: Int = 0,
     val overdueCount: Int = 0,
+    val isSelectionMode: Boolean = false,
+    val selectedTodoIds: Set<String> = emptySet(),
 )

@@ -20,6 +20,7 @@ appcompat = "1.7.0"
 # Dependency Injection
 hilt = "2.54"
 hiltNavigationCompose = "1.2.0"
+hiltWork = "1.2.0"
 
 # Database
 room = "2.6.1"
@@ -40,6 +41,12 @@ oboe = "1.8.0"
 # DataStore & Security
 datastore = "1.1.1"
 securityCrypto = "1.1.0-alpha06"
+
+# Work Manager
+work = "2.9.0"
+
+# Image Loading
+coil = "2.5.0"
 
 # Code Quality
 ktlint = "12.1.2"
@@ -85,6 +92,8 @@ androidx-navigation-compose = { group = "androidx.navigation", name = "navigatio
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
 hilt-android-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "hilt" }
 androidx-hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "hiltNavigationCompose" }
+androidx-hilt-work = { group = "androidx.hilt", name = "hilt-work", version.ref = "hiltWork" }
+androidx-hilt-compiler = { group = "androidx.hilt", name = "hilt-compiler", version.ref = "hiltWork" }
 
 # Room Database
 androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
@@ -113,6 +122,12 @@ androidx-datastore-preferences = { group = "androidx.datastore", name = "datasto
 
 # Security (Encrypted Preferences)
 androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
+
+# Work Manager (Background tasks)
+androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "work" }
+
+# Image Loading (Coil)
+coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
 
 # Testing
 junit = { group = "junit", name = "junit", version.ref = "junit" }

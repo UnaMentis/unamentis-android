@@ -1,5 +1,8 @@
 package com.unamentis.ui.todo
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -51,6 +54,8 @@ fun TodoScreen(viewModel: TodoViewModel = hiltViewModel()) {
     var showCreateDialog by remember { mutableStateOf(false) }
     var editingTodo by remember { mutableStateOf<Todo?>(null) }
     var showSuggestionInfo by remember { mutableStateOf<Todo?>(null) }
+    var showBatchPriorityMenu by remember { mutableStateOf(false) }
+    var showBatchDeleteConfirm by remember { mutableStateOf(false) }
 
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
@@ -67,25 +72,127 @@ fun TodoScreen(viewModel: TodoViewModel = hiltViewModel()) {
         }
     }
 
+    // Handle back press to exit selection mode
+    if (uiState.isSelectionMode) {
+        BackHandler {
+            viewModel.exitSelectionMode()
+        }
+    }
+
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("To-Do") },
-                actions = {
-                    // Overdue indicator badge
-                    if (uiState.overdueCount > 0) {
-                        Badge(
-                            containerColor = MaterialTheme.colorScheme.error,
-                        ) {
-                            Text("${uiState.overdueCount}")
+            if (uiState.isSelectionMode) {
+                // Selection mode top bar
+                TopAppBar(
+                    title = { Text("${uiState.selectedTodoIds.size} selected") },
+                    navigationIcon = {
+                        IconButton(onClick = { viewModel.exitSelectionMode() }) {
+                            Icon(Icons.Default.Close, contentDescription = "Exit selection")
                         }
-                        Spacer(modifier = Modifier.width(8.dp))
-                    }
-                },
-            )
+                    },
+                    actions = {
+                        // Select all
+                        IconButton(onClick = { viewModel.selectAll() }) {
+                            Icon(Icons.Default.SelectAll, contentDescription = "Select all")
+                        }
+
+                        // Batch complete (only for Active tab)
+                        if (uiState.selectedTab == TodoFilter.ACTIVE) {
+                            IconButton(
+                                onClick = { viewModel.batchComplete() },
+                                enabled = uiState.selectedTodoIds.isNotEmpty(),
+                            ) {
+                                Icon(Icons.Default.CheckCircle, contentDescription = "Complete all")
+                            }
+                        }
+
+                        // Batch restore (only for Completed/Archived tabs)
+                        if (uiState.selectedTab == TodoFilter.COMPLETED ||
+                            uiState.selectedTab == TodoFilter.ARCHIVED
+                        ) {
+                            IconButton(
+                                onClick = { viewModel.batchRestore() },
+                                enabled = uiState.selectedTodoIds.isNotEmpty(),
+                            ) {
+                                Icon(Icons.Default.Restore, contentDescription = "Restore all")
+                            }
+                        }
+
+                        // Batch archive (only for Active tab)
+                        if (uiState.selectedTab == TodoFilter.ACTIVE) {
+                            IconButton(
+                                onClick = { viewModel.batchArchive() },
+                                enabled = uiState.selectedTodoIds.isNotEmpty(),
+                            ) {
+                                Icon(Icons.Default.Archive, contentDescription = "Archive all")
+                            }
+                        }
+
+                        // Priority menu
+                        Box {
+                            IconButton(
+                                onClick = { showBatchPriorityMenu = true },
+                                enabled = uiState.selectedTodoIds.isNotEmpty(),
+                            ) {
+                                Icon(Icons.Default.Flag, contentDescription = "Change priority")
+                            }
+                            DropdownMenu(
+                                expanded = showBatchPriorityMenu,
+                                onDismissRequest = { showBatchPriorityMenu = false },
+                            ) {
+                                TodoPriority.entries.forEach { priority ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                when (priority) {
+                                                    TodoPriority.HIGH -> "High Priority"
+                                                    TodoPriority.MEDIUM -> "Medium Priority"
+                                                    TodoPriority.LOW -> "Low Priority"
+                                                },
+                                            )
+                                        },
+                                        onClick = {
+                                            viewModel.batchUpdatePriority(priority)
+                                            showBatchPriorityMenu = false
+                                        },
+                                    )
+                                }
+                            }
+                        }
+
+                        // Delete
+                        IconButton(
+                            onClick = { showBatchDeleteConfirm = true },
+                            enabled = uiState.selectedTodoIds.isNotEmpty(),
+                        ) {
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = "Delete all",
+                                tint = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                    },
+                )
+            } else {
+                // Normal top bar
+                TopAppBar(
+                    title = { Text("To-Do") },
+                    actions = {
+                        // Overdue indicator badge
+                        if (uiState.overdueCount > 0) {
+                            Badge(
+                                containerColor = MaterialTheme.colorScheme.error,
+                            ) {
+                                Text("${uiState.overdueCount}")
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                        }
+                    },
+                )
+            }
         },
         floatingActionButton = {
-            if (uiState.selectedTab == TodoFilter.ACTIVE) {
+            if (uiState.selectedTab == TodoFilter.ACTIVE && !uiState.isSelectionMode) {
                 FloatingActionButton(onClick = { showCreateDialog = true }) {
                     Icon(Icons.Default.Add, contentDescription = "Add todo")
                 }
@@ -129,7 +236,7 @@ fun TodoScreen(viewModel: TodoViewModel = hiltViewModel()) {
                         },
                         icon =
                             if (filter == TodoFilter.AI_SUGGESTED) {
-                                { Icon(Icons.Outlined.AutoAwesome, contentDescription = null) }
+                                { Icon(Icons.Outlined.AutoAwesome, contentDescription = "AI suggested") }
                             } else {
                                 null
                             },
@@ -142,7 +249,16 @@ fun TodoScreen(viewModel: TodoViewModel = hiltViewModel()) {
                 todos = uiState.todos,
                 listState = listState,
                 isAISuggestedTab = uiState.selectedTab == TodoFilter.AI_SUGGESTED,
+                isSelectionMode = uiState.isSelectionMode,
+                selectedTodoIds = uiState.selectedTodoIds,
                 onTodoClick = { editingTodo = it },
+                onTodoLongClick = { todo ->
+                    if (!uiState.isSelectionMode) {
+                        viewModel.enterSelectionMode()
+                    }
+                    viewModel.toggleTodoSelection(todo.id)
+                },
+                onToggleSelection = { viewModel.toggleTodoSelection(it.id) },
                 onToggleComplete = { todo ->
                     if (todo.status == TodoStatus.COMPLETED) {
                         viewModel.activateTodo(todo.id)
@@ -158,6 +274,32 @@ fun TodoScreen(viewModel: TodoViewModel = hiltViewModel()) {
                 onUpdateDueDate = { todo, dueDate -> viewModel.updateDueDate(todo.id, dueDate) },
             )
         }
+    }
+
+    // Batch delete confirmation dialog
+    if (showBatchDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showBatchDeleteConfirm = false },
+            title = { Text("Delete ${uiState.selectedTodoIds.size} items?") },
+            text = {
+                Text("This will permanently delete the selected to-do items. This action cannot be undone.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.batchDelete()
+                        showBatchDeleteConfirm = false
+                    },
+                ) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showBatchDeleteConfirm = false }) {
+                    Text("Cancel")
+                }
+            },
+        )
     }
 
     // Create dialog
@@ -208,7 +350,11 @@ private fun TodoList(
     todos: List<Todo>,
     listState: LazyListState,
     isAISuggestedTab: Boolean,
+    isSelectionMode: Boolean,
+    selectedTodoIds: Set<String>,
     onTodoClick: (Todo) -> Unit,
+    onTodoLongClick: (Todo) -> Unit,
+    onToggleSelection: (Todo) -> Unit,
     onToggleComplete: (Todo) -> Unit,
     onArchive: (Todo) -> Unit,
     onDelete: (Todo) -> Unit,
@@ -266,7 +412,16 @@ private fun TodoList(
                 TodoCard(
                     todo = todo,
                     isAISuggestedTab = isAISuggestedTab,
-                    onClick = { onTodoClick(todo) },
+                    isSelectionMode = isSelectionMode,
+                    isSelected = todo.id in selectedTodoIds,
+                    onClick = {
+                        if (isSelectionMode) {
+                            onToggleSelection(todo)
+                        } else {
+                            onTodoClick(todo)
+                        }
+                    },
+                    onLongClick = { onTodoLongClick(todo) },
                     onToggleComplete = { onToggleComplete(todo) },
                     onArchive = { onArchive(todo) },
                     onDelete = { onDelete(todo) },
@@ -283,12 +438,15 @@ private fun TodoList(
 /**
  * Individual todo card.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 private fun TodoCard(
     todo: Todo,
     isAISuggestedTab: Boolean,
+    isSelectionMode: Boolean,
+    isSelected: Boolean,
     onClick: () -> Unit,
+    onLongClick: () -> Unit,
     onToggleComplete: () -> Unit,
     onArchive: () -> Unit,
     onDelete: () -> Unit,
@@ -303,17 +461,21 @@ private fun TodoCard(
     val isOverdue = todo.dueDate != null && todo.dueDate < now && todo.status == TodoStatus.ACTIVE
 
     Card(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .combinedClickable(
+                    onClick = onClick,
+                    onLongClick = onLongClick,
+                ),
         colors =
             CardDefaults.cardColors(
                 containerColor =
-                    if (isOverdue) {
-                        MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
-                    } else if (todo.isAISuggested) {
-                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-                    } else {
-                        MaterialTheme.colorScheme.surfaceVariant
+                    when {
+                        isSelected -> MaterialTheme.colorScheme.primaryContainer
+                        isOverdue -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
+                        todo.isAISuggested -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                        else -> MaterialTheme.colorScheme.surfaceVariant
                     },
             ),
     ) {
@@ -369,11 +531,18 @@ private fun TodoCard(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    // Checkbox
-                    Checkbox(
-                        checked = todo.status == TodoStatus.COMPLETED,
-                        onCheckedChange = { onToggleComplete() },
-                    )
+                    // Selection checkbox or completion checkbox
+                    if (isSelectionMode) {
+                        Checkbox(
+                            checked = isSelected,
+                            onCheckedChange = { onClick() },
+                        )
+                    } else {
+                        Checkbox(
+                            checked = todo.status == TodoStatus.COMPLETED,
+                            onCheckedChange = { onToggleComplete() },
+                        )
+                    }
 
                     // Priority indicator
                     PriorityBadge(priority = todo.priority)
