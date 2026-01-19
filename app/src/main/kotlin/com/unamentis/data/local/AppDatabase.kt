@@ -8,10 +8,12 @@ import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.unamentis.data.local.dao.CurriculumDao
+import com.unamentis.data.local.dao.ModuleDao
 import com.unamentis.data.local.dao.SessionDao
 import com.unamentis.data.local.dao.TodoDao
 import com.unamentis.data.local.dao.TopicProgressDao
 import com.unamentis.data.local.entity.CurriculumEntity
+import com.unamentis.data.local.entity.DownloadedModuleEntity
 import com.unamentis.data.local.entity.SessionEntity
 import com.unamentis.data.local.entity.TopicProgressEntity
 import com.unamentis.data.local.entity.TranscriptEntryEntity
@@ -35,8 +37,9 @@ import com.unamentis.data.model.Todo
         TranscriptEntryEntity::class,
         TopicProgressEntity::class,
         Todo::class,
+        DownloadedModuleEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = false,
 )
 @TypeConverters(Converters::class)
@@ -48,6 +51,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun topicProgressDao(): TopicProgressDao
 
     abstract fun todoDao(): TodoDao
+
+    abstract fun moduleDao(): ModuleDao
 
     companion object {
         @Volatile
@@ -79,6 +84,30 @@ abstract class AppDatabase : RoomDatabase() {
             }
 
         /**
+         * Migration from version 4 to 5: Add downloaded_modules table.
+         */
+        private val MIGRATION_4_5 =
+            object : Migration(4, 5) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL(
+                        """
+                        CREATE TABLE IF NOT EXISTS downloaded_modules (
+                            id TEXT PRIMARY KEY NOT NULL,
+                            name TEXT NOT NULL,
+                            version TEXT NOT NULL,
+                            description TEXT NOT NULL,
+                            downloadedAt INTEGER NOT NULL,
+                            lastAccessedAt INTEGER NOT NULL,
+                            contentJson TEXT NOT NULL,
+                            configJson TEXT,
+                            sizeBytes INTEGER NOT NULL
+                        )
+                        """.trimIndent(),
+                    )
+                }
+            }
+
+        /**
          * Get the singleton database instance.
          *
          * @param context Application context
@@ -92,7 +121,7 @@ abstract class AppDatabase : RoomDatabase() {
                         AppDatabase::class.java,
                         "unamentis.db",
                     )
-                        .addMigrations(MIGRATION_2_3, MIGRATION_3_4)
+                        .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                         .fallbackToDestructiveMigration()
                         .build()
                 INSTANCE = instance

@@ -149,4 +149,4 @@ fun getSession(sessionId: Long): Session
 
 For security inquiries: [security@unamentis.com](mailto:security@unamentis.com)
 
-For general questions: [GitHub Issues](https://github.com/owner/unamentis-android/issues)
+For general questions: [GitHub Issues](https://github.com/unamentis/unamentis-android/issues)

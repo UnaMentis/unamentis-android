@@ -11,6 +11,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -314,6 +315,118 @@ class ApiClient(
      * @param id Curriculum ID
      */
     suspend fun preloadAssets(id: String): ApiResult<Unit> = postEmpty("/api/curricula/$id/preload-assets")
+
+    /**
+     * Stream audio for a topic.
+     *
+     * GET /api/curricula/{id}/topics/{topicId}/stream-audio
+     *
+     * Note: Returns audio stream URL. The actual streaming should be handled
+     * by the audio playback system.
+     *
+     * @param curriculumId Curriculum ID
+     * @param topicId Topic ID
+     * @return Audio stream URL
+     */
+    suspend fun getTopicAudioStreamUrl(
+        curriculumId: String,
+        topicId: String,
+    ): String = "$managementUrl/api/curricula/$curriculumId/topics/$topicId/stream-audio"
+
+    /**
+     * Upload a visual asset for a topic.
+     *
+     * POST /api/curricula/{id}/topics/{topicId}/assets
+     *
+     * @param curriculumId Curriculum ID
+     * @param topicId Topic ID
+     * @param asset Asset upload data
+     * @return Created asset metadata
+     */
+    suspend fun uploadAsset(
+        curriculumId: String,
+        topicId: String,
+        asset: VisualAssetUpload,
+    ): ApiResult<VisualAssetMetadata> = post("/api/curricula/$curriculumId/topics/$topicId/assets", asset)
+
+    /**
+     * Update an existing visual asset.
+     *
+     * PATCH /api/curricula/{id}/topics/{topicId}/assets/{assetId}
+     *
+     * @param curriculumId Curriculum ID
+     * @param topicId Topic ID
+     * @param assetId Asset ID
+     * @param update Asset update data
+     * @return Updated asset metadata
+     */
+    suspend fun updateAsset(
+        curriculumId: String,
+        topicId: String,
+        assetId: String,
+        update: UpdateAssetRequest,
+    ): ApiResult<VisualAssetMetadata> = patch("/api/curricula/$curriculumId/topics/$topicId/assets/$assetId", update)
+
+    /**
+     * Delete a visual asset.
+     *
+     * DELETE /api/curricula/{id}/topics/{topicId}/assets/{assetId}
+     *
+     * @param curriculumId Curriculum ID
+     * @param topicId Topic ID
+     * @param assetId Asset ID
+     */
+    suspend fun deleteAsset(
+        curriculumId: String,
+        topicId: String,
+        assetId: String,
+    ): ApiResult<Unit> = delete("/api/curricula/$curriculumId/topics/$topicId/assets/$assetId")
+
+    /**
+     * Import a curriculum from a file.
+     *
+     * POST /api/curricula
+     *
+     * Note: For file uploads, use multipart form data. This method accepts
+     * the file as a byte array.
+     *
+     * @param fileName Original file name
+     * @param fileData File content
+     * @return Imported curriculum summary
+     */
+    suspend fun importCurriculum(
+        fileName: String,
+        fileData: ByteArray,
+    ): ApiResult<CurriculumSummary> =
+        withContext(Dispatchers.IO) {
+            try {
+                val requestBody =
+                    MultipartBody.Builder()
+                        .setType(MultipartBody.FORM)
+                        .addFormDataPart(
+                            "file",
+                            fileName,
+                            fileData.toRequestBody("application/octet-stream".toMediaType()),
+                        )
+                        .build()
+
+                val request =
+                    Request.Builder()
+                        .url("$managementUrl/api/curricula")
+                        .post(requestBody)
+                        .addClientHeaders()
+                        .addAuthHeader()
+                        .build()
+
+                executeRequest(request)
+            } catch (e: IOException) {
+                Log.e(TAG, "Network error importing curriculum: ${e.message}", e)
+                ApiResult.NetworkError(e.message ?: "Network error", e)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error importing curriculum: ${e.message}", e)
+                ApiResult.NetworkError(e.message ?: "Import error", e)
+            }
+        }
 
     // =============================================================================
     // SESSION ENDPOINTS (03-SESSIONS.md / FOV Context)
@@ -699,6 +812,66 @@ class ApiClient(
      * @return Duplicated profile
      */
     suspend fun duplicateTTSProfile(id: String): ApiResult<TTSProfile> = postEmpty("/api/tts/profiles/$id/duplicate")
+
+    /**
+     * Export a TTS profile to JSON.
+     *
+     * GET /api/tts/profiles/{id}/export
+     *
+     * @param id Profile ID
+     * @return Profile JSON string
+     */
+    suspend fun exportTTSProfile(id: String): ApiResult<String> = get("/api/tts/profiles/$id/export")
+
+    /**
+     * Import a TTS profile from JSON.
+     *
+     * POST /api/tts/profiles/import
+     *
+     * @param profileJson Profile JSON string
+     * @return Imported profile
+     */
+    suspend fun importTTSProfile(profileJson: String): ApiResult<TTSProfile> =
+        withContext(Dispatchers.IO) {
+            try {
+                val requestBody = profileJson.toRequestBody(JSON_MEDIA_TYPE)
+                val request =
+                    Request.Builder()
+                        .url("$managementUrl/api/tts/profiles/import")
+                        .post(requestBody)
+                        .addClientHeaders()
+                        .addAuthHeader()
+                        .build()
+
+                executeRequest(request)
+            } catch (e: IOException) {
+                Log.e(TAG, "Network error importing TTS profile: ${e.message}", e)
+                ApiResult.NetworkError(e.message ?: "Network error", e)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error importing TTS profile: ${e.message}", e)
+                ApiResult.NetworkError(e.message ?: "Import error", e)
+            }
+        }
+
+    /**
+     * Get a cached TTS entry by hash.
+     *
+     * GET /api/tts/cache
+     *
+     * @param hash Cache entry hash
+     * @return Cache entry with audio URL
+     */
+    suspend fun getTTSCacheEntry(hash: String): ApiResult<TTSCacheEntry> = get("/api/tts/cache?hash=$hash")
+
+    /**
+     * Store a TTS cache entry.
+     *
+     * PUT /api/tts/cache
+     *
+     * @param entry Cache entry to store
+     * @return Stored cache entry
+     */
+    suspend fun storeTTSCacheEntry(entry: TTSCacheEntry): ApiResult<TTSCacheEntry> = put("/api/tts/cache", entry)
 
     // =============================================================================
     // IMPORT ENDPOINTS (05-IMPORT.md)

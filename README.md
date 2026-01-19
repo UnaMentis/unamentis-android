@@ -45,16 +45,17 @@ This is the Android port of the iOS application, maintaining **strict feature pa
 ## Features
 
 ### Voice Interaction
-- **Real-time Speech Recognition** — Multi-provider STT with Deepgram, AssemblyAI, and on-device Android Speech
+- **Real-time Speech Recognition** — Multi-provider STT with Deepgram, AssemblyAI, Groq Whisper, and on-device Android Speech
 - **Natural Voice Synthesis** — ElevenLabs, Deepgram Aura, and Android TTS
 - **Intelligent Barge-in** — Interrupt AI responses naturally with 600ms confirmation window
 - **Voice Activity Detection** — Silero VAD with ONNX Runtime for accurate speech detection
 
 ### AI-Powered Tutoring
-- **Multi-Provider LLM Support** — OpenAI GPT-4o, Anthropic Claude, Ollama, and on-device llama.cpp
+- **Multi-Provider LLM Support** — OpenAI GPT-4o, Anthropic Claude, Ollama, self-hosted endpoints, and on-device llama.cpp
 - **Intelligent Routing** — PatchPanel service for optimal provider selection per task
-- **Curriculum-Based Learning** — Structured content with progress tracking
+- **Curriculum-Based Learning** — Structured UMCF content with progress tracking
 - **Session Persistence** — Full conversation history with transcript storage
+- **Server Synchronization** — Local-first architecture with real-time sync
 
 ### Performance & Reliability
 - **Low-Latency Audio** — Native Oboe engine with JNI for sub-10ms audio I/O
@@ -65,7 +66,8 @@ This is the Android port of the iOS application, maintaining **strict feature pa
 ### Developer Experience
 - **MCP Integration** — Autonomous build, test, and debug via Claude Code
 - **Remote Logging** — Python log server for real-time debugging
-- **Comprehensive Testing** — Unit tests, integration tests, and performance benchmarks
+- **Comprehensive Testing** — 272+ tests: unit, UI, integration, and performance benchmarks
+- **Certificate Pinning** — Secure API communications with SHA-256 public key pins
 
 ---
 
@@ -86,7 +88,7 @@ This is the Android port of the iOS application, maintaining **strict feature pa
 
 ```bash
 # Clone repository
-git clone <repository-url> unamentis-android
+git clone https://github.com/unamentis/unamentis-android.git
 cd unamentis-android
 
 # Set environment variables (add to ~/.zshrc or ~/.bashrc)
@@ -145,23 +147,37 @@ app/src/main/kotlin/com/unamentis/
 ├── core/                    # Business logic
 │   ├── audio/              # AudioEngine, VAD integration
 │   ├── session/            # SessionManager state machine
-│   ├── curriculum/         # Content management
+│   ├── curriculum/         # Content management, UMCF parsing
 │   ├── telemetry/          # Metrics and cost tracking
-│   └── config/             # Provider configuration
+│   ├── config/             # Provider configuration
+│   ├── device/             # Device capability detection, thermal monitoring
+│   ├── health/             # Provider health monitoring
+│   ├── export/             # Session export functionality
+│   ├── network/            # Connectivity monitoring
+│   └── accessibility/      # Accessibility checker utilities
 ├── services/               # External integrations
-│   ├── stt/                # Speech-to-text providers
-│   ├── tts/                # Text-to-speech providers
-│   ├── llm/                # LLM providers + PatchPanel
-│   └── vad/                # Voice activity detection
+│   ├── stt/                # Speech-to-text providers (Deepgram, AssemblyAI, Groq, Android)
+│   ├── tts/                # Text-to-speech providers (ElevenLabs, Deepgram Aura, Android)
+│   ├── llm/                # LLM providers + PatchPanel routing
+│   └── vad/                # Voice activity detection (Silero, Simple)
 ├── data/                   # Data layer
-│   ├── local/              # Room database
-│   ├── remote/             # API clients
-│   └── repository/         # Repository pattern
+│   ├── local/              # Room database, secure token storage
+│   ├── remote/             # API clients, WebSocket clients, certificate pinning
+│   ├── repository/         # Repository pattern (Session, Curriculum, Auth)
+│   └── model/              # Domain models
 ├── ui/                     # Compose UI
 │   ├── session/            # Main voice interface
 │   ├── curriculum/         # Content browser
+│   ├── history/            # Session history
+│   ├── analytics/          # Metrics dashboard
+│   ├── todo/               # Task management
 │   ├── settings/           # Configuration
+│   ├── onboarding/         # First-run experience
+│   ├── components/         # Reusable components
 │   └── theme/              # Material 3 theming
+├── navigation/             # Deep link handling
+├── shortcuts/              # App shortcuts
+├── service/                # Foreground service, notifications
 └── di/                     # Hilt modules
 ```
 
@@ -179,8 +195,8 @@ app/src/main/kotlin/com/unamentis/
 │                        │ STT │ │Panel│ │ TTS │                  │
 │                        └─────┘ └─────┘ └─────┘                  │
 │                                                                  │
-│  STT Providers: Deepgram, AssemblyAI, Groq, Android Speech      │
-│  LLM Providers: OpenAI, Anthropic, Ollama, llama.cpp            │
+│  STT Providers: Deepgram, AssemblyAI, Groq Whisper, Android     │
+│  LLM Providers: OpenAI, Anthropic, Ollama, Self-hosted, llama   │
 │  TTS Providers: ElevenLabs, Deepgram Aura, Android TTS          │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
@@ -193,9 +209,12 @@ app/src/main/kotlin/com/unamentis/
 | Document | Description |
 |----------|-------------|
 | [DEV_ENVIRONMENT.md](docs/DEV_ENVIRONMENT.md) | Complete development setup guide |
-| [TESTING_GUIDE.md](docs/TESTING_GUIDE.md) | Comprehensive testing instructions |
+| [TESTING.md](docs/TESTING.md) | Comprehensive testing instructions |
 | [MCP_SETUP.md](docs/MCP_SETUP.md) | MCP server configuration |
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Detailed architecture documentation |
+| [QUICK_START.md](docs/QUICK_START.md) | 10-minute quickstart guide |
+| [IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md) | Current implementation progress |
+| [CLIENT_FEATURE_LIST.md](docs/CLIENT_FEATURE_LIST.md) | Feature catalog for cross-platform parity |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Contribution guidelines |
 | [SPECIFICATION.md](ANDROID_PORT_SPECIFICATION.md) | Full feature specification |
 
@@ -268,11 +287,12 @@ We prioritize real implementations over mocks:
 
 ### Test Categories
 
-| Type | Location | Command |
-|------|----------|---------|
-| Unit Tests | `app/src/test/` | `./scripts/test-quick.sh` |
-| Integration Tests | `app/src/androidTest/` | `./scripts/test-all.sh` |
-| Performance Tests | Manual profiling | Android Studio Profiler |
+| Type | Count | Location | Command |
+|------|-------|----------|---------|
+| Unit Tests | 100+ | `app/src/test/` | `./scripts/test-quick.sh` |
+| UI Tests | 142+ | `app/src/androidTest/` | `./scripts/test-all.sh` |
+| Navigation Tests | 18+ | `app/src/androidTest/` | `./scripts/test-all.sh` |
+| Performance Tests | 14+ | `app/src/androidTest/benchmark/` | Android Studio Profiler |
 
 ### Pre-Commit Requirements
 

@@ -55,7 +55,7 @@ git clone https://github.com/<your-username>/unamentis-android.git
 cd unamentis-android
 
 # Add upstream remote
-git remote add upstream https://github.com/<original-owner>/unamentis-android.git
+git remote add upstream https://github.com/unamentis/unamentis-android.git
 
 # Verify remotes
 git remote -v
@@ -695,7 +695,7 @@ Any other relevant information.
 If you have questions about contributing:
 
 1. Check existing [documentation](docs/)
-2. Search [existing issues](https://github.com/owner/unamentis-android/issues)
+2. Search [existing issues](https://github.com/unamentis/unamentis-android/issues)
 3. Open a new issue with the `question` label
 
 ---

@@ -5,7 +5,9 @@ import com.unamentis.BuildConfig
 import com.unamentis.data.local.AppDatabase
 import com.unamentis.data.local.SecureTokenStorage
 import com.unamentis.data.local.dao.CurriculumDao
+import com.unamentis.data.local.dao.ModuleDao
 import com.unamentis.data.local.dao.SessionDao
+import com.unamentis.data.local.dao.TodoDao
 import com.unamentis.data.local.dao.TopicProgressDao
 import com.unamentis.data.remote.ApiClient
 import com.unamentis.data.remote.CertificatePinning
@@ -63,6 +65,24 @@ object AppModule {
     @Singleton
     fun provideTopicProgressDao(database: AppDatabase): TopicProgressDao {
         return database.topicProgressDao()
+    }
+
+    /**
+     * Provides the TodoDao.
+     */
+    @Provides
+    @Singleton
+    fun provideTodoDao(database: AppDatabase): TodoDao {
+        return database.todoDao()
+    }
+
+    /**
+     * Provides the ModuleDao.
+     */
+    @Provides
+    @Singleton
+    fun provideModuleDao(database: AppDatabase): ModuleDao {
+        return database.moduleDao()
     }
 
     /**

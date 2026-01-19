@@ -191,6 +191,21 @@ data class UpdateAssetRequest(
     val position: Int? = null,
 )
 
+/**
+ * Visual asset metadata returned from server.
+ */
+@Serializable
+data class VisualAssetMetadata(
+    val id: String,
+    val filename: String,
+    @SerialName("mime_type") val mimeType: String,
+    val url: String? = null,
+    val caption: String? = null,
+    val position: Int? = null,
+    @SerialName("created_at") val createdAt: String? = null,
+    @SerialName("updated_at") val updatedAt: String? = null,
+)
+
 // =============================================================================
 // SESSION MODELS (03-SESSIONS.md / FOV Context)
 // =============================================================================
@@ -432,6 +447,23 @@ data class TTSCacheStats(
     @SerialName("entry_count") val entryCount: Int,
     @SerialName("hit_rate") val hitRate: Float,
     @SerialName("max_size_bytes") val maxSizeBytes: Long,
+)
+
+/**
+ * TTS cache entry.
+ */
+@Serializable
+data class TTSCacheEntry(
+    val hash: String,
+    val text: String,
+    val provider: String,
+    @SerialName("voice_id") val voiceId: String,
+    @SerialName("audio_url") val audioUrl: String? = null,
+    @SerialName("audio_data") val audioData: String? = null,
+    @SerialName("duration_ms") val durationMs: Int,
+    @SerialName("size_bytes") val sizeBytes: Long,
+    @SerialName("created_at") val createdAt: String? = null,
+    @SerialName("last_accessed") val lastAccessed: String? = null,
 )
 
 /**

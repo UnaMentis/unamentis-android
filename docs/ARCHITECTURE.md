@@ -227,9 +227,10 @@ class SessionRepository(
         TranscriptEntryEntity::class,
         CurriculumEntity::class,
         TopicEntity::class,
-        TopicProgressEntity::class
+        TopicProgressEntity::class,
+        TodoEntity::class
     ],
-    version = 1
+    version = 2
 )
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
@@ -237,6 +238,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun transcriptDao(): TranscriptDao
     abstract fun curriculumDao(): CurriculumDao
     abstract fun topicProgressDao(): TopicProgressDao
+    abstract fun todoDao(): TodoDao
 }
 
 // API Client
@@ -1091,9 +1093,82 @@ val result = telemetryEngine.measureLatency(LatencyType.STT) {
 
 ---
 
+## Server Synchronization
+
+### Architecture Overview
+
+UnaMentis uses a local-first architecture with server synchronization:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    Local-First Sync Architecture                 │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌──────────────┐     ┌──────────────┐     ┌──────────────┐    │
+│  │   Local DB   │────▶│ Sync Engine  │────▶│   Server     │    │
+│  │    (Room)    │◀────│              │◀────│   (REST)     │    │
+│  └──────────────┘     └──────────────┘     └──────────────┘    │
+│         │                    │                    │             │
+│         ▼                    ▼                    ▼             │
+│  ┌──────────────┐     ┌──────────────┐     ┌──────────────┐    │
+│  │   UI Layer   │     │  WebSocket   │     │  Auth Token  │    │
+│  │  (Compose)   │     │   Client     │     │   Storage    │    │
+│  └──────────────┘     └──────────────┘     └──────────────┘    │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Key Components
+
+```kotlin
+// Secure Token Storage
+class SecureTokenStorage(context: Context) {
+    private val prefs = EncryptedSharedPreferences.create(
+        context, "auth_tokens",
+        MasterKey.Builder(context).setKeyScheme(MasterKey.KeyScheme.AES256_GCM).build(),
+        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+    )
+
+    fun saveAuthToken(token: String) { ... }
+    fun getAuthToken(): String? { ... }
+    fun clearTokens() { ... }
+}
+
+// WebSocket Client for real-time events
+class WebSocketClient(
+    private val okHttpClient: OkHttpClient,
+    private val tokenStorage: SecureTokenStorage
+) {
+    fun connect(url: String): Flow<WebSocketMessage>
+    fun send(message: WebSocketMessage)
+    fun disconnect()
+}
+
+// Auth Repository
+class AuthRepository(
+    private val apiClient: ApiClient,
+    private val tokenStorage: SecureTokenStorage
+) {
+    suspend fun login(credentials: Credentials): Result<AuthToken>
+    suspend fun logout()
+    fun isAuthenticated(): Boolean
+    fun getAuthToken(): String?
+}
+```
+
+### Sync Flow
+
+1. **Local Operations First** — All writes go to local Room database immediately
+2. **Background Sync** — Changes are queued and synced to server when connected
+3. **Conflict Resolution** — Server timestamp wins for conflicting changes
+4. **Offline Support** — App remains fully functional without network
+
+---
+
 ## Further Reading
 
 - [DEV_ENVIRONMENT.md](DEV_ENVIRONMENT.md) — Development environment setup
-- [TESTING_GUIDE.md](TESTING_GUIDE.md) — Testing strategies and best practices
+- [TESTING.md](TESTING.md) — Testing strategies and best practices
 - [MCP_SETUP.md](MCP_SETUP.md) — MCP server configuration
 - [ANDROID_PORT_SPECIFICATION.md](../ANDROID_PORT_SPECIFICATION.md) — Complete feature specification

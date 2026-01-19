@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [0.1.0] - 2026-01-XX
+## [0.1.0] - 2026-01-19
 
 ### Added
 
@@ -115,8 +115,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - NDK 26.x
 - CMake 3.22.1+
 
+#### Server Synchronization (Phase 7)
+- Server-based session synchronization with local-first architecture
+- Real-time WebSocket communication for session events
+- Authentication token management with secure storage
+- Session data sync with conflict resolution
+- Transcript synchronization between devices
+- Server configuration management
+
 ### Known Issues
-- Some placeholder screens not fully implemented
 - On-device LLM (llama.cpp) integration pending
 - LiveKit provider integration pending
 
@@ -126,7 +133,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date | Status |
 |---------|------|--------|
-| 0.1.0 | 2026-01-XX | In Development |
+| 0.1.0 | 2026-01-19 | Released |
 
 ---
 

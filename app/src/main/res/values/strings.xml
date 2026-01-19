@@ -72,4 +72,100 @@
     <string name="shortcut_progress_long">View your learning progress</string>
     <string name="shortcut_todos_short">To-Dos</string>
     <string name="shortcut_todos_long">View your to-do list</string>
+
+    <!-- Common Actions -->
+    <string name="back">Back</string>
+    <string name="end">End</string>
+    <string name="stop">Stop</string>
+    <string name="submit">Submit</string>
+    <string name="done">Done</string>
+    <string name="cancel">Cancel</string>
+
+    <!-- Knowledge Bowl Module -->
+    <string name="kb_knowledge_bowl">Knowledge Bowl</string>
+    <string name="kb_train_for_competitions">Train for academic competitions</string>
+    <string name="kb_questions">Questions</string>
+    <string name="kb_region">Region</string>
+    <string name="kb_points">Points</string>
+    <string name="kb_time">Time</string>
+    <string name="kb_score">Score</string>
+    <string name="kb_accuracy">Accuracy</string>
+    <string name="kb_seconds">seconds</string>
+
+    <!-- KB Dashboard -->
+    <string name="kb_written_practice">Written Practice</string>
+    <string name="kb_oral_practice">Oral Practice</string>
+    <string name="kb_quick_start">Quick Start</string>
+    <string name="kb_select_region">Select Region</string>
+    <string name="kb_question_bank">Question Bank</string>
+    <string name="kb_questions_available">%1$d questions available</string>
+    <string name="kb_start_practice">Start Practice</string>
+
+    <!-- KB Written Session -->
+    <string name="kb_time_remaining">Time Remaining</string>
+    <string name="kb_question_of">Question %1$d of %2$d</string>
+    <string name="kb_option_a">A</string>
+    <string name="kb_option_b">B</string>
+    <string name="kb_option_c">C</string>
+    <string name="kb_option_d">D</string>
+    <string name="kb_correct">Correct!</string>
+    <string name="kb_incorrect">Incorrect</string>
+    <string name="kb_correct_answer">Correct answer:</string>
+    <string name="kb_your_answer">Your answer:</string>
+    <string name="kb_next_question">Next Question</string>
+    <string name="kb_see_results">See Results</string>
+    <string name="kb_session_complete">Session Complete!</string>
+    <string name="kb_time_expired">Time Expired</string>
+    <string name="kb_tap_to_start">Tap Start to begin practice</string>
+
+    <!-- KB Oral Session -->
+    <string name="kb_oral_instructions">Questions will be read aloud. You\'ll have time to confer, then speak your answer.</string>
+    <string name="kb_conference_time">Conference Time</string>
+    <string name="kb_verbal_conferring">Verbal Conferring</string>
+    <string name="kb_allowed">Allowed</string>
+    <string name="kb_not_allowed">Not Allowed</string>
+    <string name="kb_silent_only">Silent Only</string>
+    <string name="kb_mic_permission_required">Microphone and speech recognition permissions required</string>
+    <string name="kb_reading_question">Reading Question…</string>
+    <string name="kb_discuss_with_team">Discuss with your team</string>
+    <string name="kb_silent_conferring">Silent conferring only</string>
+    <string name="kb_ready_to_answer">Ready to Answer</string>
+    <string name="kb_listening">Listening…</string>
+    <string name="kb_tap_to_speak">Tap to Speak</string>
+    <string name="kb_start_listening">Start Listening</string>
+
+    <!-- KB Statistics -->
+    <string name="kb_statistics">Statistics</string>
+    <string name="kb_overview">Overview</string>
+    <string name="kb_questions_answered">Answered</string>
+    <string name="kb_avg_time">Avg Time</string>
+    <string name="kb_competition_readiness">Competition Readiness</string>
+    <string name="kb_readiness_excellent">Excellent! Ready for competition.</string>
+    <string name="kb_readiness_good">Good progress. Keep practicing!</string>
+    <string name="kb_readiness_developing">Developing. Focus on weak areas.</string>
+    <string name="kb_readiness_keep_practicing">Keep practicing to build skills.</string>
+    <string name="kb_domain_mastery">Domain Mastery</string>
+    <string name="kb_focus_areas">Focus Areas</string>
+    <string name="kb_strong_areas">Strong Areas</string>
+    <string name="kb_no_data_yet">No data yet</string>
+    <string name="kb_recent_sessions">Recent Sessions</string>
+    <string name="kb_no_stats_yet">No Statistics Yet</string>
+    <string name="kb_start_practicing_to_see_stats">Start practicing to see your performance statistics here.</string>
+
+    <!-- KB Settings -->
+    <string name="kb_settings">Settings</string>
+    <string name="kb_competition_region">Competition Region</string>
+    <string name="kb_region_rules">Region Rules</string>
+    <string name="kb_written_questions">Written Questions</string>
+    <string name="kb_written_time">Written Time</string>
+    <string name="kb_written_points">Written Points</string>
+    <string name="kb_oral_points">Oral Points</string>
+    <string name="kb_sos_bonus">SOS Bonus</string>
+    <string name="kb_available">Available</string>
+    <string name="kb_danger_zone">Danger Zone</string>
+    <string name="kb_reset_statistics">Reset Statistics</string>
+    <string name="kb_reset_stats_description">Clear all your practice history and statistics</string>
+    <string name="kb_reset_stats_title">Reset Statistics?</string>
+    <string name="kb_reset_stats_message">This will permanently delete all your practice history and statistics. This action cannot be undone.</string>
+    <string name="kb_reset">Reset</string>
 </resources>

@@ -2,7 +2,7 @@
 
 > **Document Purpose**: This document catalogs all features implemented in the UnaMentis Android client. It serves as a reference for maintaining feature parity across clients and provides sufficient detail for Claude Code to implement features in other clients.
 >
-> **Last Updated**: 2026-01-13
+> **Last Updated**: 2026-01-19
 > **Maintainers**: Update this document with each feature addition, modification, or removal.
 
 ---
@@ -23,7 +23,8 @@
 12. [Accessibility](#12-accessibility)
 13. [Security](#13-security)
 14. [Background Processing](#14-background-processing)
-15. [Testing Infrastructure](#15-testing-infrastructure)
+15. [Server Synchronization](#15-server-synchronization)
+16. [Testing Infrastructure](#16-testing-infrastructure)
 
 ---
 
@@ -572,7 +573,43 @@ Modifier.semantics {
 
 ---
 
-## 15. Testing Infrastructure
+## 15. Server Synchronization
+
+**Purpose**: Enable cross-device session continuity and server-based data management.
+
+**Key Files**:
+- [ApiClient.kt](../app/src/main/kotlin/com/unamentis/data/remote/ApiClient.kt)
+- [WebSocketClient.kt](../app/src/main/kotlin/com/unamentis/data/remote/WebSocketClient.kt)
+- [SecureTokenStorage.kt](../app/src/main/kotlin/com/unamentis/data/local/SecureTokenStorage.kt)
+- [AuthRepository.kt](../app/src/main/kotlin/com/unamentis/data/repository/AuthRepository.kt)
+
+### Architecture
+
+- **Local-First**: All operations write to local Room database first
+- **Background Sync**: Changes synced to server when connected
+- **Conflict Resolution**: Server timestamp wins for concurrent edits
+
+### Key Components
+
+| Component | Purpose |
+|-----------|---------|
+| `SecureTokenStorage` | EncryptedSharedPreferences for auth tokens |
+| `WebSocketClient` | Real-time session event streaming |
+| `AudioWebSocketClient` | Low-latency audio transmission |
+| `AuthRepository` | Login/logout and token management |
+| `SessionRepository` | Session sync with server |
+
+### Sync Capabilities
+
+- Session metadata synchronization
+- Transcript sync between devices
+- Progress tracking across clients
+- Real-time session events via WebSocket
+- Offline queue for pending changes
+
+---
+
+## 16. Testing Infrastructure
 
 **Purpose**: Ensure code quality and prevent regressions.
 
@@ -580,11 +617,13 @@ Modifier.semantics {
 
 | Category | Count | Framework |
 |----------|-------|-----------|
-| Unit Tests | 72+ | JUnit 5 |
+| Unit Tests | 100+ | JUnit 5 |
 | UI Tests | 142+ | Compose Test |
 | Navigation Tests | 18+ | Compose Navigation |
+| Integration Tests | 29+ | JUnit + Room |
 | Performance Benchmarks | 14+ | Microbenchmark |
 | Memory Tests | 6+ | LeakCanary/Custom |
+| **Total** | **272+** | |
 
 ### Testing Philosophy
 
@@ -592,6 +631,7 @@ Modifier.semantics {
 - **In-memory Room**: Use real database with in-memory backing
 - **Real services**: Use actual service implementations
 - **Coverage**: All screens, all state transitions
+- **Certificate Pinning**: Validated with unit and integration tests
 
 ---
 
@@ -599,14 +639,15 @@ Modifier.semantics {
 
 | Category | Feature Count |
 |----------|---------------|
-| UI Screens | 6 |
-| LLM Providers | 2 (OpenAI, Anthropic) |
-| STT Providers | 2 (Deepgram, Android) |
-| TTS Providers | 2 (ElevenLabs, Android) |
-| VAD Implementations | 3 |
-| Database Entities | 5 |
-| REST Endpoints | 5 |
-| Test Suites | 5 |
+| UI Screens | 6 + Onboarding |
+| LLM Providers | 4 (OpenAI, Anthropic, Ollama, Self-hosted) |
+| STT Providers | 4 (Deepgram, AssemblyAI, Groq Whisper, Android) |
+| TTS Providers | 3 (ElevenLabs, Deepgram Aura, Android) |
+| VAD Implementations | 3 (Silero TFLite, Silero ONNX, Simple RMS) |
+| Database Entities | 6 |
+| REST Endpoints | 10+ |
+| WebSocket Clients | 2 |
+| Test Suites | 6 (272+ tests) |
 
 ---
 
@@ -614,6 +655,7 @@ Modifier.semantics {
 
 | Date | Change | Author |
 |------|--------|--------|
+| 2026-01-19 | Added Server Synchronization section, updated test counts | Claude Code |
 | 2026-01-13 | Initial feature list created | Claude Code |
 
 ---
