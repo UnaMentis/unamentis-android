@@ -20,6 +20,7 @@ import javax.inject.Inject
  * - Filter todos by status (Active, Completed, Archived)
  * - Update todo status and priority
  * - Link todos to session context
+ * - Support AI-suggested todos with due dates
  *
  * @property database App database
  */
@@ -41,19 +42,37 @@ class TodoViewModel
         private val allTodos: Flow<List<Todo>> = database.todoDao().getAllTodos()
 
         /**
-         * Filtered todos based on selected tab.
+         * Filtered todos based on selected tab with smart sorting:
+         * - Overdue items first
+         * - Then by due date (soonest first)
+         * - Then by priority
+         * - Then by creation date
          */
         private val filteredTodos: StateFlow<List<Todo>> =
             combine(
                 selectedTab,
                 allTodos,
             ) { filter, todos ->
+                val now = System.currentTimeMillis()
                 when (filter) {
                     TodoFilter.ACTIVE -> todos.filter { it.status == TodoStatus.ACTIVE }
                     TodoFilter.COMPLETED -> todos.filter { it.status == TodoStatus.COMPLETED }
                     TodoFilter.ARCHIVED -> todos.filter { it.status == TodoStatus.ARCHIVED }
+                    TodoFilter.AI_SUGGESTED -> todos.filter { it.isAISuggested && it.status == TodoStatus.ACTIVE }
                 }.sortedWith(
-                    compareByDescending<Todo> { it.priority.ordinal }
+                    // Overdue items first
+                    compareBy<Todo> { todo ->
+                        when {
+                            todo.dueDate != null && todo.dueDate < now -> 0
+                            todo.dueDate != null -> 1
+                            else -> 2
+                        }
+                    }
+                        // Then by due date (soonest first)
+                        .thenBy { it.dueDate ?: Long.MAX_VALUE }
+                        // Then by priority (high first)
+                        .thenByDescending { it.priority.ordinal }
+                        // Then by creation date (newest first)
                         .thenByDescending { it.createdAt },
                 )
             }.stateIn(
@@ -63,16 +82,41 @@ class TodoViewModel
             )
 
         /**
+         * Count of AI-suggested todos.
+         */
+        private val aiSuggestedCount: Flow<Int> =
+            allTodos.map { todos ->
+                todos.count { it.isAISuggested && it.status == TodoStatus.ACTIVE }
+            }
+
+        /**
+         * Count of overdue todos.
+         */
+        private val overdueCount: Flow<Int> =
+            allTodos.map { todos ->
+                val now = System.currentTimeMillis()
+                todos.count {
+                    it.status == TodoStatus.ACTIVE &&
+                        it.dueDate != null &&
+                        it.dueDate < now
+                }
+            }
+
+        /**
          * Combined UI state.
          */
         val uiState: StateFlow<TodoUiState> =
             combine(
                 selectedTab,
                 filteredTodos,
-            ) { tab, todos ->
+                aiSuggestedCount,
+                overdueCount,
+            ) { tab, todos, aiCount, overdue ->
                 TodoUiState(
                     selectedTab = tab,
                     todos = todos,
+                    aiSuggestedCount = aiCount,
+                    overdueCount = overdue,
                 )
             }.stateIn(
                 scope = viewModelScope,
@@ -96,6 +140,7 @@ class TodoViewModel
             priority: TodoPriority = TodoPriority.MEDIUM,
             sessionId: String? = null,
             topicId: String? = null,
+            dueDate: Long? = null,
         ) {
             viewModelScope.launch {
                 val todo =
@@ -106,8 +151,67 @@ class TodoViewModel
                         priority = priority,
                         sessionId = sessionId,
                         topicId = topicId,
+                        dueDate = dueDate,
                     )
                 database.todoDao().insert(todo)
+            }
+        }
+
+        /**
+         * Update todo due date.
+         */
+        fun updateDueDate(
+            todoId: String,
+            dueDate: Long?,
+        ) {
+            viewModelScope.launch {
+                val todo = database.todoDao().getById(todoId)
+                if (todo != null) {
+                    database.todoDao().update(
+                        todo.copy(
+                            dueDate = dueDate,
+                            updatedAt = System.currentTimeMillis(),
+                        ),
+                    )
+                }
+            }
+        }
+
+        /**
+         * Accept an AI-suggested todo (remove AI flag, keep the todo).
+         */
+        fun acceptAISuggestion(todoId: String) {
+            viewModelScope.launch {
+                val todo = database.todoDao().getById(todoId)
+                if (todo != null && todo.isAISuggested) {
+                    database.todoDao().update(
+                        todo.copy(
+                            isAISuggested = false,
+                            updatedAt = System.currentTimeMillis(),
+                        ),
+                    )
+                }
+            }
+        }
+
+        /**
+         * Dismiss an AI-suggested todo (delete it).
+         */
+        fun dismissAISuggestion(todoId: String) {
+            viewModelScope.launch {
+                val todo = database.todoDao().getById(todoId)
+                if (todo != null && todo.isAISuggested) {
+                    database.todoDao().delete(todo)
+                }
+            }
+        }
+
+        /**
+         * Dismiss all AI-suggested todos.
+         */
+        fun dismissAllAISuggestions() {
+            viewModelScope.launch {
+                database.todoDao().deleteUnacceptedSuggestions()
             }
         }
 
@@ -211,10 +315,11 @@ class TodoViewModel
 /**
  * Todo filter tabs.
  */
-enum class TodoFilter {
-    ACTIVE,
-    COMPLETED,
-    ARCHIVED,
+enum class TodoFilter(val displayName: String) {
+    ACTIVE("Active"),
+    COMPLETED("Completed"),
+    ARCHIVED("Archived"),
+    AI_SUGGESTED("AI Suggested"),
 }
 
 /**
@@ -223,4 +328,6 @@ enum class TodoFilter {
 data class TodoUiState(
     val selectedTab: TodoFilter = TodoFilter.ACTIVE,
     val todos: List<Todo> = emptyList(),
+    val aiSuggestedCount: Int = 0,
+    val overdueCount: Int = 0,
 )

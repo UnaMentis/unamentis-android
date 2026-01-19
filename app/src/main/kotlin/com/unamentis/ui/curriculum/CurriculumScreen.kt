@@ -45,6 +45,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -79,11 +80,22 @@ import com.unamentis.data.repository.ConnectionState
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CurriculumScreen(
+    initialCurriculumId: String? = null,
     viewModel: CurriculumViewModel = hiltViewModel(),
     onNavigateToSession: (String, String?) -> Unit = { _, _ -> },
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var selectedCurriculum by remember { mutableStateOf<Curriculum?>(null) }
+
+    // Handle deep link to specific curriculum
+    LaunchedEffect(initialCurriculumId, uiState.localCurricula) {
+        if (initialCurriculumId != null && selectedCurriculum == null) {
+            val curriculum = uiState.localCurricula.find { it.id == initialCurriculumId }
+            if (curriculum != null) {
+                selectedCurriculum = curriculum
+            }
+        }
+    }
 
     Scaffold(
         topBar = {

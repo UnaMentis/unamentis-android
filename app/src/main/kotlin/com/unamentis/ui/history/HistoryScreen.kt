@@ -1,23 +1,61 @@
 package com.unamentis.ui.history
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.IosShare
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material.icons.outlined.StarOutline
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.unamentis.core.export.ExportResult
 import com.unamentis.data.model.Session
 import com.unamentis.data.model.TranscriptEntry
+import com.unamentis.ui.LocalScrollToTopHandler
+import com.unamentis.ui.Routes
+import com.unamentis.ui.components.ExportBottomSheet
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
 
 /**
  * History screen - Session history and playback.
@@ -36,11 +74,42 @@ import java.util.*
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
+fun HistoryScreen(
+    initialSessionId: String? = null,
+    viewModel: HistoryViewModel = hiltViewModel(),
+) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    var showExportDialog by remember { mutableStateOf(false) }
-    var exportFormat by remember { mutableStateOf(ExportFormat.JSON) }
+    var showExportSheet by remember { mutableStateOf(false) }
+    var exportResult by remember { mutableStateOf<ExportResult?>(null) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+
+    // List states for scroll-to-top
+    val listState = rememberLazyListState()
+    val detailListState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
+
+    // Handle scroll-to-top events
+    val scrollToTopHandler = LocalScrollToTopHandler.current
+    LaunchedEffect(scrollToTopHandler) {
+        scrollToTopHandler.scrollToTopEvents.collect { route ->
+            if (route == Routes.HISTORY) {
+                coroutineScope.launch {
+                    if (uiState.selectedSession != null) {
+                        detailListState.animateScrollToItem(0)
+                    } else {
+                        listState.animateScrollToItem(0)
+                    }
+                }
+            }
+        }
+    }
+
+    // Handle deep link to specific session
+    LaunchedEffect(initialSessionId, uiState.sessions) {
+        if (initialSessionId != null && uiState.selectedSession == null && uiState.sessions.isNotEmpty()) {
+            viewModel.selectSession(initialSessionId)
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -50,12 +119,39 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
                     title = { Text("Session Details") },
                     navigationIcon = {
                         IconButton(onClick = { viewModel.clearSelection() }) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                         }
                     },
                     actions = {
-                        IconButton(onClick = { showExportDialog = true }) {
-                            Icon(Icons.Default.Download, contentDescription = "Export")
+                        // Star/Unstar button
+                        IconButton(
+                            onClick = {
+                                viewModel.toggleStarred(uiState.selectedSession!!.id)
+                            },
+                        ) {
+                            Icon(
+                                imageVector =
+                                    if (uiState.selectedSession!!.isStarred) {
+                                        Icons.Filled.Star
+                                    } else {
+                                        Icons.Outlined.StarOutline
+                                    },
+                                contentDescription =
+                                    if (uiState.selectedSession!!.isStarred) {
+                                        "Unstar session"
+                                    } else {
+                                        "Star session"
+                                    },
+                                tint =
+                                    if (uiState.selectedSession!!.isStarred) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurface
+                                    },
+                            )
+                        }
+                        IconButton(onClick = { showExportSheet = true }) {
+                            Icon(Icons.Default.IosShare, contentDescription = "Export")
                         }
                         IconButton(onClick = { showDeleteDialog = true }) {
                             Icon(Icons.Default.Delete, contentDescription = "Delete")
@@ -75,6 +171,7 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
             SessionDetailView(
                 session = uiState.selectedSession!!,
                 transcript = uiState.transcript,
+                listState = detailListState,
                 modifier = Modifier.padding(paddingValues),
             )
         } else {
@@ -82,35 +179,23 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
             SessionListView(
                 sessions = uiState.sessions,
                 onSessionClick = { viewModel.selectSession(it.id) },
+                listState = listState,
                 modifier = Modifier.padding(paddingValues),
             )
         }
     }
 
-    // Export dialog
-    if (showExportDialog && uiState.selectedSession != null) {
-        ExportDialog(
-            format = exportFormat,
-            onFormatChange = { exportFormat = it },
-            onDismiss = { showExportDialog = false },
-            onExport = {
-                val exported =
-                    when (exportFormat) {
-                        ExportFormat.JSON ->
-                            viewModel.exportAsJson(
-                                uiState.selectedSession!!,
-                                uiState.transcript,
-                            )
-                        ExportFormat.TEXT ->
-                            viewModel.exportAsText(
-                                uiState.selectedSession!!,
-                                uiState.transcript,
-                            )
-                    }
-                // In a real app, this would save to file or share
-                showExportDialog = false
-                exported
+    // Export bottom sheet
+    if (showExportSheet && uiState.selectedSession != null) {
+        ExportBottomSheet(
+            onDismiss = {
+                showExportSheet = false
+                exportResult = null
             },
+            onExport = { format ->
+                exportResult = viewModel.exportSession(format)
+            },
+            exportResult = exportResult,
         )
     }
 
@@ -119,7 +204,12 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
             title = { Text("Delete Session?") },
-            text = { Text("This will permanently delete the session and its transcript. This action cannot be undone.") },
+            text = {
+                Text(
+                    "This will permanently delete the session and its transcript. " +
+                        "This action cannot be undone.",
+                )
+            },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -146,6 +236,7 @@ fun HistoryScreen(viewModel: HistoryViewModel = hiltViewModel()) {
 private fun SessionListView(
     sessions: List<Session>,
     onSessionClick: (Session) -> Unit,
+    listState: LazyListState,
     modifier: Modifier = Modifier,
 ) {
     if (sessions.isEmpty()) {
@@ -179,6 +270,7 @@ private fun SessionListView(
     } else {
         LazyColumn(
             modifier = modifier.fillMaxSize(),
+            state = listState,
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -211,17 +303,30 @@ private fun SessionCard(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            // Title and date
+            // Title, star, and date
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    text = session.curriculumId?.let { "Curriculum Session" } ?: "Free Session",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text = session.curriculumId?.let { "Curriculum Session" } ?: "Free Session",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    if (session.isStarred) {
+                        Icon(
+                            imageVector = Icons.Filled.Star,
+                            contentDescription = "Starred",
+                            modifier = Modifier.size(18.dp),
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
 
                 Text(
                     text = formatDate(session.startTime),
@@ -235,7 +340,7 @@ private fun SessionCard(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 MetadataChip(
-                    icon = Icons.Default.Chat,
+                    icon = Icons.AutoMirrored.Filled.Chat,
                     text = "${session.turnCount} turns",
                 )
 
@@ -293,10 +398,12 @@ private fun MetadataChip(
 private fun SessionDetailView(
     session: Session,
     transcript: List<TranscriptEntry>,
+    listState: LazyListState,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),
+        state = listState,
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
@@ -449,86 +556,6 @@ private fun TranscriptEntryCard(entry: TranscriptEntry) {
             }
         }
     }
-}
-
-/**
- * Export dialog.
- */
-@Composable
-private fun ExportDialog(
-    format: ExportFormat,
-    onFormatChange: (ExportFormat) -> Unit,
-    onDismiss: () -> Unit,
-    onExport: () -> String,
-) {
-    var exportedContent by remember { mutableStateOf<String?>(null) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Export Session") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(
-                    text = "Select export format:",
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    FilterChip(
-                        selected = format == ExportFormat.JSON,
-                        onClick = { onFormatChange(ExportFormat.JSON) },
-                        label = { Text("JSON") },
-                    )
-                    FilterChip(
-                        selected = format == ExportFormat.TEXT,
-                        onClick = { onFormatChange(ExportFormat.TEXT) },
-                        label = { Text("Text") },
-                    )
-                }
-
-                if (exportedContent != null) {
-                    Surface(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .heightIn(max = 300.dp),
-                        shape = RoundedCornerShape(8.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant,
-                    ) {
-                        Text(
-                            text = exportedContent!!,
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(12.dp),
-                        )
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    exportedContent = onExport()
-                },
-            ) {
-                Text(if (exportedContent == null) "Preview" else "Close")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        },
-    )
-}
-
-/**
- * Export format options.
- */
-enum class ExportFormat {
-    JSON,
-    TEXT,
 }
 
 /**

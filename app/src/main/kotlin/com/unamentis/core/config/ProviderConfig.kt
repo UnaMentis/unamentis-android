@@ -57,6 +57,7 @@ class ProviderConfig(private val context: Context) {
         val SELECTED_LLM_PROVIDER = stringPreferencesKey("selected_llm_provider")
         val COST_PREFERENCE = stringPreferencesKey("cost_preference")
         val CONFIGURATION_PRESET = stringPreferencesKey("configuration_preset")
+        val RECORDING_MODE = stringPreferencesKey("recording_mode")
     }
 
     // API key storage keys
@@ -144,6 +145,32 @@ class ProviderConfig(private val context: Context) {
         }
 
     /**
+     * Get recording mode (VAD, PUSH_TO_TALK, or TOGGLE).
+     * Defaults to VAD for automatic voice detection.
+     */
+    val recordingMode: Flow<RecordingMode> =
+        context.dataStore.data.map { prefs ->
+            val modeName = prefs[PreferenceKeys.RECORDING_MODE] ?: "VAD"
+            try {
+                RecordingMode.valueOf(modeName)
+            } catch (e: IllegalArgumentException) {
+                RecordingMode.VAD
+            }
+        }
+
+    /**
+     * Get recording mode synchronously (for dependency injection).
+     */
+    fun getRecordingMode(): RecordingMode {
+        val modeName = syncPrefs.getString(PreferenceKeys.RECORDING_MODE.name, "VAD") ?: "VAD"
+        return try {
+            RecordingMode.valueOf(modeName)
+        } catch (e: IllegalArgumentException) {
+            RecordingMode.VAD
+        }
+    }
+
+    /**
      * Set selected STT provider.
      */
     suspend fun setSTTProvider(providerName: String) {
@@ -185,6 +212,18 @@ class ProviderConfig(private val context: Context) {
     suspend fun setCostPreference(preference: String) {
         context.dataStore.edit { prefs ->
             prefs[PreferenceKeys.COST_PREFERENCE] = preference
+        }
+    }
+
+    /**
+     * Set recording mode.
+     */
+    suspend fun setRecordingMode(mode: RecordingMode) {
+        // Write to sync prefs for immediate availability
+        syncPrefs.edit().putString(PreferenceKeys.RECORDING_MODE.name, mode.name).apply()
+        // Also write to DataStore for reactive updates
+        context.dataStore.edit { prefs ->
+            prefs[PreferenceKeys.RECORDING_MODE] = mode.name
         }
     }
 
@@ -346,5 +385,30 @@ enum class ConfigurationPreset(
         ttsProvider = "Android",
         llmProvider = "OnDevice",
         costPreference = "COST",
+    ),
+}
+
+/**
+ * Recording mode options for how the app captures user speech.
+ *
+ * - VAD: Voice Activity Detection - automatic speech detection (default)
+ * - PUSH_TO_TALK: Hold-to-record - press and hold to record
+ * - TOGGLE: Tap-to-toggle - tap once to start, tap again to stop
+ */
+enum class RecordingMode(
+    val displayName: String,
+    val description: String,
+) {
+    VAD(
+        displayName = "Auto (VAD)",
+        description = "Automatically detects when you speak",
+    ),
+    PUSH_TO_TALK(
+        displayName = "Push to Talk",
+        description = "Hold the mic button to record",
+    ),
+    TOGGLE(
+        displayName = "Toggle",
+        description = "Tap to start/stop recording",
     ),
 }

@@ -118,4 +118,24 @@ interface SessionDao {
 
     @Query("DELETE FROM transcript_entries")
     suspend fun deleteAllTranscriptEntries()
+
+    /**
+     * Get all starred sessions.
+     *
+     * @return Flow of starred session list
+     */
+    @Query("SELECT * FROM sessions WHERE isStarred = 1 ORDER BY startTime DESC")
+    fun getStarredSessions(): Flow<List<SessionEntity>>
+
+    /**
+     * Update a session's starred status.
+     *
+     * @param id Session identifier
+     * @param isStarred New starred status
+     */
+    @Query("UPDATE sessions SET isStarred = :isStarred WHERE id = :id")
+    suspend fun updateStarredStatus(
+        id: String,
+        isStarred: Boolean,
+    )
 }

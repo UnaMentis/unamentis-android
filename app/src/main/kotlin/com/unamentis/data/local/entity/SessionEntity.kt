@@ -15,6 +15,7 @@ import androidx.room.PrimaryKey
  * @property turnCount Number of conversation turns
  * @property interruptionCount Number of successful barge-ins
  * @property totalCost Total API cost in USD
+ * @property isStarred Whether the session is starred/favorited
  */
 @Entity(tableName = "sessions")
 data class SessionEntity(
@@ -28,6 +29,7 @@ data class SessionEntity(
     val turnCount: Int = 0,
     val interruptionCount: Int = 0,
     val totalCost: Double = 0.0,
+    val isStarred: Boolean = false,
 )
 
 /**

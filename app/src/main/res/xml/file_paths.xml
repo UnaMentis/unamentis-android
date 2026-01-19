@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Export files directory in cache -->
+    <cache-path
+        name="exports"
+        path="exports/" />
+
+    <!-- General cache path for temporary files -->
+    <cache-path
+        name="cache"
+        path="." />
+</paths>

@@ -2,6 +2,8 @@ package com.unamentis.ui.session
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.unamentis.core.config.ProviderConfig
+import com.unamentis.core.config.RecordingMode
 import com.unamentis.core.session.SessionManager
 import com.unamentis.core.session.SessionMetrics
 import com.unamentis.data.model.Session
@@ -34,6 +36,7 @@ class SessionViewModel
     @Inject
     constructor(
         private val sessionManager: SessionManager,
+        private val providerConfig: ProviderConfig,
     ) : ViewModel() {
         /**
          * Session state from SessionManager.
@@ -80,6 +83,28 @@ class SessionViewModel
                 )
 
         /**
+         * Current recording mode from user settings.
+         */
+        val recordingMode: StateFlow<RecordingMode> =
+            providerConfig.recordingMode
+                .stateIn(
+                    scope = viewModelScope,
+                    started = SharingStarted.WhileSubscribed(5000),
+                    initialValue = RecordingMode.VAD,
+                )
+
+        /**
+         * Whether manual recording is currently active (for PTT/Toggle modes).
+         */
+        val isManuallyRecording: StateFlow<Boolean> =
+            sessionManager.isManuallyRecording
+                .stateIn(
+                    scope = viewModelScope,
+                    started = SharingStarted.WhileSubscribed(5000),
+                    initialValue = false,
+                )
+
+        /**
          * Derived UI state.
          */
         val uiState: StateFlow<SessionUiState> =
@@ -87,8 +112,8 @@ class SessionViewModel
                 sessionState,
                 currentSession,
                 transcript,
-                metrics,
-            ) { state, session, transcriptList, sessionMetrics ->
+                combine(metrics, recordingMode, isManuallyRecording) { m, rm, imr -> Triple(m, rm, imr) },
+            ) { state, session, transcriptList, (sessionMetrics, mode, manuallyRecording) ->
                 SessionUiState(
                     sessionState = state,
                     isSessionActive = session != null,
@@ -99,7 +124,9 @@ class SessionViewModel
                     transcript = transcriptList,
                     turnCount = session?.turnCount ?: 0,
                     metrics = sessionMetrics,
-                    statusMessage = getStatusMessage(state),
+                    statusMessage = getStatusMessage(state, mode, manuallyRecording),
+                    recordingMode = mode,
+                    isManuallyRecording = manuallyRecording,
                 )
             }.stateIn(
                 scope = viewModelScope,
@@ -118,7 +145,8 @@ class SessionViewModel
             topicId: String? = null,
         ) {
             viewModelScope.launch {
-                sessionManager.startSession(curriculumId, topicId)
+                val mode = providerConfig.getRecordingMode()
+                sessionManager.startSession(curriculumId, topicId, mode)
             }
         }
 
@@ -159,12 +187,74 @@ class SessionViewModel
         }
 
         /**
+         * Start manual recording (for PUSH_TO_TALK and TOGGLE modes).
+         */
+        fun startManualRecording() {
+            viewModelScope.launch {
+                sessionManager.startManualRecording()
+            }
+        }
+
+        /**
+         * Stop manual recording (for PUSH_TO_TALK and TOGGLE modes).
+         */
+        fun stopManualRecording() {
+            viewModelScope.launch {
+                sessionManager.stopManualRecording()
+            }
+        }
+
+        /**
+         * Toggle manual recording (convenience for TOGGLE mode).
+         */
+        fun toggleManualRecording() {
+            viewModelScope.launch {
+                sessionManager.toggleManualRecording()
+            }
+        }
+
+        /**
+         * Set initial context from deep link.
+         * If a curriculum/topic is specified and no session is active, auto-start a session.
+         *
+         * @param curriculumId The curriculum ID from deep link
+         * @param topicId The topic ID from deep link
+         */
+        fun setInitialContext(
+            curriculumId: String?,
+            topicId: String?,
+        ) {
+            if (curriculumId == null && topicId == null) return
+
+            viewModelScope.launch {
+                // Only auto-start if we have context and no active session
+                val currentState = sessionState.value
+                if (currentState == SessionState.IDLE) {
+                    val mode = providerConfig.getRecordingMode()
+                    sessionManager.startSession(curriculumId, topicId, mode)
+                }
+            }
+        }
+
+        /**
          * Get status message for current state.
          */
-        private fun getStatusMessage(state: SessionState): String {
+        private fun getStatusMessage(
+            state: SessionState,
+            mode: RecordingMode,
+            isManuallyRecording: Boolean,
+        ): String {
             return when (state) {
-                SessionState.IDLE -> "Ready to start"
-                SessionState.USER_SPEAKING -> "Listening..."
+                SessionState.IDLE -> {
+                    when (mode) {
+                        RecordingMode.VAD -> "Listening..."
+                        RecordingMode.PUSH_TO_TALK -> "Hold to speak"
+                        RecordingMode.TOGGLE -> "Tap to speak"
+                    }
+                }
+                SessionState.USER_SPEAKING -> {
+                    if (mode == RecordingMode.PUSH_TO_TALK) "Recording... release to send" else "Listening..."
+                }
                 SessionState.PROCESSING_UTTERANCE -> "Processing..."
                 SessionState.AI_THINKING -> "Thinking..."
                 SessionState.AI_SPEAKING -> "Speaking..."
@@ -194,4 +284,6 @@ data class SessionUiState(
     val turnCount: Int = 0,
     val metrics: SessionMetrics = SessionMetrics(),
     val statusMessage: String = "Ready to start",
+    val recordingMode: RecordingMode = RecordingMode.VAD,
+    val isManuallyRecording: Boolean = false,
 )

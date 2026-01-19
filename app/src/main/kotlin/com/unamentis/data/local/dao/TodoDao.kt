@@ -10,9 +10,17 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface TodoDao {
     /**
-     * Get all todos as a Flow.
+     * Get all todos as a Flow, ordered by due date (nulls last), then by creation date.
      */
-    @Query("SELECT * FROM todos ORDER BY createdAt DESC")
+    @Query(
+        """
+        SELECT * FROM todos
+        ORDER BY
+            CASE WHEN dueDate IS NULL THEN 1 ELSE 0 END,
+            dueDate ASC,
+            createdAt DESC
+        """,
+    )
     fun getAllTodos(): Flow<List<Todo>>
 
     /**
@@ -22,10 +30,58 @@ interface TodoDao {
     suspend fun getById(id: String): Todo?
 
     /**
+     * Get all AI-suggested todos.
+     */
+    @Query("SELECT * FROM todos WHERE isAISuggested = 1 ORDER BY suggestionConfidence DESC")
+    fun getAISuggestedTodos(): Flow<List<Todo>>
+
+    /**
+     * Get todos with due dates.
+     */
+    @Query("SELECT * FROM todos WHERE dueDate IS NOT NULL ORDER BY dueDate ASC")
+    fun getTodosWithDueDates(): Flow<List<Todo>>
+
+    /**
+     * Get overdue todos (due date is before the given timestamp).
+     */
+    @Query("SELECT * FROM todos WHERE dueDate IS NOT NULL AND dueDate < :timestamp AND status = 'ACTIVE' ORDER BY dueDate ASC")
+    fun getOverdueTodos(timestamp: Long): Flow<List<Todo>>
+
+    /**
+     * Get todos due within the next N days.
+     */
+    @Query(
+        """
+        SELECT * FROM todos
+        WHERE dueDate IS NOT NULL
+        AND dueDate >= :startTimestamp
+        AND dueDate <= :endTimestamp
+        AND status = 'ACTIVE'
+        ORDER BY dueDate ASC
+        """,
+    )
+    fun getTodosDueBetween(
+        startTimestamp: Long,
+        endTimestamp: Long,
+    ): Flow<List<Todo>>
+
+    /**
+     * Get todos by status.
+     */
+    @Query("SELECT * FROM todos WHERE status = :status ORDER BY createdAt DESC")
+    fun getTodosByStatus(status: String): Flow<List<Todo>>
+
+    /**
      * Insert todo.
      */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(todo: Todo)
+
+    /**
+     * Insert multiple todos.
+     */
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(todos: List<Todo>)
 
     /**
      * Update todo.
@@ -40,8 +96,40 @@ interface TodoDao {
     suspend fun delete(todo: Todo)
 
     /**
+     * Delete multiple todos by IDs.
+     */
+    @Query("DELETE FROM todos WHERE id IN (:ids)")
+    suspend fun deleteByIds(ids: List<String>)
+
+    /**
+     * Delete all AI-suggested todos that were not accepted.
+     */
+    @Query("DELETE FROM todos WHERE isAISuggested = 1 AND status = 'ACTIVE'")
+    suspend fun deleteUnacceptedSuggestions()
+
+    /**
      * Delete all todos.
      */
     @Query("DELETE FROM todos")
     suspend fun deleteAll()
+
+    /**
+     * Update status for multiple todos.
+     */
+    @Query("UPDATE todos SET status = :status, updatedAt = :updatedAt WHERE id IN (:ids)")
+    suspend fun updateStatusForIds(
+        ids: List<String>,
+        status: String,
+        updatedAt: Long,
+    )
+
+    /**
+     * Mark todo as completed.
+     */
+    @Query("UPDATE todos SET status = 'COMPLETED', completedAt = :completedAt, updatedAt = :updatedAt WHERE id = :id")
+    suspend fun markCompleted(
+        id: String,
+        completedAt: Long,
+        updatedAt: Long,
+    )
 }

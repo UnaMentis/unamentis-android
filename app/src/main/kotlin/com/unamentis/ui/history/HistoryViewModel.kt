@@ -2,11 +2,19 @@ package com.unamentis.ui.history
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.unamentis.core.export.ExportFormat
+import com.unamentis.core.export.ExportResult
+import com.unamentis.core.export.SessionExporter
 import com.unamentis.data.model.Session
 import com.unamentis.data.model.TranscriptEntry
 import com.unamentis.data.repository.SessionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -27,6 +35,7 @@ class HistoryViewModel
     @Inject
     constructor(
         private val sessionRepository: SessionRepository,
+        private val sessionExporter: SessionExporter,
     ) : ViewModel() {
         /**
          * All sessions from database.
@@ -120,88 +129,31 @@ class HistoryViewModel
         }
 
         /**
-         * Export session as JSON.
+         * Toggle starred status for a session.
          */
-        fun exportAsJson(
-            session: Session,
-            transcript: List<TranscriptEntry>,
-        ): String {
-            return buildString {
-                appendLine("{")
-                appendLine("  \"sessionId\": \"${session.id}\",")
-                appendLine("  \"curriculumId\": ${session.curriculumId?.let { "\"$it\"" } ?: "null"},")
-                appendLine("  \"topicId\": ${session.topicId?.let { "\"$it\"" } ?: "null"},")
-                appendLine("  \"startTime\": ${session.startTime},")
-                appendLine("  \"endTime\": ${session.endTime},")
-                appendLine("  \"turnCount\": ${session.turnCount},")
-                appendLine("  \"transcript\": [")
-                transcript.forEachIndexed { index, entry ->
-                    appendLine("    {")
-                    appendLine("      \"id\": \"${entry.id}\",")
-                    appendLine("      \"role\": \"${entry.role}\",")
-                    appendLine("      \"text\": \"${entry.text.replace("\"", "\\\"")}\",")
-                    appendLine("      \"timestamp\": ${entry.timestamp}")
-                    append("    }")
-                    if (index < transcript.size - 1) {
-                        appendLine(",")
-                    } else {
-                        appendLine()
-                    }
+        fun toggleStarred(sessionId: String) {
+            viewModelScope.launch {
+                sessionRepository.toggleStarred(sessionId)
+                // Refresh the selected session if it's the one being toggled
+                if (_selectedSessionId.value == sessionId) {
+                    _selectedSession.value = sessionRepository.getSessionById(sessionId)
                 }
-                appendLine("  ]")
-                append("}")
             }
         }
 
         /**
-         * Export session as plain text.
+         * Export current session in the specified format.
+         *
+         * @param format The export format to use
+         * @return ExportResult with the exported content or an error
          */
-        fun exportAsText(
-            session: Session,
-            transcript: List<TranscriptEntry>,
-        ): String {
-            return buildString {
-                appendLine("Session Export")
-                appendLine("=" * 50)
-                appendLine()
-                appendLine("Session ID: ${session.id}")
-                session.curriculumId?.let { appendLine("Curriculum ID: $it") }
-                session.topicId?.let { appendLine("Topic ID: $it") }
-                appendLine(
-                    "Start Time: ${java.text.SimpleDateFormat(
-                        "yyyy-MM-dd HH:mm:ss",
-                        java.util.Locale.getDefault(),
-                    ).format(java.util.Date(session.startTime))}",
-                )
-                session.endTime?.let {
-                    appendLine(
-                        "End Time: ${java.text.SimpleDateFormat(
-                            "yyyy-MM-dd HH:mm:ss",
-                            java.util.Locale.getDefault(),
-                        ).format(java.util.Date(it))}",
-                    )
-                }
-                appendLine("Turn Count: ${session.turnCount}")
-                appendLine()
-                appendLine("Transcript")
-                appendLine("-" * 50)
-                appendLine()
-
-                transcript.forEach { entry ->
-                    val role = if (entry.role == "user") "You" else "AI Tutor"
-                    val timestamp =
-                        java.text.SimpleDateFormat(
-                            "HH:mm:ss",
-                            java.util.Locale.getDefault(),
-                        ).format(java.util.Date(entry.timestamp))
-                    appendLine("[$timestamp] $role:")
-                    appendLine(entry.text)
-                    appendLine()
-                }
-            }
+        fun exportSession(format: ExportFormat): ExportResult {
+            val session =
+                _selectedSession.value
+                    ?: return ExportResult.Error("No session selected")
+            val transcriptList = _transcript.value
+            return sessionExporter.export(session, transcriptList, format)
         }
-
-        private operator fun String.times(count: Int): String = this.repeat(count)
     }
 
 /**

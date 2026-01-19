@@ -110,6 +110,35 @@ class SessionRepository
         }
 
         /**
+         * Get all starred sessions.
+         */
+        fun getStarredSessions(): Flow<List<Session>> {
+            return sessionDao.getStarredSessions().map { entities ->
+                entities.map { it.toModel() }
+            }
+        }
+
+        /**
+         * Toggle starred status for a session.
+         */
+        suspend fun toggleStarred(sessionId: String) {
+            val session = sessionDao.getSessionById(sessionId)
+            if (session != null) {
+                sessionDao.updateStarredStatus(sessionId, !session.isStarred)
+            }
+        }
+
+        /**
+         * Set starred status for a session.
+         */
+        suspend fun setStarred(
+            sessionId: String,
+            isStarred: Boolean,
+        ) {
+            sessionDao.updateStarredStatus(sessionId, isStarred)
+        }
+
+        /**
          * Export session as JSON.
          */
         suspend fun exportSessionAsJson(sessionId: String): String {
@@ -172,6 +201,7 @@ private fun Session.toEntity(): SessionEntity {
         turnCount = turnCount,
         interruptionCount = interruptionCount,
         totalCost = totalCost,
+        isStarred = isStarred,
     )
 }
 
@@ -189,6 +219,7 @@ private fun SessionEntity.toModel(): Session {
         turnCount = turnCount,
         interruptionCount = interruptionCount,
         totalCost = totalCost,
+        isStarred = isStarred,
     )
 }
 

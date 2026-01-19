@@ -2,10 +2,16 @@ package com.unamentis.ui.settings
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -14,6 +20,17 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.unamentis.core.config.ConfigurationPreset
+import com.unamentis.core.config.RecordingMode
+
+/**
+ * Settings sections that can be navigated to via deep link.
+ */
+enum class SettingsSection {
+    PRESETS,
+    PROVIDERS,
+    RECORDING,
+    API_KEYS,
+}
 
 /**
  * Settings screen - App configuration.
@@ -29,10 +46,32 @@ import com.unamentis.core.config.ConfigurationPreset
  * - Provider selection sections
  * - API key input fields (secure)
  */
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
+fun SettingsScreen(
+    initialSection: String? = null,
+    viewModel: SettingsViewModel = hiltViewModel(),
+) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val listState = rememberLazyListState()
+
+    // Handle deep link to specific section
+    LaunchedEffect(initialSection) {
+        if (initialSection != null) {
+            val sectionIndex =
+                when (initialSection.uppercase()) {
+                    "PRESETS" -> 0
+                    "PROVIDERS" -> 1
+                    "RECORDING" -> 6
+                    "API_KEYS" -> 8
+                    else -> null
+                }
+            sectionIndex?.let {
+                listState.animateScrollToItem(it)
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -42,6 +81,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
         },
     ) { paddingValues ->
         LazyColumn(
+            state = listState,
             modifier =
                 Modifier
                     .fillMaxSize()
@@ -96,6 +136,22 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                     selectedProvider = uiState.selectedLLMProvider,
                     onProviderSelected = { viewModel.setLLMProvider(it) },
                     icon = Icons.Default.Psychology,
+                )
+            }
+
+            // Recording Mode section
+            item {
+                Text(
+                    text = "Recording",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(top = 16.dp),
+                )
+            }
+
+            item {
+                RecordingModeSection(
+                    currentMode = uiState.recordingMode,
+                    onModeSelected = { viewModel.setRecordingMode(it) },
                 )
             }
 
@@ -409,4 +465,75 @@ private fun ApiKeyDialog(
             }
         },
     )
+}
+
+/**
+ * Recording mode selection section.
+ */
+@Composable
+private fun RecordingModeSection(
+    currentMode: RecordingMode,
+    onModeSelected: (RecordingMode) -> Unit,
+) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Icon(
+                    Icons.Default.Mic,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                Text(
+                    text = "Recording Mode",
+                    style = MaterialTheme.typography.titleSmall,
+                )
+            }
+
+            RecordingMode.entries.forEach { mode ->
+                RecordingModeOption(
+                    mode = mode,
+                    isSelected = currentMode == mode,
+                    onSelected = { onModeSelected(mode) },
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Individual recording mode option with radio button.
+ */
+@Composable
+private fun RecordingModeOption(
+    mode: RecordingMode,
+    isSelected: Boolean,
+    onSelected: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        RadioButton(
+            selected = isSelected,
+            onClick = onSelected,
+        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = mode.displayName,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Text(
+                text = mode.description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
 }

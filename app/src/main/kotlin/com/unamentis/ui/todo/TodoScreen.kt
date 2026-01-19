@@ -2,9 +2,12 @@ package com.unamentis.ui.todo
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,6 +20,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.unamentis.data.model.Todo
 import com.unamentis.data.model.TodoPriority
 import com.unamentis.data.model.TodoStatus
+import com.unamentis.ui.LocalScrollToTopHandler
+import com.unamentis.ui.Routes
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -24,14 +30,16 @@ import java.util.*
  * Todo screen - Task management.
  *
  * Features:
- * - Filter tabs (Active, Completed, Archived)
+ * - Filter tabs (Active, Completed, Archived, AI Suggested)
  * - CRUD operations for todos
  * - Priority indicators
+ * - Due date support with overdue indicators
+ * - AI-suggested todos with confidence and reasoning
  * - Resume from context (linked to sessions/topics)
  * - Completion tracking
  *
  * Layout:
- * - Tab row for filters
+ * - Scrollable tab row for filters
  * - Todo list with cards
  * - FAB for adding new todos
  * - Bottom sheet for editing
@@ -42,11 +50,38 @@ fun TodoScreen(viewModel: TodoViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showCreateDialog by remember { mutableStateOf(false) }
     var editingTodo by remember { mutableStateOf<Todo?>(null) }
+    var showSuggestionInfo by remember { mutableStateOf<Todo?>(null) }
+
+    val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
+
+    // Handle scroll-to-top events
+    val scrollToTopHandler = LocalScrollToTopHandler.current
+    LaunchedEffect(scrollToTopHandler) {
+        scrollToTopHandler.scrollToTopEvents.collect { route ->
+            if (route == Routes.TODO) {
+                coroutineScope.launch {
+                    listState.animateScrollToItem(0)
+                }
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("To-Do") },
+                actions = {
+                    // Overdue indicator badge
+                    if (uiState.overdueCount > 0) {
+                        Badge(
+                            containerColor = MaterialTheme.colorScheme.error,
+                        ) {
+                            Text("${uiState.overdueCount}")
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+                },
             )
         },
         floatingActionButton = {
@@ -63,28 +98,50 @@ fun TodoScreen(viewModel: TodoViewModel = hiltViewModel()) {
                     .fillMaxSize()
                     .padding(paddingValues),
         ) {
-            // Filter tabs
-            TabRow(selectedTabIndex = uiState.selectedTab.ordinal) {
-                Tab(
-                    selected = uiState.selectedTab == TodoFilter.ACTIVE,
-                    onClick = { viewModel.selectTab(TodoFilter.ACTIVE) },
-                    text = { Text("Active") },
-                )
-                Tab(
-                    selected = uiState.selectedTab == TodoFilter.COMPLETED,
-                    onClick = { viewModel.selectTab(TodoFilter.COMPLETED) },
-                    text = { Text("Completed") },
-                )
-                Tab(
-                    selected = uiState.selectedTab == TodoFilter.ARCHIVED,
-                    onClick = { viewModel.selectTab(TodoFilter.ARCHIVED) },
-                    text = { Text("Archived") },
-                )
+            // Filter tabs - using ScrollableTabRow for more tabs
+            ScrollableTabRow(
+                selectedTabIndex = uiState.selectedTab.ordinal,
+                edgePadding = 16.dp,
+            ) {
+                TodoFilter.entries.forEach { filter ->
+                    val badgeCount =
+                        if (filter == TodoFilter.AI_SUGGESTED) uiState.aiSuggestedCount else null
+
+                    Tab(
+                        selected = uiState.selectedTab == filter,
+                        onClick = { viewModel.selectTab(filter) },
+                        text = {
+                            if (badgeCount != null && badgeCount > 0) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                ) {
+                                    Text(filter.displayName)
+                                    Badge(
+                                        containerColor = MaterialTheme.colorScheme.primary,
+                                    ) {
+                                        Text("$badgeCount")
+                                    }
+                                }
+                            } else {
+                                Text(filter.displayName)
+                            }
+                        },
+                        icon =
+                            if (filter == TodoFilter.AI_SUGGESTED) {
+                                { Icon(Icons.Outlined.AutoAwesome, contentDescription = null) }
+                            } else {
+                                null
+                            },
+                    )
+                }
             }
 
             // Todo list
             TodoList(
                 todos = uiState.todos,
+                listState = listState,
+                isAISuggestedTab = uiState.selectedTab == TodoFilter.AI_SUGGESTED,
                 onTodoClick = { editingTodo = it },
                 onToggleComplete = { todo ->
                     if (todo.status == TodoStatus.COMPLETED) {
@@ -95,6 +152,10 @@ fun TodoScreen(viewModel: TodoViewModel = hiltViewModel()) {
                 },
                 onArchive = { viewModel.archiveTodo(it.id) },
                 onDelete = { viewModel.deleteTodo(it.id) },
+                onAcceptSuggestion = { viewModel.acceptAISuggestion(it.id) },
+                onDismissSuggestion = { viewModel.dismissAISuggestion(it.id) },
+                onShowSuggestionInfo = { showSuggestionInfo = it },
+                onUpdateDueDate = { todo, dueDate -> viewModel.updateDueDate(todo.id, dueDate) },
             )
         }
     }
@@ -104,8 +165,8 @@ fun TodoScreen(viewModel: TodoViewModel = hiltViewModel()) {
         TodoEditDialog(
             todo = null,
             onDismiss = { showCreateDialog = false },
-            onSave = { title, notes, priority ->
-                viewModel.createTodo(title, notes, priority)
+            onSave = { title, notes, priority, dueDate ->
+                viewModel.createTodo(title, notes, priority, dueDate = dueDate)
                 showCreateDialog = false
             },
         )
@@ -116,16 +177,25 @@ fun TodoScreen(viewModel: TodoViewModel = hiltViewModel()) {
         TodoEditDialog(
             todo = editingTodo,
             onDismiss = { editingTodo = null },
-            onSave = { title, notes, priority ->
+            onSave = { title, notes, priority, dueDate ->
                 viewModel.updateTodo(
                     editingTodo!!.copy(
                         title = title,
                         notes = notes,
                         priority = priority,
+                        dueDate = dueDate,
                     ),
                 )
                 editingTodo = null
             },
+        )
+    }
+
+    // AI suggestion info dialog
+    if (showSuggestionInfo != null) {
+        SuggestionInfoDialog(
+            todo = showSuggestionInfo!!,
+            onDismiss = { showSuggestionInfo = null },
         )
     }
 }
@@ -136,10 +206,16 @@ fun TodoScreen(viewModel: TodoViewModel = hiltViewModel()) {
 @Composable
 private fun TodoList(
     todos: List<Todo>,
+    listState: LazyListState,
+    isAISuggestedTab: Boolean,
     onTodoClick: (Todo) -> Unit,
     onToggleComplete: (Todo) -> Unit,
     onArchive: (Todo) -> Unit,
     onDelete: (Todo) -> Unit,
+    onAcceptSuggestion: (Todo) -> Unit,
+    onDismissSuggestion: (Todo) -> Unit,
+    onShowSuggestionInfo: (Todo) -> Unit,
+    onUpdateDueDate: (Todo, Long?) -> Unit,
 ) {
     if (todos.isEmpty()) {
         // Empty state
@@ -152,21 +228,34 @@ private fun TodoList(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Icon(
-                    imageVector = Icons.Default.CheckCircle,
+                    imageVector =
+                        if (isAISuggestedTab) {
+                            Icons.Outlined.AutoAwesome
+                        } else {
+                            Icons.Default.CheckCircle
+                        },
                     contentDescription = null,
                     modifier = Modifier.size(64.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                 )
                 Text(
-                    text = "No tasks",
+                    text = if (isAISuggestedTab) "No AI suggestions" else "No tasks",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                if (isAISuggestedTab) {
+                    Text(
+                        text = "AI will suggest tasks based on your learning sessions",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     } else {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
+            state = listState,
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -176,10 +265,15 @@ private fun TodoList(
             ) { todo ->
                 TodoCard(
                     todo = todo,
+                    isAISuggestedTab = isAISuggestedTab,
                     onClick = { onTodoClick(todo) },
                     onToggleComplete = { onToggleComplete(todo) },
                     onArchive = { onArchive(todo) },
                     onDelete = { onDelete(todo) },
+                    onAcceptSuggestion = { onAcceptSuggestion(todo) },
+                    onDismissSuggestion = { onDismissSuggestion(todo) },
+                    onShowSuggestionInfo = { onShowSuggestionInfo(todo) },
+                    onUpdateDueDate = { dueDate -> onUpdateDueDate(todo, dueDate) },
                 )
             }
         }
@@ -193,21 +287,78 @@ private fun TodoList(
 @Composable
 private fun TodoCard(
     todo: Todo,
+    isAISuggestedTab: Boolean,
     onClick: () -> Unit,
     onToggleComplete: () -> Unit,
     onArchive: () -> Unit,
     onDelete: () -> Unit,
+    onAcceptSuggestion: () -> Unit,
+    onDismissSuggestion: () -> Unit,
+    onShowSuggestionInfo: () -> Unit,
+    onUpdateDueDate: (Long?) -> Unit,
 ) {
     var showMenu by remember { mutableStateOf(false) }
+    var showDatePicker by remember { mutableStateOf(false) }
+    val now = System.currentTimeMillis()
+    val isOverdue = todo.dueDate != null && todo.dueDate < now && todo.status == TodoStatus.ACTIVE
 
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
+        colors =
+            CardDefaults.cardColors(
+                containerColor =
+                    if (isOverdue) {
+                        MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
+                    } else if (todo.isAISuggested) {
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                    } else {
+                        MaterialTheme.colorScheme.surfaceVariant
+                    },
+            ),
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            // AI suggestion indicator
+            if (todo.isAISuggested) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.AutoAwesome,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                    Text(
+                        text = "AI Suggested",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    if (todo.suggestionConfidence != null) {
+                        Text(
+                            text = "(${(todo.suggestionConfidence * 100).toInt()}% confidence)",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Spacer(modifier = Modifier.weight(1f))
+                    IconButton(
+                        onClick = onShowSuggestionInfo,
+                        modifier = Modifier.size(24.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = "View suggestion reason",
+                            modifier = Modifier.size(16.dp),
+                        )
+                    }
+                }
+            }
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -257,6 +408,24 @@ private fun TodoCard(
                         expanded = showMenu,
                         onDismissRequest = { showMenu = false },
                     ) {
+                        DropdownMenuItem(
+                            text = { Text(if (todo.dueDate != null) "Change due date" else "Set due date") },
+                            onClick = {
+                                showDatePicker = true
+                                showMenu = false
+                            },
+                            leadingIcon = { Icon(Icons.Default.CalendarMonth, null) },
+                        )
+                        if (todo.dueDate != null) {
+                            DropdownMenuItem(
+                                text = { Text("Remove due date") },
+                                onClick = {
+                                    onUpdateDueDate(null)
+                                    showMenu = false
+                                },
+                                leadingIcon = { Icon(Icons.Default.EventBusy, null) },
+                            )
+                        }
                         if (todo.status != TodoStatus.ARCHIVED) {
                             DropdownMenuItem(
                                 text = { Text("Archive") },
@@ -294,10 +463,48 @@ private fun TodoCard(
                 )
             }
 
-            // Metadata
+            // Metadata row
             Row(
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
+                // Due date
+                if (todo.dueDate != null) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CalendarMonth,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp),
+                            tint =
+                                if (isOverdue) {
+                                    MaterialTheme.colorScheme.error
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                },
+                        )
+                        Text(
+                            text =
+                                if (isOverdue) {
+                                    "Overdue: ${formatDate(todo.dueDate)}"
+                                } else {
+                                    "Due: ${formatDate(todo.dueDate)}"
+                                },
+                            style = MaterialTheme.typography.labelSmall,
+                            color =
+                                if (isOverdue) {
+                                    MaterialTheme.colorScheme.error
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                },
+                            fontWeight = if (isOverdue) FontWeight.Bold else FontWeight.Normal,
+                        )
+                    }
+                }
+
                 Text(
                     text = "Created ${formatDate(todo.createdAt)}",
                     style = MaterialTheme.typography.labelSmall,
@@ -312,7 +519,52 @@ private fun TodoCard(
                     )
                 }
             }
+
+            // AI suggestion action buttons (only in AI suggested tab)
+            if (isAISuggestedTab && todo.isAISuggested) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    OutlinedButton(
+                        onClick = onDismissSuggestion,
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Dismiss")
+                    }
+                    Button(
+                        onClick = onAcceptSuggestion,
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Icon(
+                            Icons.Default.Check,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Accept")
+                    }
+                }
+            }
         }
+    }
+
+    // Date picker dialog
+    if (showDatePicker) {
+        DatePickerDialog(
+            initialDate = todo.dueDate,
+            onDismiss = { showDatePicker = false },
+            onDateSelected = { selectedDate ->
+                onUpdateDueDate(selectedDate)
+                showDatePicker = false
+            },
+        )
     }
 }
 
@@ -344,15 +596,18 @@ private fun PriorityBadge(priority: TodoPriority) {
 /**
  * Todo edit/create dialog.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TodoEditDialog(
     todo: Todo?,
     onDismiss: () -> Unit,
-    onSave: (String, String?, TodoPriority) -> Unit,
+    onSave: (String, String?, TodoPriority, Long?) -> Unit,
 ) {
     var title by remember { mutableStateOf(todo?.title ?: "") }
     var notes by remember { mutableStateOf(todo?.notes ?: "") }
     var priority by remember { mutableStateOf(todo?.priority ?: TodoPriority.MEDIUM) }
+    var dueDate by remember { mutableStateOf(todo?.dueDate) }
+    var showDatePicker by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -404,13 +659,50 @@ private fun TodoEditDialog(
                         }
                     }
                 }
+
+                // Due date selector
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Due Date (optional)",
+                        style = MaterialTheme.typography.labelMedium,
+                    )
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        OutlinedButton(
+                            onClick = { showDatePicker = true },
+                        ) {
+                            Icon(
+                                Icons.Default.CalendarMonth,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                if (dueDate != null) formatDate(dueDate!!) else "Set due date",
+                            )
+                        }
+                        if (dueDate != null) {
+                            IconButton(
+                                onClick = { dueDate = null },
+                            ) {
+                                Icon(
+                                    Icons.Default.Close,
+                                    contentDescription = "Clear due date",
+                                )
+                            }
+                        }
+                    }
+                }
             }
         },
         confirmButton = {
             TextButton(
                 onClick = {
                     if (title.isNotBlank()) {
-                        onSave(title, notes.takeIf { it.isNotBlank() }, priority)
+                        onSave(title, notes.takeIf { it.isNotBlank() }, priority, dueDate)
                     }
                 },
                 enabled = title.isNotBlank(),
@@ -421,6 +713,124 @@ private fun TodoEditDialog(
         dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text("Cancel")
+            }
+        },
+    )
+
+    if (showDatePicker) {
+        DatePickerDialog(
+            initialDate = dueDate,
+            onDismiss = { showDatePicker = false },
+            onDateSelected = { selectedDate ->
+                dueDate = selectedDate
+                showDatePicker = false
+            },
+        )
+    }
+}
+
+/**
+ * Date picker dialog for selecting due dates.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DatePickerDialog(
+    initialDate: Long?,
+    onDismiss: () -> Unit,
+    onDateSelected: (Long) -> Unit,
+) {
+    val datePickerState =
+        rememberDatePickerState(
+            initialSelectedDateMillis = initialDate ?: System.currentTimeMillis(),
+        )
+
+    DatePickerDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    datePickerState.selectedDateMillis?.let { onDateSelected(it) }
+                },
+                enabled = datePickerState.selectedDateMillis != null,
+            ) {
+                Text("OK")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        },
+    ) {
+        DatePicker(state = datePickerState)
+    }
+}
+
+/**
+ * Dialog showing AI suggestion reasoning.
+ */
+@Composable
+private fun SuggestionInfoDialog(
+    todo: Todo,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = {
+            Icon(
+                Icons.Outlined.AutoAwesome,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+            )
+        },
+        title = { Text("AI Suggestion") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = todo.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+
+                if (todo.suggestionReason != null) {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(
+                            text = "Why this was suggested:",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            text = todo.suggestionReason,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+                }
+
+                if (todo.suggestionConfidence != null) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            text = "Confidence:",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        LinearProgressIndicator(
+                            progress = { todo.suggestionConfidence },
+                            modifier = Modifier.weight(1f),
+                        )
+                        Text(
+                            text = "${(todo.suggestionConfidence * 100).toInt()}%",
+                            style = MaterialTheme.typography.labelMedium,
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Close")
             }
         },
     )

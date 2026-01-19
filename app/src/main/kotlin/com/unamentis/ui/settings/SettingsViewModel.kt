@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.unamentis.core.config.ConfigurationPreset
 import com.unamentis.core.config.ProviderConfig
+import com.unamentis.core.config.RecordingMode
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -76,6 +77,17 @@ class SettingsViewModel
                 )
 
         /**
+         * Recording mode.
+         */
+        val recordingMode: StateFlow<RecordingMode> =
+            providerConfig.recordingMode
+                .stateIn(
+                    scope = viewModelScope,
+                    started = SharingStarted.WhileSubscribed(5000),
+                    initialValue = RecordingMode.VAD,
+                )
+
+        /**
          * UI state combining all settings.
          */
         val uiState: StateFlow<SettingsUiState> =
@@ -84,14 +96,15 @@ class SettingsViewModel
                 selectedSTTProvider,
                 selectedTTSProvider,
                 selectedLLMProvider,
-                costPreference,
-            ) { preset, stt, tts, llm, cost ->
+                combine(costPreference, recordingMode) { cost, mode -> cost to mode },
+            ) { preset, stt, tts, llm, (cost, mode) ->
                 SettingsUiState(
                     currentPreset = preset,
                     selectedSTTProvider = stt,
                     selectedTTSProvider = tts,
                     selectedLLMProvider = llm,
                     costPreference = cost,
+                    recordingMode = mode,
                     hasDeepgramKey = providerConfig.getDeepgramApiKey() != null,
                     hasElevenLabsKey = providerConfig.getElevenLabsApiKey() != null,
                     hasOpenAIKey = providerConfig.getOpenAIApiKey() != null,
@@ -145,6 +158,15 @@ class SettingsViewModel
         fun setCostPreference(preference: String) {
             viewModelScope.launch {
                 providerConfig.setCostPreference(preference)
+            }
+        }
+
+        /**
+         * Set recording mode.
+         */
+        fun setRecordingMode(mode: RecordingMode) {
+            viewModelScope.launch {
+                providerConfig.setRecordingMode(mode)
             }
         }
 
@@ -215,6 +237,7 @@ data class SettingsUiState(
     val selectedTTSProvider: String = "Android",
     val selectedLLMProvider: String = "PatchPanel",
     val costPreference: String = "COST",
+    val recordingMode: RecordingMode = RecordingMode.VAD,
     val hasDeepgramKey: Boolean = false,
     val hasElevenLabsKey: Boolean = false,
     val hasOpenAIKey: Boolean = false,

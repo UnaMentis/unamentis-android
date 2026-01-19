@@ -13,6 +13,8 @@ import kotlinx.serialization.Serializable
  * - Status tracking (ACTIVE, COMPLETED, ARCHIVED)
  * - Context linking to sessions or topics
  * - Timestamps for creation and completion
+ * - AI-suggested items with confidence and reasoning
+ * - Due dates for time-sensitive tasks
  */
 @Entity(tableName = "todos")
 @Serializable
@@ -55,6 +57,22 @@ data class Todo(
      * Last updated timestamp.
      */
     val updatedAt: Long = System.currentTimeMillis(),
+    /**
+     * Due date timestamp (null if no due date).
+     */
+    val dueDate: Long? = null,
+    /**
+     * Whether this todo was suggested by AI.
+     */
+    val isAISuggested: Boolean = false,
+    /**
+     * AI's reason for suggesting this todo (only if isAISuggested).
+     */
+    val suggestionReason: String? = null,
+    /**
+     * AI's confidence in this suggestion (0.0-1.0, only if isAISuggested).
+     */
+    val suggestionConfidence: Float? = null,
 )
 
 /**

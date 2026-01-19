@@ -5,6 +5,8 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.unamentis.data.local.dao.CurriculumDao
 import com.unamentis.data.local.dao.SessionDao
 import com.unamentis.data.local.dao.TodoDao
@@ -34,7 +36,7 @@ import com.unamentis.data.model.Todo
         TopicProgressEntity::class,
         Todo::class,
     ],
-    version = 2,
+    version = 4,
     exportSchema = false,
 )
 @TypeConverters(Converters::class)
@@ -52,6 +54,31 @@ abstract class AppDatabase : RoomDatabase() {
         private var INSTANCE: AppDatabase? = null
 
         /**
+         * Migration from version 2 to 3: Add isStarred column to sessions table.
+         */
+        private val MIGRATION_2_3 =
+            object : Migration(2, 3) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL(
+                        "ALTER TABLE sessions ADD COLUMN isStarred INTEGER NOT NULL DEFAULT 0",
+                    )
+                }
+            }
+
+        /**
+         * Migration from version 3 to 4: Add AI suggestion and due date columns to todos table.
+         */
+        private val MIGRATION_3_4 =
+            object : Migration(3, 4) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("ALTER TABLE todos ADD COLUMN dueDate INTEGER DEFAULT NULL")
+                    db.execSQL("ALTER TABLE todos ADD COLUMN isAISuggested INTEGER NOT NULL DEFAULT 0")
+                    db.execSQL("ALTER TABLE todos ADD COLUMN suggestionReason TEXT DEFAULT NULL")
+                    db.execSQL("ALTER TABLE todos ADD COLUMN suggestionConfidence REAL DEFAULT NULL")
+                }
+            }
+
+        /**
          * Get the singleton database instance.
          *
          * @param context Application context
@@ -65,6 +92,7 @@ abstract class AppDatabase : RoomDatabase() {
                         AppDatabase::class.java,
                         "unamentis.db",
                     )
+                        .addMigrations(MIGRATION_2_3, MIGRATION_3_4)
                         .fallbackToDestructiveMigration()
                         .build()
                 INSTANCE = instance

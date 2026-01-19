@@ -5,10 +5,12 @@ import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -16,12 +18,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.unamentis.core.config.RecordingMode
 import com.unamentis.data.model.SessionState
 import com.unamentis.data.model.TranscriptEntry
 import com.unamentis.ui.theme.AssistantBubbleDark
@@ -45,9 +49,23 @@ import java.util.*
  * - Transcript (LazyColumn, reverse layout)
  * - Status bar (session state, turn count)
  * - Control bar (action buttons)
+ *
+ * @param initialCurriculumId Optional curriculum ID from deep link to start session with
+ * @param initialTopicId Optional topic ID from deep link to start session with
  */
 @Composable
-fun SessionScreen(viewModel: SessionViewModel = hiltViewModel()) {
+fun SessionScreen(
+    initialCurriculumId: String? = null,
+    initialTopicId: String? = null,
+    viewModel: SessionViewModel = hiltViewModel(),
+) {
+    // Handle deep link parameters if provided
+    LaunchedEffect(initialCurriculumId, initialTopicId) {
+        if (initialCurriculumId != null || initialTopicId != null) {
+            viewModel.setInitialContext(initialCurriculumId, initialTopicId)
+        }
+    }
+
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
@@ -97,6 +115,9 @@ fun SessionScreen(viewModel: SessionViewModel = hiltViewModel()) {
                 onPause = { viewModel.pauseSession() },
                 onResume = { viewModel.resumeSession() },
                 onStop = { viewModel.stopSession() },
+                onStartManualRecording = { viewModel.startManualRecording() },
+                onStopManualRecording = { viewModel.stopManualRecording() },
+                onToggleManualRecording = { viewModel.toggleManualRecording() },
             )
         },
     ) { paddingValues ->
@@ -384,64 +405,158 @@ private fun SessionControlBar(
     onPause: () -> Unit,
     onResume: () -> Unit,
     onStop: () -> Unit,
+    onStartManualRecording: () -> Unit,
+    onStopManualRecording: () -> Unit,
+    onToggleManualRecording: () -> Unit,
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.surface,
         shadowElevation = 8.dp,
     ) {
-        Row(
+        Column(
             modifier = Modifier.padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            // Start button
-            if (uiState.canStart) {
-                Button(
-                    onClick = onStart,
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Icon(Icons.Default.PlayArrow, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Start Session")
-                }
+            // Manual recording button for PTT/Toggle modes (shown when session is active)
+            if (uiState.isSessionActive &&
+                uiState.recordingMode != RecordingMode.VAD &&
+                uiState.sessionState in listOf(SessionState.IDLE, SessionState.USER_SPEAKING)
+            ) {
+                MicrophoneButton(
+                    recordingMode = uiState.recordingMode,
+                    isRecording = uiState.isManuallyRecording,
+                    onStartRecording = onStartManualRecording,
+                    onStopRecording = onStopManualRecording,
+                    onToggleRecording = onToggleManualRecording,
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                )
             }
 
-            // Pause button
-            if (uiState.canPause) {
-                FilledTonalButton(
-                    onClick = onPause,
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Icon(Icons.Default.Pause, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Pause")
+            // Session control buttons
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                // Start button
+                if (uiState.canStart) {
+                    Button(
+                        onClick = onStart,
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Icon(Icons.Default.PlayArrow, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Start Session")
+                    }
                 }
-            }
 
-            // Resume button
-            if (uiState.canResume) {
-                Button(
-                    onClick = onResume,
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Icon(Icons.Default.PlayArrow, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Resume")
+                // Pause button
+                if (uiState.canPause) {
+                    FilledTonalButton(
+                        onClick = onPause,
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Icon(Icons.Default.Pause, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Pause")
+                    }
                 }
-            }
 
-            // Stop button
-            if (uiState.canStop) {
-                OutlinedButton(
-                    onClick = onStop,
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Icon(Icons.Default.Stop, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Stop")
+                // Resume button
+                if (uiState.canResume) {
+                    Button(
+                        onClick = onResume,
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Icon(Icons.Default.PlayArrow, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Resume")
+                    }
+                }
+
+                // Stop button
+                if (uiState.canStop) {
+                    OutlinedButton(
+                        onClick = onStop,
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Icon(Icons.Default.Stop, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Stop")
+                    }
                 }
             }
+        }
+    }
+}
+
+/**
+ * Microphone button for manual recording modes (PTT and Toggle).
+ */
+@Composable
+private fun MicrophoneButton(
+    recordingMode: RecordingMode,
+    isRecording: Boolean,
+    onStartRecording: () -> Unit,
+    onStopRecording: () -> Unit,
+    onToggleRecording: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val buttonColor =
+        if (isRecording) {
+            MaterialTheme.colorScheme.error
+        } else {
+            MaterialTheme.colorScheme.primary
+        }
+
+    val contentDescription =
+        when {
+            recordingMode == RecordingMode.PUSH_TO_TALK && isRecording -> "Release to send"
+            recordingMode == RecordingMode.PUSH_TO_TALK -> "Hold to speak"
+            recordingMode == RecordingMode.TOGGLE && isRecording -> "Tap to stop recording"
+            else -> "Tap to start recording"
+        }
+
+    val gestureModifier =
+        when (recordingMode) {
+            RecordingMode.PUSH_TO_TALK ->
+                Modifier.pointerInput(Unit) {
+                    detectTapGestures(
+                        onPress = {
+                            onStartRecording()
+                            tryAwaitRelease()
+                            onStopRecording()
+                        },
+                    )
+                }
+            RecordingMode.TOGGLE ->
+                Modifier.pointerInput(Unit) {
+                    detectTapGestures(
+                        onTap = { onToggleRecording() },
+                    )
+                }
+            RecordingMode.VAD -> Modifier
+        }
+
+    Surface(
+        modifier =
+            modifier
+                .size(72.dp)
+                .then(gestureModifier),
+        shape = CircleShape,
+        color = buttonColor,
+        shadowElevation = if (isRecording) 8.dp else 4.dp,
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            Icon(
+                imageVector = if (isRecording) Icons.Default.MicNone else Icons.Default.Mic,
+                contentDescription = contentDescription,
+                tint = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.size(32.dp),
+            )
         }
     }
 }

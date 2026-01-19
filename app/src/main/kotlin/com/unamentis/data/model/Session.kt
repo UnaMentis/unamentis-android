@@ -66,6 +66,7 @@ data class TranscriptEntry(
  * @property turnCount Number of conversation turns
  * @property interruptionCount Number of successful barge-ins
  * @property totalCost Total API cost in USD
+ * @property isStarred Whether the session is starred/favorited
  * @property transcript List of conversation entries
  */
 @Serializable
@@ -79,6 +80,7 @@ data class Session(
     val turnCount: Int = 0,
     val interruptionCount: Int = 0,
     val totalCost: Double = 0.0,
+    val isStarred: Boolean = false,
     val transcript: List<TranscriptEntry> = emptyList(),
 )
 

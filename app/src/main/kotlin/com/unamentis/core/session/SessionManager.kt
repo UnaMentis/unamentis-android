@@ -1,6 +1,7 @@
 package com.unamentis.core.session
 
 import com.unamentis.core.audio.AudioEngine
+import com.unamentis.core.config.RecordingMode
 import com.unamentis.core.curriculum.CurriculumEngine
 import com.unamentis.data.model.*
 // VADService is defined in com.unamentis.data.model.Providers
@@ -63,6 +64,14 @@ class SessionManager(
     private val _metrics = MutableStateFlow(SessionMetrics())
     val metrics: StateFlow<SessionMetrics> = _metrics.asStateFlow()
 
+    // Recording mode configuration
+    private val _recordingMode = MutableStateFlow(RecordingMode.VAD)
+    val recordingMode: StateFlow<RecordingMode> = _recordingMode.asStateFlow()
+
+    // Manual recording state (for PUSH_TO_TALK and TOGGLE modes)
+    private val _isManuallyRecording = MutableStateFlow(false)
+    val isManuallyRecording: StateFlow<Boolean> = _isManuallyRecording.asStateFlow()
+
     // Conversation history for LLM context
     private val conversationHistory = mutableListOf<LLMMessage>()
 
@@ -86,15 +95,28 @@ class SessionManager(
     private val vadFrameSizeMs = 32 // 32ms frames at 16kHz = 512 samples
 
     /**
+     * Set the recording mode for this session.
+     *
+     * @param mode The recording mode to use
+     */
+    fun setRecordingMode(mode: RecordingMode) {
+        _recordingMode.value = mode
+        Log.i("SessionManager", "Recording mode set to: ${mode.displayName}")
+    }
+
+    /**
      * Start a new session.
      *
      * @param curriculumId Optional curriculum to load
      * @param topicId Optional specific topic to start with
+     * @param recordingMode Recording mode to use (default: VAD)
      */
     suspend fun startSession(
         curriculumId: String? = null,
         topicId: String? = null,
+        recordingMode: RecordingMode = RecordingMode.VAD,
     ) {
+        _recordingMode.value = recordingMode
         // Block if state is not IDLE or if there's already an active session
         if (_sessionState.value != SessionState.IDLE || _currentSession.value != null) {
             Log.w("SessionManager", "Cannot start session: already active")
@@ -212,6 +234,64 @@ class SessionManager(
     }
 
     /**
+     * Start manual recording (for PUSH_TO_TALK and TOGGLE modes).
+     *
+     * In PUSH_TO_TALK mode: Call this when user presses the mic button.
+     * In TOGGLE mode: Call this when user taps to start recording.
+     */
+    suspend fun startManualRecording() {
+        if (_recordingMode.value == RecordingMode.VAD) {
+            Log.w("SessionManager", "startManualRecording called but mode is VAD")
+            return
+        }
+
+        if (_sessionState.value != SessionState.IDLE) {
+            Log.w("SessionManager", "Cannot start manual recording: session not idle")
+            return
+        }
+
+        Log.i("SessionManager", "Starting manual recording")
+        _isManuallyRecording.value = true
+        userSpeechStartTime = System.currentTimeMillis()
+        _sessionState.value = SessionState.USER_SPEAKING
+        startSTTStreaming()
+    }
+
+    /**
+     * Stop manual recording (for PUSH_TO_TALK and TOGGLE modes).
+     *
+     * In PUSH_TO_TALK mode: Call this when user releases the mic button.
+     * In TOGGLE mode: Call this when user taps to stop recording.
+     */
+    suspend fun stopManualRecording() {
+        if (_recordingMode.value == RecordingMode.VAD) {
+            Log.w("SessionManager", "stopManualRecording called but mode is VAD")
+            return
+        }
+
+        if (_sessionState.value != SessionState.USER_SPEAKING) {
+            Log.w("SessionManager", "Cannot stop manual recording: not currently recording")
+            return
+        }
+
+        Log.i("SessionManager", "Stopping manual recording")
+        _isManuallyRecording.value = false
+        _sessionState.value = SessionState.PROCESSING_UTTERANCE
+        finalizeSTT()
+    }
+
+    /**
+     * Toggle manual recording (convenience method for TOGGLE mode).
+     */
+    suspend fun toggleManualRecording() {
+        if (_isManuallyRecording.value) {
+            stopManualRecording()
+        } else {
+            startManualRecording()
+        }
+    }
+
+    /**
      * Send a text message (for testing or text-based interaction).
      */
     suspend fun sendTextMessage(text: String) {
@@ -249,14 +329,27 @@ class SessionManager(
 
         when (_sessionState.value) {
             SessionState.IDLE, SessionState.USER_SPEAKING -> {
-                if (vadResult.isSpeech) {
-                    handleSpeechDetected()
-                } else {
-                    handleSilenceDetected()
+                when (_recordingMode.value) {
+                    RecordingMode.VAD -> {
+                        // Automatic voice detection mode
+                        if (vadResult.isSpeech) {
+                            handleSpeechDetected()
+                        } else {
+                            handleSilenceDetected()
+                        }
+                    }
+                    RecordingMode.PUSH_TO_TALK, RecordingMode.TOGGLE -> {
+                        // Manual modes: only process if manually recording
+                        // Speech detection is handled by startManualRecording/stopManualRecording
+                        // Just track speech activity for UI feedback
+                        if (_isManuallyRecording.value) {
+                            lastSpeechDetectedTime = System.currentTimeMillis()
+                        }
+                    }
                 }
             }
             SessionState.AI_SPEAKING -> {
-                // Check for barge-in
+                // Check for barge-in (works in all modes)
                 if (vadResult.isSpeech && canBargeIn()) {
                     handleBargeIn()
                 }
