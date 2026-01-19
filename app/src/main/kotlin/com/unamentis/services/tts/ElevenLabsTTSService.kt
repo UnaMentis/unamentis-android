@@ -34,7 +34,8 @@ import okio.ByteString
  */
 class ElevenLabsTTSService(
     private val apiKey: String,
-    private val voiceId: String = "21m00Tcm4TlvDq8ikWAM", // Rachel voice
+    /** Rachel voice */
+    private val voiceId: String = "21m00Tcm4TlvDq8ikWAM",
     private val model: String = "eleven_monolingual_v1",
     private val stability: Float = 0.5f,
     private val similarityBoost: Float = 0.75f,

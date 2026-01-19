@@ -48,7 +48,8 @@ enum class SessionState {
 data class TranscriptEntry(
     val id: String,
     val sessionId: String,
-    val role: String, // "user" or "assistant"
+    /** "user" or "assistant" */
+    val role: String,
     val text: String,
     val timestamp: Long,
     val metadata: Map<String, String> = emptyMap(),

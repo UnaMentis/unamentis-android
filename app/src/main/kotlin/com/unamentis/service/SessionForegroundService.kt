@@ -142,8 +142,9 @@ class SessionForegroundService : Service() {
                 // No actions in idle/error state
             }
             SessionState.PAUSED -> {
+                // TODO: Create proper icons
                 builder.addAction(
-                    R.drawable.ic_launcher_foreground, // TODO: Create proper icons
+                    R.drawable.ic_launcher_foreground,
                     "Resume",
                     createActionPendingIntent(ACTION_RESUME),
                 )

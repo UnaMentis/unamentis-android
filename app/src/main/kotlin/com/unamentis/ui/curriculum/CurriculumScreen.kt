@@ -27,13 +27,11 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Storage
-import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -60,6 +58,9 @@ import com.unamentis.data.model.Curriculum
 import com.unamentis.data.model.Topic
 import com.unamentis.data.remote.CurriculumSummary
 import com.unamentis.data.repository.ConnectionState
+import com.unamentis.ui.components.IOSCard
+import com.unamentis.ui.components.IOSProgressBar
+import com.unamentis.ui.theme.Dimensions
 
 /**
  * Curriculum screen - Browse and download curricula.
@@ -401,11 +402,15 @@ private fun ServerCurriculaListView(
             }
         }
     } else {
-        // Server curricula list
+        // Server curricula list - iOS-style spacing
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding =
+                PaddingValues(
+                    horizontal = Dimensions.ScreenHorizontalPadding,
+                    vertical = Dimensions.SpacingLarge,
+                ),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
         ) {
             items(
                 items = uiState.serverCurricula,
@@ -425,6 +430,7 @@ private fun ServerCurriculaListView(
 
 /**
  * Server curriculum card (from CurriculumSummary).
+ * Uses iOS-style card with 12dp corner radius and 16dp padding.
  */
 @Composable
 private fun ServerCurriculumCard(
@@ -434,12 +440,9 @@ private fun ServerCurriculumCard(
     downloadProgress: Float,
     onDownload: () -> Unit,
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-    ) {
+    IOSCard(modifier = Modifier.fillMaxWidth()) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -495,10 +498,10 @@ private fun ServerCurriculumCard(
                 )
             }
 
-            // Download progress bar
+            // Download progress bar - iOS-style 4pt height
             if (isDownloading) {
-                LinearProgressIndicator(
-                    progress = { downloadProgress },
+                IOSProgressBar(
+                    progress = downloadProgress,
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
@@ -544,11 +547,15 @@ private fun LocalCurriculaListView(
             }
         }
     } else {
-        // Local curricula list
+        // Local curricula list - iOS-style spacing
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding =
+                PaddingValues(
+                    horizontal = Dimensions.ScreenHorizontalPadding,
+                    vertical = Dimensions.SpacingLarge,
+                ),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
         ) {
             items(
                 items = uiState.localCurricula,
@@ -566,6 +573,7 @@ private fun LocalCurriculaListView(
 
 /**
  * Local curriculum card (full Curriculum with click to view details).
+ * Uses iOS-style card with 12dp corner radius.
  */
 @Composable
 private fun LocalCurriculumCard(
@@ -573,13 +581,12 @@ private fun LocalCurriculumCard(
     onClick: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    Card(
+    IOSCard(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -632,18 +639,21 @@ private fun CurriculumDetailView(
             },
         )
 
-        // Topic list
+        // Topic list - iOS-style spacing
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding =
+                PaddingValues(
+                    horizontal = Dimensions.ScreenHorizontalPadding,
+                    vertical = Dimensions.SpacingLarge,
+                ),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
         ) {
             // Curriculum metadata
             item {
-                Card(modifier = Modifier.fillMaxWidth()) {
+                IOSCard(modifier = Modifier.fillMaxWidth()) {
                     Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
                     ) {
                         Text(
                             text = "About",
@@ -689,16 +699,16 @@ private fun CurriculumDetailView(
 
 /**
  * Individual topic card.
+ * Uses iOS-style card with 12dp corner radius.
  */
 @Composable
 private fun TopicCard(
     topic: Topic,
     onStartSession: () -> Unit,
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    IOSCard(modifier = Modifier.fillMaxWidth()) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),

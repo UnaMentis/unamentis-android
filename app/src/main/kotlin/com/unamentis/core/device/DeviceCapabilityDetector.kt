@@ -135,7 +135,8 @@ class DeviceCapabilityDetector
                         useCloudSTT = true,
                         useCloudTTS = true,
                         useCloudLLM = true,
-                        audioBufferSize = 512, // 32ms at 16kHz
+                        // 32ms at 16kHz
+                        audioBufferSize = 512,
                         maxConcurrentRequests = 3,
                         enableNNAPI = capabilities.supportsNNAPI,
                     )
@@ -144,18 +145,24 @@ class DeviceCapabilityDetector
                         useCloudSTT = true,
                         useCloudTTS = true,
                         useCloudLLM = true,
-                        audioBufferSize = 1024, // 64ms at 16kHz
+                        // 64ms at 16kHz
+                        audioBufferSize = 1024,
                         maxConcurrentRequests = 2,
                         enableNNAPI = capabilities.supportsNNAPI,
                     )
                 DeviceTier.MINIMUM ->
                     RecommendedConfig(
-                        useCloudSTT = true, // Still use cloud for quality
-                        useCloudTTS = false, // Use Android TTS
-                        useCloudLLM = false, // Use on-device LLM
-                        audioBufferSize = 2048, // 128ms at 16kHz
+                        // Still use cloud for quality
+                        useCloudSTT = true,
+                        // Use Android TTS
+                        useCloudTTS = false,
+                        // Use on-device LLM
+                        useCloudLLM = false,
+                        // 128ms at 16kHz
+                        audioBufferSize = 2048,
                         maxConcurrentRequests = 1,
-                        enableNNAPI = false, // May not be reliable
+                        // May not be reliable
+                        enableNNAPI = false,
                     )
             }
         }

@@ -130,11 +130,12 @@ class AndroidSTTService(
                         val latency = System.currentTimeMillis() - startTime
 
                         matches?.firstOrNull()?.let { text ->
+                            // Partial results have lower confidence
                             trySend(
                                 STTResult(
                                     text = text,
                                     isFinal = false,
-                                    confidence = 0.5f, // Partial results have lower confidence
+                                    confidence = 0.5f,
                                     latencyMs = latency,
                                 ),
                             )

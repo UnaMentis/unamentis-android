@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Chat
@@ -76,6 +77,8 @@ import com.unamentis.data.model.TranscriptEntry
 import com.unamentis.ui.LocalScrollToTopHandler
 import com.unamentis.ui.Routes
 import com.unamentis.ui.components.ExportBottomSheet
+import com.unamentis.ui.components.IOSCard
+import com.unamentis.ui.theme.Dimensions
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -361,7 +364,7 @@ private fun SessionListView(
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
             ) {
                 Icon(
                     imageVector = Icons.Default.History,
@@ -385,8 +388,8 @@ private fun SessionListView(
         LazyColumn(
             modifier = modifier.fillMaxSize(),
             state = listState,
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(horizontal = Dimensions.ScreenHorizontalPadding, vertical = Dimensions.ScreenVerticalPadding),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
         ) {
             items(
                 items = sessions,
@@ -409,13 +412,13 @@ private fun SessionCard(
     session: Session,
     onClick: () -> Unit,
 ) {
-    Card(
+    IOSCard(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(Dimensions.CardPadding),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
         ) {
             // Title, star, and date
             Row(
@@ -425,7 +428,7 @@ private fun SessionCard(
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
                 ) {
                     Text(
                         text = session.curriculumId?.let { "Curriculum Session" } ?: "Free Session",
@@ -451,7 +454,7 @@ private fun SessionCard(
 
             // Metadata
             Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingLarge),
             ) {
                 MetadataChip(
                     icon = Icons.AutoMirrored.Filled.Chat,
@@ -488,13 +491,13 @@ private fun MetadataChip(
     text: String,
 ) {
     Row(
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingXSmall),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            modifier = Modifier.size(16.dp),
+            modifier = Modifier.size(Dimensions.IconSizeSmall),
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
@@ -518,8 +521,8 @@ private fun SessionDetailView(
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         state = listState,
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        contentPadding = PaddingValues(horizontal = Dimensions.ScreenHorizontalPadding, vertical = Dimensions.ScreenVerticalPadding),
+        verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingLarge),
     ) {
         // Session info card
         item {
@@ -542,7 +545,7 @@ private fun SessionDetailView(
                     text = "No transcript available",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 32.dp),
+                    modifier = Modifier.padding(vertical = Dimensions.SpacingXXLarge),
                 )
             }
         } else {
@@ -561,10 +564,10 @@ private fun SessionDetailView(
  */
 @Composable
 private fun SessionInfoCard(session: Session) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    IOSCard(modifier = Modifier.fillMaxWidth()) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.padding(Dimensions.CardPadding),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
         ) {
             Text(
                 text = "Session Information",
@@ -638,12 +641,13 @@ private fun TranscriptEntryCard(entry: TranscriptEntry) {
             text = if (isUser) "You" else "AI Tutor",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+            modifier = Modifier.padding(horizontal = Dimensions.SpacingMedium, vertical = Dimensions.SpacingXSmall),
         )
 
         // Message card
         Card(
             modifier = Modifier.fillMaxWidth(0.85f),
+            shape = RoundedCornerShape(Dimensions.BubbleCornerRadius),
             colors =
                 CardDefaults.cardColors(
                     containerColor =
@@ -655,8 +659,8 @@ private fun TranscriptEntryCard(entry: TranscriptEntry) {
                 ),
         ) {
             Column(
-                modifier = Modifier.padding(12.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.padding(Dimensions.BubblePadding),
+                verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingXSmall),
             ) {
                 Text(
                     text = entry.text,
@@ -724,9 +728,9 @@ private fun HistoryFilterSheet(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .padding(bottom = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+                    .padding(horizontal = Dimensions.ScreenHorizontalPadding)
+                    .padding(bottom = Dimensions.SpacingXXLarge),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingLarge),
         ) {
             // Header
             Row(
@@ -754,13 +758,13 @@ private fun HistoryFilterSheet(
                     Modifier
                         .fillMaxWidth()
                         .clickable { onStarredOnlyChanged(!filterState.starredOnly) }
-                        .padding(vertical = 8.dp),
+                        .padding(vertical = Dimensions.SpacingSmall),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Star,
@@ -786,7 +790,7 @@ private fun HistoryFilterSheet(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
             ) {
                 // Start date chip
                 FilterChip(
@@ -866,7 +870,7 @@ private fun HistoryFilterSheet(
                         color = MaterialTheme.colorScheme.primary,
                     )
                 }
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(Dimensions.SpacingSmall))
                 Slider(
                     value = durationSliderValue,
                     onValueChange = { durationSliderValue = it },
@@ -897,7 +901,7 @@ private fun HistoryFilterSheet(
                         color = MaterialTheme.colorScheme.primary,
                     )
                 }
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(Dimensions.SpacingSmall))
                 Slider(
                     value = turnsSliderValue,
                     onValueChange = { turnsSliderValue = it },

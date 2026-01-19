@@ -19,6 +19,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.unamentis.ui.components.IOSCard
+import com.unamentis.ui.theme.Dimensions
 import java.time.format.DateTimeFormatter
 
 /**
@@ -60,8 +62,8 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
                 Modifier
                     .fillMaxSize()
                     .padding(paddingValues),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(horizontal = Dimensions.ScreenHorizontalPadding, vertical = Dimensions.ScreenVerticalPadding),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingLarge),
         ) {
             // Time range selector
             item {
@@ -115,7 +117,7 @@ private fun TimeRangeSelector(
     selectedRange: TimeRange,
     onRangeSelected: (TimeRange) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall)) {
         Text(
             text = "Time Range",
             style = MaterialTheme.typography.titleMedium,
@@ -124,7 +126,7 @@ private fun TimeRangeSelector(
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
         ) {
             TimeRange.entries.forEach { range ->
                 FilterChip(
@@ -152,7 +154,7 @@ private fun TimeRangeSelector(
  */
 @Composable
 private fun QuickStatsSection(stats: QuickStats) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall)) {
         Text(
             text = "Overview",
             style = MaterialTheme.typography.titleMedium,
@@ -161,7 +163,7 @@ private fun QuickStatsSection(stats: QuickStats) {
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
         ) {
             StatCard(
                 title = "Sessions",
@@ -179,7 +181,7 @@ private fun QuickStatsSection(stats: QuickStats) {
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
         ) {
             StatCard(
                 title = "Avg Latency",
@@ -207,20 +209,20 @@ private fun StatCard(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     modifier: Modifier = Modifier,
 ) {
-    Card(modifier = modifier) {
+    IOSCard(modifier = modifier) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(Dimensions.CardPadding),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingXSmall),
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp),
+                    modifier = Modifier.size(Dimensions.IconSizeSmall),
                 )
                 Text(
                     text = title,
@@ -242,10 +244,10 @@ private fun StatCard(
  */
 @Composable
 private fun LatencyBreakdownCard(breakdown: LatencyBreakdown) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    IOSCard(modifier = Modifier.fillMaxWidth()) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.padding(Dimensions.CardPadding),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
         ) {
             Text(
                 text = "Latency Breakdown",
@@ -276,10 +278,10 @@ private fun LatencyBreakdownCard(breakdown: LatencyBreakdown) {
  */
 @Composable
 private fun CostBreakdownCard(breakdown: CostBreakdown) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    IOSCard(modifier = Modifier.fillMaxWidth()) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.padding(Dimensions.CardPadding),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
         ) {
             Text(
                 text = "Cost Breakdown",
@@ -304,7 +306,7 @@ private fun CostBreakdownCard(breakdown: CostBreakdown) {
                 )
 
                 // Legend
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall)) {
                     CostLegendItem("STT", breakdown.sttCost, MaterialTheme.colorScheme.primary)
                     CostLegendItem("TTS", breakdown.ttsCost, MaterialTheme.colorScheme.secondary)
                     CostLegendItem("LLM", breakdown.llmCost, MaterialTheme.colorScheme.tertiary)
@@ -343,7 +345,7 @@ private fun CostLegendItem(
     color: Color,
 ) {
     Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
@@ -364,10 +366,10 @@ private fun CostLegendItem(
  */
 @Composable
 private fun ProviderBreakdownCard(providers: List<ProviderCostItem>) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    IOSCard(modifier = Modifier.fillMaxWidth()) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.padding(Dimensions.CardPadding),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
         ) {
             Text(
                 text = "Provider Details",
@@ -380,7 +382,7 @@ private fun ProviderBreakdownCard(providers: List<ProviderCostItem>) {
                     text = "No provider data available",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 16.dp),
+                    modifier = Modifier.padding(vertical = Dimensions.CardPadding),
                 )
             } else {
                 providers.forEach { provider ->
@@ -405,7 +407,7 @@ private fun ProviderCostRow(provider: ProviderCostItem) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             // Type indicator chip
@@ -462,10 +464,10 @@ private fun getProviderTypeColor(type: String): Color {
  */
 @Composable
 private fun SessionTrendsCard(trends: List<DailyStats>) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    IOSCard(modifier = Modifier.fillMaxWidth()) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.padding(Dimensions.CardPadding),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
         ) {
             Text(
                 text = "Session Trends",
@@ -478,7 +480,7 @@ private fun SessionTrendsCard(trends: List<DailyStats>) {
                     text = "No data available",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 32.dp),
+                    modifier = Modifier.padding(vertical = Dimensions.SpacingXXLarge),
                 )
             } else {
                 LineChart(
@@ -515,7 +517,7 @@ private fun BarChart(
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
             ) {
                 Text(
                     text = label,
@@ -640,20 +642,20 @@ private fun ExportDialog(
         onDismissRequest = onDismiss,
         title = { Text("Export Metrics") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall)) {
                 Text(
                     text = "Metrics in JSON format:",
                     style = MaterialTheme.typography.bodySmall,
                 )
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(8.dp),
+                    shape = RoundedCornerShape(Dimensions.CardCornerRadiusSmall),
                     color = MaterialTheme.colorScheme.surfaceVariant,
                 ) {
                     Text(
                         text = json,
                         style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.padding(12.dp),
+                        modifier = Modifier.padding(Dimensions.SpacingMedium),
                     )
                 }
             }

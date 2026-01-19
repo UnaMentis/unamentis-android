@@ -348,18 +348,24 @@ enum class TimeRange {
 data class QuickStats(
     val totalSessions: Int = 0,
     val totalTurns: Int = 0,
-    val avgE2ELatency: Int = 0, // milliseconds
-    val totalCost: Double = 0.0, // USD
+    /** milliseconds */
+    val avgE2ELatency: Int = 0,
+    /** USD */
+    val totalCost: Double = 0.0,
 )
 
 /**
  * Latency breakdown by component.
  */
 data class LatencyBreakdown(
-    val avgSTT: Int = 0, // milliseconds
-    val avgLLM_TTFT: Int = 0, // milliseconds
-    val avgTTS_TTFB: Int = 0, // milliseconds
-    val avgE2E: Int = 0, // milliseconds
+    /** milliseconds */
+    val avgSTT: Int = 0,
+    /** milliseconds */
+    val avgLLM_TTFT: Int = 0,
+    /** milliseconds */
+    val avgTTS_TTFB: Int = 0,
+    /** milliseconds */
+    val avgE2E: Int = 0,
 )
 
 /**

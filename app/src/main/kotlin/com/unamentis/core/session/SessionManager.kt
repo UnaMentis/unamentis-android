@@ -1,13 +1,12 @@
 package com.unamentis.core.session
 
+import android.util.Log
 import com.unamentis.core.audio.AudioEngine
 import com.unamentis.core.config.RecordingMode
 import com.unamentis.core.curriculum.CurriculumEngine
 import com.unamentis.data.model.*
-// VADService is defined in com.unamentis.data.model.Providers
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import android.util.Log
 import java.util.*
 
 /**
@@ -519,9 +518,10 @@ class SessionManager(
                             Log.i("SessionManager", "LLM TTFT: ${ttft}ms")
 
                             // Track TTFT metric
+                            // Running average
                             _metrics.value =
                                 _metrics.value.copy(
-                                    llmTTFT = (_metrics.value.llmTTFT + ttft) / 2, // Running average
+                                    llmTTFT = (_metrics.value.llmTTFT + ttft) / 2,
                                 )
 
                             // Transition to AI_SPEAKING
@@ -722,7 +722,10 @@ class SessionManager(
  * Session metrics tracked in real-time.
  */
 data class SessionMetrics(
-    val llmTTFT: Long = 0, // Time to first token (ms)
-    val ttsTTFB: Long = 0, // Time to first byte (ms)
-    val e2eLatency: Long = 0, // End-to-end turn latency (ms)
+    /** Time to first token (ms) */
+    val llmTTFT: Long = 0,
+    /** Time to first byte (ms) */
+    val ttsTTFB: Long = 0,
+    /** End-to-end turn latency (ms) */
+    val e2eLatency: Long = 0,
 )

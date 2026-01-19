@@ -16,11 +16,9 @@ import androidx.compose.ui.graphics.Color
  * - Deep Navy Blue: #1E3A5F to #003D7A
  * - Teal/Cyan: #00A884 to #4DB6AC
  * - Light Cyan: #B2EBF2 (highlights)
+ *
+ * Brand Colors (from iOS logo):
  */
-
-// =============================================================================
-// BRAND COLORS (from iOS logo)
-// =============================================================================
 val BrandNavyDark = Color(0xFF1E3A5F)
 val BrandNavy = Color(0xFF003D7A)
 val BrandTeal = Color(0xFF00A884)

@@ -21,6 +21,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.unamentis.core.config.ConfigurationPreset
 import com.unamentis.core.config.RecordingMode
+import com.unamentis.ui.components.IOSCard
+import com.unamentis.ui.theme.Dimensions
 
 /**
  * Settings sections that can be navigated to via deep link.
@@ -111,8 +113,12 @@ fun SettingsScreen(
                 Modifier
                     .fillMaxSize()
                     .padding(paddingValues),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding =
+                PaddingValues(
+                    horizontal = Dimensions.ScreenHorizontalPadding,
+                    vertical = Dimensions.SpacingLarge,
+                ),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingLarge),
         ) {
             // Preset selection
             item {
@@ -372,6 +378,7 @@ private fun PresetChip(
 
 /**
  * Provider selection card.
+ * Uses iOS-style card with 12dp corner radius.
  */
 @Composable
 private fun ProviderCard(
@@ -381,12 +388,9 @@ private fun ProviderCard(
     onProviderSelected: (String) -> Unit,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-    ) {
+    IOSCard(modifier = Modifier.fillMaxWidth()) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -428,10 +432,9 @@ private fun ApiKeySection(
     var showOpenAIDialog by remember { mutableStateOf(false) }
     var showAnthropicDialog by remember { mutableStateOf(false) }
 
-    Card(modifier = Modifier.fillMaxWidth()) {
+    IOSCard(modifier = Modifier.fillMaxWidth()) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
         ) {
             ApiKeyItem(
                 name = "Deepgram",

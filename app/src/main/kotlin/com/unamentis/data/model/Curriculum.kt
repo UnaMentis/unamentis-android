@@ -80,7 +80,8 @@ data class Topic(
 @Serializable
 data class TranscriptSegment(
     val id: String,
-    val type: String, // "content", "checkpoint", "activity"
+    /** "content", "checkpoint", "activity" */
+    val type: String,
     val content: String,
     val spokenText: String? = null,
     val stoppingPoint: StoppingPoint? = null,
@@ -100,7 +101,8 @@ data class TranscriptSegment(
  */
 @Serializable
 data class StoppingPoint(
-    val type: String, // "quiz", "reflection", "practice"
+    /** "quiz", "reflection", "practice" */
+    val type: String,
     val prompt: String,
     val expectedConcepts: List<String> = emptyList(),
     val hints: List<String> = emptyList(),

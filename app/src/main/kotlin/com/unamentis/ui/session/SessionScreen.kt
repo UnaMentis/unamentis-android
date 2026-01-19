@@ -4,7 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -20,6 +20,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -28,8 +30,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.unamentis.core.config.RecordingMode
 import com.unamentis.data.model.SessionState
 import com.unamentis.data.model.TranscriptEntry
+import com.unamentis.ui.components.GlassCapsule
 import com.unamentis.ui.theme.AssistantBubbleDark
 import com.unamentis.ui.theme.AssistantBubbleLight
+import com.unamentis.ui.theme.Dimensions
 import com.unamentis.ui.theme.UserBubbleDark
 import com.unamentis.ui.theme.UserBubbleLight
 import java.text.SimpleDateFormat
@@ -151,6 +155,7 @@ fun SessionScreen(
 
 /**
  * Top app bar with session info.
+ * Uses iOS-style glass capsule badge for session state (matching iOS ultraThinMaterial).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -176,21 +181,66 @@ private fun SessionTopBar(
             }
         },
         actions = {
-            // Session state indicator
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = getStateColor(sessionState),
-                modifier = Modifier.padding(end = 16.dp),
-            ) {
-                Text(
-                    text = sessionState.name,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onPrimary,
-                )
-            }
+            // Session state indicator - iOS-style glass capsule with colored dot
+            SessionStateBadge(
+                state = sessionState,
+                modifier = Modifier.padding(end = Dimensions.SpacingLarge),
+            )
         },
     )
+}
+
+/**
+ * iOS-style session state badge with glass effect and colored dot.
+ * Matches iOS pattern: Capsule().fill(.ultraThinMaterial) with status dot.
+ */
+@Composable
+private fun SessionStateBadge(
+    state: SessionState,
+    modifier: Modifier = Modifier,
+) {
+    val stateColor = getStateColor(state)
+    val statusText = getStateDisplayName(state)
+
+    GlassCapsule(modifier = modifier) {
+        Row(
+            modifier =
+                Modifier
+                    .padding(
+                        horizontal = Dimensions.BadgePaddingHorizontal,
+                        vertical = Dimensions.BadgePaddingVertical,
+                    )
+                    .semantics { contentDescription = "Session status: $statusText" },
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
+        ) {
+            // Colored status dot
+            Canvas(modifier = Modifier.size(Dimensions.StatusDotSize)) {
+                drawCircle(color = stateColor)
+            }
+            Text(
+                text = statusText,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+    }
+}
+
+/**
+ * Get display name for session state.
+ */
+private fun getStateDisplayName(state: SessionState): String {
+    return when (state) {
+        SessionState.IDLE -> "Ready"
+        SessionState.USER_SPEAKING -> "Listening"
+        SessionState.PROCESSING_UTTERANCE -> "Processing"
+        SessionState.AI_THINKING -> "Thinking"
+        SessionState.AI_SPEAKING -> "Speaking"
+        SessionState.INTERRUPTED -> "Interrupted"
+        SessionState.PAUSED -> "Paused"
+        SessionState.ERROR -> "Error"
+    }
 }
 
 /**
@@ -227,6 +277,7 @@ private fun SessionStatusIndicator(
 
 /**
  * Transcript display with reverse scroll.
+ * Uses iOS-matching spacing: 20dp horizontal padding, 12dp vertical spacing.
  */
 @Composable
 private fun TranscriptDisplay(
@@ -250,7 +301,7 @@ private fun TranscriptDisplay(
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
             ) {
                 Icon(
                     imageVector = Icons.Default.Mic,
@@ -270,10 +321,10 @@ private fun TranscriptDisplay(
             modifier =
                 modifier
                     .fillMaxSize()
-                    .padding(horizontal = 16.dp),
+                    .padding(horizontal = Dimensions.ScreenHorizontalPadding),
             state = listState,
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
+            contentPadding = PaddingValues(vertical = Dimensions.SpacingLarge),
         ) {
             items(
                 items = transcript,
@@ -287,6 +338,7 @@ private fun TranscriptDisplay(
 
 /**
  * Individual transcript bubble.
+ * Uses iOS-style corner radius (16dp) and padding (12dp).
  */
 @Composable
 private fun TranscriptBubble(entry: TranscriptEntry) {
@@ -317,23 +369,27 @@ private fun TranscriptBubble(entry: TranscriptEntry) {
             text = if (isUser) "You" else "AI Tutor",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+            modifier =
+                Modifier.padding(
+                    horizontal = Dimensions.BubblePadding,
+                    vertical = Dimensions.SpacingXSmall,
+                ),
         )
 
         // Message bubble
         Surface(
             shape =
                 RoundedCornerShape(
-                    topStart = 16.dp,
-                    topEnd = 16.dp,
-                    bottomStart = if (isUser) 16.dp else 4.dp,
-                    bottomEnd = if (isUser) 4.dp else 16.dp,
+                    topStart = Dimensions.BubbleCornerRadius,
+                    topEnd = Dimensions.BubbleCornerRadius,
+                    bottomStart = if (isUser) Dimensions.BubbleCornerRadius else Dimensions.SpacingXSmall,
+                    bottomEnd = if (isUser) Dimensions.SpacingXSmall else Dimensions.BubbleCornerRadius,
                 ),
             color = bubbleColor,
-            modifier = Modifier.widthIn(max = 300.dp),
+            modifier = Modifier.widthIn(max = Dimensions.BubbleMaxWidth),
         ) {
             Column(
-                modifier = Modifier.padding(12.dp),
+                modifier = Modifier.padding(Dimensions.BubblePadding),
             ) {
                 Text(
                     text = entry.text,
@@ -346,7 +402,7 @@ private fun TranscriptBubble(entry: TranscriptEntry) {
                     text = formatTimestamp(entry.timestamp),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    modifier = Modifier.padding(top = 4.dp),
+                    modifier = Modifier.padding(top = Dimensions.SpacingXSmall),
                 )
             }
         }
@@ -397,6 +453,7 @@ private fun MetricItem(
 
 /**
  * Control bar with session action buttons.
+ * Uses iOS-matching spacing: 16dp padding, 12dp spacing.
  */
 @Composable
 private fun SessionControlBar(
@@ -415,8 +472,8 @@ private fun SessionControlBar(
         shadowElevation = 8.dp,
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.padding(Dimensions.ControlBarPadding),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
         ) {
             // Manual recording button for PTT/Toggle modes (shown when session is active)
             if (uiState.isSessionActive &&
@@ -435,7 +492,7 @@ private fun SessionControlBar(
 
             // Session control buttons
             Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 // Start button
@@ -443,9 +500,10 @@ private fun SessionControlBar(
                     Button(
                         onClick = onStart,
                         modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(Dimensions.ButtonCornerRadius),
                     ) {
                         Icon(Icons.Default.PlayArrow, contentDescription = "Start session")
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(Dimensions.SpacingSmall))
                         Text("Start Session")
                     }
                 }
@@ -455,9 +513,10 @@ private fun SessionControlBar(
                     FilledTonalButton(
                         onClick = onPause,
                         modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(Dimensions.ButtonCornerRadius),
                     ) {
                         Icon(Icons.Default.Pause, contentDescription = "Pause session")
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(Dimensions.SpacingSmall))
                         Text("Pause")
                     }
                 }
@@ -467,9 +526,10 @@ private fun SessionControlBar(
                     Button(
                         onClick = onResume,
                         modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(Dimensions.ButtonCornerRadius),
                     ) {
                         Icon(Icons.Default.PlayArrow, contentDescription = "Resume session")
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(Dimensions.SpacingSmall))
                         Text("Resume")
                     }
                 }
@@ -479,9 +539,10 @@ private fun SessionControlBar(
                     OutlinedButton(
                         onClick = onStop,
                         modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(Dimensions.ButtonCornerRadius),
                     ) {
                         Icon(Icons.Default.Stop, contentDescription = "Stop session")
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(Dimensions.SpacingSmall))
                         Text("Stop")
                     }
                 }
