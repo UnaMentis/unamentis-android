@@ -24,4 +24,42 @@
     <string name="cd_mute_button">Mute microphone</string>
     <string name="cd_pause_button">Pause session</string>
     <string name="cd_stop_button">Stop session</string>
+
+    <!-- Onboarding Screen -->
+    <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_back">Back</string>
+    <string name="onboarding_next">Next</string>
+    <string name="onboarding_get_started">Get Started</string>
+
+    <!-- Onboarding Page 1: Welcome -->
+    <string name="onboarding_welcome_title">Welcome to UnaMentis</string>
+    <string name="onboarding_welcome_subtitle">Learn Through Voice</string>
+    <string name="onboarding_welcome_description">Have natural voice conversations with an AI tutor. Ask questions, explore topics, and learn at your own pace.</string>
+    <string name="onboarding_welcome_tip1">Speak naturally, just like talking to a teacher</string>
+    <string name="onboarding_welcome_tip2">Ask follow-up questions anytime</string>
+    <string name="onboarding_welcome_tip3">Interrupt the AI by speaking</string>
+
+    <!-- Onboarding Page 2: Curriculum -->
+    <string name="onboarding_curriculum_title">Structured Learning</string>
+    <string name="onboarding_curriculum_subtitle">Curriculum-Based Lessons</string>
+    <string name="onboarding_curriculum_description">Follow structured curricula with topics organized for progressive learning. Track your mastery and progress.</string>
+    <string name="onboarding_curriculum_tip1">Browse available curricula in the Curriculum tab</string>
+    <string name="onboarding_curriculum_tip2">Each topic has audio narration and visuals</string>
+    <string name="onboarding_curriculum_tip3">Your progress is saved automatically</string>
+
+    <!-- Onboarding Page 3: Offline -->
+    <string name="onboarding_offline_title">Works Offline</string>
+    <string name="onboarding_offline_subtitle">On-Device AI</string>
+    <string name="onboarding_offline_description">Use on-device AI for free, private sessions that work without internet. Or connect to cloud services for more power.</string>
+    <string name="onboarding_offline_tip1">On-device speech recognition is free</string>
+    <string name="onboarding_offline_tip2">Self-host AI on your PC for unlimited use</string>
+    <string name="onboarding_offline_tip3">Cloud services offer the best quality</string>
+
+    <!-- Onboarding Page 4: Hands-Free -->
+    <string name="onboarding_handsfree_title">Hands-Free Learning</string>
+    <string name="onboarding_handsfree_subtitle">Use Voice to Start</string>
+    <string name="onboarding_handsfree_description">Start learning sessions with your voice using Google Assistant. Perfect for walking, driving, or exercising.</string>
+    <string name="onboarding_handsfree_tip1">Say \"Hey Google, talk to UnaMentis\"</string>
+    <string name="onboarding_handsfree_tip2">Or \"Hey Google, start a lesson\"</string>
+    <string name="onboarding_handsfree_tip3">Use headphones for best results</string>
 </resources>

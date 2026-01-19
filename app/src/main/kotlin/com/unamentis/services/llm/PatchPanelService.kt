@@ -51,12 +51,15 @@ class PatchPanelService(
     ): Flow<LLMToken> {
         // Extract task type from system message or use default
         val taskType = extractTaskType(messages)
+        // TODO: Get deviceTier from DeviceCapabilityDetector
+        // TODO: Get networkQuality from NetworkMonitor
+        // TODO: Get costPreference from settings
         val context =
             RoutingContext(
                 taskType = taskType,
-                deviceTier = DeviceTier.STANDARD, // TODO: Get from DeviceCapabilityDetector
-                networkQuality = NetworkQuality.GOOD, // TODO: Get from NetworkMonitor
-                costPreference = CostPreference.BALANCED, // TODO: Get from settings
+                deviceTier = DeviceTier.STANDARD,
+                networkQuality = NetworkQuality.GOOD,
+                costPreference = CostPreference.BALANCED,
             )
 
         // Select provider based on routing rules
@@ -94,30 +97,145 @@ class PatchPanelService(
     /**
      * Extract task type from conversation context.
      *
-     * Looks for task type hints in system message.
+     * Looks for task type hints in system message using hierarchical matching.
+     * More specific task types are matched before general ones.
      */
     private fun extractTaskType(messages: List<LLMMessage>): TaskType {
         val systemMessage = messages.firstOrNull { it.role == "system" }?.content ?: ""
+        val lastUserMessage = messages.lastOrNull { it.role == "user" }?.content ?: ""
+        val combinedContext = "$systemMessage $lastUserMessage".lowercase()
 
         return when {
-            systemMessage.contains("tutor", ignoreCase = true) -> TaskType.TUTORING
-            systemMessage.contains("plan", ignoreCase = true) -> TaskType.PLANNING
-            systemMessage.contains("summarize", ignoreCase = true) -> TaskType.SUMMARIZATION
-            systemMessage.contains("assess", ignoreCase = true) -> TaskType.ASSESSMENT
+            // Meta tasks (check first as they can overlap with others)
+            combinedContext.containsAny("reflect", "progress review", "how am i doing") ->
+                TaskType.META_REFLECTION
+            combinedContext.containsAny("motivat", "encourage", "you can do") ->
+                TaskType.META_MOTIVATION
+            combinedContext.containsAny("error", "mistake", "sorry", "let me try again") ->
+                TaskType.META_ERROR_RECOVERY
+
+            // Simple interactions (greetings, acknowledgments)
+            combinedContext.containsAny("hello", "hi ", "hey ", "good morning", "good afternoon") ->
+                TaskType.SIMPLE_GREETING
+            combinedContext.containsAny("ok", "got it", "understood", "i see", "thanks") ->
+                TaskType.SIMPLE_ACKNOWLEDGMENT
+
+            // Assessment subtypes
+            combinedContext.containsAny("quiz", "test me", "question me") ->
+                TaskType.ASSESSMENT_QUIZ
+            combinedContext.containsAny("feedback", "how did i do", "grade my") ->
+                TaskType.ASSESSMENT_FEEDBACK
+            combinedContext.containsAny("rubric", "criteria", "scoring") ->
+                TaskType.ASSESSMENT_RUBRIC
+            combinedContext.containsAny("assess", "evaluat", "check understanding") ->
+                TaskType.ASSESSMENT
+
+            // Tutoring subtypes
+            combinedContext.containsAny("explain", "what is", "how does", "why does") ->
+                TaskType.TUTORING_EXPLANATION
+            combinedContext.containsAny("example", "show me", "demonstrate", "walk through") ->
+                TaskType.TUTORING_EXAMPLE
+            combinedContext.containsAny("analogy", "like", "similar to", "compare it to") ->
+                TaskType.TUTORING_ANALOGY
+            combinedContext.containsAny("clarify", "confused", "don't understand", "what do you mean") ->
+                TaskType.TUTORING_CLARIFICATION
+            combinedContext.containsAny("tutor", "teach", "learn about", "lesson") ->
+                TaskType.TUTORING
+
+            // Planning subtypes
+            combinedContext.containsAny("curriculum", "course", "syllabus") ->
+                TaskType.PLANNING_CURRICULUM
+            combinedContext.containsAny("schedule", "when should", "time") ->
+                TaskType.PLANNING_SCHEDULE
+            combinedContext.containsAny("goal", "objective", "target") ->
+                TaskType.PLANNING_GOAL_SETTING
+            combinedContext.containsAny("plan", "organize", "structure") ->
+                TaskType.PLANNING
+
+            // Content generation subtypes
+            combinedContext.containsAny("adapt", "simplify", "make easier", "beginner") ->
+                TaskType.CONTENT_ADAPTATION
+            combinedContext.containsAny("translat", "convert", "rephrase for") ->
+                TaskType.CONTENT_TRANSLATION
+            combinedContext.containsAny("generat", "create", "write", "produce") ->
+                TaskType.CONTENT_GENERATION
+
+            // Summarization subtypes
+            combinedContext.containsAny("key point", "main idea", "takeaway") ->
+                TaskType.SUMMARIZATION_KEY_POINTS
+            combinedContext.containsAny("compar", "differ", "versus", " vs ") ->
+                TaskType.SUMMARIZATION_COMPARISON
+            combinedContext.containsAny("summariz", "brief", "overview", "recap") ->
+                TaskType.SUMMARIZATION
+
+            // Navigation and classification
+            combinedContext.containsAny("where can i find", "show me", "navigate", "go to") ->
+                TaskType.NAVIGATION
+            combinedContext.containsAny("classify", "categoriz", "what type", "which kind") ->
+                TaskType.CLASSIFICATION
+            combinedContext.containsAny("topic", "subject", "about") ->
+                TaskType.TOPIC_DETECTION
+
+            // Default fallback
             else -> TaskType.SIMPLE_RESPONSE
         }
     }
 }
 
 /**
+ * Extension function to check if string contains any of the given substrings.
+ */
+private fun String.containsAny(vararg substrings: String): Boolean = substrings.any { this.contains(it, ignoreCase = true) }
+
+/**
  * Task type classification for routing decisions.
+ *
+ * 20+ task types organized by category for intelligent routing.
  */
 enum class TaskType {
+    // Core Tutoring Tasks
     TUTORING, // Long-form educational dialogue
+    TUTORING_EXPLANATION, // Explaining concepts in depth
+    TUTORING_EXAMPLE, // Providing worked examples
+    TUTORING_ANALOGY, // Making analogies and comparisons
+    TUTORING_CLARIFICATION, // Clarifying confusion
+
+    // Planning & Organization
     PLANNING, // Creating study plans, lesson plans
-    SUMMARIZATION, // Condensing information
+    PLANNING_CURRICULUM, // Curriculum design and sequencing
+    PLANNING_SCHEDULE, // Time management and scheduling
+    PLANNING_GOAL_SETTING, // Setting learning objectives
+
+    // Content Generation
+    CONTENT_GENERATION, // Creating new educational content
+    CONTENT_ADAPTATION, // Adapting content for different levels
+    CONTENT_TRANSLATION, // Translating between knowledge domains
+
+    // Assessment & Evaluation
     ASSESSMENT, // Evaluating understanding
+    ASSESSMENT_QUIZ, // Generating quiz questions
+    ASSESSMENT_FEEDBACK, // Providing feedback on answers
+    ASSESSMENT_RUBRIC, // Applying scoring rubrics
+
+    // Analysis & Summarization
+    SUMMARIZATION, // Condensing information
+    SUMMARIZATION_KEY_POINTS, // Extracting main ideas
+    SUMMARIZATION_COMPARISON, // Comparing multiple concepts
+
+    // Navigation & Classification
+    NAVIGATION, // Directing to relevant content
+    CLASSIFICATION, // Categorizing queries or content
+    TOPIC_DETECTION, // Detecting topic changes
+
+    // Simple Interactions
     SIMPLE_RESPONSE, // Quick questions, confirmations
+    SIMPLE_GREETING, // Greetings and pleasantries
+    SIMPLE_ACKNOWLEDGMENT, // Acknowledgments and backchannels
+
+    // Meta Tasks
+    META_REFLECTION, // Reflecting on learning progress
+    META_MOTIVATION, // Encouragement and motivation
+    META_ERROR_RECOVERY, // Recovering from errors gracefully
 }
 
 /**
@@ -163,62 +281,260 @@ data class RoutingContext(
  *
  * Each rule maps a context to an ordered list of provider candidates.
  * The first available provider in the list is selected.
+ *
+ * Routing strategies by task category:
+ * - Complex reasoning (tutoring, assessment): Prefer high-quality models (Claude, GPT-4)
+ * - Fast responses (simple, greetings): Prefer fast/cheap models (Ollama, OnDevice)
+ * - Content generation: Prefer creative models (Claude for nuance, GPT-4 for breadth)
+ * - Analysis: Prefer accurate models (Anthropic for precision)
  */
 data class RoutingTable(
     val rules: Map<TaskType, Map<CostPreference, List<String>>>,
 ) {
     companion object {
+        // Provider shorthand constants
+        private const val ANTHROPIC = "Anthropic"
+        private const val OPENAI = "OpenAI"
+        private const val OLLAMA = "Ollama"
+        private const val ON_DEVICE = "OnDevice"
+
+        // Common routing patterns
+        private val highQuality = listOf(ANTHROPIC, OPENAI)
+        private val balanced = listOf(OPENAI, ANTHROPIC, OLLAMA)
+        private val costOptimized = listOf(OLLAMA, ON_DEVICE, OPENAI)
+        private val fast = listOf(OPENAI, OLLAMA, ON_DEVICE)
+        private val ultraFast = listOf(OLLAMA, ON_DEVICE, OPENAI)
+
         /**
-         * Default routing table.
+         * Default routing table with comprehensive coverage of all 28 task types.
          *
-         * Provider priorities:
-         * - Quality: Claude Sonnet > GPT-4 > GPT-4o-mini
-         * - Balanced: GPT-4o-mini > Claude Haiku > Ollama
-         * - Cost: Ollama > On-Device > GPT-4o-mini
+         * Provider priorities by category:
+         * - Quality: Claude Sonnet > GPT-4 (best reasoning, nuance)
+         * - Balanced: GPT-4o-mini > Claude Haiku > Ollama (good quality, reasonable cost)
+         * - Cost: Ollama > On-Device > GPT-4o-mini (minimize API spend)
          */
-        fun default() =
-            RoutingTable(
-                rules =
-                    mapOf(
-                        TaskType.TUTORING to
-                            mapOf(
-                                CostPreference.QUALITY to listOf("Anthropic", "OpenAI"),
-                                CostPreference.BALANCED to listOf("OpenAI", "Anthropic", "Ollama"),
-                                CostPreference.COST to listOf("Ollama", "OnDevice", "OpenAI"),
-                            ),
-                        TaskType.PLANNING to
-                            mapOf(
-                                CostPreference.QUALITY to listOf("Anthropic", "OpenAI"),
-                                CostPreference.BALANCED to listOf("OpenAI", "Anthropic"),
-                                CostPreference.COST to listOf("OpenAI", "Ollama"),
-                            ),
-                        TaskType.SUMMARIZATION to
-                            mapOf(
-                                CostPreference.QUALITY to listOf("OpenAI", "Anthropic"),
-                                CostPreference.BALANCED to listOf("OpenAI", "Ollama"),
-                                CostPreference.COST to listOf("Ollama", "OnDevice", "OpenAI"),
-                            ),
-                        TaskType.ASSESSMENT to
-                            mapOf(
-                                CostPreference.QUALITY to listOf("Anthropic", "OpenAI"),
-                                CostPreference.BALANCED to listOf("OpenAI", "Anthropic"),
-                                CostPreference.COST to listOf("OpenAI", "Anthropic"),
-                            ),
-                        TaskType.SIMPLE_RESPONSE to
-                            mapOf(
-                                CostPreference.QUALITY to listOf("OpenAI", "Anthropic"),
-                                CostPreference.BALANCED to listOf("OpenAI", "Ollama"),
-                                CostPreference.COST to listOf("Ollama", "OnDevice", "OpenAI"),
-                            ),
-                    ),
-            )
+        fun default(): RoutingTable {
+            val rules = mutableMapOf<TaskType, Map<CostPreference, List<String>>>()
+
+            // Core Tutoring Tasks - need high quality for nuanced explanations
+            rules[TaskType.TUTORING] =
+                mapOf(
+                    CostPreference.QUALITY to highQuality,
+                    CostPreference.BALANCED to balanced,
+                    CostPreference.COST to costOptimized,
+                )
+            rules[TaskType.TUTORING_EXPLANATION] =
+                mapOf(
+                    CostPreference.QUALITY to highQuality,
+                    CostPreference.BALANCED to listOf(ANTHROPIC, OPENAI, OLLAMA),
+                    CostPreference.COST to listOf(OLLAMA, OPENAI),
+                )
+            rules[TaskType.TUTORING_EXAMPLE] =
+                mapOf(
+                    CostPreference.QUALITY to highQuality,
+                    CostPreference.BALANCED to balanced,
+                    CostPreference.COST to listOf(OPENAI, OLLAMA),
+                )
+            // Claude excels at analogies
+            rules[TaskType.TUTORING_ANALOGY] =
+                mapOf(
+                    CostPreference.QUALITY to listOf(ANTHROPIC, OPENAI),
+                    CostPreference.BALANCED to listOf(ANTHROPIC, OPENAI, OLLAMA),
+                    CostPreference.COST to listOf(OLLAMA, OPENAI),
+                )
+            rules[TaskType.TUTORING_CLARIFICATION] =
+                mapOf(
+                    CostPreference.QUALITY to highQuality,
+                    CostPreference.BALANCED to balanced,
+                    CostPreference.COST to costOptimized,
+                )
+
+            // Planning Tasks - need good reasoning
+            rules[TaskType.PLANNING] =
+                mapOf(
+                    CostPreference.QUALITY to highQuality,
+                    CostPreference.BALANCED to listOf(OPENAI, ANTHROPIC),
+                    CostPreference.COST to listOf(OPENAI, OLLAMA),
+                )
+            rules[TaskType.PLANNING_CURRICULUM] =
+                mapOf(
+                    CostPreference.QUALITY to listOf(ANTHROPIC, OPENAI),
+                    CostPreference.BALANCED to listOf(ANTHROPIC, OPENAI),
+                    CostPreference.COST to listOf(OPENAI, OLLAMA),
+                )
+            rules[TaskType.PLANNING_SCHEDULE] =
+                mapOf(
+                    CostPreference.QUALITY to listOf(OPENAI, ANTHROPIC),
+                    CostPreference.BALANCED to listOf(OPENAI, OLLAMA),
+                    CostPreference.COST to listOf(OLLAMA, OPENAI),
+                )
+            rules[TaskType.PLANNING_GOAL_SETTING] =
+                mapOf(
+                    CostPreference.QUALITY to highQuality,
+                    CostPreference.BALANCED to balanced,
+                    CostPreference.COST to listOf(OPENAI, OLLAMA),
+                )
+
+            // Content Generation - need creativity
+            rules[TaskType.CONTENT_GENERATION] =
+                mapOf(
+                    CostPreference.QUALITY to listOf(ANTHROPIC, OPENAI),
+                    CostPreference.BALANCED to listOf(OPENAI, ANTHROPIC),
+                    CostPreference.COST to listOf(OPENAI, OLLAMA),
+                )
+            rules[TaskType.CONTENT_ADAPTATION] =
+                mapOf(
+                    CostPreference.QUALITY to listOf(ANTHROPIC, OPENAI),
+                    CostPreference.BALANCED to balanced,
+                    CostPreference.COST to listOf(OLLAMA, OPENAI),
+                )
+            rules[TaskType.CONTENT_TRANSLATION] =
+                mapOf(
+                    CostPreference.QUALITY to highQuality,
+                    CostPreference.BALANCED to listOf(OPENAI, ANTHROPIC),
+                    CostPreference.COST to listOf(OPENAI, OLLAMA),
+                )
+
+            // Assessment Tasks - need accuracy
+            // Don't trust cheap models for assessment
+            rules[TaskType.ASSESSMENT] =
+                mapOf(
+                    CostPreference.QUALITY to listOf(ANTHROPIC, OPENAI),
+                    CostPreference.BALANCED to listOf(OPENAI, ANTHROPIC),
+                    CostPreference.COST to listOf(OPENAI, ANTHROPIC),
+                )
+            rules[TaskType.ASSESSMENT_QUIZ] =
+                mapOf(
+                    CostPreference.QUALITY to listOf(ANTHROPIC, OPENAI),
+                    CostPreference.BALANCED to listOf(OPENAI, ANTHROPIC, OLLAMA),
+                    CostPreference.COST to listOf(OPENAI, OLLAMA),
+                )
+            // Claude gives nuanced feedback
+            rules[TaskType.ASSESSMENT_FEEDBACK] =
+                mapOf(
+                    CostPreference.QUALITY to listOf(ANTHROPIC, OPENAI),
+                    CostPreference.BALANCED to listOf(ANTHROPIC, OPENAI),
+                    CostPreference.COST to listOf(OPENAI, ANTHROPIC),
+                )
+            rules[TaskType.ASSESSMENT_RUBRIC] =
+                mapOf(
+                    CostPreference.QUALITY to listOf(ANTHROPIC, OPENAI),
+                    CostPreference.BALANCED to listOf(OPENAI, ANTHROPIC),
+                    CostPreference.COST to listOf(OPENAI, OLLAMA),
+                )
+
+            // Summarization Tasks - need accuracy and conciseness
+            rules[TaskType.SUMMARIZATION] =
+                mapOf(
+                    CostPreference.QUALITY to listOf(OPENAI, ANTHROPIC),
+                    CostPreference.BALANCED to listOf(OPENAI, OLLAMA),
+                    CostPreference.COST to costOptimized,
+                )
+            rules[TaskType.SUMMARIZATION_KEY_POINTS] =
+                mapOf(
+                    CostPreference.QUALITY to listOf(ANTHROPIC, OPENAI),
+                    CostPreference.BALANCED to listOf(OPENAI, OLLAMA),
+                    CostPreference.COST to costOptimized,
+                )
+            rules[TaskType.SUMMARIZATION_COMPARISON] =
+                mapOf(
+                    CostPreference.QUALITY to listOf(ANTHROPIC, OPENAI),
+                    CostPreference.BALANCED to listOf(ANTHROPIC, OPENAI, OLLAMA),
+                    CostPreference.COST to listOf(OPENAI, OLLAMA),
+                )
+
+            // Navigation & Classification - can use faster models
+            rules[TaskType.NAVIGATION] =
+                mapOf(
+                    CostPreference.QUALITY to fast,
+                    CostPreference.BALANCED to fast,
+                    CostPreference.COST to ultraFast,
+                )
+            rules[TaskType.CLASSIFICATION] =
+                mapOf(
+                    CostPreference.QUALITY to fast,
+                    CostPreference.BALANCED to fast,
+                    CostPreference.COST to ultraFast,
+                )
+            rules[TaskType.TOPIC_DETECTION] =
+                mapOf(
+                    CostPreference.QUALITY to fast,
+                    CostPreference.BALANCED to ultraFast,
+                    CostPreference.COST to ultraFast,
+                )
+
+            // Simple Interactions - use fastest/cheapest
+            rules[TaskType.SIMPLE_RESPONSE] =
+                mapOf(
+                    CostPreference.QUALITY to listOf(OPENAI, ANTHROPIC),
+                    CostPreference.BALANCED to listOf(OPENAI, OLLAMA),
+                    CostPreference.COST to ultraFast,
+                )
+            // Even quality mode should be fast for greetings
+            rules[TaskType.SIMPLE_GREETING] =
+                mapOf(
+                    CostPreference.QUALITY to ultraFast,
+                    CostPreference.BALANCED to ultraFast,
+                    CostPreference.COST to listOf(ON_DEVICE, OLLAMA),
+                )
+            rules[TaskType.SIMPLE_ACKNOWLEDGMENT] =
+                mapOf(
+                    CostPreference.QUALITY to ultraFast,
+                    CostPreference.BALANCED to ultraFast,
+                    CostPreference.COST to listOf(ON_DEVICE, OLLAMA),
+                )
+
+            // Meta Tasks
+            // Claude for thoughtful reflection
+            rules[TaskType.META_REFLECTION] =
+                mapOf(
+                    CostPreference.QUALITY to listOf(ANTHROPIC, OPENAI),
+                    CostPreference.BALANCED to balanced,
+                    CostPreference.COST to listOf(OPENAI, OLLAMA),
+                )
+            rules[TaskType.META_MOTIVATION] =
+                mapOf(
+                    CostPreference.QUALITY to listOf(ANTHROPIC, OPENAI),
+                    CostPreference.BALANCED to balanced,
+                    CostPreference.COST to costOptimized,
+                )
+            // Fast recovery is important
+            rules[TaskType.META_ERROR_RECOVERY] =
+                mapOf(
+                    CostPreference.QUALITY to fast,
+                    CostPreference.BALANCED to fast,
+                    CostPreference.COST to ultraFast,
+                )
+
+            return RoutingTable(rules)
+        }
     }
 
     /**
      * Get ordered list of provider candidates for the given context.
+     *
+     * Applies condition-based adjustments:
+     * - OFFLINE network: Filter to only offline-capable providers
+     * - POOR network: Deprioritize cloud providers
+     * - MINIMUM device tier: Prefer cloud over on-device
+     * - Thermal throttling: Prefer cloud providers
      */
     fun getProviderCandidates(context: RoutingContext): List<String> {
-        return rules[context.taskType]?.get(context.costPreference)
-            ?: listOf("OpenAI") // Ultimate fallback
+        val baseList =
+            rules[context.taskType]?.get(context.costPreference)
+                ?: listOf("OpenAI") // Ultimate fallback
+
+        // Apply condition-based filtering
+        return when (context.networkQuality) {
+            NetworkQuality.OFFLINE ->
+                baseList.filter { it in listOf("OnDevice", "Ollama") }
+                    .ifEmpty { listOf("OnDevice") }
+            NetworkQuality.POOR -> {
+                // Move cloud providers to end of list
+                val (local, cloud) = baseList.partition { it in listOf("OnDevice", "Ollama") }
+                local + cloud
+            }
+            else -> baseList
+        }
     }
 }

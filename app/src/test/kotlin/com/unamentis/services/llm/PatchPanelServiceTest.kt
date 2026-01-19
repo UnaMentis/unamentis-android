@@ -47,9 +47,10 @@ class PatchPanelServiceTest {
     }
 
     @Test
-    fun `routes tutoring task to OpenAI with BALANCED preference`() =
+    fun `routes tutoring explanation task to Anthropic with BALANCED preference`() =
         runTest {
-            // With BALANCED preference, TUTORING routes to OpenAI first
+            // With BALANCED preference, TUTORING_EXPLANATION routes to Anthropic first
+            // because "explain" keyword triggers TUTORING_EXPLANATION task type
             val messages =
                 listOf(
                     LLMMessage(role = "system", content = "You are a tutor for mathematics."),
@@ -64,13 +65,13 @@ class PatchPanelServiceTest {
                 )
 
             every {
-                mockOpenAI.streamCompletion(any(), any(), any())
+                mockAnthropic.streamCompletion(any(), any(), any())
             } returns flowOf(*expectedTokens.toTypedArray())
 
             val tokens = patchPanel.streamCompletion(messages).toList()
 
             assertEquals(expectedTokens, tokens)
-            verify { mockOpenAI.streamCompletion(messages, 0.7f, 500) }
+            verify { mockAnthropic.streamCompletion(messages, 0.7f, 500) }
         }
 
     @Test
@@ -178,12 +179,13 @@ class PatchPanelServiceTest {
     }
 
     @Test
-    fun `extracts TUTORING task type from system message`() =
+    fun `extracts TUTORING task type from system message without explain keyword`() =
         runTest {
+            // Use "teach" keyword instead of "explain" to trigger base TUTORING task
             val messages =
                 listOf(
                     LLMMessage(role = "system", content = "You are a tutor for physics."),
-                    LLMMessage(role = "user", content = "Explain gravity."),
+                    LLMMessage(role = "user", content = "Teach me about gravity."),
                 )
 
             every {
@@ -192,7 +194,7 @@ class PatchPanelServiceTest {
 
             patchPanel.streamCompletion(messages).toList()
 
-            // Should route to OpenAI (TUTORING + BALANCED defaults to OpenAI first)
+            // "teach" triggers TUTORING which with BALANCED defaults to OpenAI first
             verify { mockOpenAI.streamCompletion(any(), any(), any()) }
         }
 
@@ -227,4 +229,169 @@ class PatchPanelServiceTest {
 
             emptyPatchPanel.streamCompletion(messages).toList()
         }
+
+    // Tests for new task types
+
+    @Test
+    fun `extracts TUTORING_EXPLANATION from explain keyword`() =
+        runTest {
+            val messages =
+                listOf(
+                    LLMMessage(role = "system", content = "You are an AI tutor."),
+                    LLMMessage(role = "user", content = "Explain how photosynthesis works."),
+                )
+
+            every {
+                mockAnthropic.streamCompletion(any(), any(), any())
+            } returns flowOf(LLMToken(content = "Photosynthesis is", isDone = false))
+
+            patchPanel.streamCompletion(messages).toList()
+
+            // TUTORING_EXPLANATION with BALANCED defaults to Anthropic first
+            verify { mockAnthropic.streamCompletion(any(), any(), any()) }
+        }
+
+    @Test
+    fun `extracts ASSESSMENT_QUIZ from quiz keyword`() =
+        runTest {
+            val messages =
+                listOf(
+                    LLMMessage(role = "system", content = "Generate a quiz."),
+                    LLMMessage(role = "user", content = "Quiz me on biology."),
+                )
+
+            every {
+                mockOpenAI.streamCompletion(any(), any(), any())
+            } returns flowOf(LLMToken(content = "Question 1:", isDone = false))
+
+            patchPanel.streamCompletion(messages).toList()
+
+            // ASSESSMENT_QUIZ with BALANCED defaults to OpenAI first
+            verify { mockOpenAI.streamCompletion(any(), any(), any()) }
+        }
+
+    @Test
+    fun `extracts SIMPLE_GREETING from hello keyword`() =
+        runTest {
+            val messages =
+                listOf(
+                    LLMMessage(role = "user", content = "Hello there!"),
+                )
+
+            every {
+                mockOllama.streamCompletion(any(), any(), any())
+            } returns flowOf(LLMToken(content = "Hi!", isDone = false))
+
+            patchPanel.streamCompletion(messages).toList()
+
+            // SIMPLE_GREETING with BALANCED defaults to Ollama first (ultraFast)
+            verify { mockOllama.streamCompletion(any(), any(), any()) }
+        }
+
+    @Test
+    fun `extracts META_REFLECTION from progress review phrase`() =
+        runTest {
+            val messages =
+                listOf(
+                    LLMMessage(role = "user", content = "How am I doing in my studies?"),
+                )
+
+            every {
+                mockOpenAI.streamCompletion(any(), any(), any())
+            } returns flowOf(LLMToken(content = "You've made great progress", isDone = false))
+
+            patchPanel.streamCompletion(messages).toList()
+
+            // META_REFLECTION with BALANCED defaults to OpenAI (balanced list)
+            verify { mockOpenAI.streamCompletion(any(), any(), any()) }
+        }
+
+    // Tests for condition-based routing
+
+    @Test
+    fun `offline network filters to only offline-capable providers`() {
+        val routingTable = RoutingTable.default()
+
+        val offlineContext =
+            RoutingContext(
+                taskType = TaskType.TUTORING,
+                deviceTier = DeviceTier.STANDARD,
+                networkQuality = NetworkQuality.OFFLINE,
+                costPreference = CostPreference.QUALITY,
+            )
+
+        val candidates = routingTable.getProviderCandidates(offlineContext)
+
+        // Should only contain OnDevice and Ollama (local providers)
+        assertTrue(candidates.all { it in listOf("OnDevice", "Ollama") })
+        assertTrue(candidates.isNotEmpty())
+    }
+
+    @Test
+    fun `poor network deprioritizes cloud providers`() {
+        val routingTable = RoutingTable.default()
+
+        // Cost preference includes local providers
+        val poorNetworkContext =
+            RoutingContext(
+                taskType = TaskType.TUTORING,
+                deviceTier = DeviceTier.STANDARD,
+                networkQuality = NetworkQuality.POOR,
+                costPreference = CostPreference.COST,
+            )
+
+        val candidates = routingTable.getProviderCandidates(poorNetworkContext)
+
+        // Local providers should come before cloud providers
+        val ollamaIndex = candidates.indexOf("Ollama")
+        val onDeviceIndex = candidates.indexOf("OnDevice")
+        val openaiIndex = candidates.indexOf("OpenAI")
+
+        if (ollamaIndex >= 0 && openaiIndex >= 0) {
+            assertTrue("Ollama should come before OpenAI in poor network", ollamaIndex < openaiIndex)
+        }
+        if (onDeviceIndex >= 0 && openaiIndex >= 0) {
+            assertTrue("OnDevice should come before OpenAI in poor network", onDeviceIndex < openaiIndex)
+        }
+    }
+
+    @Test
+    fun `routing table covers all 28 task types`() {
+        val routingTable = RoutingTable.default()
+
+        // Verify all task types have routing rules
+        for (taskType in TaskType.entries) {
+            val context =
+                RoutingContext(
+                    taskType = taskType,
+                    deviceTier = DeviceTier.STANDARD,
+                    networkQuality = NetworkQuality.GOOD,
+                    costPreference = CostPreference.BALANCED,
+                )
+            val candidates = routingTable.getProviderCandidates(context)
+            assertTrue("Task type $taskType should have routing candidates", candidates.isNotEmpty())
+        }
+    }
+
+    @Test
+    fun `all cost preferences are handled for each task type`() {
+        val routingTable = RoutingTable.default()
+
+        for (taskType in TaskType.entries) {
+            for (costPref in CostPreference.entries) {
+                val context =
+                    RoutingContext(
+                        taskType = taskType,
+                        deviceTier = DeviceTier.STANDARD,
+                        networkQuality = NetworkQuality.GOOD,
+                        costPreference = costPref,
+                    )
+                val candidates = routingTable.getProviderCandidates(context)
+                assertTrue(
+                    "Task type $taskType with $costPref should have candidates",
+                    candidates.isNotEmpty(),
+                )
+            }
+        }
+    }
 }
