@@ -5,6 +5,7 @@ import com.unamentis.data.local.dao.CurriculumDao
 import com.unamentis.data.local.entity.CurriculumEntity
 import com.unamentis.data.model.Curriculum
 import com.unamentis.data.remote.ApiClient
+import com.unamentis.data.remote.ApiResult
 import com.unamentis.data.remote.CurriculumSummary
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -122,26 +123,39 @@ class CurriculumRepository
 
             return try {
                 Log.d(TAG, "Fetching curricula from management console...")
-                val summaries = apiClient.getCurricula()
-                _serverCurriculaSummaries.value = summaries
-                _connectionState.value = ConnectionState.Connected
-                Log.i(TAG, "Successfully fetched ${summaries.size} curricula from server")
-                true
-            } catch (e: Exception) {
-                val errorMsg =
-                    when {
-                        e.message?.contains("Connection refused") == true ->
-                            "Server not running. Start the management console on port 8766."
-                        e.message?.contains("timeout") == true ->
-                            "Connection timed out. Check network and server status."
-                        e.message?.contains("Unable to resolve host") == true ->
-                            "Cannot reach server. Check network connection."
-                        else -> "Failed to connect: ${e.message}"
+                when (val result = apiClient.getCurricula()) {
+                    is ApiResult.Success<*> -> {
+                        @Suppress("UNCHECKED_CAST")
+                        val summaries = result.data as List<CurriculumSummary>
+                        _serverCurriculaSummaries.value = summaries
+                        _connectionState.value = ConnectionState.Connected
+                        Log.i(TAG, "Successfully fetched ${summaries.size} curricula from server")
+                        true
                     }
-                Log.e(TAG, "Failed to fetch curricula: $errorMsg", e)
-                _connectionState.value = ConnectionState.Failed(errorMsg)
-                _lastError.value = errorMsg
-                false
+                    is ApiResult.Error -> {
+                        val errorMsg = "Server error: ${result.error.error}"
+                        Log.e(TAG, "Failed to fetch curricula: $errorMsg")
+                        _connectionState.value = ConnectionState.Failed(errorMsg)
+                        _lastError.value = errorMsg
+                        false
+                    }
+                    is ApiResult.NetworkError -> {
+                        val errorMsg =
+                            when {
+                                result.message.contains("Connection refused") ->
+                                    "Server not running. Start the management console on port 8766."
+                                result.message.contains("timeout", ignoreCase = true) ->
+                                    "Connection timed out. Check network and server status."
+                                result.message.contains("Unable to resolve host") ->
+                                    "Cannot reach server. Check network connection."
+                                else -> "Failed to connect: ${result.message}"
+                            }
+                        Log.e(TAG, "Failed to fetch curricula: $errorMsg", result.cause)
+                        _connectionState.value = ConnectionState.Failed(errorMsg)
+                        _lastError.value = errorMsg
+                        false
+                    }
+                }
             } finally {
                 _isLoading.value = false
             }
@@ -161,29 +175,36 @@ class CurriculumRepository
                 emit(0.0f)
                 _lastError.value = null
 
-                try {
-                    Log.d(TAG, "Starting download for curriculum: $curriculumId")
-                    emit(0.1f)
+                Log.d(TAG, "Starting download for curriculum: $curriculumId")
+                emit(0.1f)
 
-                    // Fetch full curriculum with assets from server
-                    val curriculum = apiClient.getCurriculumFullWithAssets(curriculumId)
-                    emit(0.5f)
+                // Fetch full curriculum with assets from server
+                when (val result = apiClient.getCurriculumFullWithAssets(curriculumId)) {
+                    is ApiResult.Success<*> -> {
+                        val curriculum = result.data as Curriculum
+                        emit(0.5f)
 
-                    Log.d(TAG, "Downloaded curriculum: ${curriculum.title} with ${curriculum.topics.size} topics")
+                        Log.d(TAG, "Downloaded curriculum: ${curriculum.title} with ${curriculum.topics.size} topics")
 
-                    // Save to local storage
-                    saveCurriculum(curriculum)
-                    emit(0.9f)
+                        // Save to local storage
+                        saveCurriculum(curriculum)
+                        emit(0.9f)
 
-                    Log.i(TAG, "Successfully saved curriculum ${curriculum.id} to local storage")
-                    emit(1.0f)
-                } catch (e: Exception) {
-                    val errorMsg = "Download failed: ${e.message}"
-                    Log.e(TAG, errorMsg, e)
-                    _lastError.value = errorMsg
-
-                    // Emit completion even on error (UI will check lastError)
-                    emit(1.0f)
+                        Log.i(TAG, "Successfully saved curriculum ${curriculum.id} to local storage")
+                        emit(1.0f)
+                    }
+                    is ApiResult.Error -> {
+                        val errorMsg = "Download failed: ${result.error.error}"
+                        Log.e(TAG, errorMsg)
+                        _lastError.value = errorMsg
+                        emit(1.0f)
+                    }
+                    is ApiResult.NetworkError -> {
+                        val errorMsg = "Download failed: ${result.message}"
+                        Log.e(TAG, errorMsg, result.cause)
+                        _lastError.value = errorMsg
+                        emit(1.0f)
+                    }
                 }
             }
 

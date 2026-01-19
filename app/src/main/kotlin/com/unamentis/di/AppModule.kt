@@ -3,11 +3,13 @@ package com.unamentis.di
 import android.content.Context
 import com.unamentis.BuildConfig
 import com.unamentis.data.local.AppDatabase
+import com.unamentis.data.local.SecureTokenStorage
 import com.unamentis.data.local.dao.CurriculumDao
 import com.unamentis.data.local.dao.SessionDao
 import com.unamentis.data.local.dao.TopicProgressDao
 import com.unamentis.data.remote.ApiClient
 import com.unamentis.data.remote.CertificatePinning
+import com.unamentis.data.repository.AuthRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -113,7 +115,21 @@ object AppModule {
     }
 
     /**
+     * Provides secure token storage for authentication.
+     */
+    @Provides
+    @Singleton
+    fun provideSecureTokenStorage(
+        @ApplicationContext context: Context,
+    ): SecureTokenStorage {
+        return SecureTokenStorage(context)
+    }
+
+    /**
      * Provides the API client for server communication.
+     *
+     * The API client is configured with token provider and expiration callback
+     * from the AuthRepository for automatic token management.
      */
     @Provides
     @Singleton
@@ -122,10 +138,27 @@ object AppModule {
         okHttpClient: OkHttpClient,
         json: Json,
     ): ApiClient {
+        // Note: tokenProvider and onTokenExpired are set to null here
+        // and will be configured by AuthRepository after initialization.
+        // This avoids circular dependency issues.
         return ApiClient(
             context = context,
             okHttpClient = okHttpClient,
             json = json,
+            tokenProvider = null,
+            onTokenExpired = null,
         )
+    }
+
+    /**
+     * Provides the authentication repository.
+     */
+    @Provides
+    @Singleton
+    fun provideAuthRepository(
+        apiClient: ApiClient,
+        tokenStorage: SecureTokenStorage,
+    ): AuthRepository {
+        return AuthRepository(apiClient, tokenStorage)
     }
 }

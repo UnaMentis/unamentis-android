@@ -10,6 +10,7 @@ import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -61,7 +62,7 @@ class ApiClientTest {
                         "title": "Test Curriculum",
                         "description": "A test curriculum",
                         "version": "1.0.0",
-                        "topicCount": 5
+                        "topic_count": 5
                     }
                 ]
                 """.trimIndent()
@@ -77,10 +78,12 @@ class ApiClientTest {
             val result = apiClient.getCurricula()
 
             // Then
-            assertEquals(1, result.size)
-            assertEquals("curriculum-001", result[0].id)
-            assertEquals("Test Curriculum", result[0].title)
-            assertEquals(5, result[0].topicCount)
+            assertTrue(result is ApiResult.Success)
+            val curricula = (result as ApiResult.Success).data
+            assertEquals(1, curricula.size)
+            assertEquals("curriculum-001", curricula[0].id)
+            assertEquals("Test Curriculum", curricula[0].title)
+            assertEquals(5, curricula[0].topicCount)
 
             // Verify request
             val request = mockServer.takeRequest()
