@@ -32,7 +32,7 @@ data class Curriculum(
     val difficulty: String? = null,
     val ageRange: String? = null,
     val duration: String? = null,
-    val keywords: List<String> = emptyList()
+    val keywords: List<String> = emptyList(),
 )
 
 /**
@@ -61,7 +61,7 @@ data class Topic(
     val documents: List<Document> = emptyList(),
     val visualAssets: List<VisualAsset> = emptyList(),
     val description: String? = null,
-    val duration: String? = null
+    val duration: String? = null,
 )
 
 /**
@@ -80,11 +80,12 @@ data class Topic(
 @Serializable
 data class TranscriptSegment(
     val id: String,
-    val type: String,  // "content", "checkpoint", "activity"
+    /** "content", "checkpoint", "activity" */
+    val type: String,
     val content: String,
     val spokenText: String? = null,
     val stoppingPoint: StoppingPoint? = null,
-    val visualAssetId: String? = null
+    val visualAssetId: String? = null,
 )
 
 /**
@@ -100,10 +101,11 @@ data class TranscriptSegment(
  */
 @Serializable
 data class StoppingPoint(
-    val type: String,  // "quiz", "reflection", "practice"
+    /** "quiz", "reflection", "practice" */
+    val type: String,
     val prompt: String,
     val expectedConcepts: List<String> = emptyList(),
-    val hints: List<String> = emptyList()
+    val hints: List<String> = emptyList(),
 )
 
 /**
@@ -124,7 +126,7 @@ data class VisualAsset(
     val filename: String,
     val mimeType: String,
     val url: String? = null,
-    val caption: String? = null
+    val caption: String? = null,
 )
 
 /**
@@ -140,7 +142,7 @@ data class Document(
     val id: String,
     val title: String,
     val url: String,
-    val type: String
+    val type: String,
 )
 
 /**
@@ -154,5 +156,5 @@ data class Document(
 data class GlossaryTerm(
     val term: String,
     val definition: String,
-    val examples: List<String> = emptyList()
+    val examples: List<String> = emptyList(),
 )

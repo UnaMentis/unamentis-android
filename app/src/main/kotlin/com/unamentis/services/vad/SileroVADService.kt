@@ -29,16 +29,17 @@ import java.nio.channels.FileChannel
 class SileroVADService(
     private val context: Context,
     private val threshold: Float = 0.5f,
-    private val useNnapi: Boolean = true
+    private val useNnapi: Boolean = true,
 ) : VADService {
-
     private var interpreter: Interpreter? = null
-    private val inputBuffer = ByteBuffer.allocateDirect(512 * 4).apply {
-        order(ByteOrder.nativeOrder())
-    }
-    private val outputBuffer = ByteBuffer.allocateDirect(1 * 4).apply {
-        order(ByteOrder.nativeOrder())
-    }
+    private val inputBuffer =
+        ByteBuffer.allocateDirect(512 * 4).apply {
+            order(ByteOrder.nativeOrder())
+        }
+    private val outputBuffer =
+        ByteBuffer.allocateDirect(1 * 4).apply {
+            order(ByteOrder.nativeOrder())
+        }
 
     companion object {
         private const val MODEL_FILENAME = "silero_vad.tflite"
@@ -53,17 +54,18 @@ class SileroVADService(
     fun initialize() {
         try {
             val modelBuffer = loadModelFile()
-            val options = Interpreter.Options().apply {
-                setNumThreads(2)
-                if (useNnapi) {
-                    // Enable NNAPI acceleration if available
-                    try {
-                        setUseNNAPI(true)
-                    } catch (e: Exception) {
-                        android.util.Log.w("SileroVAD", "NNAPI not available", e)
+            val options =
+                Interpreter.Options().apply {
+                    setNumThreads(2)
+                    if (useNnapi) {
+                        // Enable NNAPI acceleration if available
+                        try {
+                            setUseNNAPI(true)
+                        } catch (e: Exception) {
+                            android.util.Log.w("SileroVAD", "NNAPI not available", e)
+                        }
                     }
                 }
-            }
 
             interpreter = Interpreter(modelBuffer, options)
             android.util.Log.i("SileroVAD", "Model loaded successfully")
@@ -88,7 +90,7 @@ class SileroVADService(
         if (samples.size != FRAME_SIZE) {
             android.util.Log.w(
                 "SileroVAD",
-                "Invalid frame size: ${samples.size}, expected $FRAME_SIZE"
+                "Invalid frame size: ${samples.size}, expected $FRAME_SIZE",
             )
             return VADResult(isSpeech = false, confidence = 0f)
         }
@@ -116,7 +118,7 @@ class SileroVADService(
 
         return VADResult(
             isSpeech = probability > threshold,
-            confidence = probability
+            confidence = probability,
         )
     }
 
@@ -146,7 +148,7 @@ class SileroVADService(
             throw IllegalStateException(
                 "Model file '$MODEL_FILENAME' not found in assets. " +
                     "Please download and add the Silero VAD TFLite model.",
-                e
+                e,
             )
         }
     }

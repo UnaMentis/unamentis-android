@@ -1,0 +1,36 @@
+# CODEOWNERS - Define who must review changes to specific files/directories
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owners for everything in the repo
+* @sirfifer
+
+# Core app architecture - requires owner review
+/app/src/main/kotlin/com/unamentis/ @sirfifer
+/app/src/test/ @sirfifer
+/app/src/androidTest/ @sirfifer
+
+# Core business logic - extra careful review
+/app/src/main/kotlin/com/unamentis/core/ @sirfifer
+/app/src/main/kotlin/com/unamentis/services/ @sirfifer
+
+# Security-sensitive files
+/app/src/main/kotlin/com/unamentis/core/config/ @sirfifer
+/app/src/main/kotlin/com/unamentis/data/remote/ @sirfifer
+
+# CI/CD and infrastructure - be extra careful
+/.github/ @sirfifer
+/scripts/ @sirfifer
+
+# Build configuration
+/build.gradle.kts @sirfifer
+/app/build.gradle.kts @sirfifer
+/settings.gradle.kts @sirfifer
+/gradle.properties @sirfifer
+
+# Documentation can have broader contributions but still needs review
+/docs/ @sirfifer
+*.md @sirfifer
+
+# Configuration files
+/config/ @sirfifer
+/.claude/ @sirfifer

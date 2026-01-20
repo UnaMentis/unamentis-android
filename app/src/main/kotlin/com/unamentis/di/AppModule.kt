@@ -3,8 +3,15 @@ package com.unamentis.di
 import android.content.Context
 import com.unamentis.BuildConfig
 import com.unamentis.data.local.AppDatabase
+import com.unamentis.data.local.SecureTokenStorage
+import com.unamentis.data.local.dao.CurriculumDao
+import com.unamentis.data.local.dao.ModuleDao
+import com.unamentis.data.local.dao.SessionDao
+import com.unamentis.data.local.dao.TodoDao
+import com.unamentis.data.local.dao.TopicProgressDao
 import com.unamentis.data.remote.ApiClient
 import com.unamentis.data.remote.CertificatePinning
+import com.unamentis.data.repository.AuthRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -22,14 +29,60 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
-
     /**
      * Provides the Room database instance.
      */
     @Provides
     @Singleton
-    fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
+    fun provideAppDatabase(
+        @ApplicationContext context: Context,
+    ): AppDatabase {
         return AppDatabase.getInstance(context)
+    }
+
+    /**
+     * Provides the SessionDao.
+     */
+    @Provides
+    @Singleton
+    fun provideSessionDao(database: AppDatabase): SessionDao {
+        return database.sessionDao()
+    }
+
+    /**
+     * Provides the CurriculumDao.
+     */
+    @Provides
+    @Singleton
+    fun provideCurriculumDao(database: AppDatabase): CurriculumDao {
+        return database.curriculumDao()
+    }
+
+    /**
+     * Provides the TopicProgressDao.
+     */
+    @Provides
+    @Singleton
+    fun provideTopicProgressDao(database: AppDatabase): TopicProgressDao {
+        return database.topicProgressDao()
+    }
+
+    /**
+     * Provides the TodoDao.
+     */
+    @Provides
+    @Singleton
+    fun provideTodoDao(database: AppDatabase): TodoDao {
+        return database.todoDao()
+    }
+
+    /**
+     * Provides the ModuleDao.
+     */
+    @Provides
+    @Singleton
+    fun provideModuleDao(database: AppDatabase): ModuleDao {
+        return database.moduleDao()
     }
 
     /**
@@ -41,13 +94,15 @@ object AppModule {
     @Provides
     @Singleton
     fun provideOkHttpClient(): OkHttpClient {
-        val loggingInterceptor = HttpLoggingInterceptor().apply {
-            level = if (BuildConfig.DEBUG) {
-                HttpLoggingInterceptor.Level.BODY
-            } else {
-                HttpLoggingInterceptor.Level.NONE
+        val loggingInterceptor =
+            HttpLoggingInterceptor().apply {
+                level =
+                    if (BuildConfig.DEBUG) {
+                        HttpLoggingInterceptor.Level.BODY
+                    } else {
+                        HttpLoggingInterceptor.Level.NONE
+                    }
             }
-        }
 
         return OkHttpClient.Builder()
             .connectTimeout(10, TimeUnit.SECONDS)
@@ -80,19 +135,48 @@ object AppModule {
     }
 
     /**
+     * Provides secure token storage for authentication.
+     */
+    @Provides
+    @Singleton
+    fun provideSecureTokenStorage(
+        @ApplicationContext context: Context,
+    ): SecureTokenStorage {
+        return SecureTokenStorage(context)
+    }
+
+    /**
      * Provides the API client for server communication.
+     *
+     * The API client is configured with token provider and expiration callback
+     * from the AuthRepository for automatic token management.
      */
     @Provides
     @Singleton
     fun provideApiClient(
         @ApplicationContext context: Context,
         okHttpClient: OkHttpClient,
-        json: Json
+        json: Json,
     ): ApiClient {
+        // Note: tokenProvider and onTokenExpired are set to null here (via default config)
+        // and will be configured by AuthRepository after initialization.
+        // This avoids circular dependency issues.
         return ApiClient(
-            context = context,
+            _context = context,
             okHttpClient = okHttpClient,
-            json = json
+            json = json,
         )
+    }
+
+    /**
+     * Provides the authentication repository.
+     */
+    @Provides
+    @Singleton
+    fun provideAuthRepository(
+        apiClient: ApiClient,
+        tokenStorage: SecureTokenStorage,
+    ): AuthRepository {
+        return AuthRepository(apiClient, tokenStorage)
     }
 }

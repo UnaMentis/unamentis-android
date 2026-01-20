@@ -14,7 +14,7 @@ data class STTResult(
     val text: String,
     val isFinal: Boolean,
     val confidence: Float = 1.0f,
-    val latencyMs: Long = 0
+    val latencyMs: Long = 0,
 )
 
 /**
@@ -52,7 +52,7 @@ interface STTService {
 data class TTSAudioChunk(
     val audioData: ByteArray = byteArrayOf(),
     val isFirst: Boolean = false,
-    val isLast: Boolean = false
+    val isLast: Boolean = false,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -106,7 +106,7 @@ interface TTSService {
  */
 data class LLMMessage(
     val role: String,
-    val content: String
+    val content: String,
 )
 
 /**
@@ -117,7 +117,7 @@ data class LLMMessage(
  */
 data class LLMToken(
     val content: String,
-    val isDone: Boolean = false
+    val isDone: Boolean = false,
 )
 
 /**
@@ -138,7 +138,7 @@ interface LLMService {
     fun streamCompletion(
         messages: List<LLMMessage>,
         temperature: Float = 0.7f,
-        maxTokens: Int = 500
+        maxTokens: Int = 500,
     ): Flow<LLMToken>
 
     /**
@@ -160,7 +160,7 @@ interface LLMService {
  */
 data class VADResult(
     val isSpeech: Boolean,
-    val confidence: Float
+    val confidence: Float,
 )
 
 /**

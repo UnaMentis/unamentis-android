@@ -1,13 +1,34 @@
 package com.unamentis.core.session
 
+import android.util.Log
 import com.unamentis.core.audio.AudioEngine
+import com.unamentis.core.config.RecordingMode
 import com.unamentis.core.curriculum.CurriculumEngine
 import com.unamentis.data.model.*
-import com.unamentis.services.vad.VADService
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import android.util.Log
 import java.util.*
+
+/**
+ * Dependencies for SessionManager.
+ *
+ * Groups all required services for the session orchestrator.
+ *
+ * @property audioEngine Audio I/O engine
+ * @property vadService Voice activity detection
+ * @property sttService Speech-to-text provider
+ * @property ttsService Text-to-speech provider
+ * @property llmService Language model provider
+ * @property curriculumEngine Curriculum progress tracking
+ */
+data class SessionDependencies(
+    val audioEngine: AudioEngine,
+    val vadService: VADService,
+    val sttService: STTService,
+    val ttsService: TTSService,
+    val llmService: LLMService,
+    val curriculumEngine: CurriculumEngine,
+)
 
 /**
  * Core session orchestrator managing voice conversation state machine.
@@ -34,24 +55,19 @@ import java.util.*
  * - AI audio stops, LLM generation cancelled
  * - New user utterance processed
  *
- * @property audioEngine Audio I/O engine
- * @property vadService Voice activity detection
- * @property sttService Speech-to-text provider
- * @property ttsService Text-to-speech provider
- * @property llmService Language model provider
- * @property curriculumEngine Curriculum progress tracking
+ * @property dependencies Required services bundle
  * @property scope Coroutine scope for session lifecycle
  */
 class SessionManager(
-    private val audioEngine: AudioEngine,
-    private val vadService: VADService,
-    private val sttService: STTService,
-    private val ttsService: TTSService,
-    private val llmService: LLMService,
-    private val curriculumEngine: CurriculumEngine,
-    private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+    private val dependencies: SessionDependencies,
+    private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default + SupervisorJob()),
 ) {
-
+    private val audioEngine get() = dependencies.audioEngine
+    private val vadService get() = dependencies.vadService
+    private val sttService get() = dependencies.sttService
+    private val ttsService get() = dependencies.ttsService
+    private val llmService get() = dependencies.llmService
+    private val curriculumEngine get() = dependencies.curriculumEngine
     private val _sessionState = MutableStateFlow<SessionState>(SessionState.IDLE)
     val sessionState: StateFlow<SessionState> = _sessionState.asStateFlow()
 
@@ -63,6 +79,14 @@ class SessionManager(
 
     private val _metrics = MutableStateFlow(SessionMetrics())
     val metrics: StateFlow<SessionMetrics> = _metrics.asStateFlow()
+
+    // Recording mode configuration
+    private val _recordingMode = MutableStateFlow(RecordingMode.VAD)
+    val recordingMode: StateFlow<RecordingMode> = _recordingMode.asStateFlow()
+
+    // Manual recording state (for PUSH_TO_TALK and TOGGLE modes)
+    private val _isManuallyRecording = MutableStateFlow(false)
+    val isManuallyRecording: StateFlow<Boolean> = _isManuallyRecording.asStateFlow()
 
     // Conversation history for LLM context
     private val conversationHistory = mutableListOf<LLMMessage>()
@@ -84,16 +108,32 @@ class SessionManager(
 
     // Configuration
     private val silenceThresholdMs = 1500L // 1.5 seconds of silence to finalize utterance
-    private val vadFrameSizeMs = 32 // 32ms frames at 16kHz = 512 samples
+
+    /**
+     * Set the recording mode for this session.
+     *
+     * @param mode The recording mode to use
+     */
+    fun setRecordingMode(mode: RecordingMode) {
+        _recordingMode.value = mode
+        Log.i("SessionManager", "Recording mode set to: ${mode.displayName}")
+    }
 
     /**
      * Start a new session.
      *
      * @param curriculumId Optional curriculum to load
      * @param topicId Optional specific topic to start with
+     * @param recordingMode Recording mode to use (default: VAD)
      */
-    suspend fun startSession(curriculumId: String? = null, topicId: String? = null) {
-        if (_sessionState.value != SessionState.IDLE) {
+    suspend fun startSession(
+        curriculumId: String? = null,
+        topicId: String? = null,
+        recordingMode: RecordingMode = RecordingMode.VAD,
+    ) {
+        _recordingMode.value = recordingMode
+        // Block if state is not IDLE or if there's already an active session
+        if (_sessionState.value != SessionState.IDLE || _currentSession.value != null) {
             Log.w("SessionManager", "Cannot start session: already active")
             return
         }
@@ -101,14 +141,15 @@ class SessionManager(
         Log.i("SessionManager", "Starting new session")
 
         // Create new session
-        val session = Session(
-            id = UUID.randomUUID().toString(),
-            curriculumId = curriculumId,
-            currentTopicId = topicId,
-            startTime = System.currentTimeMillis(),
-            endTime = null,
-            totalTurns = 0
-        )
+        val session =
+            Session(
+                id = UUID.randomUUID().toString(),
+                curriculumId = curriculumId,
+                topicId = topicId,
+                startTime = System.currentTimeMillis(),
+                endTime = null,
+                turnCount = 0,
+            )
         _currentSession.value = session
 
         // Load curriculum if specified
@@ -122,11 +163,12 @@ class SessionManager(
         conversationHistory.add(LLMMessage(role = "system", content = systemPrompt))
 
         // Start audio capture
-        val captureStarted = audioEngine.startCapture { audioSamples ->
-            scope.launch {
-                processAudioFrame(audioSamples)
+        val captureStarted =
+            audioEngine.startCapture { audioSamples ->
+                scope.launch {
+                    processAudioFrame(audioSamples)
+                }
             }
-        }
 
         if (!captureStarted) {
             _sessionState.value = SessionState.ERROR
@@ -191,9 +233,10 @@ class SessionManager(
 
         // Finalize session
         _currentSession.value?.let { session ->
-            val finalSession = session.copy(
-                endTime = System.currentTimeMillis()
-            )
+            val finalSession =
+                session.copy(
+                    endTime = System.currentTimeMillis(),
+                )
             _currentSession.value = finalSession
 
             // TODO: Save to database via SessionRepository
@@ -203,6 +246,64 @@ class SessionManager(
         _currentSession.value = null
 
         Log.i("SessionManager", "Session stopped")
+    }
+
+    /**
+     * Start manual recording (for PUSH_TO_TALK and TOGGLE modes).
+     *
+     * In PUSH_TO_TALK mode: Call this when user presses the mic button.
+     * In TOGGLE mode: Call this when user taps to start recording.
+     */
+    suspend fun startManualRecording() {
+        if (_recordingMode.value == RecordingMode.VAD) {
+            Log.w("SessionManager", "startManualRecording called but mode is VAD")
+            return
+        }
+
+        if (_sessionState.value != SessionState.IDLE) {
+            Log.w("SessionManager", "Cannot start manual recording: session not idle")
+            return
+        }
+
+        Log.i("SessionManager", "Starting manual recording")
+        _isManuallyRecording.value = true
+        userSpeechStartTime = System.currentTimeMillis()
+        _sessionState.value = SessionState.USER_SPEAKING
+        startSTTStreaming()
+    }
+
+    /**
+     * Stop manual recording (for PUSH_TO_TALK and TOGGLE modes).
+     *
+     * In PUSH_TO_TALK mode: Call this when user releases the mic button.
+     * In TOGGLE mode: Call this when user taps to stop recording.
+     */
+    suspend fun stopManualRecording() {
+        if (_recordingMode.value == RecordingMode.VAD) {
+            Log.w("SessionManager", "stopManualRecording called but mode is VAD")
+            return
+        }
+
+        if (_sessionState.value != SessionState.USER_SPEAKING) {
+            Log.w("SessionManager", "Cannot stop manual recording: not currently recording")
+            return
+        }
+
+        Log.i("SessionManager", "Stopping manual recording")
+        _isManuallyRecording.value = false
+        _sessionState.value = SessionState.PROCESSING_UTTERANCE
+        finalizeSTT()
+    }
+
+    /**
+     * Toggle manual recording (convenience method for TOGGLE mode).
+     */
+    suspend fun toggleManualRecording() {
+        if (_isManuallyRecording.value) {
+            stopManualRecording()
+        } else {
+            startManualRecording()
+        }
     }
 
     /**
@@ -217,13 +318,14 @@ class SessionManager(
         Log.i("SessionManager", "Processing text message: $text")
 
         // Add to transcript
-        val userEntry = TranscriptEntry(
-            id = UUID.randomUUID().toString(),
-            sessionId = _currentSession.value?.id ?: "",
-            role = "user",
-            content = text,
-            timestamp = System.currentTimeMillis()
-        )
+        val userEntry =
+            TranscriptEntry(
+                id = UUID.randomUUID().toString(),
+                sessionId = _currentSession.value?.id ?: "",
+                role = "user",
+                text = text,
+                timestamp = System.currentTimeMillis(),
+            )
         addToTranscript(userEntry)
 
         // Add to conversation history
@@ -242,14 +344,27 @@ class SessionManager(
 
         when (_sessionState.value) {
             SessionState.IDLE, SessionState.USER_SPEAKING -> {
-                if (vadResult.isSpeech) {
-                    handleSpeechDetected()
-                } else {
-                    handleSilenceDetected()
+                when (_recordingMode.value) {
+                    RecordingMode.VAD -> {
+                        // Automatic voice detection mode
+                        if (vadResult.isSpeech) {
+                            handleSpeechDetected()
+                        } else {
+                            handleSilenceDetected()
+                        }
+                    }
+                    RecordingMode.PUSH_TO_TALK, RecordingMode.TOGGLE -> {
+                        // Manual modes: only process if manually recording
+                        // Speech detection is handled by startManualRecording/stopManualRecording
+                        // Just track speech activity for UI feedback
+                        if (_isManuallyRecording.value) {
+                            lastSpeechDetectedTime = System.currentTimeMillis()
+                        }
+                    }
                 }
             }
             SessionState.AI_SPEAKING -> {
-                // Check for barge-in
+                // Check for barge-in (works in all modes)
                 if (vadResult.isSpeech && canBargeIn()) {
                     handleBargeIn()
                 }
@@ -331,23 +446,24 @@ class SessionManager(
      */
     private fun startSTTStreaming() {
         sttJob?.cancel()
-        sttJob = scope.launch {
-            try {
-                sttService.startStreaming().collect { result ->
-                    Log.d("SessionManager", "STT: ${result.text} (final=${result.isFinal})")
+        sttJob =
+            scope.launch {
+                try {
+                    sttService.startStreaming().collect { result ->
+                        Log.d("SessionManager", "STT: ${result.text} (final=${result.isFinal})")
 
-                    if (result.isFinal) {
-                        // Final transcription received
-                        handleFinalTranscription(result.text)
+                        if (result.isFinal) {
+                            // Final transcription received
+                            handleFinalTranscription(result.text)
+                        }
                     }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Log.e("SessionManager", "STT error", e)
+                    _sessionState.value = SessionState.ERROR
                 }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Log.e("SessionManager", "STT error", e)
-                _sessionState.value = SessionState.ERROR
             }
-        }
     }
 
     /**
@@ -376,13 +492,14 @@ class SessionManager(
         sttService.stopStreaming()
 
         // Add to transcript
-        val userEntry = TranscriptEntry(
-            id = UUID.randomUUID().toString(),
-            sessionId = _currentSession.value?.id ?: "",
-            role = "user",
-            content = text,
-            timestamp = System.currentTimeMillis()
-        )
+        val userEntry =
+            TranscriptEntry(
+                id = UUID.randomUUID().toString(),
+                sessionId = _currentSession.value?.id ?: "",
+                role = "user",
+                text = text,
+                timestamp = System.currentTimeMillis(),
+            )
         addToTranscript(userEntry)
 
         // Add to conversation history
@@ -403,56 +520,59 @@ class SessionManager(
         val responseBuffer = StringBuilder()
 
         llmJob?.cancel()
-        llmJob = scope.launch {
-            try {
-                llmService.streamCompletion(
-                    messages = conversationHistory,
-                    temperature = 0.7f,
-                    maxTokens = 500
-                ).collect { token ->
-                    if (firstTokenTime == 0L && token.content.isNotEmpty()) {
-                        firstTokenTime = System.currentTimeMillis()
-                        val ttft = firstTokenTime - llmStartTime
-                        Log.i("SessionManager", "LLM TTFT: ${ttft}ms")
+        llmJob =
+            scope.launch {
+                try {
+                    llmService.streamCompletion(
+                        messages = conversationHistory,
+                        temperature = 0.7f,
+                        maxTokens = 500,
+                    ).collect { token ->
+                        if (firstTokenTime == 0L && token.content.isNotEmpty()) {
+                            firstTokenTime = System.currentTimeMillis()
+                            val ttft = firstTokenTime - llmStartTime
+                            Log.i("SessionManager", "LLM TTFT: ${ttft}ms")
 
-                        // Track TTFT metric
-                        _metrics.value = _metrics.value.copy(
-                            llmTTFT = (_metrics.value.llmTTFT + ttft) / 2 // Running average
-                        )
+                            // Track TTFT metric
+                            // Running average
+                            _metrics.value =
+                                _metrics.value.copy(
+                                    llmTTFT = (_metrics.value.llmTTFT + ttft) / 2,
+                                )
 
-                        // Transition to AI_SPEAKING
-                        _sessionState.value = SessionState.AI_SPEAKING
-                        aiSpeechStartTime = System.currentTimeMillis()
-                    }
-
-                    if (!token.isDone) {
-                        responseBuffer.append(token.content)
-
-                        // Stream to TTS in chunks (every ~20 tokens or sentence boundary)
-                        if (shouldSendToTTS(responseBuffer.toString())) {
-                            val chunk = responseBuffer.toString()
-                            synthesizeAndPlay(chunk)
-                            responseBuffer.clear()
-                        }
-                    } else {
-                        // LLM complete
-                        if (responseBuffer.isNotEmpty()) {
-                            val finalChunk = responseBuffer.toString()
-                            synthesizeAndPlay(finalChunk)
-                            responseBuffer.clear()
+                            // Transition to AI_SPEAKING
+                            _sessionState.value = SessionState.AI_SPEAKING
+                            aiSpeechStartTime = System.currentTimeMillis()
                         }
 
-                        // Finalize response
-                        finalizeLLMResponse()
+                        if (!token.isDone) {
+                            responseBuffer.append(token.content)
+
+                            // Stream to TTS in chunks (every ~20 tokens or sentence boundary)
+                            if (shouldSendToTTS(responseBuffer.toString())) {
+                                val chunk = responseBuffer.toString()
+                                synthesizeAndPlay(chunk)
+                                responseBuffer.clear()
+                            }
+                        } else {
+                            // LLM complete
+                            if (responseBuffer.isNotEmpty()) {
+                                val finalChunk = responseBuffer.toString()
+                                synthesizeAndPlay(finalChunk)
+                                responseBuffer.clear()
+                            }
+
+                            // Finalize response
+                            finalizeLLMResponse()
+                        }
                     }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Log.e("SessionManager", "LLM error", e)
+                    _sessionState.value = SessionState.ERROR
                 }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Log.e("SessionManager", "LLM error", e)
-                _sessionState.value = SessionState.ERROR
             }
-        }
     }
 
     /**
@@ -467,41 +587,43 @@ class SessionManager(
      * Synthesize text and play audio.
      */
     private fun synthesizeAndPlay(text: String) {
-        ttsJob = scope.launch {
-            try {
-                val audioChunks = mutableListOf<ByteArray>()
-                var firstChunkTime = 0L
-                val ttsStartTime = System.currentTimeMillis()
+        ttsJob =
+            scope.launch {
+                try {
+                    val audioChunks = mutableListOf<ByteArray>()
+                    var firstChunkTime = 0L
+                    val ttsStartTime = System.currentTimeMillis()
 
-                ttsService.synthesize(text).collect { chunk ->
-                    if (firstChunkTime == 0L && chunk.audioData.isNotEmpty()) {
-                        firstChunkTime = System.currentTimeMillis()
-                        val ttfb = firstChunkTime - ttsStartTime
-                        Log.i("SessionManager", "TTS TTFB: ${ttfb}ms")
+                    ttsService.synthesize(text).collect { chunk ->
+                        if (firstChunkTime == 0L && chunk.audioData.isNotEmpty()) {
+                            firstChunkTime = System.currentTimeMillis()
+                            val ttfb = firstChunkTime - ttsStartTime
+                            Log.i("SessionManager", "TTS TTFB: ${ttfb}ms")
 
-                        // Track TTFB metric
-                        _metrics.value = _metrics.value.copy(
-                            ttsTTFB = (_metrics.value.ttsTTFB + ttfb) / 2
-                        )
+                            // Track TTFB metric
+                            _metrics.value =
+                                _metrics.value.copy(
+                                    ttsTTFB = (_metrics.value.ttsTTFB + ttfb) / 2,
+                                )
+                        }
+
+                        audioChunks.add(chunk.audioData)
+
+                        // Queue audio for playback
+                        if (chunk.audioData.isNotEmpty()) {
+                            // Convert to float samples and queue
+                            val floatSamples = convertBytesToFloat(chunk.audioData)
+                            audioEngine.queuePlayback(floatSamples)
+                        }
                     }
 
-                    audioChunks.add(chunk.audioData)
-
-                    // Queue audio for playback
-                    if (chunk.audioData.isNotEmpty()) {
-                        // Convert to float samples and queue
-                        val floatSamples = convertBytesToFloat(chunk.audioData)
-                        audioEngine.queuePlayback(floatSamples)
-                    }
+                    Log.d("SessionManager", "TTS synthesis complete: $text")
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Log.e("SessionManager", "TTS error", e)
                 }
-
-                Log.d("SessionManager", "TTS synthesis complete: $text")
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Log.e("SessionManager", "TTS error", e)
             }
-        }
     }
 
     /**
@@ -515,29 +637,32 @@ class SessionManager(
         val fullResponse = conversationHistory.lastOrNull { it.role == "assistant" }?.content ?: ""
 
         // Add to transcript
-        val aiEntry = TranscriptEntry(
-            id = UUID.randomUUID().toString(),
-            sessionId = _currentSession.value?.id ?: "",
-            role = "assistant",
-            content = fullResponse,
-            timestamp = System.currentTimeMillis()
-        )
+        val aiEntry =
+            TranscriptEntry(
+                id = UUID.randomUUID().toString(),
+                sessionId = _currentSession.value?.id ?: "",
+                role = "assistant",
+                text = fullResponse,
+                timestamp = System.currentTimeMillis(),
+            )
         addToTranscript(aiEntry)
 
         // Update session metrics
         _currentSession.value?.let { session ->
-            _currentSession.value = session.copy(
-                totalTurns = session.totalTurns + 1
-            )
+            _currentSession.value =
+                session.copy(
+                    turnCount = session.turnCount + 1,
+                )
         }
 
         // Calculate E2E latency
         val e2eLatency = System.currentTimeMillis() - currentTurnStartTime
         Log.i("SessionManager", "E2E turn latency: ${e2eLatency}ms")
 
-        _metrics.value = _metrics.value.copy(
-            e2eLatency = (_metrics.value.e2eLatency + e2eLatency) / 2
-        )
+        _metrics.value =
+            _metrics.value.copy(
+                e2eLatency = (_metrics.value.e2eLatency + e2eLatency) / 2,
+            )
 
         // Return to listening
         _sessionState.value = SessionState.IDLE
@@ -579,9 +704,12 @@ class SessionManager(
         ttsJob?.cancel()
         vadJob?.cancel()
 
-        sttService.stopStreaming()
-        llmService.stop()
-        ttsService.stop()
+        // Launch coroutine to stop services asynchronously
+        scope.launch {
+            runCatching { sttService.stopStreaming() }
+            runCatching { llmService.stop() }
+            runCatching { ttsService.stop() }
+        }
     }
 
     /**
@@ -610,7 +738,10 @@ class SessionManager(
  * Session metrics tracked in real-time.
  */
 data class SessionMetrics(
-    val llmTTFT: Long = 0, // Time to first token (ms)
-    val ttsTTFB: Long = 0, // Time to first byte (ms)
-    val e2eLatency: Long = 0 // End-to-end turn latency (ms)
+    /** Time to first token (ms) */
+    val llmTTFT: Long = 0,
+    /** Time to first byte (ms) */
+    val ttsTTFB: Long = 0,
+    /** End-to-end turn latency (ms) */
+    val e2eLatency: Long = 0,
 )

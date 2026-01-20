@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.Flow
  */
 @Dao
 interface CurriculumDao {
-
     /**
      * Get all downloaded curricula (observable).
      *
@@ -44,7 +43,10 @@ interface CurriculumDao {
      * @param timestamp New timestamp
      */
     @Query("UPDATE curricula SET lastAccessedAt = :timestamp WHERE id = :id")
-    suspend fun updateLastAccessed(id: String, timestamp: Long)
+    suspend fun updateLastAccessed(
+        id: String,
+        timestamp: Long,
+    )
 
     /**
      * Delete a curriculum.

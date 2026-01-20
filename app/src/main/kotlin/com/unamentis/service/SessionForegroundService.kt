@@ -38,7 +38,6 @@ import javax.inject.Inject
  */
 @AndroidEntryPoint
 class SessionForegroundService : Service() {
-
     @Inject
     lateinit var sessionManager: SessionManager
 
@@ -53,7 +52,11 @@ class SessionForegroundService : Service() {
         createNotificationChannel()
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+    override fun onStartCommand(
+        intent: Intent?,
+        flags: Int,
+        startId: Int,
+    ): Int {
         when (intent?.action) {
             ACTION_START -> {
                 startForeground(NOTIFICATION_ID, createNotification(SessionState.IDLE))
@@ -112,23 +115,26 @@ class SessionForegroundService : Service() {
      * Create notification for current session state.
      */
     private fun createNotification(state: SessionState): Notification {
-        val openAppIntent = Intent(this, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        }
-        val openAppPendingIntent = PendingIntent.getActivity(
-            this,
-            0,
-            openAppIntent,
-            PendingIntent.FLAG_IMMUTABLE
-        )
+        val openAppIntent =
+            Intent(this, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            }
+        val openAppPendingIntent =
+            PendingIntent.getActivity(
+                this,
+                0,
+                openAppIntent,
+                PendingIntent.FLAG_IMMUTABLE,
+            )
 
-        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground) // TODO: Create proper notification icon
-            .setContentTitle("UnaMentis Session")
-            .setContentText(getStateMessage(state))
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            .setOngoing(true)
-            .setContentIntent(openAppPendingIntent)
+        val builder =
+            NotificationCompat.Builder(this, CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_launcher_foreground) // TODO: Create proper notification icon
+                .setContentTitle("UnaMentis Session")
+                .setContentText(getStateMessage(state))
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setOngoing(true)
+                .setContentIntent(openAppPendingIntent)
 
         // Add action buttons based on state
         when (state) {
@@ -136,27 +142,28 @@ class SessionForegroundService : Service() {
                 // No actions in idle/error state
             }
             SessionState.PAUSED -> {
+                // TODO: Create proper icons
                 builder.addAction(
-                    R.drawable.ic_launcher_foreground, // TODO: Create proper icons
+                    R.drawable.ic_launcher_foreground,
                     "Resume",
-                    createActionPendingIntent(ACTION_RESUME)
+                    createActionPendingIntent(ACTION_RESUME),
                 )
                 builder.addAction(
                     R.drawable.ic_launcher_foreground,
                     "Stop",
-                    createActionPendingIntent(ACTION_STOP)
+                    createActionPendingIntent(ACTION_STOP),
                 )
             }
             else -> {
                 builder.addAction(
                     R.drawable.ic_launcher_foreground,
                     "Pause",
-                    createActionPendingIntent(ACTION_PAUSE)
+                    createActionPendingIntent(ACTION_PAUSE),
                 )
                 builder.addAction(
                     R.drawable.ic_launcher_foreground,
                     "Stop",
-                    createActionPendingIntent(ACTION_STOP)
+                    createActionPendingIntent(ACTION_STOP),
                 )
             }
         }
@@ -168,14 +175,15 @@ class SessionForegroundService : Service() {
      * Create PendingIntent for action button.
      */
     private fun createActionPendingIntent(action: String): PendingIntent {
-        val intent = Intent(this, SessionForegroundService::class.java).apply {
-            this.action = action
-        }
+        val intent =
+            Intent(this, SessionForegroundService::class.java).apply {
+                this.action = action
+            }
         return PendingIntent.getService(
             this,
             action.hashCode(),
             intent,
-            PendingIntent.FLAG_IMMUTABLE
+            PendingIntent.FLAG_IMMUTABLE,
         )
     }
 
@@ -200,14 +208,15 @@ class SessionForegroundService : Service() {
      */
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                "Voice Sessions",
-                NotificationManager.IMPORTANCE_LOW
-            ).apply {
-                description = "Ongoing voice learning sessions"
-                setShowBadge(false)
-            }
+            val channel =
+                NotificationChannel(
+                    CHANNEL_ID,
+                    "Voice Sessions",
+                    NotificationManager.IMPORTANCE_LOW,
+                ).apply {
+                    description = "Ongoing voice learning sessions"
+                    setShowBadge(false)
+                }
             notificationManager.createNotificationChannel(channel)
         }
     }

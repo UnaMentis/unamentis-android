@@ -2,7 +2,7 @@
 # SDK & Language
 agp = "8.7.3"
 kotlin = "2.0.21"
-androidCompileSdk = "34"
+androidCompileSdk = "35"
 androidMinSdk = "28"
 androidTargetSdk = "34"
 
@@ -20,6 +20,7 @@ appcompat = "1.7.0"
 # Dependency Injection
 hilt = "2.54"
 hiltNavigationCompose = "1.2.0"
+hiltWork = "1.2.0"
 
 # Database
 room = "2.6.1"
@@ -32,10 +33,23 @@ kotlinxSerialization = "1.7.3"
 # ML/AI
 tensorflowLite = "2.16.1"
 tensorflowLiteGpu = "2.16.1"
+onnxRuntime = "1.17.0"
+
+# Audio
+oboe = "1.8.0"
 
 # DataStore & Security
 datastore = "1.1.1"
 securityCrypto = "1.1.0-alpha06"
+
+# Work Manager
+work = "2.9.0"
+
+# Glance (Compose Widgets)
+glance = "1.1.1"
+
+# Image Loading
+coil = "2.5.0"
 
 # Code Quality
 ktlint = "12.1.2"
@@ -48,6 +62,10 @@ espresso = "3.6.1"
 mockk = "1.13.13"
 coroutinesTest = "1.9.0"
 turbine = "1.2.0"
+robolectric = "4.14.1"
+mockWebServer = "4.12.0"
+hiltTesting = "2.54"
+androidTestRunner = "1.6.2"
 
 # Build Tools
 ksp = "2.0.21-1.0.25"
@@ -69,6 +87,7 @@ androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "u
 androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
+androidx-compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
 androidx-compose-material3-adaptive = { group = "androidx.compose.material3.adaptive", name = "adaptive", version.ref = "composeAdaptive" }
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "composeNavigation" }
 
@@ -76,6 +95,8 @@ androidx-navigation-compose = { group = "androidx.navigation", name = "navigatio
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
 hilt-android-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "hilt" }
 androidx-hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "hiltNavigationCompose" }
+androidx-hilt-work = { group = "androidx.hilt", name = "hilt-work", version.ref = "hiltWork" }
+androidx-hilt-compiler = { group = "androidx.hilt", name = "hilt-compiler", version.ref = "hiltWork" }
 
 # Room Database
 androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
@@ -93,11 +114,27 @@ kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-
 tensorflow-lite = { group = "org.tensorflow", name = "tensorflow-lite", version.ref = "tensorflowLite" }
 tensorflow-lite-gpu = { group = "org.tensorflow", name = "tensorflow-lite-gpu", version.ref = "tensorflowLiteGpu" }
 
+# ONNX Runtime (Silero VAD)
+onnxruntime-android = { group = "com.microsoft.onnxruntime", name = "onnxruntime-android", version.ref = "onnxRuntime" }
+
+# Audio (Oboe - low-latency native audio)
+oboe = { group = "com.google.oboe", name = "oboe", version.ref = "oboe" }
+
 # DataStore (Preferences)
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
 
 # Security (Encrypted Preferences)
 androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
+
+# Work Manager (Background tasks)
+androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "work" }
+
+# Glance (Compose Widgets)
+androidx-glance-appwidget = { group = "androidx.glance", name = "glance-appwidget", version.ref = "glance" }
+androidx-glance-material3 = { group = "androidx.glance", name = "glance-material3", version.ref = "glance" }
+
+# Image Loading (Coil)
+coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
 
 # Testing
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -107,6 +144,11 @@ mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 mockk-android = { group = "io.mockk", name = "mockk-android", version.ref = "mockk" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutinesTest" }
 turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine" }
+robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
+okhttp-mockwebserver = { group = "com.squareup.okhttp3", name = "mockwebserver", version.ref = "mockWebServer" }
+androidx-test-core = { group = "androidx.test", name = "core", version = "1.6.1" }
+hilt-android-testing = { group = "com.google.dagger", name = "hilt-android-testing", version.ref = "hiltTesting" }
+androidx-test-runner = { group = "androidx.test", name = "runner", version.ref = "androidTestRunner" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

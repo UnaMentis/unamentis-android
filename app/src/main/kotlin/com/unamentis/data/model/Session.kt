@@ -31,7 +31,7 @@ enum class SessionState {
     PAUSED,
 
     /** Session encountered an error */
-    ERROR
+    ERROR,
 }
 
 /**
@@ -48,10 +48,11 @@ enum class SessionState {
 data class TranscriptEntry(
     val id: String,
     val sessionId: String,
-    val role: String,  // "user" or "assistant"
+    /** "user" or "assistant" */
+    val role: String,
     val text: String,
     val timestamp: Long,
-    val metadata: Map<String, String> = emptyMap()
+    val metadata: Map<String, String> = emptyMap(),
 )
 
 /**
@@ -66,6 +67,7 @@ data class TranscriptEntry(
  * @property turnCount Number of conversation turns
  * @property interruptionCount Number of successful barge-ins
  * @property totalCost Total API cost in USD
+ * @property isStarred Whether the session is starred/favorited
  * @property transcript List of conversation entries
  */
 @Serializable
@@ -79,7 +81,8 @@ data class Session(
     val turnCount: Int = 0,
     val interruptionCount: Int = 0,
     val totalCost: Double = 0.0,
-    val transcript: List<TranscriptEntry> = emptyList()
+    val isStarred: Boolean = false,
+    val transcript: List<TranscriptEntry> = emptyList(),
 )
 
 /**
@@ -101,5 +104,5 @@ data class TopicProgress(
     val masteryLevel: Float = 0.0f,
     val lastAccessedAt: Long,
     val completedSegments: List<String> = emptyList(),
-    val currentSegmentId: String? = null
+    val currentSegmentId: String? = null,
 )

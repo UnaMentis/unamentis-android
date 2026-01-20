@@ -35,9 +35,8 @@ import java.util.UUID
  */
 class AndroidTTSService(
     private val context: Context,
-    private val language: Locale = Locale.US
+    private val language: Locale = Locale.US,
 ) : TTSService {
-
     override val providerName: String = "Android TTS"
 
     private var tts: TextToSpeech? = null
@@ -48,23 +47,25 @@ class AndroidTTSService(
      * Should be called before synthesize().
      */
     fun initialize(onReady: (() -> Unit)? = null) {
-        tts = TextToSpeech(context) { status ->
-            if (status == TextToSpeech.SUCCESS) {
-                val result = tts?.setLanguage(language)
-                if (result == TextToSpeech.LANG_MISSING_DATA ||
-                    result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                    android.util.Log.e("AndroidTTS", "Language not supported: $language")
-                    isInitialized = false
+        tts =
+            TextToSpeech(context) { status ->
+                if (status == TextToSpeech.SUCCESS) {
+                    val result = tts?.setLanguage(language)
+                    if (result == TextToSpeech.LANG_MISSING_DATA ||
+                        result == TextToSpeech.LANG_NOT_SUPPORTED
+                    ) {
+                        android.util.Log.e("AndroidTTS", "Language not supported: $language")
+                        isInitialized = false
+                    } else {
+                        isInitialized = true
+                        android.util.Log.i("AndroidTTS", "TTS initialized successfully")
+                        onReady?.invoke()
+                    }
                 } else {
-                    isInitialized = true
-                    android.util.Log.i("AndroidTTS", "TTS initialized successfully")
-                    onReady?.invoke()
+                    android.util.Log.e("AndroidTTS", "TTS initialization failed")
+                    isInitialized = false
                 }
-            } else {
-                android.util.Log.e("AndroidTTS", "TTS initialization failed")
-                isInitialized = false
             }
-        }
     }
 
     /**
@@ -76,96 +77,109 @@ class AndroidTTSService(
      * @param text Text to synthesize
      * @return Flow of audio chunks
      */
-    override fun synthesize(text: String): Flow<TTSAudioChunk> = callbackFlow {
-        if (!isInitialized || tts == null) {
-            android.util.Log.e("AndroidTTS", "TTS not initialized")
-            close(IllegalStateException("TTS not initialized. Call initialize() first."))
-            return@callbackFlow
-        }
-
-        val utteranceId = UUID.randomUUID().toString()
-        val audioFile = File(context.cacheDir, "tts_$utteranceId.wav")
-        val startTime = System.currentTimeMillis()
-        var isFirstChunk = true
-
-        tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-            override fun onStart(utteranceId: String) {
-                android.util.Log.i("AndroidTTS", "Synthesis started")
+    override fun synthesize(text: String): Flow<TTSAudioChunk> =
+        callbackFlow {
+            if (!isInitialized || tts == null) {
+                android.util.Log.e("AndroidTTS", "TTS not initialized")
+                close(IllegalStateException("TTS not initialized. Call initialize() first."))
+                return@callbackFlow
             }
 
-            override fun onDone(utteranceId: String) {
-                // Read the audio file and emit as chunks
-                try {
-                    val audioData = audioFile.readBytes()
-                    val chunkSize = 4096 // 4KB chunks
+            val utteranceId = UUID.randomUUID().toString()
+            val audioFile = File(context.cacheDir, "tts_$utteranceId.wav")
+            val startTime = System.currentTimeMillis()
+            var isFirstChunk = true
 
-                    audioData.toList().chunked(chunkSize).forEachIndexed { index, chunk ->
-                        val chunkArray = chunk.toByteArray()
-                        val isLast = (index * chunkSize + chunk.size) >= audioData.size
+            tts?.setOnUtteranceProgressListener(
+                object : UtteranceProgressListener() {
+                    override fun onStart(utteranceId: String) {
+                        android.util.Log.i("AndroidTTS", "Synthesis started")
+                    }
 
-                        if (isFirstChunk) {
-                            val ttfb = System.currentTimeMillis() - startTime
-                            android.util.Log.i("AndroidTTS", "TTFB: ${ttfb}ms")
-                            isFirstChunk = false
+                    override fun onDone(utteranceId: String) {
+                        // Read the audio file and emit as chunks
+                        try {
+                            val audioData = audioFile.readBytes()
+                            val chunkSize = 4096 // 4KB chunks
 
-                            trySend(
-                                TTSAudioChunk(
-                                    audioData = chunkArray,
-                                    isFirst = true,
-                                    isLast = isLast
-                                )
-                            )
-                        } else {
-                            trySend(
-                                TTSAudioChunk(
-                                    audioData = chunkArray,
-                                    isFirst = false,
-                                    isLast = isLast
-                                )
-                            )
+                            audioData.toList().chunked(chunkSize).forEachIndexed { index, chunk ->
+                                val chunkArray = chunk.toByteArray()
+                                val isLast = (index * chunkSize + chunk.size) >= audioData.size
+
+                                if (isFirstChunk) {
+                                    val ttfb = System.currentTimeMillis() - startTime
+                                    android.util.Log.i("AndroidTTS", "TTFB: ${ttfb}ms")
+                                    isFirstChunk = false
+
+                                    trySend(
+                                        TTSAudioChunk(
+                                            audioData = chunkArray,
+                                            isFirst = true,
+                                            isLast = isLast,
+                                        ),
+                                    )
+                                } else {
+                                    trySend(
+                                        TTSAudioChunk(
+                                            audioData = chunkArray,
+                                            isFirst = false,
+                                            isLast = isLast,
+                                        ),
+                                    )
+                                }
+                            }
+
+                            close()
+                        } catch (e: Exception) {
+                            android.util.Log.e("AndroidTTS", "Failed to read audio file", e)
+                            close(e)
+                        } finally {
+                            // Clean up temp file
+                            audioFile.delete()
                         }
                     }
 
-                    close()
-                } catch (e: Exception) {
-                    android.util.Log.e("AndroidTTS", "Failed to read audio file", e)
-                    close(e)
-                } finally {
-                    // Clean up temp file
-                    audioFile.delete()
-                }
+                    override fun onError(utteranceId: String) {
+                        android.util.Log.e("AndroidTTS", "Synthesis error")
+                        audioFile.delete()
+                        close(Exception("TTS synthesis failed"))
+                    }
+
+                    @Deprecated("Deprecated in Java")
+                    override fun onError(
+                        utteranceId: String?,
+                        errorCode: Int,
+                    ) {
+                        android.util.Log.e("AndroidTTS", "Synthesis error: $errorCode")
+                        audioFile.delete()
+                        close(Exception("TTS synthesis failed with code $errorCode"))
+                    }
+                },
+            )
+
+            // Start synthesis to file
+            val result = tts?.synthesizeToFile(text, null, audioFile, utteranceId)
+            if (result != TextToSpeech.SUCCESS) {
+                android.util.Log.e("AndroidTTS", "Failed to start synthesis")
+                close(Exception("Failed to start TTS synthesis"))
             }
 
-            override fun onError(utteranceId: String) {
-                android.util.Log.e("AndroidTTS", "Synthesis error")
-                audioFile.delete()
-                close(Exception("TTS synthesis failed"))
+            awaitClose {
+                doStop()
             }
-
-            @Deprecated("Deprecated in Java")
-            override fun onError(utteranceId: String?, errorCode: Int) {
-                android.util.Log.e("AndroidTTS", "Synthesis error: $errorCode")
-                audioFile.delete()
-                close(Exception("TTS synthesis failed with code $errorCode"))
-            }
-        })
-
-        // Start synthesis to file
-        val result = tts?.synthesizeToFile(text, null, audioFile, utteranceId)
-        if (result != TextToSpeech.SUCCESS) {
-            android.util.Log.e("AndroidTTS", "Failed to start synthesis")
-            close(Exception("Failed to start TTS synthesis"))
         }
 
-        awaitClose {
-            stop()
-        }
+    /**
+     * Stop synthesis and release resources (suspend version).
+     */
+    override suspend fun stop() {
+        doStop()
     }
 
     /**
-     * Stop synthesis and release resources.
+     * Internal non-suspend stop implementation.
      */
-    override suspend fun stop() {
+    private fun doStop() {
         tts?.stop()
     }
 

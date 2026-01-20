@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/shortcut_background" />
+    <foreground>
+        <vector
+            android:width="108dp"
+            android:height="108dp"
+            android:viewportWidth="108"
+            android:viewportHeight="108">
+            <path
+                android:fillColor="#FFFFFF"
+                android:pathData="M54,36c-3.3,0 -6,2.7 -6,6v16c0,3.3 2.7,6 6,6s6,-2.7 6,-6V42c0,-3.3 -2.7,-6 -6,-6zM66,58c0,6.6 -5.4,12 -12,12s-12,-5.4 -12,-12h-4c0,8.4 6.4,15.3 14,16.7V80h4v-5.3c7.6,-1.4 14,-8.3 14,-16.7h-4z" />
+        </vector>
+    </foreground>
+</adaptive-icon>

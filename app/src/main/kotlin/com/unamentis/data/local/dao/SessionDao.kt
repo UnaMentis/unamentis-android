@@ -6,13 +6,29 @@ import com.unamentis.data.local.entity.TranscriptEntryEntity
 import kotlinx.coroutines.flow.Flow
 
 /**
+ * Statistics for updating a session.
+ *
+ * @property endTime End timestamp
+ * @property durationSeconds Session duration
+ * @property turnCount Number of turns
+ * @property interruptionCount Number of interruptions
+ * @property totalCost Total cost
+ */
+data class SessionStatsUpdate(
+    val endTime: Long,
+    val durationSeconds: Long,
+    val turnCount: Int,
+    val interruptionCount: Int,
+    val totalCost: Double,
+)
+
+/**
  * Data Access Object for sessions and transcripts.
  *
  * Provides methods to query and manage session history.
  */
 @Dao
 interface SessionDao {
-
     /**
      * Get all sessions ordered by start time (most recent first).
      *
@@ -50,6 +66,9 @@ interface SessionDao {
     /**
      * Update session end time and stats.
      *
+     * Note: Room requires individual parameters for raw SQL queries.
+     * Use [SessionStatsUpdate] data class when calling from repository layer.
+     *
      * @param id Session identifier
      * @param endTime End timestamp
      * @param durationSeconds Session duration
@@ -57,6 +76,7 @@ interface SessionDao {
      * @param interruptionCount Number of interruptions
      * @param totalCost Total cost
      */
+    @Suppress("LongParameterList")
     @Query(
         """
         UPDATE sessions
@@ -66,7 +86,7 @@ interface SessionDao {
             interruptionCount = :interruptionCount,
             totalCost = :totalCost
         WHERE id = :id
-        """
+        """,
     )
     suspend fun updateSessionStats(
         id: String,
@@ -74,7 +94,7 @@ interface SessionDao {
         durationSeconds: Long,
         turnCount: Int,
         interruptionCount: Int,
-        totalCost: Double
+        totalCost: Double,
     )
 
     /**
@@ -119,4 +139,89 @@ interface SessionDao {
 
     @Query("DELETE FROM transcript_entries")
     suspend fun deleteAllTranscriptEntries()
+
+    /**
+     * Get all starred sessions.
+     *
+     * @return Flow of starred session list
+     */
+    @Query("SELECT * FROM sessions WHERE isStarred = 1 ORDER BY startTime DESC")
+    fun getStarredSessions(): Flow<List<SessionEntity>>
+
+    /**
+     * Update a session's starred status.
+     *
+     * @param id Session identifier
+     * @param isStarred New starred status
+     */
+    @Query("UPDATE sessions SET isStarred = :isStarred WHERE id = :id")
+    suspend fun updateStarredStatus(
+        id: String,
+        isStarred: Boolean,
+    )
+
+    /**
+     * Get sessions within a date range.
+     *
+     * @param startTimestamp Start of date range
+     * @param endTimestamp End of date range
+     * @return Flow of session list
+     */
+    @Query(
+        """
+        SELECT * FROM sessions
+        WHERE startTime >= :startTimestamp AND startTime <= :endTimestamp
+        ORDER BY startTime DESC
+        """,
+    )
+    fun getSessionsInDateRange(
+        startTimestamp: Long,
+        endTimestamp: Long,
+    ): Flow<List<SessionEntity>>
+
+    /**
+     * Get sessions by curriculum.
+     *
+     * @param curriculumId Curriculum identifier
+     * @return Flow of session list
+     */
+    @Query("SELECT * FROM sessions WHERE curriculumId = :curriculumId ORDER BY startTime DESC")
+    fun getSessionsByCurriculum(curriculumId: String): Flow<List<SessionEntity>>
+
+    /**
+     * Get sessions with minimum duration.
+     *
+     * @param minDurationSeconds Minimum duration in seconds
+     * @return Flow of session list
+     */
+    @Query("SELECT * FROM sessions WHERE durationSeconds >= :minDurationSeconds ORDER BY startTime DESC")
+    fun getSessionsByMinDuration(minDurationSeconds: Long): Flow<List<SessionEntity>>
+
+    /**
+     * Search transcript entries for text.
+     *
+     * @param query Search query
+     * @return List of sessions containing matching transcript entries
+     */
+    @Query(
+        """
+        SELECT DISTINCT s.* FROM sessions s
+        INNER JOIN transcript_entries t ON s.id = t.sessionId
+        WHERE t.text LIKE '%' || :query || '%'
+        ORDER BY s.startTime DESC
+        """,
+    )
+    fun searchSessionsByTranscript(query: String): Flow<List<SessionEntity>>
+
+    /**
+     * Get total session count.
+     */
+    @Query("SELECT COUNT(*) FROM sessions")
+    suspend fun getSessionCount(): Int
+
+    /**
+     * Get starred session count.
+     */
+    @Query("SELECT COUNT(*) FROM sessions WHERE isStarred = 1")
+    suspend fun getStarredSessionCount(): Int
 }

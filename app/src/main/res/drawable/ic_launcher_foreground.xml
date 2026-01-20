@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- UnaMentis logo placeholder - brain/education icon -->
+    <group android:translateX="24" android:translateY="24">
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M30,5C17.85,5 8,14.85 8,27c0,9.94 6.6,18.35 15.65,21.1L30,60l6.35,-11.9C45.4,45.35 52,36.94 52,27C52,14.85 42.15,5 30,5zM30,35c-4.42,0 -8,-3.58 -8,-8s3.58,-8 8,-8 8,3.58 8,8 -3.58,8 -8,8z"/>
+    </group>
+</vector>

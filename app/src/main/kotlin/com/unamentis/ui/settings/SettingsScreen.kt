@@ -2,20 +2,42 @@ package com.unamentis.ui.settings
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.unamentis.core.config.ConfigurationPreset
+import com.unamentis.core.config.RecordingMode
+import com.unamentis.ui.components.IOSCard
+import com.unamentis.ui.theme.Dimensions
+
+/**
+ * Settings sections that can be navigated to via deep link.
+ */
+enum class SettingsSection {
+    PRESETS,
+    PROVIDERS,
+    RECORDING,
+    AUDIO,
+    VAD,
+    LLM,
+    TTS,
+    CURRICULUM,
+    API_KEYS,
+}
 
 /**
  * Settings screen - App configuration.
@@ -31,32 +53,78 @@ import com.unamentis.core.config.ConfigurationPreset
  * - Provider selection sections
  * - API key input fields (secure)
  */
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    viewModel: SettingsViewModel = hiltViewModel()
+    initialSection: String? = null,
+    viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val listState = rememberLazyListState()
+
+    // Collect advanced settings
+    val sampleRate by viewModel.sampleRate.collectAsStateWithLifecycle()
+    val enableVoiceProcessing by viewModel.enableVoiceProcessing.collectAsStateWithLifecycle()
+    val enableEchoCancellation by viewModel.enableEchoCancellation.collectAsStateWithLifecycle()
+    val enableNoiseSuppression by viewModel.enableNoiseSuppression.collectAsStateWithLifecycle()
+    val vadThreshold by viewModel.vadThreshold.collectAsStateWithLifecycle()
+    val bargeInThreshold by viewModel.bargeInThreshold.collectAsStateWithLifecycle()
+    val enableBargeIn by viewModel.enableBargeIn.collectAsStateWithLifecycle()
+    val silenceThresholdMs by viewModel.silenceThresholdMs.collectAsStateWithLifecycle()
+    val llmTemperature by viewModel.llmTemperature.collectAsStateWithLifecycle()
+    val llmMaxTokens by viewModel.llmMaxTokens.collectAsStateWithLifecycle()
+    val ttsSpeakingRate by viewModel.ttsSpeakingRate.collectAsStateWithLifecycle()
+    val ttsPlaybackSpeed by viewModel.ttsPlaybackSpeed.collectAsStateWithLifecycle()
+    val autoContinueTopics by viewModel.autoContinueTopics.collectAsStateWithLifecycle()
+
+    // Handle deep link to specific section
+    LaunchedEffect(initialSection) {
+        if (initialSection != null) {
+            val sectionIndex =
+                when (initialSection.uppercase()) {
+                    "PRESETS" -> 0
+                    "PROVIDERS" -> 1
+                    "RECORDING" -> 6
+                    "AUDIO" -> 8
+                    "VAD" -> 10
+                    "LLM" -> 12
+                    "TTS" -> 14
+                    "CURRICULUM" -> 16
+                    "API_KEYS" -> 18
+                    else -> null
+                }
+            sectionIndex?.let {
+                listState.animateScrollToItem(it)
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Settings") }
+                title = { Text("Settings") },
             )
-        }
+        },
     ) { paddingValues ->
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            state = listState,
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+            contentPadding =
+                PaddingValues(
+                    horizontal = Dimensions.ScreenHorizontalPadding,
+                    vertical = Dimensions.SpacingLarge,
+                ),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingLarge),
         ) {
             // Preset selection
             item {
                 PresetSection(
                     currentPreset = uiState.currentPreset,
-                    onPresetSelected = { viewModel.applyPreset(it) }
+                    onPresetSelected = { viewModel.applyPreset(it) },
                 )
             }
 
@@ -65,7 +133,7 @@ fun SettingsScreen(
                 Text(
                     text = "Providers",
                     style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(top = 8.dp)
+                    modifier = Modifier.padding(top = 8.dp),
                 )
             }
 
@@ -76,7 +144,7 @@ fun SettingsScreen(
                     providers = listOf("Deepgram", "Android"),
                     selectedProvider = uiState.selectedSTTProvider,
                     onProviderSelected = { viewModel.setSTTProvider(it) },
-                    icon = Icons.Default.Mic
+                    icon = Icons.Default.Mic,
                 )
             }
 
@@ -87,7 +155,7 @@ fun SettingsScreen(
                     providers = listOf("ElevenLabs", "Android"),
                     selectedProvider = uiState.selectedTTSProvider,
                     onProviderSelected = { viewModel.setTTSProvider(it) },
-                    icon = Icons.Default.VolumeUp
+                    icon = Icons.Default.VolumeUp,
                 )
             }
 
@@ -98,7 +166,119 @@ fun SettingsScreen(
                     providers = listOf("PatchPanel", "OpenAI", "Anthropic"),
                     selectedProvider = uiState.selectedLLMProvider,
                     onProviderSelected = { viewModel.setLLMProvider(it) },
-                    icon = Icons.Default.Psychology
+                    icon = Icons.Default.Psychology,
+                )
+            }
+
+            // Recording Mode section
+            item {
+                Text(
+                    text = "Recording",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(top = 16.dp),
+                )
+            }
+
+            item {
+                RecordingModeSection(
+                    currentMode = uiState.recordingMode,
+                    onModeSelected = { viewModel.setRecordingMode(it) },
+                )
+            }
+
+            // Advanced Audio Settings section
+            item {
+                Text(
+                    text = "Audio Settings",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(top = 16.dp),
+                )
+            }
+
+            item {
+                AudioSettingsSection(
+                    sampleRate = sampleRate,
+                    onSampleRateChange = { viewModel.setSampleRate(it) },
+                    enableVoiceProcessing = enableVoiceProcessing,
+                    onVoiceProcessingChange = { viewModel.setEnableVoiceProcessing(it) },
+                    enableEchoCancellation = enableEchoCancellation,
+                    onEchoCancellationChange = { viewModel.setEnableEchoCancellation(it) },
+                    enableNoiseSuppression = enableNoiseSuppression,
+                    onNoiseSuppressionChange = { viewModel.setEnableNoiseSuppression(it) },
+                )
+            }
+
+            // VAD Settings section
+            item {
+                Text(
+                    text = "Voice Detection",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(top = 16.dp),
+                )
+            }
+
+            item {
+                VadSettingsSection(
+                    vadThreshold = vadThreshold,
+                    onVadThresholdChange = { viewModel.setVadThreshold(it) },
+                    bargeInThreshold = bargeInThreshold,
+                    onBargeInThresholdChange = { viewModel.setBargeInThreshold(it) },
+                    enableBargeIn = enableBargeIn,
+                    onEnableBargeInChange = { viewModel.setEnableBargeIn(it) },
+                    silenceThresholdMs = silenceThresholdMs,
+                    onSilenceThresholdChange = { viewModel.setSilenceThresholdMs(it) },
+                )
+            }
+
+            // LLM Settings section
+            item {
+                Text(
+                    text = "Language Model",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(top = 16.dp),
+                )
+            }
+
+            item {
+                LlmSettingsSection(
+                    temperature = llmTemperature,
+                    onTemperatureChange = { viewModel.setLlmTemperature(it) },
+                    maxTokens = llmMaxTokens,
+                    onMaxTokensChange = { viewModel.setLlmMaxTokens(it) },
+                )
+            }
+
+            // TTS Settings section
+            item {
+                Text(
+                    text = "Voice Output",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(top = 16.dp),
+                )
+            }
+
+            item {
+                TtsSettingsSection(
+                    speakingRate = ttsSpeakingRate,
+                    onSpeakingRateChange = { viewModel.setTtsSpeakingRate(it) },
+                    playbackSpeed = ttsPlaybackSpeed,
+                    onPlaybackSpeedChange = { viewModel.setTtsPlaybackSpeed(it) },
+                )
+            }
+
+            // Curriculum Playback section
+            item {
+                Text(
+                    text = "Curriculum Playback",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(top = 16.dp),
+                )
+            }
+
+            item {
+                CurriculumSettingsSection(
+                    autoContinueTopics = autoContinueTopics,
+                    onAutoContinueChange = { viewModel.setAutoContinueTopics(it) },
                 )
             }
 
@@ -107,14 +287,14 @@ fun SettingsScreen(
                 Text(
                     text = "API Keys",
                     style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(top = 16.dp)
+                    modifier = Modifier.padding(top = 16.dp),
                 )
             }
 
             item {
                 ApiKeySection(
                     viewModel = viewModel,
-                    uiState = uiState
+                    uiState = uiState,
                 )
             }
         }
@@ -127,47 +307,47 @@ fun SettingsScreen(
 @Composable
 private fun PresetSection(
     currentPreset: ConfigurationPreset,
-    onPresetSelected: (ConfigurationPreset) -> Unit
+    onPresetSelected: (ConfigurationPreset) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
             text = "Configuration Presets",
-            style = MaterialTheme.typography.titleMedium
+            style = MaterialTheme.typography.titleMedium,
         )
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             PresetChip(
-                preset = ConfigurationPreset.BALANCED,
-                isSelected = currentPreset == ConfigurationPreset.BALANCED,
-                onClick = { onPresetSelected(ConfigurationPreset.BALANCED) },
-                modifier = Modifier.weight(1f)
+                preset = ConfigurationPreset.FREE,
+                isSelected = currentPreset == ConfigurationPreset.FREE,
+                onClick = { onPresetSelected(ConfigurationPreset.FREE) },
+                modifier = Modifier.weight(1f),
             )
             PresetChip(
-                preset = ConfigurationPreset.LOW_LATENCY,
-                isSelected = currentPreset == ConfigurationPreset.LOW_LATENCY,
-                onClick = { onPresetSelected(ConfigurationPreset.LOW_LATENCY) },
-                modifier = Modifier.weight(1f)
+                preset = ConfigurationPreset.PREMIUM,
+                isSelected = currentPreset == ConfigurationPreset.PREMIUM,
+                onClick = { onPresetSelected(ConfigurationPreset.PREMIUM) },
+                modifier = Modifier.weight(1f),
             )
         }
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             PresetChip(
                 preset = ConfigurationPreset.COST_OPTIMIZED,
                 isSelected = currentPreset == ConfigurationPreset.COST_OPTIMIZED,
                 onClick = { onPresetSelected(ConfigurationPreset.COST_OPTIMIZED) },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             )
             PresetChip(
                 preset = ConfigurationPreset.OFFLINE,
                 isSelected = currentPreset == ConfigurationPreset.OFFLINE,
                 onClick = { onPresetSelected(ConfigurationPreset.OFFLINE) },
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             )
         }
     }
@@ -181,7 +361,7 @@ private fun PresetChip(
     preset: ConfigurationPreset,
     isSelected: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     FilterChip(
         selected = isSelected,
@@ -189,15 +369,16 @@ private fun PresetChip(
         label = {
             Text(
                 text = preset.name.replace("_", " "),
-                style = MaterialTheme.typography.labelMedium
+                style = MaterialTheme.typography.labelMedium,
             )
         },
-        modifier = modifier
+        modifier = modifier,
     )
 }
 
 /**
  * Provider selection card.
+ * Uses iOS-style card with 12dp corner radius.
  */
 @Composable
 private fun ProviderCard(
@@ -205,35 +386,32 @@ private fun ProviderCard(
     providers: List<String>,
     selectedProvider: String,
     onProviderSelected: (String) -> Unit,
-    icon: androidx.compose.ui.graphics.vector.ImageVector
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth()
-    ) {
+    IOSCard(modifier = Modifier.fillMaxWidth()) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.titleSmall
+                    style = MaterialTheme.typography.titleSmall,
                 )
             }
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 providers.forEach { provider ->
                     FilterChip(
                         selected = selectedProvider == provider,
                         onClick = { onProviderSelected(provider) },
-                        label = { Text(provider) }
+                        label = { Text(provider) },
                     )
                 }
             }
@@ -247,37 +425,36 @@ private fun ProviderCard(
 @Composable
 private fun ApiKeySection(
     viewModel: SettingsViewModel,
-    uiState: SettingsUiState
+    uiState: SettingsUiState,
 ) {
     var showDeepgramDialog by remember { mutableStateOf(false) }
     var showElevenLabsDialog by remember { mutableStateOf(false) }
     var showOpenAIDialog by remember { mutableStateOf(false) }
     var showAnthropicDialog by remember { mutableStateOf(false) }
 
-    Card(modifier = Modifier.fillMaxWidth()) {
+    IOSCard(modifier = Modifier.fillMaxWidth()) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
         ) {
             ApiKeyItem(
                 name = "Deepgram",
                 hasKey = uiState.hasDeepgramKey,
-                onEdit = { showDeepgramDialog = true }
+                onEdit = { showDeepgramDialog = true },
             )
             ApiKeyItem(
                 name = "ElevenLabs",
                 hasKey = uiState.hasElevenLabsKey,
-                onEdit = { showElevenLabsDialog = true }
+                onEdit = { showElevenLabsDialog = true },
             )
             ApiKeyItem(
                 name = "OpenAI",
                 hasKey = uiState.hasOpenAIKey,
-                onEdit = { showOpenAIDialog = true }
+                onEdit = { showOpenAIDialog = true },
             )
             ApiKeyItem(
                 name = "Anthropic",
                 hasKey = uiState.hasAnthropicKey,
-                onEdit = { showAnthropicDialog = true }
+                onEdit = { showAnthropicDialog = true },
             )
         }
     }
@@ -288,7 +465,7 @@ private fun ApiKeySection(
             title = "Deepgram API Key",
             currentKey = viewModel.getDeepgramApiKey(),
             onDismiss = { showDeepgramDialog = false },
-            onSave = { viewModel.updateDeepgramApiKey(it) }
+            onSave = { viewModel.updateDeepgramApiKey(it) },
         )
     }
     if (showElevenLabsDialog) {
@@ -296,7 +473,7 @@ private fun ApiKeySection(
             title = "ElevenLabs API Key",
             currentKey = viewModel.getElevenLabsApiKey(),
             onDismiss = { showElevenLabsDialog = false },
-            onSave = { viewModel.updateElevenLabsApiKey(it) }
+            onSave = { viewModel.updateElevenLabsApiKey(it) },
         )
     }
     if (showOpenAIDialog) {
@@ -304,7 +481,7 @@ private fun ApiKeySection(
             title = "OpenAI API Key",
             currentKey = viewModel.getOpenAIApiKey(),
             onDismiss = { showOpenAIDialog = false },
-            onSave = { viewModel.updateOpenAIApiKey(it) }
+            onSave = { viewModel.updateOpenAIApiKey(it) },
         )
     }
     if (showAnthropicDialog) {
@@ -312,7 +489,7 @@ private fun ApiKeySection(
             title = "Anthropic API Key",
             currentKey = viewModel.getAnthropicApiKey(),
             onDismiss = { showAnthropicDialog = false },
-            onSave = { viewModel.updateAnthropicApiKey(it) }
+            onSave = { viewModel.updateAnthropicApiKey(it) },
         )
     }
 }
@@ -324,22 +501,22 @@ private fun ApiKeySection(
 private fun ApiKeyItem(
     name: String,
     hasKey: Boolean,
-    onEdit: () -> Unit
+    onEdit: () -> Unit,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Column {
             Text(
                 text = name,
-                style = MaterialTheme.typography.bodyMedium
+                style = MaterialTheme.typography.bodyMedium,
             )
             Text(
                 text = if (hasKey) "Configured" else "Not configured",
                 style = MaterialTheme.typography.bodySmall,
-                color = if (hasKey) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                color = if (hasKey) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
             )
         }
 
@@ -357,7 +534,7 @@ private fun ApiKeyDialog(
     title: String,
     currentKey: String?,
     onDismiss: () -> Unit,
-    onSave: (String) -> Unit
+    onSave: (String) -> Unit,
 ) {
     var keyInput by remember { mutableStateOf("") }
     var showKey by remember { mutableStateOf(false) }
@@ -371,7 +548,7 @@ private fun ApiKeyDialog(
                     Text(
                         text = "Current: $currentKey",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
 
@@ -384,12 +561,12 @@ private fun ApiKeyDialog(
                         IconButton(onClick = { showKey = !showKey }) {
                             Icon(
                                 imageVector = if (showKey) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                                contentDescription = if (showKey) "Hide" else "Show"
+                                contentDescription = if (showKey) "Hide" else "Show",
                             )
                         }
                     },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
         },
@@ -401,7 +578,7 @@ private fun ApiKeyDialog(
                     }
                     onDismiss()
                 },
-                enabled = keyInput.isNotBlank()
+                enabled = keyInput.isNotBlank(),
             ) {
                 Text("Save")
             }
@@ -410,6 +587,558 @@ private fun ApiKeyDialog(
             TextButton(onClick = onDismiss) {
                 Text("Cancel")
             }
-        }
+        },
     )
+}
+
+/**
+ * Recording mode selection section.
+ */
+@Composable
+private fun RecordingModeSection(
+    currentMode: RecordingMode,
+    onModeSelected: (RecordingMode) -> Unit,
+) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Icon(
+                    Icons.Default.Mic,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                Text(
+                    text = "Recording Mode",
+                    style = MaterialTheme.typography.titleSmall,
+                )
+            }
+
+            RecordingMode.entries.forEach { mode ->
+                RecordingModeOption(
+                    mode = mode,
+                    isSelected = currentMode == mode,
+                    onSelected = { onModeSelected(mode) },
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Individual recording mode option with radio button.
+ */
+@Composable
+private fun RecordingModeOption(
+    mode: RecordingMode,
+    isSelected: Boolean,
+    onSelected: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        RadioButton(
+            selected = isSelected,
+            onClick = onSelected,
+        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = mode.displayName,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Text(
+                text = mode.description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/**
+ * Audio settings section with sample rate and processing options.
+ */
+@Composable
+private fun AudioSettingsSection(
+    sampleRate: Int,
+    onSampleRateChange: (Int) -> Unit,
+    enableVoiceProcessing: Boolean,
+    onVoiceProcessingChange: (Boolean) -> Unit,
+    enableEchoCancellation: Boolean,
+    onEchoCancellationChange: (Boolean) -> Unit,
+    enableNoiseSuppression: Boolean,
+    onNoiseSuppressionChange: (Boolean) -> Unit,
+) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Icon(
+                    Icons.Default.Tune,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                Text(
+                    text = "Audio Quality",
+                    style = MaterialTheme.typography.titleSmall,
+                )
+            }
+
+            // Sample rate picker
+            Text(
+                text = "Sample Rate",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                listOf(16000, 24000, 48000).forEach { rate ->
+                    FilterChip(
+                        selected = sampleRate == rate,
+                        onClick = { onSampleRateChange(rate) },
+                        label = { Text("${rate / 1000} kHz") },
+                    )
+                }
+            }
+            Text(
+                text = "Higher rates sound better but use more data",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            HorizontalDivider()
+
+            // Toggle options
+            SettingsToggle(
+                title = "Voice Processing",
+                description = "Enhances voice clarity",
+                checked = enableVoiceProcessing,
+                onCheckedChange = onVoiceProcessingChange,
+            )
+
+            SettingsToggle(
+                title = "Echo Cancellation",
+                description = "Prevents microphone from picking up AI's voice",
+                checked = enableEchoCancellation,
+                onCheckedChange = onEchoCancellationChange,
+            )
+
+            SettingsToggle(
+                title = "Noise Suppression",
+                description = "Filters background noise",
+                checked = enableNoiseSuppression,
+                onCheckedChange = onNoiseSuppressionChange,
+            )
+        }
+    }
+}
+
+/**
+ * VAD (Voice Activity Detection) settings section.
+ */
+@Composable
+private fun VadSettingsSection(
+    vadThreshold: Float,
+    onVadThresholdChange: (Float) -> Unit,
+    bargeInThreshold: Float,
+    onBargeInThresholdChange: (Float) -> Unit,
+    enableBargeIn: Boolean,
+    onEnableBargeInChange: (Boolean) -> Unit,
+    silenceThresholdMs: Int,
+    onSilenceThresholdChange: (Int) -> Unit,
+) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Icon(
+                    Icons.Default.GraphicEq,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                Text(
+                    text = "Voice Detection Tuning",
+                    style = MaterialTheme.typography.titleSmall,
+                )
+            }
+
+            // VAD Threshold slider
+            Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = "Detection Threshold",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text(
+                        text = "%.2f".format(vadThreshold),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                Slider(
+                    value = vadThreshold,
+                    onValueChange = onVadThresholdChange,
+                    valueRange = 0.3f..0.9f,
+                )
+                Text(
+                    text = "Lower values detect quieter speech but may pick up noise",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            HorizontalDivider()
+
+            // Barge-in settings
+            SettingsToggle(
+                title = "Enable Interruptions",
+                description = "Speaking while AI talks will pause it to listen",
+                checked = enableBargeIn,
+                onCheckedChange = onEnableBargeInChange,
+            )
+
+            if (enableBargeIn) {
+                Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text(
+                            text = "Interruption Threshold",
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        Text(
+                            text = "%.2f".format(bargeInThreshold),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                    Slider(
+                        value = bargeInThreshold,
+                        onValueChange = onBargeInThresholdChange,
+                        valueRange = 0.5f..0.95f,
+                    )
+                    Text(
+                        text = "How loud you need to speak to interrupt the AI",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
+            HorizontalDivider()
+
+            // Silence threshold
+            Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = "Silence Timeout",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text(
+                        text = "${silenceThresholdMs}ms",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                Slider(
+                    value = silenceThresholdMs.toFloat(),
+                    onValueChange = { onSilenceThresholdChange(it.toInt()) },
+                    valueRange = 500f..3000f,
+                    steps = 4,
+                )
+                Text(
+                    text = "How long to wait in silence before ending your turn",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * LLM settings section with temperature and max tokens.
+ */
+@Composable
+private fun LlmSettingsSection(
+    temperature: Float,
+    onTemperatureChange: (Float) -> Unit,
+    maxTokens: Int,
+    onMaxTokensChange: (Int) -> Unit,
+) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Icon(
+                    Icons.Default.Psychology,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                Text(
+                    text = "Response Tuning",
+                    style = MaterialTheme.typography.titleSmall,
+                )
+            }
+
+            // Temperature slider
+            Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = "Temperature",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text(
+                        text = "%.1f".format(temperature),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                Slider(
+                    value = temperature,
+                    onValueChange = onTemperatureChange,
+                    valueRange = 0f..1f,
+                )
+                Text(
+                    text = "Controls creativity. Lower for factual, higher for creative.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            HorizontalDivider()
+
+            // Max tokens slider
+            Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = "Max Response Length",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text(
+                        text = "$maxTokens tokens",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                Slider(
+                    value = maxTokens.toFloat(),
+                    onValueChange = { onMaxTokensChange(it.toInt()) },
+                    valueRange = 256f..4096f,
+                    steps = 14,
+                )
+                Text(
+                    text = "Maximum response length. One token is roughly 4 characters.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * TTS settings section with speaking rate and playback speed.
+ */
+@Composable
+private fun TtsSettingsSection(
+    speakingRate: Float,
+    onSpeakingRateChange: (Float) -> Unit,
+    playbackSpeed: Float,
+    onPlaybackSpeedChange: (Float) -> Unit,
+) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Icon(
+                    Icons.Default.RecordVoiceOver,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                Text(
+                    text = "Voice Output Tuning",
+                    style = MaterialTheme.typography.titleSmall,
+                )
+            }
+
+            // Speaking rate slider
+            Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = "Speaking Rate",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text(
+                        text = "%.1fx".format(speakingRate),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                Slider(
+                    value = speakingRate,
+                    onValueChange = onSpeakingRateChange,
+                    valueRange = 0.5f..2.0f,
+                )
+                Text(
+                    text = "Adjust how fast the AI speaks",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            HorizontalDivider()
+
+            // Playback speed slider
+            Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = "Playback Speed",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text(
+                        text = "%.1fx".format(playbackSpeed),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                Slider(
+                    value = playbackSpeed,
+                    onValueChange = onPlaybackSpeedChange,
+                    valueRange = 0.5f..2.0f,
+                )
+                Text(
+                    text = "Speed up or slow down audio playback",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Curriculum playback settings section.
+ */
+@Composable
+private fun CurriculumSettingsSection(
+    autoContinueTopics: Boolean,
+    onAutoContinueChange: (Boolean) -> Unit,
+) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Icon(
+                    Icons.Default.PlaylistPlay,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                Text(
+                    text = "Session Behavior",
+                    style = MaterialTheme.typography.titleSmall,
+                )
+            }
+
+            SettingsToggle(
+                title = "Auto-continue to next topic",
+                description = "Automatically start the next topic when current one finishes",
+                checked = autoContinueTopics,
+                onCheckedChange = onAutoContinueChange,
+            )
+
+            Text(
+                text =
+                    "When a topic completes, seamlessly continue to the next topic " +
+                        "in the curriculum with an audio announcement.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/**
+ * Reusable settings toggle row.
+ */
+@Composable
+private fun SettingsToggle(
+    title: String,
+    description: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+        )
+    }
 }

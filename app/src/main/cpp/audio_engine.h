@@ -4,6 +4,10 @@
 #include <cstdint>
 #include <memory>
 #include <functional>
+#include <atomic>
+#include <mutex>
+#include <vector>
+#include <oboe/Oboe.h>
 
 namespace unamentis {
 
@@ -26,12 +30,18 @@ struct AudioConfig {
 using AudioCallback = std::function<void(const float* audio_data, int32_t frame_count, void* user_data)>;
 
 /**
- * Low-latency audio engine using platform audio APIs.
+ * Low-latency audio engine using Oboe.
  *
- * This implementation uses Android's low-latency audio path
- * to minimize recording and playback latency for voice conversations.
+ * This implementation uses Google's Oboe library for lowest-latency
+ * audio recording and playback on Android devices.
+ *
+ * Features:
+ * - Automatic AAudio/OpenSL ES selection
+ * - Low-latency audio capture at 16kHz
+ * - Configurable buffer sizes
+ * - Thread-safe callbacks
  */
-class AudioEngine {
+class AudioEngine : public oboe::AudioStreamCallback {
 public:
     AudioEngine();
     ~AudioEngine();
@@ -75,27 +85,51 @@ public:
     /**
      * Check if currently capturing.
      */
-    bool isCapturing() const { return is_capturing_; }
+    bool isCapturing() const { return is_capturing_.load(); }
 
     /**
      * Check if currently playing.
      */
-    bool isPlaying() const { return is_playing_; }
+    bool isPlaying() const { return is_playing_.load(); }
 
     /**
      * Get current audio configuration.
      */
     const AudioConfig& getConfig() const { return config_; }
 
+    // Oboe callback interface
+    oboe::DataCallbackResult onAudioReady(
+        oboe::AudioStream* stream,
+        void* audioData,
+        int32_t numFrames) override;
+
+    void onErrorBeforeClose(oboe::AudioStream* stream, oboe::Result result) override;
+    void onErrorAfterClose(oboe::AudioStream* stream, oboe::Result result) override;
+
 private:
     AudioConfig config_;
-    bool is_capturing_ = false;
-    bool is_playing_ = false;
+    std::atomic<bool> is_capturing_{false};
+    std::atomic<bool> is_playing_{false};
+
+    // Capture stream
+    std::shared_ptr<oboe::AudioStream> capture_stream_;
     AudioCallback capture_callback_;
     void* user_data_ = nullptr;
+    std::mutex callback_mutex_;
 
-    // Platform-specific implementation details would go here
-    // For now, this is a simplified version without Oboe dependency
+    // Playback stream
+    std::shared_ptr<oboe::AudioStream> playback_stream_;
+    std::vector<float> playback_buffer_;
+    std::mutex playback_mutex_;
+    size_t playback_read_pos_ = 0;
+    size_t playback_write_pos_ = 0;
+
+    // Conversion buffer for int16 to float
+    std::vector<float> conversion_buffer_;
+
+    bool createCaptureStream();
+    bool createPlaybackStream();
+    void closeStreams();
 };
 
 } // namespace unamentis

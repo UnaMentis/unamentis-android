@@ -18,71 +18,76 @@ import org.junit.Test
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class CurriculumEngineTest {
-
     private lateinit var curriculumRepository: CurriculumRepository
     private lateinit var topicProgressRepository: TopicProgressRepository
     private lateinit var curriculumEngine: CurriculumEngine
 
-    private val testCurriculum = Curriculum(
-        id = "curriculum-1",
-        title = "Introduction to Physics",
-        description = "Basic physics concepts",
-        author = "Dr. Smith",
-        version = "1.0",
-        topics = listOf(
-            Topic(
-                id = "topic-1",
-                title = "Newton's Laws",
-                description = "Laws of motion",
-                learningObjectives = listOf("Understand F=ma", "Apply to real scenarios"),
-                transcriptSegments = listOf(
-                    TranscriptSegment(
-                        segmentId = "seg-1",
-                        speaker = "tutor",
-                        text = "Let's learn about Newton's first law.",
-                        timestamp = 0,
-                        visualAssets = emptyList(),
-                        stoppingPoint = null
+    private val testCurriculum =
+        Curriculum(
+            id = "curriculum-1",
+            title = "Introduction to Physics",
+            description = "Basic physics concepts",
+            version = "1.0",
+            topics =
+                listOf(
+                    Topic(
+                        id = "topic-1",
+                        title = "Newton's Laws",
+                        orderIndex = 0,
+                        transcript =
+                            listOf(
+                                TranscriptSegment(
+                                    id = "seg-1",
+                                    type = "content",
+                                    content = "Let's learn about Newton's first law.",
+                                    spokenText = null,
+                                    stoppingPoint = null,
+                                    visualAssetId = null,
+                                ),
+                                TranscriptSegment(
+                                    id = "seg-2",
+                                    type = "content",
+                                    content = "An object at rest stays at rest.",
+                                    spokenText = null,
+                                    stoppingPoint = null,
+                                    visualAssetId = null,
+                                ),
+                                TranscriptSegment(
+                                    id = "seg-3",
+                                    type = "checkpoint",
+                                    content = "Let's test your understanding.",
+                                    spokenText = null,
+                                    stoppingPoint =
+                                        StoppingPoint(
+                                            type = "quiz",
+                                            prompt = "What is Newton's First Law?",
+                                        ),
+                                    visualAssetId = null,
+                                ),
+                            ),
+                        description = "Laws of motion",
+                        learningObjectives = listOf("Understand F=ma", "Apply to real scenarios"),
                     ),
-                    TranscriptSegment(
-                        segmentId = "seg-2",
-                        speaker = "tutor",
-                        text = "An object at rest stays at rest.",
-                        timestamp = 5000,
-                        visualAssets = emptyList(),
-                        stoppingPoint = null
+                    Topic(
+                        id = "topic-2",
+                        title = "Energy and Work",
+                        orderIndex = 1,
+                        transcript =
+                            listOf(
+                                TranscriptSegment(
+                                    id = "seg-4",
+                                    type = "content",
+                                    content = "Energy is the capacity to do work.",
+                                    spokenText = null,
+                                    stoppingPoint = null,
+                                    visualAssetId = null,
+                                ),
+                            ),
+                        description = "Energy concepts",
+                        learningObjectives = listOf("Define kinetic energy", "Calculate work"),
                     ),
-                    TranscriptSegment(
-                        segmentId = "seg-3",
-                        speaker = "tutor",
-                        text = "Let's test your understanding.",
-                        timestamp = 10000,
-                        visualAssets = emptyList(),
-                        stoppingPoint = StoppingPoint(
-                            type = StoppingPointType.QUIZ,
-                            title = "Quiz: Newton's First Law"
-                        )
-                    )
-                )
-            ),
-            Topic(
-                id = "topic-2",
-                title = "Energy and Work",
-                description = "Energy concepts",
-                learningObjectives = listOf("Define kinetic energy", "Calculate work"),
-                transcriptSegments = listOf(
-                    TranscriptSegment(
-                        segmentId = "seg-4",
-                        speaker = "tutor",
-                        text = "Energy is the capacity to do work.",
-                        timestamp = 0,
-                        visualAssets = emptyList(),
-                        stoppingPoint = null
-                    )
-                )
-            )
+                ),
         )
-    )
 
     @Before
     fun setup() {
@@ -90,13 +95,14 @@ class CurriculumEngineTest {
         topicProgressRepository = mockk(relaxed = true)
 
         coEvery { curriculumRepository.getCurriculumById(any()) } returns testCurriculum
-        coEvery { topicProgressRepository.getProgress(any(), any()) } returns null
+        coEvery { topicProgressRepository.getProgressByTopic(any()) } returns null
         coEvery { topicProgressRepository.saveProgress(any()) } just Runs
 
-        curriculumEngine = CurriculumEngine(
-            curriculumRepository = curriculumRepository,
-            topicProgressRepository = topicProgressRepository
-        )
+        curriculumEngine =
+            CurriculumEngine(
+                curriculumRepository = curriculumRepository,
+                topicProgressRepository = topicProgressRepository,
+            )
     }
 
     @After
@@ -105,268 +111,294 @@ class CurriculumEngineTest {
     }
 
     @Test
-    fun `loadCurriculum loads curriculum and first topic`() = runTest {
-        curriculumEngine.loadCurriculum("curriculum-1")
+    fun `loadCurriculum loads curriculum and first topic`() =
+        runTest {
+            curriculumEngine.loadCurriculum("curriculum-1")
 
-        assertEquals(testCurriculum, curriculumEngine.currentCurriculum.value)
-        assertEquals("topic-1", curriculumEngine.currentTopic.value?.id)
-        assertEquals(0, curriculumEngine.currentSegmentIndex.value)
-    }
-
-    @Test
-    fun `loadCurriculum with topicId loads specific topic`() = runTest {
-        curriculumEngine.loadCurriculum("curriculum-1", topicId = "topic-2")
-
-        assertEquals("topic-2", curriculumEngine.currentTopic.value?.id)
-    }
+            assertEquals(testCurriculum, curriculumEngine.currentCurriculum.value)
+            assertEquals("topic-1", curriculumEngine.currentTopic.value?.id)
+            assertEquals(0, curriculumEngine.currentSegmentIndex.value)
+        }
 
     @Test
-    fun `loadTopic creates new progress if none exists`() = runTest {
-        curriculumEngine.loadCurriculum("curriculum-1")
+    fun `loadCurriculum with topicId loads specific topic`() =
+        runTest {
+            curriculumEngine.loadCurriculum("curriculum-1", topicId = "topic-2")
 
-        val progress = curriculumEngine.topicProgress.value
-        assertNotNull(progress)
-        assertEquals("topic-1", progress!!.topicId)
-        assertEquals(0, progress.currentSegmentIndex)
-        assertEquals(0.0f, progress.masteryLevel, 0.001f)
-    }
+            assertEquals("topic-2", curriculumEngine.currentTopic.value?.id)
+        }
 
     @Test
-    fun `loadTopic loads existing progress`() = runTest {
-        val existingProgress = TopicProgress(
-            curriculumId = "curriculum-1",
-            topicId = "topic-1",
-            currentSegmentIndex = 2,
-            completedSegments = listOf(0, 1),
-            masteryLevel = 0.75f,
-            lastAccessedTime = System.currentTimeMillis()
-        )
+    fun `loadTopic creates new progress if none exists`() =
+        runTest {
+            curriculumEngine.loadCurriculum("curriculum-1")
 
-        coEvery {
-            topicProgressRepository.getProgress("curriculum-1", "topic-1")
-        } returns existingProgress
-
-        curriculumEngine.loadCurriculum("curriculum-1")
-
-        assertEquals(2, curriculumEngine.currentSegmentIndex.value)
-        assertEquals(0.75f, curriculumEngine.topicProgress.value?.masteryLevel, 0.001f)
-    }
+            val progress = curriculumEngine.topicProgress.value
+            assertNotNull(progress)
+            assertEquals("topic-1", progress!!.topicId)
+            assertEquals(0.0f, progress.masteryLevel, 0.001f)
+        }
 
     @Test
-    fun `advanceSegment moves to next segment`() = runTest {
-        curriculumEngine.loadCurriculum("curriculum-1")
+    fun `loadTopic loads existing progress`() =
+        runTest {
+            val existingProgress =
+                TopicProgress(
+                    curriculumId = "curriculum-1",
+                    topicId = "topic-1",
+                    completedSegments = listOf("seg-1", "seg-2"),
+                    masteryLevel = 0.75f,
+                    lastAccessedAt = System.currentTimeMillis(),
+                    currentSegmentId = "seg-3",
+                )
 
-        assertEquals(0, curriculumEngine.currentSegmentIndex.value)
+            coEvery {
+                topicProgressRepository.getProgressByTopic("topic-1")
+            } returns existingProgress
 
-        curriculumEngine.advanceSegment()
+            curriculumEngine.loadCurriculum("curriculum-1")
 
-        assertEquals(1, curriculumEngine.currentSegmentIndex.value)
-        coVerify { topicProgressRepository.saveProgress(any()) }
-    }
-
-    @Test
-    fun `advanceSegment stops at stopping point`() = runTest {
-        curriculumEngine.loadCurriculum("curriculum-1")
-
-        // Advance to segment 1
-        curriculumEngine.advanceSegment()
-        assertEquals(1, curriculumEngine.currentSegmentIndex.value)
-
-        // Advance to segment 2 (has stopping point)
-        curriculumEngine.advanceSegment()
-        assertEquals(2, curriculumEngine.currentSegmentIndex.value)
-
-        // Should be at stopping point
-        assertTrue(curriculumEngine.isAtStoppingPoint())
-        assertNotNull(curriculumEngine.getCurrentStoppingPoint())
-        assertEquals(StoppingPointType.QUIZ, curriculumEngine.getCurrentStoppingPoint()?.type)
-    }
+            assertEquals(2, curriculumEngine.currentSegmentIndex.value)
+            assertEquals(0.75f, curriculumEngine.topicProgress.value?.masteryLevel ?: 0f, 0.001f)
+        }
 
     @Test
-    fun `resumeFromStoppingPoint advances past stopping point`() = runTest {
-        curriculumEngine.loadCurriculum("curriculum-1")
+    fun `advanceSegment moves to next segment`() =
+        runTest {
+            curriculumEngine.loadCurriculum("curriculum-1")
 
-        // Jump to stopping point
-        curriculumEngine.goToSegment(2)
-        assertTrue(curriculumEngine.isAtStoppingPoint())
+            assertEquals(0, curriculumEngine.currentSegmentIndex.value)
 
-        // Resume
-        curriculumEngine.resumeFromStoppingPoint()
+            curriculumEngine.advanceSegment()
 
-        // Should have advanced past (to end of topic in this case)
-        assertFalse(curriculumEngine.isAtStoppingPoint())
-    }
+            assertEquals(1, curriculumEngine.currentSegmentIndex.value)
+            coVerify { topicProgressRepository.saveProgress(any()) }
+        }
 
     @Test
-    fun `advanceSegment at end of topic marks topic complete`() = runTest {
-        curriculumEngine.loadCurriculum("curriculum-1")
+    fun `advanceSegment stops at stopping point`() =
+        runTest {
+            curriculumEngine.loadCurriculum("curriculum-1")
 
-        // Jump to last segment
-        val lastIndex = testCurriculum.topics[0].transcriptSegments.size - 1
-        curriculumEngine.goToSegment(lastIndex)
+            // Advance to segment 1
+            curriculumEngine.advanceSegment()
+            assertEquals(1, curriculumEngine.currentSegmentIndex.value)
 
-        // Advance past end
-        curriculumEngine.advanceSegment()
+            // Advance to segment 2 (has stopping point)
+            curriculumEngine.advanceSegment()
+            assertEquals(2, curriculumEngine.currentSegmentIndex.value)
 
-        // Should have mastery level 1.0
-        assertEquals(1.0f, curriculumEngine.topicProgress.value?.masteryLevel, 0.001f)
-
-        // Should auto-load next topic
-        assertEquals("topic-2", curriculumEngine.currentTopic.value?.id)
-    }
-
-    @Test
-    fun `previousSegment moves back`() = runTest {
-        curriculumEngine.loadCurriculum("curriculum-1")
-
-        curriculumEngine.goToSegment(2)
-        assertEquals(2, curriculumEngine.currentSegmentIndex.value)
-
-        curriculumEngine.previousSegment()
-        assertEquals(1, curriculumEngine.currentSegmentIndex.value)
-    }
+            // Should be at stopping point
+            assertTrue(curriculumEngine.isAtStoppingPoint())
+            assertNotNull(curriculumEngine.getCurrentStoppingPoint())
+            assertEquals("quiz", curriculumEngine.getCurrentStoppingPoint()?.type)
+        }
 
     @Test
-    fun `previousSegment at index 0 does nothing`() = runTest {
-        curriculumEngine.loadCurriculum("curriculum-1")
+    fun `resumeFromStoppingPoint advances past stopping point`() =
+        runTest {
+            curriculumEngine.loadCurriculum("curriculum-1")
 
-        assertEquals(0, curriculumEngine.currentSegmentIndex.value)
+            // Jump to stopping point
+            curriculumEngine.goToSegment(2)
+            assertTrue(curriculumEngine.isAtStoppingPoint())
 
-        curriculumEngine.previousSegment()
+            // Resume
+            curriculumEngine.resumeFromStoppingPoint()
 
-        assertEquals(0, curriculumEngine.currentSegmentIndex.value)
-    }
-
-    @Test
-    fun `goToSegment jumps to specific segment`() = runTest {
-        curriculumEngine.loadCurriculum("curriculum-1")
-
-        curriculumEngine.goToSegment(2)
-
-        assertEquals(2, curriculumEngine.currentSegmentIndex.value)
-        coVerify { topicProgressRepository.saveProgress(any()) }
-    }
+            // Should have advanced past (to end of topic in this case)
+            assertFalse(curriculumEngine.isAtStoppingPoint())
+        }
 
     @Test
-    fun `goToSegment with invalid index does nothing`() = runTest {
-        curriculumEngine.loadCurriculum("curriculum-1")
+    fun `advanceSegment at end of topic marks topic complete and loads next`() =
+        runTest {
+            // Capture saved progress to verify mastery was set to 1.0
+            val savedProgresses = mutableListOf<TopicProgress>()
+            coEvery { topicProgressRepository.saveProgress(capture(savedProgresses)) } just Runs
 
-        curriculumEngine.goToSegment(999)
+            curriculumEngine.loadCurriculum("curriculum-1")
 
-        assertEquals(0, curriculumEngine.currentSegmentIndex.value)
-    }
+            // Jump to last segment
+            val lastIndex = testCurriculum.topics[0].transcript.size - 1
+            curriculumEngine.goToSegment(lastIndex)
 
-    @Test
-    fun `markSegmentComplete adds to completed list`() = runTest {
-        curriculumEngine.loadCurriculum("curriculum-1")
+            // Advance past end
+            curriculumEngine.advanceSegment()
 
-        curriculumEngine.markSegmentComplete()
+            // Should auto-load next topic
+            assertEquals("topic-2", curriculumEngine.currentTopic.value?.id)
 
-        val progress = curriculumEngine.topicProgress.value
-        assertTrue(progress!!.completedSegments.contains(0))
-    }
-
-    @Test
-    fun `updateMastery increases mastery level`() = runTest {
-        curriculumEngine.loadCurriculum("curriculum-1")
-
-        val initialMastery = curriculumEngine.topicProgress.value?.masteryLevel ?: 0f
-
-        curriculumEngine.updateMastery(0.25f)
-
-        val newMastery = curriculumEngine.topicProgress.value?.masteryLevel ?: 0f
-        assertTrue(newMastery > initialMastery)
-        assertEquals(0.25f, newMastery, 0.001f)
-    }
+            // Verify that topic-1 was saved with mastery 1.0 before auto-loading topic-2
+            val topic1Progress = savedProgresses.find { it.topicId == "topic-1" && it.masteryLevel == 1.0f }
+            assertNotNull("Topic 1 should have been saved with mastery 1.0", topic1Progress)
+        }
 
     @Test
-    fun `updateMastery decreases mastery level`() = runTest {
-        curriculumEngine.loadCurriculum("curriculum-1")
+    fun `previousSegment moves back`() =
+        runTest {
+            curriculumEngine.loadCurriculum("curriculum-1")
 
-        // Set initial mastery
-        curriculumEngine.updateMastery(0.5f)
+            curriculumEngine.goToSegment(2)
+            assertEquals(2, curriculumEngine.currentSegmentIndex.value)
 
-        // Decrease
-        curriculumEngine.updateMastery(-0.2f)
-
-        val mastery = curriculumEngine.topicProgress.value?.masteryLevel ?: 0f
-        assertEquals(0.3f, mastery, 0.001f)
-    }
+            curriculumEngine.previousSegment()
+            assertEquals(1, curriculumEngine.currentSegmentIndex.value)
+        }
 
     @Test
-    fun `updateMastery clamps to 0-1 range`() = runTest {
-        curriculumEngine.loadCurriculum("curriculum-1")
+    fun `previousSegment at index 0 does nothing`() =
+        runTest {
+            curriculumEngine.loadCurriculum("curriculum-1")
 
-        // Try to go above 1.0
-        curriculumEngine.updateMastery(2.0f)
-        assertEquals(1.0f, curriculumEngine.topicProgress.value?.masteryLevel, 0.001f)
+            assertEquals(0, curriculumEngine.currentSegmentIndex.value)
 
-        // Try to go below 0.0
-        curriculumEngine.updateMastery(-5.0f)
-        assertEquals(0.0f, curriculumEngine.topicProgress.value?.masteryLevel, 0.001f)
-    }
+            curriculumEngine.previousSegment()
 
-    @Test
-    fun `getCurrentContext returns curriculum context`() = runTest {
-        curriculumEngine.loadCurriculum("curriculum-1")
-
-        val context = curriculumEngine.getCurrentContext()
-
-        assertNotNull(context)
-        assertEquals("Newton's Laws", context!!.topicTitle)
-        assertEquals(0, context.segmentIndex)
-        assertEquals(3, context.totalSegments)
-        assertEquals(2, context.learningObjectives.size)
-    }
+            assertEquals(0, curriculumEngine.currentSegmentIndex.value)
+        }
 
     @Test
-    fun `getCurrentSegment returns current segment`() = runTest {
-        curriculumEngine.loadCurriculum("curriculum-1")
+    fun `goToSegment jumps to specific segment`() =
+        runTest {
+            curriculumEngine.loadCurriculum("curriculum-1")
 
-        val segment = curriculumEngine.getCurrentSegment()
+            curriculumEngine.goToSegment(2)
 
-        assertNotNull(segment)
-        assertEquals("seg-1", segment!!.segmentId)
-        assertEquals("Let's learn about Newton's first law.", segment.text)
-    }
-
-    @Test
-    fun `getTopicCompletionPercentage calculates correctly`() = runTest {
-        curriculumEngine.loadCurriculum("curriculum-1")
-
-        // No segments completed
-        assertEquals(0f, curriculumEngine.getTopicCompletionPercentage(), 0.001f)
-
-        // Mark 1 of 3 segments complete
-        curriculumEngine.markSegmentComplete()
-        assertEquals(33.33f, curriculumEngine.getTopicCompletionPercentage(), 1f)
-
-        // Advance and mark another
-        curriculumEngine.advanceSegment()
-        curriculumEngine.markSegmentComplete()
-        assertEquals(66.66f, curriculumEngine.getTopicCompletionPercentage(), 1f)
-    }
+            assertEquals(2, curriculumEngine.currentSegmentIndex.value)
+            coVerify { topicProgressRepository.saveProgress(any()) }
+        }
 
     @Test
-    fun `clear resets all state`() = runTest {
-        curriculumEngine.loadCurriculum("curriculum-1")
+    fun `goToSegment with invalid index does nothing`() =
+        runTest {
+            curriculumEngine.loadCurriculum("curriculum-1")
 
-        curriculumEngine.clear()
+            curriculumEngine.goToSegment(999)
 
-        assertNull(curriculumEngine.currentCurriculum.value)
-        assertNull(curriculumEngine.currentTopic.value)
-        assertEquals(0, curriculumEngine.currentSegmentIndex.value)
-        assertNull(curriculumEngine.topicProgress.value)
-    }
+            assertEquals(0, curriculumEngine.currentSegmentIndex.value)
+        }
 
     @Test
-    fun `curriculum with no topics handles gracefully`() = runTest {
-        val emptyCurriculum = testCurriculum.copy(topics = emptyList())
-        coEvery { curriculumRepository.getCurriculumById(any()) } returns emptyCurriculum
+    fun `markSegmentComplete adds to completed list`() =
+        runTest {
+            curriculumEngine.loadCurriculum("curriculum-1")
 
-        curriculumEngine.loadCurriculum("empty-curriculum")
+            curriculumEngine.markSegmentComplete()
 
-        assertEquals(emptyCurriculum, curriculumEngine.currentCurriculum.value)
-        assertNull(curriculumEngine.currentTopic.value)
-    }
+            val progress = curriculumEngine.topicProgress.value
+            assertTrue(progress!!.completedSegments.contains("seg-1"))
+        }
+
+    @Test
+    fun `updateMastery increases mastery level`() =
+        runTest {
+            curriculumEngine.loadCurriculum("curriculum-1")
+
+            val initialMastery = curriculumEngine.topicProgress.value?.masteryLevel ?: 0f
+
+            curriculumEngine.updateMastery(0.25f)
+
+            val newMastery = curriculumEngine.topicProgress.value?.masteryLevel ?: 0f
+            assertTrue(newMastery > initialMastery)
+            assertEquals(0.25f, newMastery, 0.001f)
+        }
+
+    @Test
+    fun `updateMastery decreases mastery level`() =
+        runTest {
+            curriculumEngine.loadCurriculum("curriculum-1")
+
+            // Set initial mastery
+            curriculumEngine.updateMastery(0.5f)
+
+            // Decrease
+            curriculumEngine.updateMastery(-0.2f)
+
+            val mastery = curriculumEngine.topicProgress.value?.masteryLevel ?: 0f
+            assertEquals(0.3f, mastery, 0.001f)
+        }
+
+    @Test
+    fun `updateMastery clamps to 0-1 range`() =
+        runTest {
+            curriculumEngine.loadCurriculum("curriculum-1")
+
+            // Try to go above 1.0
+            curriculumEngine.updateMastery(2.0f)
+            assertEquals(1.0f, curriculumEngine.topicProgress.value?.masteryLevel ?: 0f, 0.001f)
+
+            // Try to go below 0.0
+            curriculumEngine.updateMastery(-5.0f)
+            assertEquals(0.0f, curriculumEngine.topicProgress.value?.masteryLevel ?: 0f, 0.001f)
+        }
+
+    @Test
+    fun `getCurrentContext returns curriculum context`() =
+        runTest {
+            curriculumEngine.loadCurriculum("curriculum-1")
+
+            val context = curriculumEngine.getCurrentContext()
+
+            assertNotNull(context)
+            assertEquals("Newton's Laws", context!!.topicTitle)
+            assertEquals(0, context.segmentIndex)
+            assertEquals(3, context.totalSegments)
+            assertEquals(2, context.learningObjectives.size)
+        }
+
+    @Test
+    fun `getCurrentSegment returns current segment`() =
+        runTest {
+            curriculumEngine.loadCurriculum("curriculum-1")
+
+            val segment = curriculumEngine.getCurrentSegment()
+
+            assertNotNull(segment)
+            assertEquals("seg-1", segment!!.id)
+            assertEquals("Let's learn about Newton's first law.", segment.content)
+        }
+
+    @Test
+    fun `getTopicCompletionPercentage calculates correctly`() =
+        runTest {
+            curriculumEngine.loadCurriculum("curriculum-1")
+
+            // No segments completed
+            assertEquals(0f, curriculumEngine.getTopicCompletionPercentage(), 0.001f)
+
+            // Mark 1 of 3 segments complete
+            curriculumEngine.markSegmentComplete()
+            assertEquals(33.33f, curriculumEngine.getTopicCompletionPercentage(), 1f)
+
+            // Advance and mark another
+            curriculumEngine.advanceSegment()
+            curriculumEngine.markSegmentComplete()
+            assertEquals(66.66f, curriculumEngine.getTopicCompletionPercentage(), 1f)
+        }
+
+    @Test
+    fun `clear resets all state`() =
+        runTest {
+            curriculumEngine.loadCurriculum("curriculum-1")
+
+            curriculumEngine.clear()
+
+            assertNull(curriculumEngine.currentCurriculum.value)
+            assertNull(curriculumEngine.currentTopic.value)
+            assertEquals(0, curriculumEngine.currentSegmentIndex.value)
+            assertNull(curriculumEngine.topicProgress.value)
+        }
+
+    @Test
+    fun `curriculum with no topics handles gracefully`() =
+        runTest {
+            val emptyCurriculum = testCurriculum.copy(topics = emptyList())
+            coEvery { curriculumRepository.getCurriculumById(any()) } returns emptyCurriculum
+
+            curriculumEngine.loadCurriculum("empty-curriculum")
+
+            assertEquals(emptyCurriculum, curriculumEngine.currentCurriculum.value)
+            assertNull(curriculumEngine.currentTopic.value)
+        }
 }

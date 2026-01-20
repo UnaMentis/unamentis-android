@@ -27,5 +27,5 @@ data class CurriculumEntity(
     val contentJson: String,
     val downloadedAt: Long,
     val lastAccessedAt: Long,
-    val topicCount: Int
+    val topicCount: Int,
 )

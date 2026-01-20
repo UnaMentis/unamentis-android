@@ -36,15 +36,15 @@ class OpenAILLMService(
     private val apiKey: String,
     private val model: String = "gpt-4o-mini",
     private val baseUrl: String = "https://api.openai.com/v1",
-    private val client: OkHttpClient
+    private val client: OkHttpClient,
 ) : LLMService {
-
     override val providerName: String = "OpenAI"
 
-    private val json = Json {
-        ignoreUnknownKeys = true
-        isLenient = true
-    }
+    private val json =
+        Json {
+            ignoreUnknownKeys = true
+            isLenient = true
+        }
 
     /**
      * Stream completion for a conversation.
@@ -60,58 +60,65 @@ class OpenAILLMService(
     override fun streamCompletion(
         messages: List<LLMMessage>,
         temperature: Float,
-        maxTokens: Int
-    ): Flow<LLMToken> = flow {
-        val requestBody = OpenAIRequest(
-            model = model,
-            messages = messages.map { OpenAIMessage(it.role, it.content) },
-            temperature = temperature.toDouble(),
-            maxTokens = maxTokens,
-            stream = true
-        )
+        maxTokens: Int,
+    ): Flow<LLMToken> =
+        flow {
+            val requestBody =
+                OpenAIRequest(
+                    model = model,
+                    messages = messages.map { OpenAIMessage(it.role, it.content) },
+                    temperature = temperature.toDouble(),
+                    maxTokens = maxTokens,
+                    stream = true,
+                )
 
-        val jsonBody = json.encodeToString(requestBody)
-        val request = Request.Builder()
-            .url("$baseUrl/chat/completions")
-            .addHeader("Authorization", "Bearer $apiKey")
-            .addHeader("Content-Type", "application/json")
-            .post(jsonBody.toRequestBody("application/json".toMediaType()))
-            .build()
+            val jsonBody = json.encodeToString(requestBody)
+            val request =
+                Request.Builder()
+                    .url("$baseUrl/chat/completions")
+                    .addHeader("Authorization", "Bearer $apiKey")
+                    .addHeader("Content-Type", "application/json")
+                    .post(jsonBody.toRequestBody("application/json".toMediaType()))
+                    .build()
 
-        val startTime = System.currentTimeMillis()
-        var isFirstToken = true
+            val startTime = System.currentTimeMillis()
+            var isFirstToken = true
 
-        client.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) {
-                val error = response.body?.string() ?: "Unknown error"
-                throw Exception("OpenAI API error: ${response.code} - $error")
-            }
-
-            val reader = response.body?.byteStream()?.bufferedReader()
-                ?: throw Exception("No response body")
-
-            reader.use { processSSEStream(it, isFirstToken, startTime) { token ->
-                emit(token)
-                if (token.content.isNotEmpty() && isFirstToken) {
-                    val ttft = System.currentTimeMillis() - startTime
-                    android.util.Log.i("OpenAI", "TTFT: ${ttft}ms")
-                    isFirstToken = false
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    val error = response.body?.string() ?: "Unknown error"
+                    throw Exception("OpenAI API error: ${response.code} - $error")
                 }
-            } }
-        }
-    }.flowOn(Dispatchers.IO)
+
+                val reader =
+                    response.body?.byteStream()?.bufferedReader()
+                        ?: throw Exception("No response body")
+
+                reader.use {
+                    processSSEStream(it, isFirstToken, startTime) { token ->
+                        emit(token)
+                        if (token.content.isNotEmpty() && isFirstToken) {
+                            val ttft = System.currentTimeMillis() - startTime
+                            android.util.Log.i("OpenAI", "TTFT: ${ttft}ms")
+                            isFirstToken = false
+                        }
+                    }
+                }
+            }
+        }.flowOn(Dispatchers.IO)
 
     /**
      * Process Server-Sent Events stream.
      */
     private suspend fun processSSEStream(
         reader: BufferedReader,
-        isFirstToken: Boolean,
-        startTime: Long,
-        emit: suspend (LLMToken) -> Unit
+        _isFirstToken: Boolean,
+        _startTime: Long,
+        emit: suspend (LLMToken) -> Unit,
     ) {
-        var line: String?
-        while (reader.readLine().also { line = it } != null) {
+        var line: String? = null
+        var streamComplete = false
+        while (!streamComplete && reader.readLine().also { line = it } != null) {
             val currentLine = line ?: continue
 
             if (currentLine.startsWith("data: ")) {
@@ -120,27 +127,42 @@ class OpenAILLMService(
                 // Check for stream end
                 if (data == "[DONE]") {
                     emit(LLMToken(content = "", isDone = true))
-                    break
-                }
-
-                try {
-                    val chunk = json.decodeFromString<OpenAIStreamChunk>(data)
-                    val content = chunk.choices.firstOrNull()?.delta?.content ?: ""
-
-                    if (content.isNotEmpty()) {
-                        emit(LLMToken(content = content, isDone = false))
-                    }
-
-                    // Check if this is the last chunk
-                    val finishReason = chunk.choices.firstOrNull()?.finishReason
-                    if (finishReason != null) {
-                        emit(LLMToken(content = "", isDone = true))
-                        break
-                    }
-                } catch (e: Exception) {
-                    android.util.Log.w("OpenAI", "Failed to parse chunk: $data", e)
+                    streamComplete = true
+                } else {
+                    streamComplete = processSSEChunk(data, emit)
                 }
             }
+        }
+    }
+
+    /**
+     * Process a single SSE chunk.
+     *
+     * @return true if stream is complete, false otherwise
+     */
+    private suspend fun processSSEChunk(
+        data: String,
+        emit: suspend (LLMToken) -> Unit,
+    ): Boolean {
+        return try {
+            val chunk = json.decodeFromString<OpenAIStreamChunk>(data)
+            val content = chunk.choices.firstOrNull()?.delta?.content ?: ""
+
+            if (content.isNotEmpty()) {
+                emit(LLMToken(content = content, isDone = false))
+            }
+
+            // Check if this is the last chunk
+            val finishReason = chunk.choices.firstOrNull()?.finishReason
+            if (finishReason != null) {
+                emit(LLMToken(content = "", isDone = true))
+                true
+            } else {
+                false
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("OpenAI", "Failed to parse chunk: $data", e)
+            false
         }
     }
 
@@ -159,29 +181,29 @@ class OpenAILLMService(
         val messages: List<OpenAIMessage>,
         val temperature: Double = 0.7,
         val maxTokens: Int? = null,
-        val stream: Boolean = false
+        val stream: Boolean = false,
     )
 
     @Serializable
     private data class OpenAIMessage(
         val role: String,
-        val content: String
+        val content: String,
     )
 
     @Serializable
     private data class OpenAIStreamChunk(
-        val choices: List<Choice>
+        val choices: List<Choice>,
     )
 
     @Serializable
     private data class Choice(
         val delta: Delta,
-        val finishReason: String? = null
+        val finishReason: String? = null,
     )
 
     @Serializable
     private data class Delta(
         val content: String? = null,
-        val role: String? = null
+        val role: String? = null,
     )
 }

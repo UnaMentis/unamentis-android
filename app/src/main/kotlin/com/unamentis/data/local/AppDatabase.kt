@@ -5,11 +5,15 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.unamentis.data.local.dao.CurriculumDao
+import com.unamentis.data.local.dao.ModuleDao
 import com.unamentis.data.local.dao.SessionDao
 import com.unamentis.data.local.dao.TodoDao
 import com.unamentis.data.local.dao.TopicProgressDao
 import com.unamentis.data.local.entity.CurriculumEntity
+import com.unamentis.data.local.entity.DownloadedModuleEntity
 import com.unamentis.data.local.entity.SessionEntity
 import com.unamentis.data.local.entity.TopicProgressEntity
 import com.unamentis.data.local.entity.TranscriptEntryEntity
@@ -32,22 +36,76 @@ import com.unamentis.data.model.Todo
         SessionEntity::class,
         TranscriptEntryEntity::class,
         TopicProgressEntity::class,
-        Todo::class
+        Todo::class,
+        DownloadedModuleEntity::class,
     ],
-    version = 2,
-    exportSchema = false
+    version = 5,
+    exportSchema = false,
 )
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
-
     abstract fun curriculumDao(): CurriculumDao
+
     abstract fun sessionDao(): SessionDao
+
     abstract fun topicProgressDao(): TopicProgressDao
+
     abstract fun todoDao(): TodoDao
+
+    abstract fun moduleDao(): ModuleDao
 
     companion object {
         @Volatile
         private var INSTANCE: AppDatabase? = null
+
+        /**
+         * Migration from version 2 to 3: Add isStarred column to sessions table.
+         */
+        private val MIGRATION_2_3 =
+            object : Migration(2, 3) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL(
+                        "ALTER TABLE sessions ADD COLUMN isStarred INTEGER NOT NULL DEFAULT 0",
+                    )
+                }
+            }
+
+        /**
+         * Migration from version 3 to 4: Add AI suggestion and due date columns to todos table.
+         */
+        private val MIGRATION_3_4 =
+            object : Migration(3, 4) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("ALTER TABLE todos ADD COLUMN dueDate INTEGER DEFAULT NULL")
+                    db.execSQL("ALTER TABLE todos ADD COLUMN isAISuggested INTEGER NOT NULL DEFAULT 0")
+                    db.execSQL("ALTER TABLE todos ADD COLUMN suggestionReason TEXT DEFAULT NULL")
+                    db.execSQL("ALTER TABLE todos ADD COLUMN suggestionConfidence REAL DEFAULT NULL")
+                }
+            }
+
+        /**
+         * Migration from version 4 to 5: Add downloaded_modules table.
+         */
+        private val MIGRATION_4_5 =
+            object : Migration(4, 5) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL(
+                        """
+                        CREATE TABLE IF NOT EXISTS downloaded_modules (
+                            id TEXT PRIMARY KEY NOT NULL,
+                            name TEXT NOT NULL,
+                            version TEXT NOT NULL,
+                            description TEXT NOT NULL,
+                            downloadedAt INTEGER NOT NULL,
+                            lastAccessedAt INTEGER NOT NULL,
+                            contentJson TEXT NOT NULL,
+                            configJson TEXT,
+                            sizeBytes INTEGER NOT NULL
+                        )
+                        """.trimIndent(),
+                    )
+                }
+            }
 
         /**
          * Get the singleton database instance.
@@ -57,13 +115,15 @@ abstract class AppDatabase : RoomDatabase() {
          */
         fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
-                val instance = Room.databaseBuilder(
-                    context.applicationContext,
-                    AppDatabase::class.java,
-                    "unamentis.db"
-                )
-                    .fallbackToDestructiveMigration()
-                    .build()
+                val instance =
+                    Room.databaseBuilder(
+                        context.applicationContext,
+                        AppDatabase::class.java,
+                        "unamentis.db",
+                    )
+                        .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                        .fallbackToDestructiveMigration()
+                        .build()
                 INSTANCE = instance
                 instance
             }
@@ -78,7 +138,7 @@ abstract class AppDatabase : RoomDatabase() {
         fun createInMemory(context: Context): AppDatabase {
             return Room.inMemoryDatabaseBuilder(
                 context.applicationContext,
-                AppDatabase::class.java
+                AppDatabase::class.java,
             )
                 .allowMainThreadQueries() // Only for tests
                 .build()

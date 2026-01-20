@@ -1,9 +1,17 @@
 package com.unamentis
 
-import androidx.compose.ui.test.*
+import androidx.compose.ui.test.assertExists
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.unamentis.ui.MainActivity
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import org.junit.Before
@@ -20,7 +28,6 @@ import org.junit.runner.RunWith
 @HiltAndroidTest
 @RunWith(AndroidJUnit4::class)
 class NavigationFlowTest {
-
     @get:Rule(order = 0)
     val hiltRule = HiltAndroidRule(this)
 
@@ -42,13 +49,14 @@ class NavigationFlowTest {
     @Test
     fun navigation_switchToAllTabs_succeeds() {
         // Navigate to each tab in sequence
-        val tabs = listOf(
-            "Curriculum",
-            "Settings",
-            "Analytics",
-            "History",
-            "To-Do"
-        )
+        val tabs =
+            listOf(
+                "Curriculum",
+                "Settings",
+                "Analytics",
+                "History",
+                "To-Do",
+            )
 
         tabs.forEach { tabName ->
             composeTestRule.onNodeWithText(tabName).performClick()
@@ -195,14 +203,15 @@ class NavigationFlowTest {
 
     @Test
     fun navigation_allTabsAccessible_fromBottomNav() {
-        val tabs = listOf(
-            "Session",
-            "Curriculum",
-            "Settings",
-            "Analytics",
-            "History",
-            "To-Do"
-        )
+        val tabs =
+            listOf(
+                "Session",
+                "Curriculum",
+                "Settings",
+                "Analytics",
+                "History",
+                "To-Do",
+            )
 
         // Verify all tabs are present in bottom navigation
         tabs.forEach { tabName ->

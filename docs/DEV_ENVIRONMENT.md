@@ -117,32 +117,24 @@ emulator -list-avds
 
 MCP servers enable Claude Code to perform autonomous build, test, and UI automation.
 
-### 4.1 mobile-mcp
+> **Note:** For comprehensive MCP documentation, see [MCP_SETUP.md](MCP_SETUP.md).
 
-Runs via npx (no installation needed):
+### 4.1 Quick Setup
+
 ```bash
-# Verify Node.js is installed
+# 1. Verify prerequisites
 node --version  # Should be 20+
-```
-
-### 4.2 gradle-mcp-server
-
-Download and install:
-```bash
-# Create directory
-mkdir -p ~/mcp-servers/gradle-mcp-server
-
-# Download JAR
-curl -L -o ~/mcp-servers/gradle-mcp-server/gradle-mcp-server-all.jar \
-  https://github.com/IlyaGulya/gradle-mcp-server/releases/latest/download/gradle-mcp-server-all.jar
-
-# Verify Java is installed
 java --version  # Should be 17+
+
+# 2. Install gradle-mcp-server
+mkdir -p ~/mcp-servers/gradle-mcp-server
+curl -fSL -o ~/mcp-servers/gradle-mcp-server/gradle-mcp-server-all.jar \
+  "https://github.com/IlyaGulya/gradle-mcp-server/releases/latest/download/gradle-mcp-server-all.jar"
 ```
 
-### 4.3 Configure MCP
+### 4.2 Configuration
 
-Create `.mcp.json` in project root:
+The `.mcp.json` file in the project root configures MCP servers:
 
 ```json
 {
@@ -155,13 +147,18 @@ Create `.mcp.json` in project root:
     "gradle-mcp-server": {
       "type": "stdio",
       "command": "java",
-      "args": ["-jar", "~/mcp-servers/gradle-mcp-server/gradle-mcp-server-all.jar"]
+      "args": [
+        "-jar",
+        "/Users/<username>/mcp-servers/gradle-mcp-server/gradle-mcp-server-all.jar"
+      ]
     }
   }
 }
 ```
 
-### 4.4 Verify MCP Connection
+> **Important:** Replace `/Users/<username>` with your actual home directory path. The `~` shorthand may not expand correctly in all contexts.
+
+### 4.3 Verify MCP Connection
 
 ```bash
 # In Claude Code
@@ -170,6 +167,8 @@ claude mcp list
 # mobile-mcp: Connected
 # gradle-mcp-server: Connected
 ```
+
+For detailed tool documentation and troubleshooting, see [MCP_SETUP.md](MCP_SETUP.md).
 
 ## 5. Log Server Setup
 

@@ -12,7 +12,6 @@ import kotlin.math.sin
  * peak detection, normalization, and format conversion.
  */
 class AudioUtilsTest {
-
     @Test
     fun `calculateRMS returns zero for empty array`() {
         val rms = AudioUtils.calculateRMS(floatArrayOf())
@@ -32,9 +31,10 @@ class AudioUtilsTest {
     @Test
     fun `calculateRMS returns correct value for sine wave`() {
         // Generate one period of sine wave at 0.707 peak amplitude
-        val samples = FloatArray(1000) { i ->
-            (0.707 * sin(2 * Math.PI * i / 1000.0)).toFloat()
-        }
+        val samples =
+            FloatArray(1000) { i ->
+                (0.707 * sin(2 * Math.PI * i / 1000.0)).toFloat()
+            }
         val rms = AudioUtils.calculateRMS(samples)
 
         // RMS of sine wave is peak / sqrt(2) ≈ 0.707 / 1.414 ≈ 0.5
@@ -125,11 +125,11 @@ class AudioUtilsTest {
         val floatSamples = floatArrayOf(0.0f, 0.5f, -0.5f, 1.0f, -1.0f)
         val pcm = AudioUtils.floatToPcm(floatSamples)
 
-        assertEquals(0, pcm[0])
-        assertEquals(16383, pcm[1])
-        assertEquals(-16383, pcm[2])
-        assertEquals(32767, pcm[3])
-        assertEquals(-32767, pcm[4])
+        assertEquals(0.toShort(), pcm[0])
+        assertEquals(16383.toShort(), pcm[1])
+        assertEquals((-16383).toShort(), pcm[2])
+        assertEquals(32767.toShort(), pcm[3])
+        assertEquals((-32767).toShort(), pcm[4])
     }
 
     @Test
@@ -138,8 +138,8 @@ class AudioUtilsTest {
         val pcm = AudioUtils.floatToPcm(floatSamples)
 
         // Should clamp to valid range
-        assertEquals(32767, pcm[0])
-        assertEquals(-32767, pcm[1])
+        assertEquals(32767.toShort(), pcm[0])
+        assertEquals((-32767).toShort(), pcm[1])
     }
 
     @Test

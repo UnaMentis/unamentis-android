@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.asStateFlow
 data class AudioConfig(
     val sampleRate: Int = 16000,
     val channelCount: Int = 1,
-    val framesPerBurst: Int = 192
+    val framesPerBurst: Int = 192,
 )
 
 /**
@@ -25,7 +25,7 @@ data class AudioConfig(
  */
 data class AudioLevel(
     val rms: Float = 0f,
-    val peak: Float = 0f
+    val peak: Float = 0f,
 )
 
 /**
@@ -50,7 +50,6 @@ data class AudioLevel(
  * ```
  */
 class AudioEngine {
-
     private var nativeEnginePtr: Long = 0
     private var captureCallback: ((FloatArray) -> Unit)? = null
 
@@ -91,12 +90,13 @@ class AudioEngine {
             return false
         }
 
-        val success = nativeInitialize(
-            nativeEnginePtr,
-            config.sampleRate,
-            config.channelCount,
-            config.framesPerBurst
-        )
+        val success =
+            nativeInitialize(
+                nativeEnginePtr,
+                config.sampleRate,
+                config.channelCount,
+                config.framesPerBurst,
+            )
 
         if (!success) {
             nativeDestroy(nativeEnginePtr)
@@ -205,10 +205,13 @@ class AudioEngine {
 
     /**
      * Called from native code when audio is captured.
+     * This method is invoked from the native audio thread via JNI.
      * Do not call directly.
+     *
+     * @param audioData Captured audio samples (float, -1.0 to 1.0)
      */
     @Suppress("unused")
-    private fun onAudioCaptured(audioData: FloatArray) {
+    fun onNativeAudioData(audioData: FloatArray) {
         updateAudioLevel(audioData)
         captureCallback?.invoke(audioData)
     }
@@ -228,15 +231,24 @@ class AudioEngine {
 
     // Native method declarations
     private external fun nativeCreate(): Long
+
     private external fun nativeInitialize(
         enginePtr: Long,
         sampleRate: Int,
         channelCount: Int,
-        framesPerBurst: Int
+        framesPerBurst: Int,
     ): Boolean
+
     private external fun nativeStartCapture(enginePtr: Long): Boolean
+
     private external fun nativeStopCapture(enginePtr: Long)
-    private external fun nativeQueuePlayback(enginePtr: Long, audioData: FloatArray): Boolean
+
+    private external fun nativeQueuePlayback(
+        enginePtr: Long,
+        audioData: FloatArray,
+    ): Boolean
+
     private external fun nativeStopPlayback(enginePtr: Long)
+
     private external fun nativeDestroy(enginePtr: Long)
 }

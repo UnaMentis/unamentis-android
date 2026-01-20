@@ -36,15 +36,15 @@ class AnthropicLLMService(
     private val apiKey: String,
     private val model: String = "claude-3-5-haiku-20241022",
     private val anthropicVersion: String = "2023-06-01",
-    private val client: OkHttpClient
+    private val client: OkHttpClient,
 ) : LLMService {
-
     override val providerName: String = "Anthropic"
 
-    private val json = Json {
-        ignoreUnknownKeys = true
-        isLenient = true
-    }
+    private val json =
+        Json {
+            ignoreUnknownKeys = true
+            isLenient = true
+        }
 
     /**
      * Stream completion for a conversation.
@@ -61,92 +61,124 @@ class AnthropicLLMService(
     override fun streamCompletion(
         messages: List<LLMMessage>,
         temperature: Float,
-        maxTokens: Int
-    ): Flow<LLMToken> = flow {
-        // Separate system messages
-        val systemMessage = messages.firstOrNull { it.role == "system" }?.content
-        val conversationMessages = messages.filter { it.role != "system" }
+        maxTokens: Int,
+    ): Flow<LLMToken> =
+        flow {
+            // Separate system messages
+            val systemMessage = messages.firstOrNull { it.role == "system" }?.content
+            val conversationMessages = messages.filter { it.role != "system" }
 
-        val requestBody = AnthropicRequest(
-            model = model,
-            messages = conversationMessages.map { AnthropicMessage(it.role, it.content) },
-            maxTokens = maxTokens,
-            temperature = temperature.toDouble(),
-            system = systemMessage,
-            stream = true
-        )
+            val requestBody =
+                AnthropicRequest(
+                    model = model,
+                    messages = conversationMessages.map { AnthropicMessage(it.role, it.content) },
+                    maxTokens = maxTokens,
+                    temperature = temperature.toDouble(),
+                    system = systemMessage,
+                    stream = true,
+                )
 
-        val jsonBody = json.encodeToString(requestBody)
-        val request = Request.Builder()
-            .url("https://api.anthropic.com/v1/messages")
-            .addHeader("x-api-key", apiKey)
-            .addHeader("anthropic-version", anthropicVersion)
-            .addHeader("Content-Type", "application/json")
-            .post(jsonBody.toRequestBody("application/json".toMediaType()))
-            .build()
+            val jsonBody = json.encodeToString(requestBody)
+            val request =
+                Request.Builder()
+                    .url("https://api.anthropic.com/v1/messages")
+                    .addHeader("x-api-key", apiKey)
+                    .addHeader("anthropic-version", anthropicVersion)
+                    .addHeader("Content-Type", "application/json")
+                    .post(jsonBody.toRequestBody("application/json".toMediaType()))
+                    .build()
 
-        val startTime = System.currentTimeMillis()
-        var isFirstToken = true
+            val startTime = System.currentTimeMillis()
+            var isFirstToken = true
 
-        client.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) {
-                val error = response.body?.string() ?: "Unknown error"
-                throw Exception("Anthropic API error: ${response.code} - $error")
-            }
-
-            val reader = response.body?.byteStream()?.bufferedReader()
-                ?: throw Exception("No response body")
-
-            reader.use { processSSEStream(it, isFirstToken, startTime) { token ->
-                emit(token)
-                if (token.content.isNotEmpty() && isFirstToken) {
-                    val ttft = System.currentTimeMillis() - startTime
-                    android.util.Log.i("Anthropic", "TTFT: ${ttft}ms")
-                    isFirstToken = false
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    val error = response.body?.string() ?: "Unknown error"
+                    throw Exception("Anthropic API error: ${response.code} - $error")
                 }
-            } }
-        }
-    }.flowOn(Dispatchers.IO)
+
+                val reader =
+                    response.body?.byteStream()?.bufferedReader()
+                        ?: throw Exception("No response body")
+
+                reader.use {
+                    processSSEStream(it, isFirstToken, startTime) { token ->
+                        emit(token)
+                        if (token.content.isNotEmpty() && isFirstToken) {
+                            val ttft = System.currentTimeMillis() - startTime
+                            android.util.Log.i("Anthropic", "TTFT: ${ttft}ms")
+                            isFirstToken = false
+                        }
+                    }
+                }
+            }
+        }.flowOn(Dispatchers.IO)
 
     /**
      * Process Server-Sent Events stream.
      */
     private suspend fun processSSEStream(
         reader: BufferedReader,
-        isFirstToken: Boolean,
-        startTime: Long,
-        emit: suspend (LLMToken) -> Unit
+        _isFirstToken: Boolean,
+        _startTime: Long,
+        emit: suspend (LLMToken) -> Unit,
     ) {
-        var line: String?
-        while (reader.readLine().also { line = it } != null) {
+        var line: String? = null
+        var streamComplete = false
+        while (!streamComplete && reader.readLine().also { line = it } != null) {
             val currentLine = line ?: continue
 
             if (currentLine.startsWith("data: ")) {
                 val data = currentLine.substring(6)
-
-                try {
-                    val event = json.decodeFromString<AnthropicStreamEvent>(data)
-
-                    when (event.type) {
-                        "content_block_delta" -> {
-                            val text = event.delta?.text ?: ""
-                            if (text.isNotEmpty()) {
-                                emit(LLMToken(content = text, isDone = false))
-                            }
-                        }
-                        "message_stop" -> {
-                            emit(LLMToken(content = "", isDone = true))
-                            return
-                        }
-                        "error" -> {
-                            val errorMsg = event.error?.message ?: "Unknown error"
-                            throw Exception("Anthropic error: $errorMsg")
-                        }
-                    }
-                } catch (e: Exception) {
-                    android.util.Log.w("Anthropic", "Failed to parse chunk: $data", e)
-                }
+                streamComplete = processSSEEvent(data, emit)
             }
+        }
+    }
+
+    /**
+     * Process a single SSE event.
+     *
+     * @return true if stream is complete, false otherwise
+     */
+    private suspend fun processSSEEvent(
+        data: String,
+        emit: suspend (LLMToken) -> Unit,
+    ): Boolean {
+        return try {
+            val event = json.decodeFromString<AnthropicStreamEvent>(data)
+            handleAnthropicEvent(event, emit)
+        } catch (e: Exception) {
+            android.util.Log.w("Anthropic", "Failed to parse chunk: $data", e)
+            false
+        }
+    }
+
+    /**
+     * Handle a parsed Anthropic stream event.
+     *
+     * @return true if stream is complete, false otherwise
+     */
+    private suspend fun handleAnthropicEvent(
+        event: AnthropicStreamEvent,
+        emit: suspend (LLMToken) -> Unit,
+    ): Boolean {
+        return when (event.type) {
+            "content_block_delta" -> {
+                val text = event.delta?.text ?: ""
+                if (text.isNotEmpty()) {
+                    emit(LLMToken(content = text, isDone = false))
+                }
+                false
+            }
+            "message_stop" -> {
+                emit(LLMToken(content = "", isDone = true))
+                true
+            }
+            "error" -> {
+                val errorMsg = event.error?.message ?: "Unknown error"
+                throw Exception("Anthropic error: $errorMsg")
+            }
+            else -> false
         }
     }
 
@@ -166,31 +198,31 @@ class AnthropicLLMService(
         val maxTokens: Int,
         val temperature: Double = 0.7,
         val system: String? = null,
-        val stream: Boolean = false
+        val stream: Boolean = false,
     )
 
     @Serializable
     private data class AnthropicMessage(
         val role: String,
-        val content: String
+        val content: String,
     )
 
     @Serializable
     private data class AnthropicStreamEvent(
         val type: String,
         val delta: ContentDelta? = null,
-        val error: ErrorInfo? = null
+        val error: ErrorInfo? = null,
     )
 
     @Serializable
     private data class ContentDelta(
         val type: String? = null,
-        val text: String? = null
+        val text: String? = null,
     )
 
     @Serializable
     private data class ErrorInfo(
         val type: String,
-        val message: String
+        val message: String,
     )
 }

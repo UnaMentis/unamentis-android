@@ -12,6 +12,7 @@ plugins {
 android {
     namespace = "com.unamentis"
     compileSdk = libs.versions.androidCompileSdk.get().toInt()
+    ndkVersion = "26.1.10909125"
 
     defaultConfig {
         applicationId = "com.unamentis"
@@ -20,7 +21,7 @@ android {
         versionCode = 1
         versionName = "1.0.0"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = "com.unamentis.HiltTestRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
@@ -32,6 +33,17 @@ android {
 
         // Enable NNAPI for TensorFlow Lite acceleration
         buildConfigField("boolean", "ENABLE_NNAPI", "true")
+
+        // CMake configuration for native code
+        externalNativeBuild {
+            cmake {
+                cppFlags += "-std=c++17"
+                arguments +=
+                    listOf(
+                        "-DANDROID_STL=c++_shared",
+                    )
+            }
+        }
     }
 
     buildTypes {
@@ -40,7 +52,7 @@ android {
             isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
         }
         debug {
@@ -57,16 +69,18 @@ android {
 
     kotlinOptions {
         jvmTarget = "17"
-        freeCompilerArgs += listOf(
-            "-opt-in=kotlin.RequiresOptIn",
-            "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
-            "-opt-in=kotlinx.coroutines.FlowPreview"
-        )
+        freeCompilerArgs +=
+            listOf(
+                "-opt-in=kotlin.RequiresOptIn",
+                "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
+                "-opt-in=kotlinx.coroutines.FlowPreview",
+            )
     }
 
     buildFeatures {
         compose = true
         buildConfig = true
+        prefab = true // Enable prefab for Oboe
     }
 
     packaging {
@@ -106,6 +120,7 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.compose.material3.adaptive)
     implementation(libs.androidx.navigation.compose)
     debugImplementation(libs.androidx.compose.ui.tooling)
@@ -115,6 +130,8 @@ dependencies {
     implementation(libs.hilt.android)
     ksp(libs.hilt.android.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
+    implementation(libs.androidx.hilt.work)
+    ksp(libs.androidx.hilt.compiler)
 
     // Room Database
     implementation(libs.androidx.room.runtime)
@@ -131,11 +148,27 @@ dependencies {
     implementation(libs.tensorflow.lite)
     implementation(libs.tensorflow.lite.gpu)
 
+    // ONNX Runtime (Silero VAD)
+    implementation(libs.onnxruntime.android)
+
+    // Oboe (Low-latency audio)
+    implementation(libs.oboe)
+
     // DataStore (Preferences)
     implementation(libs.androidx.datastore.preferences)
 
     // Security (Encrypted Preferences)
     implementation(libs.androidx.security.crypto)
+
+    // Image Loading (Coil)
+    implementation(libs.coil.compose)
+
+    // Work Manager (Background tasks)
+    implementation(libs.androidx.work.runtime.ktx)
+
+    // Glance (Compose Widgets)
+    implementation(libs.androidx.glance.appwidget)
+    implementation(libs.androidx.glance.material3)
 
     // Unit Testing
     testImplementation(libs.junit)
@@ -143,6 +176,9 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.turbine)
     testImplementation(libs.androidx.room.testing)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.okhttp.mockwebserver)
+    testImplementation(libs.androidx.test.core)
 
     // Instrumentation Testing
     androidTestImplementation(libs.androidx.junit)
@@ -150,6 +186,10 @@ dependencies {
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.mockk.android)
+    androidTestImplementation(libs.hilt.android.testing)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.kotlinx.coroutines.test)
+    kspAndroidTest(libs.hilt.android.compiler)
 }
 
 // KtLint Configuration

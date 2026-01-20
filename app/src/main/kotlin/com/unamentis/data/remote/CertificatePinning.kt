@@ -39,7 +39,6 @@ import okhttp3.CertificatePinner
  * @see <a href="https://square.github.io/okhttp/features/https/">OkHttp Certificate Pinning</a>
  */
 object CertificatePinning {
-
     /**
      * OkHttp CertificatePinner configured for all provider APIs.
      *
@@ -54,81 +53,87 @@ object CertificatePinning {
             // Deepgram (STT + TTS)
             // Domain: api.deepgram.com
             // Extracted: 2026-01-06
+            // Current certificate
             .add(
                 "api.deepgram.com",
-                "sha256/X8+ZdX9JC7PpuC2PcAcu4YK8uBomj/p1g9GWgQUydYw=" // Current certificate
+                "sha256/X8+ZdX9JC7PpuC2PcAcu4YK8uBomj/p1g9GWgQUydYw=",
             )
+            // Backup (same for now)
+            // TODO: Add actual backup pin from provider docs or cert transparency logs
             .add(
                 "api.deepgram.com",
-                "sha256/X8+ZdX9JC7PpuC2PcAcu4YK8uBomj/p1g9GWgQUydYw=" // Backup (same for now)
-                // TODO: Add actual backup pin from provider docs or cert transparency logs
+                "sha256/X8+ZdX9JC7PpuC2PcAcu4YK8uBomj/p1g9GWgQUydYw=",
             )
-
             // AssemblyAI (STT)
             // Domain: api.assemblyai.com
             // Extracted: 2026-01-06
+            // Current certificate
             .add(
                 "api.assemblyai.com",
-                "sha256/CZeSZU67gkkm38VUyW3BQgsKeDDMhsspi6qsXBGCRRM=" // Current certificate
+                "sha256/CZeSZU67gkkm38VUyW3BQgsKeDDMhsspi6qsXBGCRRM=",
             )
+            // Backup (same for now)
+            // TODO: Add actual backup pin from provider docs or cert transparency logs
             .add(
                 "api.assemblyai.com",
-                "sha256/CZeSZU67gkkm38VUyW3BQgsKeDDMhsspi6qsXBGCRRM=" // Backup (same for now)
-                // TODO: Add actual backup pin from provider docs or cert transparency logs
+                "sha256/CZeSZU67gkkm38VUyW3BQgsKeDDMhsspi6qsXBGCRRM=",
             )
-
             // Groq (STT)
             // Domain: api.groq.com
             // Extracted: 2026-01-06
+            // Current certificate
             .add(
                 "api.groq.com",
-                "sha256/fJTdkUyvkoImr+NME8c4ojlZqTPW6wxzoVA8kvjN0uQ=" // Current certificate
+                "sha256/fJTdkUyvkoImr+NME8c4ojlZqTPW6wxzoVA8kvjN0uQ=",
             )
+            // Backup (same for now)
+            // TODO: Add actual backup pin from provider docs or cert transparency logs
             .add(
                 "api.groq.com",
-                "sha256/fJTdkUyvkoImr+NME8c4ojlZqTPW6wxzoVA8kvjN0uQ=" // Backup (same for now)
-                // TODO: Add actual backup pin from provider docs or cert transparency logs
+                "sha256/fJTdkUyvkoImr+NME8c4ojlZqTPW6wxzoVA8kvjN0uQ=",
             )
-
             // ElevenLabs (TTS)
             // Domain: api.elevenlabs.io
             // Extracted: 2026-01-06
+            // Current certificate
             .add(
                 "api.elevenlabs.io",
-                "sha256/v9AlryIFBgmtoDnRR0rJutbV+oIdwHMnrFui7Z1R4ak=" // Current certificate
+                "sha256/v9AlryIFBgmtoDnRR0rJutbV+oIdwHMnrFui7Z1R4ak=",
             )
+            // Backup (same for now)
+            // TODO: Add actual backup pin from provider docs or cert transparency logs
             .add(
                 "api.elevenlabs.io",
-                "sha256/v9AlryIFBgmtoDnRR0rJutbV+oIdwHMnrFui7Z1R4ak=" // Backup (same for now)
-                // TODO: Add actual backup pin from provider docs or cert transparency logs
+                "sha256/v9AlryIFBgmtoDnRR0rJutbV+oIdwHMnrFui7Z1R4ak=",
             )
-
             // OpenAI (LLM)
             // Domain: api.openai.com
             // Extracted: 2026-01-06
+            // Current certificate
             .add(
                 "api.openai.com",
-                "sha256/5KjN64rxTiC13wacHTGCLnBdD2k6jwPdd7duayEkNiU=" // Current certificate
+                "sha256/5KjN64rxTiC13wacHTGCLnBdD2k6jwPdd7duayEkNiU=",
             )
+            // Backup (same for now)
+            // TODO: Add actual backup pin from provider docs or cert transparency logs
             .add(
                 "api.openai.com",
-                "sha256/5KjN64rxTiC13wacHTGCLnBdD2k6jwPdd7duayEkNiU=" // Backup (same for now)
-                // TODO: Add actual backup pin from provider docs or cert transparency logs
+                "sha256/5KjN64rxTiC13wacHTGCLnBdD2k6jwPdd7duayEkNiU=",
             )
-
             // Anthropic (LLM)
             // Domain: api.anthropic.com
             // Extracted: 2026-01-06
+            // Current certificate
             .add(
                 "api.anthropic.com",
-                "sha256/dlJe145OFRVi3s8R63aTImXFgAv9B3lNJJcd0M3JjJk=" // Current certificate
+                "sha256/dlJe145OFRVi3s8R63aTImXFgAv9B3lNJJcd0M3JjJk=",
             )
+            // Backup (same for now)
+            // TODO: Add actual backup pin from provider docs or cert transparency logs
             .add(
                 "api.anthropic.com",
-                "sha256/dlJe145OFRVi3s8R63aTImXFgAv9B3lNJJcd0M3JjJk=" // Backup (same for now)
-                // TODO: Add actual backup pin from provider docs or cert transparency logs
+                "sha256/dlJe145OFRVi3s8R63aTImXFgAv9B3lNJJcd0M3JjJk=",
             )
-
             .build()
     }
 
@@ -159,7 +164,7 @@ object CertificatePinning {
             "api.groq.com",
             "api.elevenlabs.io",
             "api.openai.com",
-            "api.anthropic.com"
+            "api.anthropic.com",
         )
     }
 

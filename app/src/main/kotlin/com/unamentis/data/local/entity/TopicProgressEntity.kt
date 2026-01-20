@@ -23,5 +23,5 @@ data class TopicProgressEntity(
     val masteryLevel: Float = 0.0f,
     val lastAccessedAt: Long,
     val completedSegments: List<String> = emptyList(),
-    val currentSegmentId: String? = null
+    val currentSegmentId: String? = null,
 )

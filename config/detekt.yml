@@ -25,27 +25,163 @@ complexity:
   LongMethod:
     active: true
     threshold: 60
+    excludes: ['**/ui/**', '**/widget/**']  # Compose/widget functions are naturally longer
   LongParameterList:
     active: true
     functionThreshold: 6
     constructorThreshold: 7
-  ComplexMethod:
+    excludes: ['**/ui/**', '**/di/**', '**/helpers/**', '**/service/TodoReminderWorker.kt']  # Compose/DI/test helpers and workers often have many parameters
+  CyclomaticComplexMethod:
     active: true
     threshold: 15
+    excludes: ['**/ui/**', '**/data/remote/AudioWebSocketClient.kt']  # WebSocket parsing is complex by nature
+  TooManyFunctions:
+    active: true
+    thresholdInFiles: 15
+    thresholdInClasses: 15
+    thresholdInInterfaces: 20  # DAOs often have many query functions
+    thresholdInObjects: 15
+    thresholdInEnums: 15
+    excludes:
+      # Package-level exclusions
+      - '**/ui/**'
+      - '**/test/**'
+      - '**/androidTest/**'
+      - '**/di/**'
+      - '**/dao/**'
+      - '**/repository/**'
+      # Core engine classes - legitimately complex with many operations
+      - '**/core/audio/AudioEngine.kt'
+      - '**/core/config/ProviderConfig.kt'
+      - '**/core/config/ServerConfigManager.kt'
+      - '**/core/curriculum/CurriculumEngine.kt'
+      - '**/core/fov/FOVSessionContextCoordinator.kt'
+      - '**/core/module/ModuleRegistry.kt'
+      - '**/core/session/SessionManager.kt'
+      # Data layer classes - complex state management and network operations
+      - '**/data/local/SecureTokenStorage.kt'
+      - '**/data/remote/AudioWebSocketClient.kt'
+      - '**/data/remote/WebSocketClient.kt'
+      - '**/data/remote/ApiClient.kt'
+  NestedBlockDepth:
+    active: true
+    threshold: 5
+
+exceptions:
+  active: true
+  TooGenericExceptionCaught:
+    active: true
+    exceptionNames:
+      - 'ArrayIndexOutOfBoundsException'
+      - 'Error'
+      - 'IllegalMonitorStateException'
+      - 'NullPointerException'
+      - 'IndexOutOfBoundsException'
+      - 'RuntimeException'
+      - 'Throwable'
+    allowedExceptionNameRegex: '_|(ignore|expected).*'
+  TooGenericExceptionThrown:
+    active: true
+    exceptionNames:
+      - 'Error'
+      - 'Throwable'
+  SwallowedException:
+    active: true
+    ignoredExceptionTypes:
+      - 'InterruptedException'
+      - 'MalformedURLException'
+      - 'NumberFormatException'
+      - 'ParseException'
+      - 'ModuleServiceError'  # Re-thrown wrapped exceptions
+      - 'FeatureFlagError'    # Re-thrown wrapped exceptions
+      - 'IllegalArgumentException'  # Expected in validation tests
+    allowedExceptionNameRegex: '_|(ignore|expected|e).*'
+    excludes: ['**/test/**', '**/androidTest/**']  # Test exception handling is intentional
+  PrintStackTrace:
+    active: true
 
 naming:
   active: true
   FunctionNaming:
     active: true
+    excludes: ['**/ui/**', '**/test/**', '**/androidTest/**', '**/widget/**']  # Compose functions use PascalCase
+    functionPattern: '[a-z][a-zA-Z0-9]*'
+  FunctionParameterNaming:
+    active: true
+    parameterPattern: '(_)?[a-z][A-Za-z0-9]*'  # Allow underscore prefix for unused params
   ClassNaming:
     active: true
   PackageNaming:
     active: true
+  ConstructorParameterNaming:
+    active: true
+    parameterPattern: '(_)?[a-z][A-Za-z0-9]*'  # Allow underscore prefix for unused params
+    privateParameterPattern: '(_)?[a-z][A-Za-z0-9]*'  # Allow underscore prefix for private params
+    excludes: ['**/ui/**', '**/services/stt/**']  # JSON serialization may require specific names
+  MatchingDeclarationName:
+    active: false  # Files with multiple related declarations are valid
 
 style:
   active: true
+  ForbiddenComment:
+    active: false  # Allow TODO/FIXME comments during development
   MagicNumber:
     active: false  # Allow magic numbers for common UI values
   MaxLineLength:
     active: true
     maxLineLength: 120
+    excludeCommentStatements: true
+    excludes:
+      # Files with function signatures that ktlint prefers to keep on one line
+      - '**/data/remote/ApiClient.kt'
+      - '**/services/llm/PatchPanelService.kt'
+      - '**/modules/knowledgebowl/ui/theme/KBColors.kt'
+      - '**/ui/components/OfflineBanner.kt'
+  WildcardImport:
+    active: true
+    excludeImports:
+      - 'java.util.*'
+      - 'kotlinx.coroutines.*'
+      - 'kotlinx.coroutines.flow.*'
+      - 'kotlinx.coroutines.test.*'
+      - 'org.junit.Assert.*'
+      - 'io.mockk.*'
+      - 'com.unamentis.data.model.*'
+      - 'androidx.compose.foundation.layout.*'
+      - 'androidx.compose.material3.*'
+      - 'androidx.compose.material.icons.filled.*'
+      - 'androidx.compose.runtime.*'
+      - 'androidx.room.*'
+  ReturnCount:
+    active: true
+    max: 3
+    excludeGuardClauses: true
+    excludeLabeled: true
+    excludes: ['**/test/**', '**/androidTest/**']
+  LoopWithTooManyJumpStatements:
+    active: true
+    maxJumpCount: 2
+  UseCheckOrError:
+    active: false  # Allow explicit IllegalStateException for clarity
+  UnusedPrivateProperty:
+    active: true
+    allowedNames: '_.*'
+  UnusedParameter:
+    active: true
+    allowedNames: '_.*'
+
+empty-blocks:
+  active: true
+  EmptyFunctionBlock:
+    active: true
+    excludes: ['**/test/**', '**/androidTest/**']  # Test mocks often have empty implementations
+
+performance:
+  active: true
+  SpreadOperator:
+    active: false  # Performance impact is minimal for small arrays
+
+potential-bugs:
+  active: true
+  ImplicitDefaultLocale:
+    active: false  # Android handles locale correctly in most cases
