@@ -6,9 +6,19 @@ import com.unamentis.core.telemetry.TelemetryEngine
 import com.unamentis.data.repository.SessionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
+import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import javax.inject.Inject
+
+/**
+ * Convert epoch milliseconds to LocalDate using compatible API.
+ */
+private fun epochMillisToLocalDate(epochMillis: Long): LocalDate {
+    return Instant.ofEpochMilli(epochMillis)
+        .atZone(ZoneId.systemDefault())
+        .toLocalDate()
+}
 
 /**
  * ViewModel for the Analytics screen.
@@ -53,10 +63,7 @@ class AnalyticsViewModel
                 val filtered =
                     sessions.filter { session ->
                         val sessionDate =
-                            LocalDate.ofInstant(
-                                java.time.Instant.ofEpochMilli(session.startTime),
-                                ZoneId.systemDefault(),
-                            )
+                            epochMillisToLocalDate(session.startTime)
                         isInRange(sessionDate, range)
                     }
 
@@ -97,10 +104,7 @@ class AnalyticsViewModel
                 val filtered =
                     sessions.filter { session ->
                         val sessionDate =
-                            LocalDate.ofInstant(
-                                java.time.Instant.ofEpochMilli(session.startTime),
-                                ZoneId.systemDefault(),
-                            )
+                            epochMillisToLocalDate(session.startTime)
                         isInRange(sessionDate, range)
                     }
 
@@ -142,10 +146,7 @@ class AnalyticsViewModel
                 val filtered =
                     sessions.filter { session ->
                         val sessionDate =
-                            LocalDate.ofInstant(
-                                java.time.Instant.ofEpochMilli(session.startTime),
-                                ZoneId.systemDefault(),
-                            )
+                            epochMillisToLocalDate(session.startTime)
                         isInRange(sessionDate, range)
                     }
 
@@ -176,10 +177,7 @@ class AnalyticsViewModel
                 val filtered =
                     sessions.filter { session ->
                         val sessionDate =
-                            LocalDate.ofInstant(
-                                java.time.Instant.ofEpochMilli(session.startTime),
-                                ZoneId.systemDefault(),
-                            )
+                            epochMillisToLocalDate(session.startTime)
                         isInRange(sessionDate, range)
                     }
 
@@ -220,11 +218,7 @@ class AnalyticsViewModel
                     val date = today.minusDays(daysAgo.toLong())
                     val sessionsOnDate =
                         sessions.filter { session ->
-                            val sessionDate =
-                                LocalDate.ofInstant(
-                                    java.time.Instant.ofEpochMilli(session.startTime),
-                                    ZoneId.systemDefault(),
-                                )
+                            val sessionDate = epochMillisToLocalDate(session.startTime)
                             sessionDate == date
                         }
 

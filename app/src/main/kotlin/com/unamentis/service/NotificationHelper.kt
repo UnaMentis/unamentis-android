@@ -1,6 +1,7 @@
 package com.unamentis.service
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -89,6 +90,7 @@ object NotificationHelper {
      * @param title Todo title
      * @param timeUntilDue Human-readable time until due (e.g., "in 1 hour")
      */
+    @SuppressLint("MissingPermission") // Permission is checked via hasNotificationPermission
     fun showReminderNotification(
         context: Context,
         todoId: String,
@@ -135,6 +137,7 @@ object NotificationHelper {
      * @param title Todo title
      * @param overdueBy Human-readable time overdue (e.g., "2 hours overdue")
      */
+    @SuppressLint("MissingPermission") // Permission is checked via hasNotificationPermission
     fun showOverdueNotification(
         context: Context,
         todoId: String,
@@ -180,6 +183,7 @@ object NotificationHelper {
      * @param context Application context
      * @param count Number of overdue todos
      */
+    @SuppressLint("MissingPermission") // Permission is checked via hasNotificationPermission
     fun showOverdueSummaryNotification(
         context: Context,
         count: Int,

@@ -20,6 +20,9 @@
     <!-- Post Notifications (Android 13+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- Vibration for haptic feedback -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+
     <application
         android:name=".UnaMentisApp"
         android:allowBackup="true"
@@ -62,9 +65,21 @@
 
         <!-- Session Foreground Service -->
         <service
-            android:name=".core.session.SessionForegroundService"
+            android:name=".service.SessionForegroundService"
             android:foregroundServiceType="microphone"
             android:exported="false" />
+
+        <!-- Disable default WorkManager initializer for on-demand initialization -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
+        </provider>
 
         <!-- FileProvider for sharing exported files -->
         <provider
