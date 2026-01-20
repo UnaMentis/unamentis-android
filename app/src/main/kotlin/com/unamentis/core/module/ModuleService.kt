@@ -52,7 +52,7 @@ import javax.inject.Singleton
 class ModuleService
     @Inject
     constructor(
-        @ApplicationContext private val context: Context,
+        @Suppress("unused") @ApplicationContext private val _context: Context,
         private val okHttpClient: OkHttpClient,
         private val registry: ModuleRegistry,
         private val json: Json,
@@ -287,12 +287,12 @@ class ModuleService
                         }
                     }
                 } catch (e: ModuleServiceError) {
-                    throw e
+                    throw e // Re-throw ModuleServiceError as-is
                 } catch (e: IOException) {
-                    Log.e(TAG, "Network error: ${e.message}", e)
+                    Log.e(TAG, "GET network error: ${e.message}", e)
                     throw ModuleServiceError.NetworkError(e.message ?: "Network error")
                 } catch (e: Exception) {
-                    Log.e(TAG, "Unexpected error: ${e.message}", e)
+                    Log.e(TAG, "GET unexpected error: ${e.message}", e)
                     throw ModuleServiceError.NetworkError(e.message ?: "Unexpected error")
                 }
             }
@@ -352,12 +352,12 @@ class ModuleService
                         }
                     }
                 } catch (e: ModuleServiceError) {
-                    throw e
+                    throw e // Re-throw ModuleServiceError as-is
                 } catch (e: IOException) {
-                    Log.e(TAG, "Network error: ${e.message}", e)
+                    Log.e(TAG, "POST network error: ${e.message}", e)
                     throw ModuleServiceError.DownloadFailed(e.message ?: "Network error")
                 } catch (e: Exception) {
-                    Log.e(TAG, "Unexpected error: ${e.message}", e)
+                    Log.e(TAG, "POST unexpected error: ${e.message}", e)
                     throw ModuleServiceError.DownloadFailed(e.message ?: "Unexpected error")
                 }
             }

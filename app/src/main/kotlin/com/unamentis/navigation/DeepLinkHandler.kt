@@ -167,7 +167,7 @@ class DeepLinkHandler
                     // Parse and re-format to ensure consistency
                     UUID.fromString(id).toString()
                 } catch (e: IllegalArgumentException) {
-                    Log.w(TAG, "Invalid UUID format: $id")
+                    Log.w(TAG, "Invalid UUID format: $id", e)
                     null
                 }
             } else {

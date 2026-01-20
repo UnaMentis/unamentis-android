@@ -56,9 +56,6 @@ class GroqWhisperSTTService(
 
         // Minimum ~1 second of audio before sending a batch
         private const val MIN_BATCH_BYTES = 32_000
-
-        // Maximum ~10 seconds per batch
-        private const val MAX_BATCH_BYTES = 320_000
     }
 
     override val providerName: String = "GroqWhisper"

@@ -173,8 +173,8 @@ class STTProviderRouterTest {
             try {
                 router.startStreaming().first()
                 fail("Expected IllegalStateException")
-            } catch (e: IllegalStateException) {
-                // Expected
+            } catch (_: IllegalStateException) {
+                // Expected - should throw when no providers registered
             }
         }
 
@@ -357,8 +357,8 @@ class STTProviderRouterTest {
             try {
                 router.startStreaming().toList()
                 fail("Expected STTException.ConnectionFailed")
-            } catch (e: STTException.ConnectionFailed) {
-                // Expected
+            } catch (_: STTException.ConnectionFailed) {
+                // Expected - failing provider should propagate exception
             }
         }
 

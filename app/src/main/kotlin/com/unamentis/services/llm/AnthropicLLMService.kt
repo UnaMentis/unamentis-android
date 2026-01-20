@@ -119,40 +119,66 @@ class AnthropicLLMService(
      */
     private suspend fun processSSEStream(
         reader: BufferedReader,
-        isFirstToken: Boolean,
-        startTime: Long,
+        _isFirstToken: Boolean,
+        _startTime: Long,
         emit: suspend (LLMToken) -> Unit,
     ) {
-        var line: String?
-        while (reader.readLine().also { line = it } != null) {
+        var line: String? = null
+        var streamComplete = false
+        while (!streamComplete && reader.readLine().also { line = it } != null) {
             val currentLine = line ?: continue
 
             if (currentLine.startsWith("data: ")) {
                 val data = currentLine.substring(6)
-
-                try {
-                    val event = json.decodeFromString<AnthropicStreamEvent>(data)
-
-                    when (event.type) {
-                        "content_block_delta" -> {
-                            val text = event.delta?.text ?: ""
-                            if (text.isNotEmpty()) {
-                                emit(LLMToken(content = text, isDone = false))
-                            }
-                        }
-                        "message_stop" -> {
-                            emit(LLMToken(content = "", isDone = true))
-                            return
-                        }
-                        "error" -> {
-                            val errorMsg = event.error?.message ?: "Unknown error"
-                            throw Exception("Anthropic error: $errorMsg")
-                        }
-                    }
-                } catch (e: Exception) {
-                    android.util.Log.w("Anthropic", "Failed to parse chunk: $data", e)
-                }
+                streamComplete = processSSEEvent(data, emit)
             }
+        }
+    }
+
+    /**
+     * Process a single SSE event.
+     *
+     * @return true if stream is complete, false otherwise
+     */
+    private suspend fun processSSEEvent(
+        data: String,
+        emit: suspend (LLMToken) -> Unit,
+    ): Boolean {
+        return try {
+            val event = json.decodeFromString<AnthropicStreamEvent>(data)
+            handleAnthropicEvent(event, emit)
+        } catch (e: Exception) {
+            android.util.Log.w("Anthropic", "Failed to parse chunk: $data", e)
+            false
+        }
+    }
+
+    /**
+     * Handle a parsed Anthropic stream event.
+     *
+     * @return true if stream is complete, false otherwise
+     */
+    private suspend fun handleAnthropicEvent(
+        event: AnthropicStreamEvent,
+        emit: suspend (LLMToken) -> Unit,
+    ): Boolean {
+        return when (event.type) {
+            "content_block_delta" -> {
+                val text = event.delta?.text ?: ""
+                if (text.isNotEmpty()) {
+                    emit(LLMToken(content = text, isDone = false))
+                }
+                false
+            }
+            "message_stop" -> {
+                emit(LLMToken(content = "", isDone = true))
+                true
+            }
+            "error" -> {
+                val errorMsg = event.error?.message ?: "Unknown error"
+                throw Exception("Anthropic error: $errorMsg")
+            }
+            else -> false
         }
     }
 

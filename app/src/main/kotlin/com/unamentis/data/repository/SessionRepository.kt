@@ -135,22 +135,21 @@ class SessionRepository
 
         /**
          * Update session statistics.
+         *
+         * @param sessionId Session identifier
+         * @param stats Statistics to update
          */
         suspend fun updateSessionStats(
             sessionId: String,
-            endTime: Long,
-            durationSeconds: Long,
-            turnCount: Int,
-            interruptionCount: Int,
-            totalCost: Double,
+            stats: com.unamentis.data.local.dao.SessionStatsUpdate,
         ) {
             sessionDao.updateSessionStats(
                 id = sessionId,
-                endTime = endTime,
-                durationSeconds = durationSeconds,
-                turnCount = turnCount,
-                interruptionCount = interruptionCount,
-                totalCost = totalCost,
+                endTime = stats.endTime,
+                durationSeconds = stats.durationSeconds,
+                turnCount = stats.turnCount,
+                interruptionCount = stats.interruptionCount,
+                totalCost = stats.totalCost,
             )
         }
 
@@ -418,22 +417,24 @@ class SessionRepository
 
             Log.d(TAG, "Added local turn: $role -> ${content.take(50)}...")
 
+            // Create turn data for sync
+            val turn =
+                PendingTurn(
+                    localSessionId = sessionId,
+                    role = role,
+                    content = content,
+                    timestamp = timestamp,
+                    audioUrl = audioUrl,
+                    latencyMs = latencyMs,
+                )
+
             // Queue for server sync
             val serverSessionId = serverSessionIds[sessionId]
             if (serverSessionId != null) {
-                sendTurnToServer(serverSessionId, role, content, timestamp, audioUrl, latencyMs)
+                sendTurnToServer(serverSessionId, turn)
             } else {
                 syncMutex.withLock {
-                    pendingTurns.add(
-                        PendingTurn(
-                            localSessionId = sessionId,
-                            role = role,
-                            content = content,
-                            timestamp = timestamp,
-                            audioUrl = audioUrl,
-                            latencyMs = latencyMs,
-                        ),
-                    )
+                    pendingTurns.add(turn)
                 }
             }
         }
@@ -679,14 +680,7 @@ class SessionRepository
             for (turn in turns) {
                 val serverSessionId = serverSessionIds[turn.localSessionId]
                 if (serverSessionId != null) {
-                    sendTurnToServer(
-                        serverSessionId,
-                        turn.role,
-                        turn.content,
-                        turn.timestamp,
-                        turn.audioUrl,
-                        turn.latencyMs,
-                    )
+                    sendTurnToServer(serverSessionId, turn)
                 } else {
                     syncMutex.withLock {
                         pendingTurns.add(turn)
@@ -706,35 +700,24 @@ class SessionRepository
                 }
 
             for (turn in turnsToSync) {
-                sendTurnToServer(
-                    serverSessionId,
-                    turn.role,
-                    turn.content,
-                    turn.timestamp,
-                    turn.audioUrl,
-                    turn.latencyMs,
-                )
+                sendTurnToServer(serverSessionId, turn)
             }
         }
 
         private suspend fun sendTurnToServer(
             serverSessionId: String,
-            role: String,
-            content: String,
-            timestamp: Long,
-            audioUrl: String?,
-            latencyMs: Long?,
+            turn: PendingTurn,
         ) {
             val request =
                 AddTurnRequest(
-                    role = role,
-                    content = content,
-                    audioUrl = audioUrl,
-                    latencyMs = latencyMs?.toInt(),
+                    role = turn.role,
+                    content = turn.content,
+                    audioUrl = turn.audioUrl,
+                    latencyMs = turn.latencyMs?.toInt(),
                 )
             when (val result = apiClient.addConversationTurn(serverSessionId, request)) {
                 is ApiResult.Success<*> -> {
-                    Log.d(TAG, "Turn synced to server: $role")
+                    Log.d(TAG, "Turn synced to server: ${turn.role}")
                 }
                 is ApiResult.Error -> {
                     Log.e(TAG, "Failed to sync turn: ${result.error.error}")
@@ -742,16 +725,7 @@ class SessionRepository
                 is ApiResult.NetworkError -> {
                     Log.w(TAG, "Network error syncing turn")
                     syncMutex.withLock {
-                        pendingTurns.add(
-                            PendingTurn(
-                                localSessionId = serverSessionId,
-                                role = role,
-                                content = content,
-                                timestamp = timestamp,
-                                audioUrl = audioUrl,
-                                latencyMs = latencyMs,
-                            ),
-                        )
+                        pendingTurns.add(turn.copy(localSessionId = serverSessionId))
                     }
                 }
             }
@@ -761,7 +735,8 @@ class SessionRepository
             if (isoString == null) return System.currentTimeMillis()
             return try {
                 java.time.Instant.parse(isoString).toEpochMilli()
-            } catch (e: Exception) {
+            } catch (_: Exception) {
+                // Failed to parse ISO timestamp, fall back to current time
                 System.currentTimeMillis()
             }
         }

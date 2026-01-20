@@ -5,6 +5,7 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
+import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -31,6 +32,10 @@ class ConnectivityMonitor
     constructor(
         @ApplicationContext private val context: Context,
     ) {
+        companion object {
+            private const val TAG = "ConnectivityMonitor"
+        }
+
         private val connectivityManager =
             context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
@@ -119,7 +124,8 @@ class ConnectivityMonitor
             try {
                 connectivityManager.registerNetworkCallback(networkRequest, networkCallback)
             } catch (e: Exception) {
-                // Handle cases where the callback cannot be registered
+                // Handle cases where the callback cannot be registered (e.g., too many callbacks)
+                Log.w(TAG, "Failed to register network callback: ${e.message}", e)
             }
         }
 

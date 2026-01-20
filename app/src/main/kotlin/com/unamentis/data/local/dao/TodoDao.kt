@@ -44,7 +44,13 @@ interface TodoDao {
     /**
      * Get overdue todos (due date is before the given timestamp).
      */
-    @Query("SELECT * FROM todos WHERE dueDate IS NOT NULL AND dueDate < :timestamp AND status = 'ACTIVE' ORDER BY dueDate ASC")
+    @Query(
+        """
+        SELECT * FROM todos
+        WHERE dueDate IS NOT NULL AND dueDate < :timestamp AND status = 'ACTIVE'
+        ORDER BY dueDate ASC
+        """,
+    )
     fun getOverdueTodos(timestamp: Long): Flow<List<Todo>>
 
     /**

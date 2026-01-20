@@ -308,9 +308,9 @@ object ProviderModule {
     @Singleton
     fun provideDefaultSTTService(
         @Named("STTRouter") router: STTProviderRouter,
-        @Named("DeepgramSTT") deepgram: STTService,
-        @Named("AndroidSTT") android: STTService,
-        config: ProviderConfig,
+        @Named("DeepgramSTT") _deepgram: STTService,
+        @Named("AndroidSTT") _android: STTService,
+        _config: ProviderConfig,
     ): STTService {
         // Use the router for automatic failover
         // The router will select the best provider based on priority and health
@@ -327,9 +327,9 @@ object ProviderModule {
     @Singleton
     fun provideDefaultTTSService(
         @Named("TTSRouter") router: TTSProviderRouter,
-        @Named("ElevenLabsTTS") elevenlabs: TTSService,
-        @Named("AndroidTTS") android: TTSService,
-        config: ProviderConfig,
+        @Named("ElevenLabsTTS") _elevenlabs: TTSService,
+        @Named("AndroidTTS") _android: TTSService,
+        _config: ProviderConfig,
     ): TTSService {
         // Use the router for automatic failover
         // The router will select the best provider based on priority and health
@@ -343,9 +343,9 @@ object ProviderModule {
     @Singleton
     fun provideDefaultLLMService(
         @Named("PatchPanelLLM") patchPanel: LLMService,
-        @Named("OpenAILLM") openai: LLMService,
-        @Named("AnthropicLLM") anthropic: LLMService,
-        config: ProviderConfig,
+        @Named("OpenAILLM") _openai: LLMService,
+        @Named("AnthropicLLM") _anthropic: LLMService,
+        _config: ProviderConfig,
     ): LLMService {
         // TODO: Read from config.selectedLLMProvider flow
         // For now, default to PatchPanel

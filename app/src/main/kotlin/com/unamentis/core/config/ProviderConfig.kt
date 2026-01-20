@@ -161,7 +161,7 @@ class ProviderConfig(private val context: Context) {
             val presetName = prefs[PreferenceKeys.CONFIGURATION_PRESET] ?: "FREE"
             try {
                 ConfigurationPreset.valueOf(presetName)
-            } catch (e: IllegalArgumentException) {
+            } catch (_: IllegalArgumentException) {
                 // Handle old preset names (e.g., "BALANCED" -> "FREE")
                 ConfigurationPreset.FREE
             }
@@ -176,7 +176,7 @@ class ProviderConfig(private val context: Context) {
             val modeName = prefs[PreferenceKeys.RECORDING_MODE] ?: "VAD"
             try {
                 RecordingMode.valueOf(modeName)
-            } catch (e: IllegalArgumentException) {
+            } catch (_: IllegalArgumentException) {
                 RecordingMode.VAD
             }
         }
@@ -188,7 +188,7 @@ class ProviderConfig(private val context: Context) {
         val modeName = syncPrefs.getString(PreferenceKeys.RECORDING_MODE.name, "VAD") ?: "VAD"
         return try {
             RecordingMode.valueOf(modeName)
-        } catch (e: IllegalArgumentException) {
+        } catch (_: IllegalArgumentException) {
             RecordingMode.VAD
         }
     }

@@ -121,7 +121,9 @@ class TodoToolHandler
                                 "reason" to
                                     ToolProperty(
                                         type = "string",
-                                        description = "Why this topic needs review (e.g., 'Student confused about electron configuration')",
+                                        description =
+                                            "Why this topic needs review " +
+                                                "(e.g., 'Student confused about electron configuration')",
                                     ),
                             ),
                         required = emptyList(),
@@ -150,21 +152,20 @@ class TodoToolHandler
         ): LLMToolResult {
             // Parse required arguments
             val title = call.getStringArgument("title")
-            if (title.isNullOrBlank()) {
-                return LLMToolResult.error(call.id, "Missing required argument: title")
-            }
-
             val type = call.getStringArgument("type")
-            if (type.isNullOrBlank()) {
-                return LLMToolResult.error(call.id, "Missing required argument: type")
-            }
+            val validTypes = listOf("learning_target", "reinforcement")
 
-            // Validate type
-            if (type !in listOf("learning_target", "reinforcement")) {
-                return LLMToolResult.error(
-                    call.id,
-                    "Invalid type: $type. Must be 'learning_target' or 'reinforcement'",
-                )
+            // Validate required arguments
+            val validationError =
+                when {
+                    title.isNullOrBlank() -> "Missing required argument: title"
+                    type.isNullOrBlank() -> "Missing required argument: type"
+                    type !in validTypes -> "Invalid type: $type. Must be 'learning_target' or 'reinforcement'"
+                    else -> null
+                }
+
+            if (validationError != null) {
+                return LLMToolResult.error(call.id, validationError)
             }
 
             // Parse optional arguments
@@ -181,8 +182,8 @@ class TodoToolHandler
             val todo =
                 Todo(
                     id = UUID.randomUUID().toString(),
-                    title = title,
-                    notes = buildTodoNotes(type, notes, context),
+                    title = title!!,
+                    notes = buildTodoNotes(type!!, notes, context),
                     priority = priority,
                     status = TodoStatus.ACTIVE,
                     sessionId = context.sessionId,

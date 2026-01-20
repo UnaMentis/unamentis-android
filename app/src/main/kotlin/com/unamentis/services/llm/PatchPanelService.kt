@@ -103,83 +103,86 @@ class PatchPanelService(
     private fun extractTaskType(messages: List<LLMMessage>): TaskType {
         val systemMessage = messages.firstOrNull { it.role == "system" }?.content ?: ""
         val lastUserMessage = messages.lastOrNull { it.role == "user" }?.content ?: ""
-        val combinedContext = "$systemMessage $lastUserMessage".lowercase()
+        val context = "$systemMessage $lastUserMessage".lowercase()
 
-        return when {
-            // Meta tasks (check first as they can overlap with others)
-            combinedContext.containsAny("reflect", "progress review", "how am i doing") ->
-                TaskType.META_REFLECTION
-            combinedContext.containsAny("motivat", "encourage", "you can do") ->
-                TaskType.META_MOTIVATION
-            combinedContext.containsAny("error", "mistake", "sorry", "let me try again") ->
-                TaskType.META_ERROR_RECOVERY
-
-            // Simple interactions (greetings, acknowledgments)
-            combinedContext.containsAny("hello", "hi ", "hey ", "good morning", "good afternoon") ->
-                TaskType.SIMPLE_GREETING
-            combinedContext.containsAny("ok", "got it", "understood", "i see", "thanks") ->
-                TaskType.SIMPLE_ACKNOWLEDGMENT
-
-            // Assessment subtypes
-            combinedContext.containsAny("quiz", "test me", "question me") ->
-                TaskType.ASSESSMENT_QUIZ
-            combinedContext.containsAny("feedback", "how did i do", "grade my") ->
-                TaskType.ASSESSMENT_FEEDBACK
-            combinedContext.containsAny("rubric", "criteria", "scoring") ->
-                TaskType.ASSESSMENT_RUBRIC
-            combinedContext.containsAny("assess", "evaluat", "check understanding") ->
-                TaskType.ASSESSMENT
-
-            // Tutoring subtypes
-            combinedContext.containsAny("explain", "what is", "how does", "why does") ->
-                TaskType.TUTORING_EXPLANATION
-            combinedContext.containsAny("example", "show me", "demonstrate", "walk through") ->
-                TaskType.TUTORING_EXAMPLE
-            combinedContext.containsAny("analogy", "like", "similar to", "compare it to") ->
-                TaskType.TUTORING_ANALOGY
-            combinedContext.containsAny("clarify", "confused", "don't understand", "what do you mean") ->
-                TaskType.TUTORING_CLARIFICATION
-            combinedContext.containsAny("tutor", "teach", "learn about", "lesson") ->
-                TaskType.TUTORING
-
-            // Planning subtypes
-            combinedContext.containsAny("curriculum", "course", "syllabus") ->
-                TaskType.PLANNING_CURRICULUM
-            combinedContext.containsAny("schedule", "when should", "time") ->
-                TaskType.PLANNING_SCHEDULE
-            combinedContext.containsAny("goal", "objective", "target") ->
-                TaskType.PLANNING_GOAL_SETTING
-            combinedContext.containsAny("plan", "organize", "structure") ->
-                TaskType.PLANNING
-
-            // Content generation subtypes
-            combinedContext.containsAny("adapt", "simplify", "make easier", "beginner") ->
-                TaskType.CONTENT_ADAPTATION
-            combinedContext.containsAny("translat", "convert", "rephrase for") ->
-                TaskType.CONTENT_TRANSLATION
-            combinedContext.containsAny("generat", "create", "write", "produce") ->
-                TaskType.CONTENT_GENERATION
-
-            // Summarization subtypes
-            combinedContext.containsAny("key point", "main idea", "takeaway") ->
-                TaskType.SUMMARIZATION_KEY_POINTS
-            combinedContext.containsAny("compar", "differ", "versus", " vs ") ->
-                TaskType.SUMMARIZATION_COMPARISON
-            combinedContext.containsAny("summariz", "brief", "overview", "recap") ->
-                TaskType.SUMMARIZATION
-
-            // Navigation and classification
-            combinedContext.containsAny("where can i find", "show me", "navigate", "go to") ->
-                TaskType.NAVIGATION
-            combinedContext.containsAny("classify", "categoriz", "what type", "which kind") ->
-                TaskType.CLASSIFICATION
-            combinedContext.containsAny("topic", "subject", "about") ->
-                TaskType.TOPIC_DETECTION
-
-            // Default fallback
-            else -> TaskType.SIMPLE_RESPONSE
-        }
+        return detectMetaTask(context)
+            ?: detectSimpleInteraction(context)
+            ?: detectAssessmentTask(context)
+            ?: detectTutoringTask(context)
+            ?: detectPlanningTask(context)
+            ?: detectContentTask(context)
+            ?: detectSummarizationTask(context)
+            ?: detectNavigationTask(context)
+            ?: TaskType.SIMPLE_RESPONSE
     }
+
+    private fun detectMetaTask(context: String): TaskType? =
+        when {
+            context.containsAny("reflect", "progress review", "how am i doing") -> TaskType.META_REFLECTION
+            context.containsAny("motivat", "encourage", "you can do") -> TaskType.META_MOTIVATION
+            context.containsAny("error", "mistake", "sorry", "let me try again") -> TaskType.META_ERROR_RECOVERY
+            else -> null
+        }
+
+    private fun detectSimpleInteraction(context: String): TaskType? =
+        when {
+            context.containsAny("hello", "hi ", "hey ", "good morning", "good afternoon") -> TaskType.SIMPLE_GREETING
+            context.containsAny("ok", "got it", "understood", "i see", "thanks") -> TaskType.SIMPLE_ACKNOWLEDGMENT
+            else -> null
+        }
+
+    private fun detectAssessmentTask(context: String): TaskType? =
+        when {
+            context.containsAny("quiz", "test me", "question me") -> TaskType.ASSESSMENT_QUIZ
+            context.containsAny("feedback", "how did i do", "grade my") -> TaskType.ASSESSMENT_FEEDBACK
+            context.containsAny("rubric", "criteria", "scoring") -> TaskType.ASSESSMENT_RUBRIC
+            context.containsAny("assess", "evaluat", "check understanding") -> TaskType.ASSESSMENT
+            else -> null
+        }
+
+    private fun detectTutoringTask(context: String): TaskType? =
+        when {
+            context.containsAny("explain", "what is", "how does", "why does") -> TaskType.TUTORING_EXPLANATION
+            context.containsAny("example", "show me", "demonstrate", "walk through") -> TaskType.TUTORING_EXAMPLE
+            context.containsAny("analogy", "like", "similar to", "compare it to") -> TaskType.TUTORING_ANALOGY
+            context.containsAny("clarify", "confused", "don't understand", "what do you mean") ->
+                TaskType.TUTORING_CLARIFICATION
+            context.containsAny("tutor", "teach", "learn about", "lesson") -> TaskType.TUTORING
+            else -> null
+        }
+
+    private fun detectPlanningTask(context: String): TaskType? =
+        when {
+            context.containsAny("curriculum", "course", "syllabus") -> TaskType.PLANNING_CURRICULUM
+            context.containsAny("schedule", "when should", "time") -> TaskType.PLANNING_SCHEDULE
+            context.containsAny("goal", "objective", "target") -> TaskType.PLANNING_GOAL_SETTING
+            context.containsAny("plan", "organize", "structure") -> TaskType.PLANNING
+            else -> null
+        }
+
+    private fun detectContentTask(context: String): TaskType? =
+        when {
+            context.containsAny("adapt", "simplify", "make easier", "beginner") -> TaskType.CONTENT_ADAPTATION
+            context.containsAny("translat", "convert", "rephrase for") -> TaskType.CONTENT_TRANSLATION
+            context.containsAny("generat", "create", "write", "produce") -> TaskType.CONTENT_GENERATION
+            else -> null
+        }
+
+    private fun detectSummarizationTask(context: String): TaskType? =
+        when {
+            context.containsAny("key point", "main idea", "takeaway") -> TaskType.SUMMARIZATION_KEY_POINTS
+            context.containsAny("compar", "differ", "versus", " vs ") -> TaskType.SUMMARIZATION_COMPARISON
+            context.containsAny("summariz", "brief", "overview", "recap") -> TaskType.SUMMARIZATION
+            else -> null
+        }
+
+    private fun detectNavigationTask(context: String): TaskType? =
+        when {
+            context.containsAny("where can i find", "show me", "navigate", "go to") -> TaskType.NAVIGATION
+            context.containsAny("classify", "categoriz", "what type", "which kind") -> TaskType.CLASSIFICATION
+            context.containsAny("topic", "subject", "about") -> TaskType.TOPIC_DETECTION
+            else -> null
+        }
 }
 
 /**
@@ -315,8 +318,18 @@ data class RoutingTable(
          */
         fun default(): RoutingTable {
             val rules = mutableMapOf<TaskType, Map<CostPreference, List<String>>>()
+            addTutoringRules(rules)
+            addPlanningRules(rules)
+            addContentRules(rules)
+            addAssessmentRules(rules)
+            addSummarizationRules(rules)
+            addNavigationRules(rules)
+            addSimpleInteractionRules(rules)
+            addMetaTaskRules(rules)
+            return RoutingTable(rules)
+        }
 
-            // Core Tutoring Tasks - need high quality for nuanced explanations
+        private fun addTutoringRules(rules: MutableMap<TaskType, Map<CostPreference, List<String>>>) {
             rules[TaskType.TUTORING] =
                 mapOf(
                     CostPreference.QUALITY to highQuality,
@@ -335,7 +348,6 @@ data class RoutingTable(
                     CostPreference.BALANCED to balanced,
                     CostPreference.COST to listOf(OPENAI, OLLAMA),
                 )
-            // Claude excels at analogies
             rules[TaskType.TUTORING_ANALOGY] =
                 mapOf(
                     CostPreference.QUALITY to listOf(ANTHROPIC, OPENAI),
@@ -348,8 +360,9 @@ data class RoutingTable(
                     CostPreference.BALANCED to balanced,
                     CostPreference.COST to costOptimized,
                 )
+        }
 
-            // Planning Tasks - need good reasoning
+        private fun addPlanningRules(rules: MutableMap<TaskType, Map<CostPreference, List<String>>>) {
             rules[TaskType.PLANNING] =
                 mapOf(
                     CostPreference.QUALITY to highQuality,
@@ -374,8 +387,9 @@ data class RoutingTable(
                     CostPreference.BALANCED to balanced,
                     CostPreference.COST to listOf(OPENAI, OLLAMA),
                 )
+        }
 
-            // Content Generation - need creativity
+        private fun addContentRules(rules: MutableMap<TaskType, Map<CostPreference, List<String>>>) {
             rules[TaskType.CONTENT_GENERATION] =
                 mapOf(
                     CostPreference.QUALITY to listOf(ANTHROPIC, OPENAI),
@@ -394,9 +408,9 @@ data class RoutingTable(
                     CostPreference.BALANCED to listOf(OPENAI, ANTHROPIC),
                     CostPreference.COST to listOf(OPENAI, OLLAMA),
                 )
+        }
 
-            // Assessment Tasks - need accuracy
-            // Don't trust cheap models for assessment
+        private fun addAssessmentRules(rules: MutableMap<TaskType, Map<CostPreference, List<String>>>) {
             rules[TaskType.ASSESSMENT] =
                 mapOf(
                     CostPreference.QUALITY to listOf(ANTHROPIC, OPENAI),
@@ -409,7 +423,6 @@ data class RoutingTable(
                     CostPreference.BALANCED to listOf(OPENAI, ANTHROPIC, OLLAMA),
                     CostPreference.COST to listOf(OPENAI, OLLAMA),
                 )
-            // Claude gives nuanced feedback
             rules[TaskType.ASSESSMENT_FEEDBACK] =
                 mapOf(
                     CostPreference.QUALITY to listOf(ANTHROPIC, OPENAI),
@@ -422,8 +435,9 @@ data class RoutingTable(
                     CostPreference.BALANCED to listOf(OPENAI, ANTHROPIC),
                     CostPreference.COST to listOf(OPENAI, OLLAMA),
                 )
+        }
 
-            // Summarization Tasks - need accuracy and conciseness
+        private fun addSummarizationRules(rules: MutableMap<TaskType, Map<CostPreference, List<String>>>) {
             rules[TaskType.SUMMARIZATION] =
                 mapOf(
                     CostPreference.QUALITY to listOf(OPENAI, ANTHROPIC),
@@ -442,8 +456,9 @@ data class RoutingTable(
                     CostPreference.BALANCED to listOf(ANTHROPIC, OPENAI, OLLAMA),
                     CostPreference.COST to listOf(OPENAI, OLLAMA),
                 )
+        }
 
-            // Navigation & Classification - can use faster models
+        private fun addNavigationRules(rules: MutableMap<TaskType, Map<CostPreference, List<String>>>) {
             rules[TaskType.NAVIGATION] =
                 mapOf(
                     CostPreference.QUALITY to fast,
@@ -462,15 +477,15 @@ data class RoutingTable(
                     CostPreference.BALANCED to ultraFast,
                     CostPreference.COST to ultraFast,
                 )
+        }
 
-            // Simple Interactions - use fastest/cheapest
+        private fun addSimpleInteractionRules(rules: MutableMap<TaskType, Map<CostPreference, List<String>>>) {
             rules[TaskType.SIMPLE_RESPONSE] =
                 mapOf(
                     CostPreference.QUALITY to listOf(OPENAI, ANTHROPIC),
                     CostPreference.BALANCED to listOf(OPENAI, OLLAMA),
                     CostPreference.COST to ultraFast,
                 )
-            // Even quality mode should be fast for greetings
             rules[TaskType.SIMPLE_GREETING] =
                 mapOf(
                     CostPreference.QUALITY to ultraFast,
@@ -483,9 +498,9 @@ data class RoutingTable(
                     CostPreference.BALANCED to ultraFast,
                     CostPreference.COST to listOf(ON_DEVICE, OLLAMA),
                 )
+        }
 
-            // Meta Tasks
-            // Claude for thoughtful reflection
+        private fun addMetaTaskRules(rules: MutableMap<TaskType, Map<CostPreference, List<String>>>) {
             rules[TaskType.META_REFLECTION] =
                 mapOf(
                     CostPreference.QUALITY to listOf(ANTHROPIC, OPENAI),
@@ -498,15 +513,12 @@ data class RoutingTable(
                     CostPreference.BALANCED to balanced,
                     CostPreference.COST to costOptimized,
                 )
-            // Fast recovery is important
             rules[TaskType.META_ERROR_RECOVERY] =
                 mapOf(
                     CostPreference.QUALITY to fast,
                     CostPreference.BALANCED to fast,
                     CostPreference.COST to ultraFast,
                 )
-
-            return RoutingTable(rules)
         }
     }
 

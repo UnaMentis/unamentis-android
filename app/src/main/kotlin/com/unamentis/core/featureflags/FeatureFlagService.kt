@@ -328,7 +328,8 @@ class FeatureFlagService
                     try {
                         val map = json.decodeFromString<Map<String, String>>(payload.value)
                         FeatureFlagPayload.fromJson(map)
-                    } catch (e: Exception) {
+                    } catch (_: Exception) {
+                        // Failed to parse as JSON map, fall back to string
                         FeatureFlagPayload.fromString(payload.value)
                     }
                 }
@@ -348,7 +349,7 @@ class FeatureFlagService
                             try {
                                 fetchFlags()
                             } catch (e: Exception) {
-                                Log.w(TAG, "Background refresh failed: ${e.message}")
+                                Log.w(TAG, "Background refresh failed: ${e.message}", e)
                             }
                         }
                     }

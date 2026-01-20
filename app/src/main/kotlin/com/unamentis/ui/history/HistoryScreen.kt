@@ -388,7 +388,11 @@ private fun SessionListView(
         LazyColumn(
             modifier = modifier.fillMaxSize(),
             state = listState,
-            contentPadding = PaddingValues(horizontal = Dimensions.ScreenHorizontalPadding, vertical = Dimensions.ScreenVerticalPadding),
+            contentPadding =
+                PaddingValues(
+                    horizontal = Dimensions.ScreenHorizontalPadding,
+                    vertical = Dimensions.ScreenVerticalPadding,
+                ),
             verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
         ) {
             items(
@@ -521,7 +525,11 @@ private fun SessionDetailView(
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         state = listState,
-        contentPadding = PaddingValues(horizontal = Dimensions.ScreenHorizontalPadding, vertical = Dimensions.ScreenVerticalPadding),
+        contentPadding =
+            PaddingValues(
+                horizontal = Dimensions.ScreenHorizontalPadding,
+                vertical = Dimensions.ScreenVerticalPadding,
+            ),
         verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingLarge),
     ) {
         // Session info card

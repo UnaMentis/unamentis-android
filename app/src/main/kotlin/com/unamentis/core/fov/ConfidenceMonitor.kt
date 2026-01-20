@@ -320,46 +320,25 @@ class ConfidenceMonitor
         /**
          * Detect specific uncertainty markers.
          */
-        private fun detectSpecificMarkers(text: String): Set<ConfidenceMarker> {
-            val markers = mutableSetOf<ConfidenceMarker>()
+        private fun detectSpecificMarkers(text: String): Set<ConfidenceMarker> =
+            markerPatterns
+                .filter { (_, phrases) -> phrases.any { phrase -> phrase in text } }
+                .map { (marker, _) -> marker }
+                .toSet()
 
-            // Hedging markers
-            if ("i'm not sure" in text || "i'm uncertain" in text) {
-                markers.add(ConfidenceMarker.HEDGING)
-            }
-
-            // Knowledge gap markers
-            if ("i don't know" in text || "i'm not familiar" in text) {
-                markers.add(ConfidenceMarker.KNOWLEDGE_GAP)
-            }
-
-            // Deflection markers
-            if ("you should ask" in text || "consult a" in text) {
-                markers.add(ConfidenceMarker.DEFLECTION)
-            }
-
-            // Topic boundary markers
-            if ("that's outside" in text || "beyond the scope" in text) {
-                markers.add(ConfidenceMarker.TOPIC_BOUNDARY)
-            }
-
-            // Out of scope markers
-            if ("i can't help with" in text || "not within my" in text) {
-                markers.add(ConfidenceMarker.OUT_OF_SCOPE)
-            }
-
-            // Clarification request markers
-            if ("could you clarify" in text || "what do you mean" in text) {
-                markers.add(ConfidenceMarker.CLARIFICATION_NEEDED)
-            }
-
-            // Speculation markers
-            if ("my guess" in text || "i would speculate" in text) {
-                markers.add(ConfidenceMarker.SPECULATION)
-            }
-
-            return markers
-        }
+        /**
+         * Mapping of confidence markers to their detection phrases.
+         */
+        private val markerPatterns: Map<ConfidenceMarker, List<String>> =
+            mapOf(
+                ConfidenceMarker.HEDGING to listOf("i'm not sure", "i'm uncertain"),
+                ConfidenceMarker.KNOWLEDGE_GAP to listOf("i don't know", "i'm not familiar"),
+                ConfidenceMarker.DEFLECTION to listOf("you should ask", "consult a"),
+                ConfidenceMarker.TOPIC_BOUNDARY to listOf("that's outside", "beyond the scope"),
+                ConfidenceMarker.OUT_OF_SCOPE to listOf("i can't help with", "not within my"),
+                ConfidenceMarker.CLARIFICATION_NEEDED to listOf("could you clarify", "what do you mean"),
+                ConfidenceMarker.SPECULATION to listOf("my guess", "i would speculate"),
+            )
 
         // MARK: - Trend Analysis
 

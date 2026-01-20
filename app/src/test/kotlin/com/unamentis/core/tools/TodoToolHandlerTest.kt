@@ -328,7 +328,12 @@ class TodoToolHandlerTest {
     @Test
     fun `priority parsing works for all levels`() =
         runTest {
-            val priorities = listOf("low" to TodoPriority.LOW, "medium" to TodoPriority.MEDIUM, "high" to TodoPriority.HIGH)
+            val priorities =
+                listOf(
+                    "low" to TodoPriority.LOW,
+                    "medium" to TodoPriority.MEDIUM,
+                    "high" to TodoPriority.HIGH,
+                )
 
             for ((input, expected) in priorities) {
                 val call =

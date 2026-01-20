@@ -163,66 +163,9 @@ class UMCFParser
                     transcript = emptyList(),
                 )
 
-            // Convert segments
-            val segments =
-                transcript.segments.mapIndexed { index, segment ->
-                    TranscriptSegment(
-                        id = segment.id ?: "segment-$index",
-                        type = segment.type ?: "content",
-                        content = segment.content,
-                        spokenText = segment.spokenText,
-                        stoppingPoint =
-                            segment.checkpoint?.let { checkpoint ->
-                                StoppingPoint(
-                                    type = checkpoint.type ?: "comprehension",
-                                    prompt = checkpoint.question,
-                                    expectedConcepts = checkpoint.expectedConcepts ?: emptyList(),
-                                    hints = checkpoint.hints ?: emptyList(),
-                                )
-                            },
-                        visualAssetId = segment.visualId,
-                    )
-                }
-
-            // Convert visual assets from media collection
-            val visualAssets = mutableListOf<VisualAsset>()
-
-            // Embedded assets
-            node.media?.embedded?.forEach { asset ->
-                visualAssets.add(
-                    VisualAsset(
-                        id = asset.id,
-                        filename = asset.title ?: asset.id,
-                        mimeType = asset.mimeType ?: "image/png",
-                        url = asset.url,
-                        caption = asset.caption,
-                    ),
-                )
-            }
-
-            // Reference assets
-            node.media?.reference?.forEach { asset ->
-                visualAssets.add(
-                    VisualAsset(
-                        id = asset.id,
-                        filename = asset.title ?: asset.id,
-                        mimeType = "application/octet-stream",
-                        url = asset.url,
-                        caption = asset.description,
-                    ),
-                )
-            }
-
-            // Convert documents
-            val documents =
-                node.media?.reference?.filter { it.type in listOf("pdf", "text", "markdown") }?.map { ref ->
-                    Document(
-                        id = ref.id,
-                        title = ref.title ?: ref.id,
-                        url = ref.url ?: "",
-                        type = ref.type,
-                    )
-                } ?: emptyList()
+            val segments = convertTranscriptSegments(transcript)
+            val visualAssets = extractVisualAssets(node.media)
+            val documents = extractDocuments(node.media)
 
             return Topic(
                 id = node.id,
@@ -236,6 +179,80 @@ class UMCFParser
                 duration = node.educational?.duration,
             )
         }
+
+        /**
+         * Convert UMCF transcript segments to internal TranscriptSegment model.
+         */
+        private fun convertTranscriptSegments(transcript: UMCFTranscript): List<TranscriptSegment> =
+            transcript.segments.mapIndexed { index, segment ->
+                TranscriptSegment(
+                    id = segment.id ?: "segment-$index",
+                    type = segment.type ?: "content",
+                    content = segment.content,
+                    spokenText = segment.spokenText,
+                    stoppingPoint = convertCheckpoint(segment.checkpoint),
+                    visualAssetId = segment.visualId,
+                )
+            }
+
+        /**
+         * Convert UMCF checkpoint to StoppingPoint.
+         */
+        private fun convertCheckpoint(checkpoint: UMCFCheckpoint?): StoppingPoint? =
+            checkpoint?.let {
+                StoppingPoint(
+                    type = it.type ?: "comprehension",
+                    prompt = it.question,
+                    expectedConcepts = it.expectedConcepts ?: emptyList(),
+                    hints = it.hints ?: emptyList(),
+                )
+            }
+
+        /**
+         * Extract visual assets from UMCF media collection.
+         */
+        private fun extractVisualAssets(media: UMCFMediaCollection?): List<VisualAsset> {
+            val visualAssets = mutableListOf<VisualAsset>()
+
+            media?.embedded?.forEach { asset ->
+                visualAssets.add(
+                    VisualAsset(
+                        id = asset.id,
+                        filename = asset.title ?: asset.id,
+                        mimeType = asset.mimeType ?: "image/png",
+                        url = asset.url,
+                        caption = asset.caption,
+                    ),
+                )
+            }
+
+            media?.reference?.forEach { asset ->
+                visualAssets.add(
+                    VisualAsset(
+                        id = asset.id,
+                        filename = asset.title ?: asset.id,
+                        mimeType = "application/octet-stream",
+                        url = asset.url,
+                        caption = asset.description,
+                    ),
+                )
+            }
+
+            return visualAssets
+        }
+
+        /**
+         * Extract documents from UMCF media collection.
+         */
+        private fun extractDocuments(media: UMCFMediaCollection?): List<Document> =
+            media?.reference?.filter { it.type in listOf("pdf", "text", "markdown") }?.map { ref ->
+                Document(
+                    id = ref.id,
+                    title = ref.title ?: ref.id,
+                    url = ref.url ?: "",
+                    type = ref.type,
+                )
+            } ?: emptyList()
 
         /**
          * Extract top-level learning objectives from root content.

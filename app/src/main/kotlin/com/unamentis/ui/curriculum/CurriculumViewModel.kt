@@ -200,6 +200,8 @@ class CurriculumViewModel
                             }
                         }
                 } catch (e: Exception) {
+                    // Download failed, remove from progress map - error is handled by repository
+                    android.util.Log.w("CurriculumViewModel", "Download failed for $curriculumId: ${e.message}", e)
                     _downloadProgress.value = _downloadProgress.value - curriculumId
                 }
             }

@@ -20,6 +20,21 @@ import java.util.UUID
 import kotlin.math.min
 
 /**
+ * Configuration for API client.
+ *
+ * @property tokenProvider Function to get current access token (null if not logged in)
+ * @property onTokenExpired Callback when token is expired (401 response)
+ * @property logServerUrl Log server base URL
+ * @property managementUrl Management console base URL
+ */
+data class ApiClientConfig(
+    val tokenProvider: (suspend () -> String?)? = null,
+    val onTokenExpired: (suspend () -> Unit)? = null,
+    val logServerUrl: String = "http://10.0.2.2:8765",
+    val managementUrl: String = "http://10.0.2.2:8766",
+)
+
+/**
  * API client for communicating with the UnaMentis management console.
  *
  * Handles all HTTP requests to the server including:
@@ -36,22 +51,16 @@ import kotlin.math.min
  * - Request/response logging
  * - Client identification headers
  *
- * @property context Application context for device info
+ * @property _context Application context for device info
  * @property okHttpClient HTTP client instance
  * @property json JSON serializer
- * @property tokenProvider Function to get current access token (null if not logged in)
- * @property onTokenExpired Callback when token is expired (401 response)
- * @property logServerUrl Log server base URL
- * @property managementUrl Management console base URL
+ * @property config Configuration for URLs and authentication callbacks
  */
 class ApiClient(
-    private val context: Context,
+    @Suppress("unused") private val _context: Context,
     private val okHttpClient: OkHttpClient,
     private val json: Json,
-    private val tokenProvider: (suspend () -> String?)? = null,
-    private val onTokenExpired: (suspend () -> Unit)? = null,
-    private val logServerUrl: String = "http://10.0.2.2:8765",
-    private val managementUrl: String = "http://10.0.2.2:8766",
+    private val config: ApiClientConfig = ApiClientConfig(),
 ) {
     companion object {
         private const val TAG = "ApiClient"
@@ -60,6 +69,11 @@ class ApiClient(
         private const val MAX_RETRY_DELAY_MS = 10000L
         private val JSON_MEDIA_TYPE = "application/json".toMediaType()
     }
+
+    private val tokenProvider get() = config.tokenProvider
+    private val onTokenExpired get() = config.onTokenExpired
+    private val logServerUrl get() = config.logServerUrl
+    private val managementUrl get() = config.managementUrl
 
     private val deviceId: String by lazy {
         UUID.randomUUID().toString()
@@ -1346,8 +1360,8 @@ class ApiClient(
                     }
                 }
             } catch (e: Exception) {
-                // Silently fail logging errors
-                Log.w(TAG, "Failed to send log: ${e.message}")
+                // Silently fail logging errors - don't want logging to crash the app
+                Log.w(TAG, "Failed to send log: ${e.message}", e)
             }
         }
 
@@ -1512,44 +1526,7 @@ class ApiClient(
             try {
                 okHttpClient.newCall(request).execute().use { response ->
                     val bodyString = response.body?.string()
-
-                    when {
-                        response.code == 401 -> {
-                            onTokenExpired?.invoke()
-                            val error =
-                                bodyString?.let {
-                                    try {
-                                        json.decodeFromString<ApiError>(it)
-                                    } catch (e: Exception) {
-                                        ApiError("Unauthorized", "UNAUTHORIZED")
-                                    }
-                                } ?: ApiError("Unauthorized", "UNAUTHORIZED")
-                            ApiResult.Error(error, 401)
-                        }
-                        !response.isSuccessful -> {
-                            val error =
-                                bodyString?.let {
-                                    try {
-                                        json.decodeFromString<ApiError>(it)
-                                    } catch (e: Exception) {
-                                        ApiError(it, "HTTP_${response.code}")
-                                    }
-                                } ?: ApiError("Unknown error", "HTTP_${response.code}")
-                            ApiResult.Error(error, response.code)
-                        }
-                        else -> {
-                            // Handle Unit return type
-                            if (T::class == Unit::class) {
-                                @Suppress("UNCHECKED_CAST")
-                                ApiResult.Success(Unit as T)
-                            } else {
-                                val data =
-                                    bodyString?.let { json.decodeFromString<T>(it) }
-                                        ?: throw IOException("Empty response body")
-                                ApiResult.Success(data)
-                            }
-                        }
-                    }
+                    handleResponse<T>(response.code, bodyString, response.isSuccessful)
                 }
             } catch (e: IOException) {
                 Log.e(TAG, "Network error: ${e.message}", e)
@@ -1559,6 +1536,71 @@ class ApiClient(
                 ApiResult.NetworkError(e.message ?: "Request error", e)
             }
         }
+
+    /**
+     * Handle HTTP response and convert to ApiResult.
+     */
+    private suspend inline fun <reified T> handleResponse(
+        code: Int,
+        bodyString: String?,
+        isSuccessful: Boolean,
+    ): ApiResult<T> =
+        when {
+            code == 401 -> handleUnauthorized(bodyString)
+            !isSuccessful -> handleError(bodyString, code)
+            else -> handleSuccess(bodyString)
+        }
+
+    /**
+     * Handle 401 Unauthorized response.
+     */
+    private suspend fun <T> handleUnauthorized(bodyString: String?): ApiResult<T> {
+        onTokenExpired?.invoke()
+        val error = parseApiError(bodyString, "Unauthorized", "UNAUTHORIZED")
+        return ApiResult.Error(error, 401)
+    }
+
+    /**
+     * Handle error response (non-2xx status codes).
+     */
+    private fun <T> handleError(
+        bodyString: String?,
+        code: Int,
+    ): ApiResult<T> {
+        val error = parseApiError(bodyString, "Unknown error", "HTTP_$code")
+        return ApiResult.Error(error, code)
+    }
+
+    /**
+     * Handle successful response.
+     */
+    private inline fun <reified T> handleSuccess(bodyString: String?): ApiResult<T> {
+        if (T::class == Unit::class) {
+            @Suppress("UNCHECKED_CAST")
+            return ApiResult.Success(Unit as T)
+        }
+        val data =
+            bodyString?.let { json.decodeFromString<T>(it) }
+                ?: throw IOException("Empty response body")
+        return ApiResult.Success(data)
+    }
+
+    /**
+     * Parse API error from response body, falling back to defaults if parsing fails.
+     */
+    private fun parseApiError(
+        bodyString: String?,
+        defaultMessage: String,
+        defaultCode: String,
+    ): ApiError =
+        bodyString?.let {
+            try {
+                json.decodeFromString<ApiError>(it)
+            } catch (_: Exception) {
+                // Failed to parse as ApiError, use raw string as message
+                ApiError(it.ifEmpty { defaultMessage }, defaultCode)
+            }
+        } ?: ApiError(defaultMessage, defaultCode)
 
     /**
      * Execute with exponential backoff retry.

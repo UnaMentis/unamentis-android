@@ -158,7 +158,7 @@ class SessionExporter
             }
 
         private fun exportToCsv(
-            session: Session,
+            _session: Session,
             transcript: List<TranscriptEntry>,
         ): String =
             buildString {

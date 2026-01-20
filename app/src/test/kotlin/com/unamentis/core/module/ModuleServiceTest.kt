@@ -74,8 +74,8 @@ class ModuleServiceTest {
             try {
                 service.fetchAvailableModules()
                 assertTrue("Should have thrown", false)
-            } catch (e: ModuleServiceError.NotConfigured) {
-                // Expected
+            } catch (_: ModuleServiceError.NotConfigured) {
+                // Expected - service should throw when not configured
             }
         }
 
@@ -194,8 +194,8 @@ class ModuleServiceTest {
             try {
                 service.fetchAvailableModules()
                 assertTrue("Should have thrown", false)
-            } catch (e: ModuleServiceError.ModuleNotFound) {
-                // Expected
+            } catch (_: ModuleServiceError.ModuleNotFound) {
+                // Expected - 404 should throw ModuleNotFound
             }
         }
 
@@ -236,8 +236,8 @@ class ModuleServiceTest {
             try {
                 service.fetchModuleDetail("non-existent")
                 assertTrue("Should have thrown", false)
-            } catch (e: ModuleServiceError.ModuleNotFound) {
-                // Expected
+            } catch (_: ModuleServiceError.ModuleNotFound) {
+                // Expected - 404 should throw ModuleNotFound
             }
         }
 
@@ -365,8 +365,8 @@ class ModuleServiceTest {
 
             try {
                 service.fetchAvailableModules()
-            } catch (e: ModuleServiceError) {
-                // Expected
+            } catch (_: ModuleServiceError) {
+                // Expected - 500 should throw ModuleServiceError
             }
 
             assertTrue(service.lastError.value != null)

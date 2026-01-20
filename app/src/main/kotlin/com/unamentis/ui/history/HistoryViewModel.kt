@@ -135,7 +135,7 @@ class HistoryViewModel
         private fun applyFilters(
             sessions: List<Session>,
             filter: SessionFilterState,
-            searchQuery: String,
+            _searchQuery: String,
         ): List<Session> {
             var result = sessions
 

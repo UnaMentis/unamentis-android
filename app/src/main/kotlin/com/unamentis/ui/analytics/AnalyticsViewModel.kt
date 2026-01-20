@@ -215,7 +215,6 @@ class AnalyticsViewModel
                     }
 
                 val today = LocalDate.now()
-                val startDate = today.minusDays(days.toLong() - 1)
 
                 (0 until days).map { daysAgo ->
                     val date = today.minusDays(daysAgo.toLong())

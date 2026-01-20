@@ -42,79 +42,108 @@ class TodoReminderWorker
                 Result.success()
             } catch (e: Exception) {
                 // Log error but don't fail the work - we'll retry
+                android.util.Log.w("TodoReminderWorker", "Error checking todos: ${e.message}", e)
                 Result.retry()
             }
         }
 
         private suspend fun checkTodosAndNotify() {
             val now = System.currentTimeMillis()
-            val oneHour = 60 * 60 * 1000L
-            val twentyFourHours = 24 * oneHour
-
-            // Get all active todos with due dates
-            val activeTodos =
-                database.todoDao().getActiveTodosWithDueDates()
+            val activeTodos = database.todoDao().getActiveTodosWithDueDates()
 
             var overdueCount = 0
-
             for (todo in activeTodos) {
                 val dueDate = todo.dueDate ?: continue
-
-                // Skip if already completed
                 if (todo.status != TodoStatus.ACTIVE) continue
 
                 val timeUntilDue = dueDate - now
+                if (timeUntilDue < 0) overdueCount++
 
-                when {
-                    // Overdue
-                    timeUntilDue < 0 -> {
-                        overdueCount++
-                        // Only notify once per overdue period (check if we recently notified)
-                        val lastNotified = getLastNotifiedTime(todo.id)
-                        if (now - lastNotified > oneHour) {
-                            NotificationHelper.showOverdueNotification(
-                                context = applicationContext,
-                                todoId = todo.id,
-                                title = todo.title,
-                                overdueBy = "${NotificationHelper.formatDuration(-timeUntilDue)} overdue",
-                            )
-                            setLastNotifiedTime(todo.id, now)
-                        }
-                    }
-
-                    // Due within 1 hour
-                    timeUntilDue in 0..oneHour -> {
-                        val lastNotified = getLastNotifiedTime(todo.id)
-                        // Only notify once for this threshold
-                        if (lastNotified < dueDate - oneHour) {
-                            NotificationHelper.showReminderNotification(
-                                context = applicationContext,
-                                todoId = todo.id,
-                                title = todo.title,
-                                timeUntilDue = "in ${NotificationHelper.formatDuration(timeUntilDue)}",
-                            )
-                            setLastNotifiedTime(todo.id, now)
-                        }
-                    }
-
-                    // Due within 24 hours (notify once per day)
-                    timeUntilDue in oneHour..twentyFourHours -> {
-                        val lastNotified = getLastNotifiedTime(todo.id)
-                        // Only notify once for the "due tomorrow" notification
-                        if (lastNotified < dueDate - twentyFourHours) {
-                            NotificationHelper.showReminderNotification(
-                                context = applicationContext,
-                                todoId = todo.id,
-                                title = todo.title,
-                                timeUntilDue = "tomorrow",
-                            )
-                            setLastNotifiedTime(todo.id, now)
-                        }
-                    }
-                }
+                checkAndNotifyTodo(todo.id, todo.title, dueDate, timeUntilDue, now)
             }
 
-            // Show summary notification for overdue todos
+            showOrCancelOverdueSummary(overdueCount)
+        }
+
+        private fun checkAndNotifyTodo(
+            todoId: String,
+            title: String,
+            dueDate: Long,
+            timeUntilDue: Long,
+            now: Long,
+        ) {
+            val oneHour = 60 * 60 * 1000L
+            val twentyFourHours = 24 * oneHour
+
+            when {
+                timeUntilDue < 0 ->
+                    notifyOverdueIfNeeded(todoId, title, timeUntilDue, now, oneHour)
+                timeUntilDue in 0..oneHour ->
+                    notifyDueSoonIfNeeded(todoId, title, dueDate, timeUntilDue, now, oneHour)
+                timeUntilDue in oneHour..twentyFourHours ->
+                    notifyDueTomorrowIfNeeded(todoId, title, dueDate, now, twentyFourHours)
+            }
+        }
+
+        private fun notifyOverdueIfNeeded(
+            todoId: String,
+            title: String,
+            timeUntilDue: Long,
+            now: Long,
+            oneHour: Long,
+        ) {
+            val lastNotified = getLastNotifiedTime(todoId)
+            if (now - lastNotified > oneHour) {
+                NotificationHelper.showOverdueNotification(
+                    context = applicationContext,
+                    todoId = todoId,
+                    title = title,
+                    overdueBy = "${NotificationHelper.formatDuration(-timeUntilDue)} overdue",
+                )
+                setLastNotifiedTime(todoId, now)
+            }
+        }
+
+        private fun notifyDueSoonIfNeeded(
+            todoId: String,
+            title: String,
+            dueDate: Long,
+            timeUntilDue: Long,
+            now: Long,
+            oneHour: Long,
+        ) {
+            val lastNotified = getLastNotifiedTime(todoId)
+            if (lastNotified < dueDate - oneHour) {
+                NotificationHelper.showReminderNotification(
+                    context = applicationContext,
+                    todoId = todoId,
+                    title = title,
+                    timeUntilDue = "in ${NotificationHelper.formatDuration(timeUntilDue)}",
+                )
+                setLastNotifiedTime(todoId, now)
+            }
+        }
+
+        private fun notifyDueTomorrowIfNeeded(
+            todoId: String,
+            title: String,
+            dueDate: Long,
+            now: Long,
+            twentyFourHours: Long,
+        ) {
+            val lastNotified = getLastNotifiedTime(todoId)
+            if (lastNotified < dueDate - twentyFourHours) {
+                NotificationHelper.showReminderNotification(
+                    context = applicationContext,
+                    todoId = todoId,
+                    title = title,
+                    timeUntilDue = "tomorrow",
+                )
+                setLastNotifiedTime(todoId, now)
+            }
+        }
+
+        private fun showOrCancelOverdueSummary(overdueCount: Int) {
             if (overdueCount > 0) {
                 NotificationHelper.showOverdueSummaryNotification(
                     context = applicationContext,

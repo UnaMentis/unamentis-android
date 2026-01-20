@@ -299,8 +299,8 @@ class ServerConfigManager
                                 discovered.add(config)
                                 Log.i(TAG, "Discovered server: ${config.name} at $host:$port")
                             }
-                        } catch (e: Exception) {
-                            // Server not available at this address/port
+                        } catch (_: Exception) {
+                            // Server not available at this address/port - expected during discovery
                         }
                     }
                 }
@@ -362,7 +362,8 @@ class ServerConfigManager
                         }
 
                     response
-                } catch (e: Exception) {
+                } catch (_: Exception) {
+                    // Server not reachable at this address/port
                     null
                 }
             }
@@ -423,7 +424,8 @@ class ServerConfigManager
                             emptyList()
                         }
                     }
-                } catch (e: Exception) {
+                } catch (_: Exception) {
+                    // Failed to discover Ollama models - return empty list
                     emptyList()
                 }
             }
@@ -455,7 +457,8 @@ class ServerConfigManager
                             emptyList()
                         }
                     }
-                } catch (e: Exception) {
+                } catch (_: Exception) {
+                    // Failed to discover Piper voices - return empty list
                     emptyList()
                 }
             }
@@ -487,7 +490,8 @@ class ServerConfigManager
                             emptyList()
                         }
                     }
-                } catch (e: Exception) {
+                } catch (_: Exception) {
+                    // Failed to discover VibeVoice voices - return empty list
                     emptyList()
                 }
             }

@@ -225,27 +225,25 @@ object ModelContextWindows {
     fun contextWindow(model: String): Int {
         val normalizedModel = model.lowercase()
 
-        // OpenAI models
-        if ("gpt-4o" in normalizedModel) return 128_000
-        if ("gpt-4-turbo" in normalizedModel) return 128_000
-        if ("gpt-4" in normalizedModel) return 8_192
-        if ("gpt-3.5" in normalizedModel) return 16_385
-
-        // Anthropic models
-        if ("claude-3" in normalizedModel) return 200_000
-        if ("claude-2" in normalizedModel) return 100_000
-
-        // Self-hosted models (common configurations)
-        if ("qwen2.5" in normalizedModel) return 32_768
-        if ("llama3.2" in normalizedModel) return 128_000
-        if ("llama3.1" in normalizedModel) return 128_000
-        if ("mistral" in normalizedModel) return 32_768
-
-        // On-device models
-        if ("ministral" in normalizedModel) return 8_192
-        if ("phi" in normalizedModel) return 4_096
-
-        return DEFAULT_CONTEXT_WINDOW
+        return when {
+            // OpenAI models
+            "gpt-4o" in normalizedModel -> 128_000
+            "gpt-4-turbo" in normalizedModel -> 128_000
+            "gpt-4" in normalizedModel -> 8_192
+            "gpt-3.5" in normalizedModel -> 16_385
+            // Anthropic models
+            "claude-3" in normalizedModel -> 200_000
+            "claude-2" in normalizedModel -> 100_000
+            // Self-hosted models (common configurations)
+            "qwen2.5" in normalizedModel -> 32_768
+            "llama3.2" in normalizedModel -> 128_000
+            "llama3.1" in normalizedModel -> 128_000
+            "mistral" in normalizedModel -> 32_768
+            // On-device models
+            "ministral" in normalizedModel -> 8_192
+            "phi" in normalizedModel -> 4_096
+            else -> DEFAULT_CONTEXT_WINDOW
+        }
     }
 }
 

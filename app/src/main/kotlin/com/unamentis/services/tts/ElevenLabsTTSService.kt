@@ -150,7 +150,8 @@ class ElevenLabsTTSService(
                                     android.util.Log.e("ElevenLabsTTS", "Server error: ${response.error}")
                                     close(Exception(response.error))
                                 }
-                            } catch (e: Exception) {
+                            } catch (_: Exception) {
+                                // Not JSON, likely a non-parseable message - log for debugging
                                 android.util.Log.w("ElevenLabsTTS", "Non-JSON message: $text")
                             }
                         }

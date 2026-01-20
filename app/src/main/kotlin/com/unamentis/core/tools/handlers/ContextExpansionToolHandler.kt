@@ -74,13 +74,21 @@ class ContextExpansionToolHandler
                                 "query" to
                                     ToolProperty(
                                         type = "string",
-                                        description = "What information do you need? Be specific about the topic or concept.",
+                                        description =
+                                            "What information do you need? " +
+                                                "Be specific about the topic or concept.",
                                     ),
                                 "scope" to
                                     ToolProperty(
                                         type = "string",
                                         description = "Where to search for the information",
-                                        enum = listOf("current_topic", "current_unit", "full_curriculum", "related_topics"),
+                                        enum =
+                                            listOf(
+                                                "current_topic",
+                                                "current_unit",
+                                                "full_curriculum",
+                                                "related_topics",
+                                            ),
                                     ),
                                 "reason" to
                                     ToolProperty(
@@ -199,12 +207,21 @@ class ContextExpansionToolHandler
             // Get current topic first
             results.addAll(searchCurrentTopic(query))
 
-            val curriculum = curriculumEngine.currentCurriculum.value ?: return results
-            val currentTopic = curriculumEngine.currentTopic.value ?: return results
+            val curriculum = curriculumEngine.currentCurriculum.value
+            val currentTopic = curriculumEngine.currentTopic.value
+
+            // Early exit if curriculum or topic unavailable
+            if (curriculum == null || currentTopic == null) {
+                return results
+            }
 
             val topics = curriculum.topics
             val currentIndex = topics.indexOfFirst { it.id == currentTopic.id }
-            if (currentIndex == -1) return results
+
+            // Early exit if topic not found in curriculum
+            if (currentIndex == -1) {
+                return results
+            }
 
             // Search previous topic
             if (currentIndex > 0) {

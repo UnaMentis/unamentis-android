@@ -62,7 +62,11 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
                 Modifier
                     .fillMaxSize()
                     .padding(paddingValues),
-            contentPadding = PaddingValues(horizontal = Dimensions.ScreenHorizontalPadding, vertical = Dimensions.ScreenVerticalPadding),
+            contentPadding =
+                PaddingValues(
+                    horizontal = Dimensions.ScreenHorizontalPadding,
+                    vertical = Dimensions.ScreenVerticalPadding,
+                ),
             verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingLarge),
         ) {
             // Time range selector
@@ -589,7 +593,7 @@ private fun PieChart(
 @Composable
 private fun LineChart(
     data: List<Float>,
-    labels: List<String>,
+    @Suppress("unused") labels: List<String>,
     modifier: Modifier = Modifier,
 ) {
     val maxValue = data.maxOrNull() ?: 1f

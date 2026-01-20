@@ -505,83 +505,98 @@ class WebSocketClient
         private suspend fun parseAndEmitMessage(text: String) {
             try {
                 val raw = json.decodeFromString<RawWebSocketMessage>(text)
-                val timestamp = raw.timestamp ?: ""
-
-                val message: WebSocketMessage? =
-                    when (raw.type) {
-                        "pong" -> WebSocketMessage.Pong(timestamp)
-
-                        "log" -> {
-                            raw.data?.let { data ->
-                                val logData = json.decodeFromString<LogData>(data.toString())
-                                WebSocketMessage.Log(
-                                    level = logData.level,
-                                    message = logData.message,
-                                    source = logData.source,
-                                    timestamp = timestamp,
-                                )
-                            }
-                        }
-
-                        "metric" -> {
-                            raw.data?.let { data ->
-                                val metricData = json.decodeFromString<MetricData>(data.toString())
-                                WebSocketMessage.Metric(
-                                    cpuPercent = metricData.cpuPercent,
-                                    memoryPercent = metricData.memoryPercent,
-                                    activeSessions = metricData.activeSessions,
-                                    timestamp = timestamp,
-                                )
-                            }
-                        }
-
-                        "session_update" -> {
-                            raw.data?.let { data ->
-                                val sessionData = json.decodeFromString<SessionUpdateData>(data.toString())
-                                WebSocketMessage.SessionUpdate(
-                                    sessionId = sessionData.sessionId,
-                                    status = sessionData.status,
-                                    event = sessionData.event,
-                                    timestamp = timestamp,
-                                )
-                            }
-                        }
-
-                        "service_status" -> {
-                            raw.data?.let { data ->
-                                val serviceData = json.decodeFromString<ServiceStatusData>(data.toString())
-                                WebSocketMessage.ServiceStatus(
-                                    serviceId = serviceData.serviceId,
-                                    status = serviceData.status,
-                                    event = serviceData.event,
-                                    timestamp = timestamp,
-                                )
-                            }
-                        }
-
-                        "import_progress" -> {
-                            raw.data?.let { data ->
-                                val importData = json.decodeFromString<ImportProgressData>(data.toString())
-                                WebSocketMessage.ImportProgress(
-                                    jobId = importData.jobId,
-                                    progress = importData.progress,
-                                    currentTopic = importData.currentTopic,
-                                    timestamp = timestamp,
-                                )
-                            }
-                        }
-
-                        else -> {
-                            Log.w(TAG, "Unknown message type: ${raw.type}")
-                            null
-                        }
-                    }
-
+                val message = parseRawWebSocketMessage(raw)
                 message?.let { _messages.emit(it) }
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to parse message: $text", e)
             }
         }
+
+        private fun parseRawWebSocketMessage(raw: RawWebSocketMessage): WebSocketMessage? {
+            val timestamp = raw.timestamp ?: ""
+            return when (raw.type) {
+                "pong" -> WebSocketMessage.Pong(timestamp)
+                "log" -> parseLogMessage(raw.data, timestamp)
+                "metric" -> parseMetricMessage(raw.data, timestamp)
+                "session_update" -> parseSessionUpdateMessage(raw.data, timestamp)
+                "service_status" -> parseServiceStatusMessage(raw.data, timestamp)
+                "import_progress" -> parseImportProgressMessage(raw.data, timestamp)
+                else -> {
+                    Log.w(TAG, "Unknown message type: ${raw.type}")
+                    null
+                }
+            }
+        }
+
+        private fun parseLogMessage(
+            data: kotlinx.serialization.json.JsonObject?,
+            timestamp: String,
+        ): WebSocketMessage.Log? =
+            data?.let {
+                val logData = json.decodeFromString<LogData>(it.toString())
+                WebSocketMessage.Log(
+                    level = logData.level,
+                    message = logData.message,
+                    source = logData.source,
+                    timestamp = timestamp,
+                )
+            }
+
+        private fun parseMetricMessage(
+            data: kotlinx.serialization.json.JsonObject?,
+            timestamp: String,
+        ): WebSocketMessage.Metric? =
+            data?.let {
+                val metricData = json.decodeFromString<MetricData>(it.toString())
+                WebSocketMessage.Metric(
+                    cpuPercent = metricData.cpuPercent,
+                    memoryPercent = metricData.memoryPercent,
+                    activeSessions = metricData.activeSessions,
+                    timestamp = timestamp,
+                )
+            }
+
+        private fun parseSessionUpdateMessage(
+            data: kotlinx.serialization.json.JsonObject?,
+            timestamp: String,
+        ): WebSocketMessage.SessionUpdate? =
+            data?.let {
+                val sessionData = json.decodeFromString<SessionUpdateData>(it.toString())
+                WebSocketMessage.SessionUpdate(
+                    sessionId = sessionData.sessionId,
+                    status = sessionData.status,
+                    event = sessionData.event,
+                    timestamp = timestamp,
+                )
+            }
+
+        private fun parseServiceStatusMessage(
+            data: kotlinx.serialization.json.JsonObject?,
+            timestamp: String,
+        ): WebSocketMessage.ServiceStatus? =
+            data?.let {
+                val serviceData = json.decodeFromString<ServiceStatusData>(it.toString())
+                WebSocketMessage.ServiceStatus(
+                    serviceId = serviceData.serviceId,
+                    status = serviceData.status,
+                    event = serviceData.event,
+                    timestamp = timestamp,
+                )
+            }
+
+        private fun parseImportProgressMessage(
+            data: kotlinx.serialization.json.JsonObject?,
+            timestamp: String,
+        ): WebSocketMessage.ImportProgress? =
+            data?.let {
+                val importData = json.decodeFromString<ImportProgressData>(it.toString())
+                WebSocketMessage.ImportProgress(
+                    jobId = importData.jobId,
+                    progress = importData.progress,
+                    currentTopic = importData.currentTopic,
+                    timestamp = timestamp,
+                )
+            }
 
         /**
          * Clean up resources.

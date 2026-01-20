@@ -265,7 +265,12 @@ fun FullscreenAssetViewer(
                                     Modifier
                                         .align(Alignment.BottomCenter)
                                         .padding(
-                                            bottom = if (currentAsset?.title != null || currentAsset?.description != null) 80.dp else 16.dp,
+                                            bottom =
+                                                if (currentAsset?.title != null || currentAsset?.description != null) {
+                                                    80.dp
+                                                } else {
+                                                    16.dp
+                                                },
                                         ),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                             ) {

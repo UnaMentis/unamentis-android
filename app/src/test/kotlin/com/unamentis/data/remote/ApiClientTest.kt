@@ -35,13 +35,17 @@ class ApiClientTest {
         mockServer.start()
 
         val context = mockk<Context>(relaxed = true)
-        apiClient =
-            ApiClient(
-                context = context,
-                okHttpClient = OkHttpClient(),
-                json = json,
+        val config =
+            ApiClientConfig(
                 logServerUrl = mockServer.url("/").toString().trimEnd('/'),
                 managementUrl = mockServer.url("/").toString().trimEnd('/'),
+            )
+        apiClient =
+            ApiClient(
+                _context = context,
+                okHttpClient = OkHttpClient(),
+                json = json,
+                config = config,
             )
     }
 

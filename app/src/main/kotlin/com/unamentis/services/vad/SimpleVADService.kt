@@ -134,12 +134,23 @@ class SimpleVADService(
 
         var crossings = 0
         for (i in 1 until samples.size) {
-            if ((samples[i] >= 0 && samples[i - 1] < 0) ||
-                (samples[i] < 0 && samples[i - 1] >= 0)
-            ) {
+            val isZeroCrossing = isSignChange(samples[i - 1], samples[i])
+            if (isZeroCrossing) {
                 crossings++
             }
         }
         return crossings.toFloat() / (samples.size - 1)
+    }
+
+    /**
+     * Check if there is a sign change between two consecutive samples.
+     */
+    private fun isSignChange(
+        previous: Float,
+        current: Float,
+    ): Boolean {
+        val crossingPositiveToNegative = current >= 0 && previous < 0
+        val crossingNegativeToPositive = current < 0 && previous >= 0
+        return crossingPositiveToNegative || crossingNegativeToPositive
     }
 }

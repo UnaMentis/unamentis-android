@@ -42,14 +42,18 @@ class SessionManagerTest {
         every { audioEngine.startCapture(any()) } returns true
         every { curriculumEngine.getCurrentContext() } returns null
 
-        sessionManager =
-            SessionManager(
+        val dependencies =
+            SessionDependencies(
                 audioEngine = audioEngine,
                 vadService = vadService,
                 sttService = sttService,
                 ttsService = ttsService,
                 llmService = llmService,
                 curriculumEngine = curriculumEngine,
+            )
+        sessionManager =
+            SessionManager(
+                dependencies = dependencies,
                 scope = testScope,
             )
     }

@@ -11,6 +11,31 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
+ * Data for updating widget display.
+ *
+ * @property totalTopics Total number of topics in curriculum
+ * @property completedTopics Number of completed topics
+ * @property inProgressTopics Number of topics in progress
+ * @property overallMastery Overall mastery percentage (0-1)
+ * @property totalSessionMinutes Total minutes spent in sessions
+ * @property lastTopicTitle Title of the last topic accessed
+ * @property lastTopicId ID of the last topic accessed
+ * @property lastCurriculumName Name of the last curriculum accessed
+ * @property streakDays Number of consecutive days with activity
+ */
+data class WidgetUpdateData(
+    val totalTopics: Int = 0,
+    val completedTopics: Int = 0,
+    val inProgressTopics: Int = 0,
+    val overallMastery: Float = 0f,
+    val totalSessionMinutes: Long = 0L,
+    val lastTopicTitle: String? = null,
+    val lastTopicId: String? = null,
+    val lastCurriculumName: String? = null,
+    val streakDays: Int = 0,
+)
+
+/**
  * Service to update widget data from app state.
  *
  * Call this when:
@@ -32,29 +57,21 @@ class WidgetDataUpdater
          *
          * Fetches latest progress data and updates both
          * ProgressWidget and QuickActionWidget.
+         *
+         * @param data Widget update data containing progress information
          */
-        suspend fun updateWidgetData(
-            totalTopics: Int = 0,
-            completedTopics: Int = 0,
-            inProgressTopics: Int = 0,
-            overallMastery: Float = 0f,
-            totalSessionMinutes: Long = 0L,
-            lastTopicTitle: String? = null,
-            lastTopicId: String? = null,
-            lastCurriculumName: String? = null,
-            streakDays: Int = 0,
-        ) {
+        suspend fun updateWidgetData(data: WidgetUpdateData = WidgetUpdateData()) {
             // Update DataStore
             context.widgetDataStore.edit { prefs ->
-                prefs[WidgetDataKeys.TOTAL_TOPICS] = totalTopics
-                prefs[WidgetDataKeys.COMPLETED_TOPICS] = completedTopics
-                prefs[WidgetDataKeys.IN_PROGRESS_TOPICS] = inProgressTopics
-                prefs[WidgetDataKeys.OVERALL_MASTERY] = overallMastery
-                prefs[WidgetDataKeys.TOTAL_SESSION_MINUTES] = totalSessionMinutes
-                lastTopicTitle?.let { prefs[WidgetDataKeys.LAST_TOPIC_TITLE] = it }
-                lastTopicId?.let { prefs[WidgetDataKeys.LAST_TOPIC_ID] = it }
-                lastCurriculumName?.let { prefs[WidgetDataKeys.LAST_CURRICULUM_NAME] = it }
-                prefs[WidgetDataKeys.STREAK_DAYS] = streakDays
+                prefs[WidgetDataKeys.TOTAL_TOPICS] = data.totalTopics
+                prefs[WidgetDataKeys.COMPLETED_TOPICS] = data.completedTopics
+                prefs[WidgetDataKeys.IN_PROGRESS_TOPICS] = data.inProgressTopics
+                prefs[WidgetDataKeys.OVERALL_MASTERY] = data.overallMastery
+                prefs[WidgetDataKeys.TOTAL_SESSION_MINUTES] = data.totalSessionMinutes
+                data.lastTopicTitle?.let { prefs[WidgetDataKeys.LAST_TOPIC_TITLE] = it }
+                data.lastTopicId?.let { prefs[WidgetDataKeys.LAST_TOPIC_ID] = it }
+                data.lastCurriculumName?.let { prefs[WidgetDataKeys.LAST_CURRICULUM_NAME] = it }
+                prefs[WidgetDataKeys.STREAK_DAYS] = data.streakDays
                 prefs[WidgetDataKeys.LAST_UPDATED] = System.currentTimeMillis()
             }
 
@@ -74,8 +91,10 @@ class WidgetDataUpdater
             val streakDays = calculateStreak(sessions)
 
             updateWidgetData(
-                totalSessionMinutes = totalMinutes,
-                streakDays = streakDays,
+                WidgetUpdateData(
+                    totalSessionMinutes = totalMinutes,
+                    streakDays = streakDays,
+                ),
             )
         }
 

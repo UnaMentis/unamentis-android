@@ -297,7 +297,8 @@ private fun shareExportedContent(
             Intent.createChooser(shareIntent, "Share Session Export"),
         )
     } catch (e: Exception) {
-        // Fall back to plain text share
+        // Fall back to plain text share when file sharing fails
+        android.util.Log.w("ExportBottomSheet", "File share failed, falling back to plain text: ${e.message}", e)
         val shareIntent =
             Intent(Intent.ACTION_SEND).apply {
                 type = "text/plain"

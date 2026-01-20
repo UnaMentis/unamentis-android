@@ -95,7 +95,7 @@ class FeatureFlagCache(
 
                     Log.i(TAG, "Loaded ${cache.flags.size} flags from cache (age: ${cacheAge / 1000}s)")
                 } catch (e: Exception) {
-                    Log.e(TAG, "Failed to load cache: ${e.message}")
+                    Log.e(TAG, "Failed to load cache: ${e.message}", e)
                     throw FeatureFlagError.CacheError("Failed to load: ${e.message}")
                 }
             }
@@ -135,7 +135,7 @@ class FeatureFlagCache(
                     cacheFile.writeText(content)
                     Log.d(TAG, "Saved ${flags.size} flags to cache")
                 } catch (e: Exception) {
-                    Log.e(TAG, "Failed to save cache: ${e.message}")
+                    Log.e(TAG, "Failed to save cache: ${e.message}", e)
                     throw FeatureFlagError.CacheError("Failed to save: ${e.message}")
                 }
             }

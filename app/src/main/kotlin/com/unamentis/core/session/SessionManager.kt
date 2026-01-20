@@ -10,6 +10,27 @@ import kotlinx.coroutines.flow.*
 import java.util.*
 
 /**
+ * Dependencies for SessionManager.
+ *
+ * Groups all required services for the session orchestrator.
+ *
+ * @property audioEngine Audio I/O engine
+ * @property vadService Voice activity detection
+ * @property sttService Speech-to-text provider
+ * @property ttsService Text-to-speech provider
+ * @property llmService Language model provider
+ * @property curriculumEngine Curriculum progress tracking
+ */
+data class SessionDependencies(
+    val audioEngine: AudioEngine,
+    val vadService: VADService,
+    val sttService: STTService,
+    val ttsService: TTSService,
+    val llmService: LLMService,
+    val curriculumEngine: CurriculumEngine,
+)
+
+/**
  * Core session orchestrator managing voice conversation state machine.
  *
  * State Machine:
@@ -34,23 +55,19 @@ import java.util.*
  * - AI audio stops, LLM generation cancelled
  * - New user utterance processed
  *
- * @property audioEngine Audio I/O engine
- * @property vadService Voice activity detection
- * @property sttService Speech-to-text provider
- * @property ttsService Text-to-speech provider
- * @property llmService Language model provider
- * @property curriculumEngine Curriculum progress tracking
+ * @property dependencies Required services bundle
  * @property scope Coroutine scope for session lifecycle
  */
 class SessionManager(
-    private val audioEngine: AudioEngine,
-    private val vadService: VADService,
-    private val sttService: STTService,
-    private val ttsService: TTSService,
-    private val llmService: LLMService,
-    private val curriculumEngine: CurriculumEngine,
+    private val dependencies: SessionDependencies,
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default + SupervisorJob()),
 ) {
+    private val audioEngine get() = dependencies.audioEngine
+    private val vadService get() = dependencies.vadService
+    private val sttService get() = dependencies.sttService
+    private val ttsService get() = dependencies.ttsService
+    private val llmService get() = dependencies.llmService
+    private val curriculumEngine get() = dependencies.curriculumEngine
     private val _sessionState = MutableStateFlow<SessionState>(SessionState.IDLE)
     val sessionState: StateFlow<SessionState> = _sessionState.asStateFlow()
 
@@ -91,7 +108,6 @@ class SessionManager(
 
     // Configuration
     private val silenceThresholdMs = 1500L // 1.5 seconds of silence to finalize utterance
-    private val vadFrameSizeMs = 32 // 32ms frames at 16kHz = 512 samples
 
     /**
      * Set the recording mode for this session.

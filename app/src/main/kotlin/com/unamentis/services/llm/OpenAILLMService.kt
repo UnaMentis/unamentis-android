@@ -112,12 +112,13 @@ class OpenAILLMService(
      */
     private suspend fun processSSEStream(
         reader: BufferedReader,
-        isFirstToken: Boolean,
-        startTime: Long,
+        _isFirstToken: Boolean,
+        _startTime: Long,
         emit: suspend (LLMToken) -> Unit,
     ) {
-        var line: String?
-        while (reader.readLine().also { line = it } != null) {
+        var line: String? = null
+        var streamComplete = false
+        while (!streamComplete && reader.readLine().also { line = it } != null) {
             val currentLine = line ?: continue
 
             if (currentLine.startsWith("data: ")) {
@@ -126,27 +127,42 @@ class OpenAILLMService(
                 // Check for stream end
                 if (data == "[DONE]") {
                     emit(LLMToken(content = "", isDone = true))
-                    break
-                }
-
-                try {
-                    val chunk = json.decodeFromString<OpenAIStreamChunk>(data)
-                    val content = chunk.choices.firstOrNull()?.delta?.content ?: ""
-
-                    if (content.isNotEmpty()) {
-                        emit(LLMToken(content = content, isDone = false))
-                    }
-
-                    // Check if this is the last chunk
-                    val finishReason = chunk.choices.firstOrNull()?.finishReason
-                    if (finishReason != null) {
-                        emit(LLMToken(content = "", isDone = true))
-                        break
-                    }
-                } catch (e: Exception) {
-                    android.util.Log.w("OpenAI", "Failed to parse chunk: $data", e)
+                    streamComplete = true
+                } else {
+                    streamComplete = processSSEChunk(data, emit)
                 }
             }
+        }
+    }
+
+    /**
+     * Process a single SSE chunk.
+     *
+     * @return true if stream is complete, false otherwise
+     */
+    private suspend fun processSSEChunk(
+        data: String,
+        emit: suspend (LLMToken) -> Unit,
+    ): Boolean {
+        return try {
+            val chunk = json.decodeFromString<OpenAIStreamChunk>(data)
+            val content = chunk.choices.firstOrNull()?.delta?.content ?: ""
+
+            if (content.isNotEmpty()) {
+                emit(LLMToken(content = content, isDone = false))
+            }
+
+            // Check if this is the last chunk
+            val finishReason = chunk.choices.firstOrNull()?.finishReason
+            if (finishReason != null) {
+                emit(LLMToken(content = "", isDone = true))
+                true
+            } else {
+                false
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("OpenAI", "Failed to parse chunk: $data", e)
+            false
         }
     }
 

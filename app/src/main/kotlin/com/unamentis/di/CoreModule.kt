@@ -3,6 +3,7 @@ package com.unamentis.di
 import android.content.Context
 import com.unamentis.core.audio.AudioEngine
 import com.unamentis.core.curriculum.CurriculumEngine
+import com.unamentis.core.session.SessionDependencies
 import com.unamentis.core.session.SessionManager
 import com.unamentis.data.model.LLMService
 import com.unamentis.data.model.STTService
@@ -108,13 +109,17 @@ object CoreModule {
         curriculumEngine: CurriculumEngine,
         scope: CoroutineScope,
     ): SessionManager {
+        val dependencies =
+            SessionDependencies(
+                audioEngine = audioEngine,
+                vadService = vadService,
+                sttService = sttService,
+                ttsService = ttsService,
+                llmService = llmService,
+                curriculumEngine = curriculumEngine,
+            )
         return SessionManager(
-            audioEngine = audioEngine,
-            vadService = vadService,
-            sttService = sttService,
-            ttsService = ttsService,
-            llmService = llmService,
-            curriculumEngine = curriculumEngine,
+            dependencies = dependencies,
             scope = scope,
         )
     }

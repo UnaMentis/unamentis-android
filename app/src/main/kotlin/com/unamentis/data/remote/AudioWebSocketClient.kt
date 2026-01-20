@@ -620,97 +620,89 @@ class AudioWebSocketClient
         private suspend fun parseAndEmitTextMessage(text: String) {
             try {
                 val raw = json.decodeFromString<RawAudioMessage>(text)
-
-                val message: AudioWebSocketMessage? =
-                    when (raw.type) {
-                        "pong" -> null // Just a ping response, no need to emit
-
-                        "vad_start" -> AudioWebSocketMessage.VadStart(raw.timestamp ?: "")
-
-                        "vad_end" ->
-                            AudioWebSocketMessage.VadEnd(
-                                timestamp = raw.timestamp ?: "",
-                                durationMs = raw.durationMs ?: 0,
-                            )
-
-                        "transcript" -> {
-                            AudioWebSocketMessage.Transcript(
-                                text = raw.text ?: "",
-                                confidence = raw.confidence ?: 0.0,
-                                latencyMs = raw.latencyMs ?: 0,
-                            )
-                        }
-
-                        "llm_start" -> AudioWebSocketMessage.LlmStart(raw.timestamp ?: "")
-
-                        "llm_token" -> AudioWebSocketMessage.LlmToken(raw.token ?: "")
-
-                        "llm_complete" -> {
-                            AudioWebSocketMessage.LlmComplete(
-                                text = raw.text ?: "",
-                                latencyMs = raw.latencyMs ?: 0,
-                            )
-                        }
-
-                        "tts_start" -> AudioWebSocketMessage.TtsStart(raw.textLength ?: 0)
-
-                        "tts_complete" -> {
-                            AudioWebSocketMessage.TtsComplete(
-                                durationMs = raw.durationMs ?: 0,
-                                latencyMs = raw.latencyMs ?: 0,
-                            )
-                        }
-
-                        "turn_complete" -> {
-                            val metrics = raw.metrics
-                            AudioWebSocketMessage.TurnComplete(
-                                turnId = raw.turnId ?: "",
-                                sttMs = metrics?.sttMs ?: 0,
-                                llmMs = metrics?.llmMs ?: 0,
-                                ttsMs = metrics?.ttsMs ?: 0,
-                                totalMs = metrics?.totalMs ?: 0,
-                            ).also {
-                                // Return to connected state after turn completes
-                                _state.value = AudioWebSocketState.CONNECTED
-                            }
-                        }
-
-                        "visual_asset" -> {
-                            raw.asset?.let { asset ->
-                                AudioWebSocketMessage.VisualAsset(
-                                    id = asset.id,
-                                    type = asset.type,
-                                    url = asset.url,
-                                    caption = asset.caption,
-                                )
-                            }
-                        }
-
-                        "error" -> {
-                            AudioWebSocketMessage.Error(
-                                code = raw.code ?: "UNKNOWN",
-                                message = raw.message ?: "Unknown error",
-                                recoverable = raw.recoverable ?: false,
-                            ).also {
-                                // If not recoverable, return to connected state
-                                if (raw.recoverable != true) {
-                                    if (_state.value != AudioWebSocketState.DISCONNECTED) {
-                                        _state.value = AudioWebSocketState.CONNECTED
-                                    }
-                                }
-                            }
-                        }
-
-                        else -> {
-                            Log.w(TAG, "Unknown audio message type: ${raw.type}")
-                            null
-                        }
-                    }
-
+                val message = parseRawAudioMessage(raw)
                 message?.let { _messages.emit(it) }
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to parse audio message: $text", e)
             }
+        }
+
+        private fun parseRawAudioMessage(raw: RawAudioMessage): AudioWebSocketMessage? =
+            when (raw.type) {
+                "pong" -> null
+                "vad_start" -> AudioWebSocketMessage.VadStart(raw.timestamp ?: "")
+                "vad_end" -> parseVadEnd(raw)
+                "transcript" -> parseTranscript(raw)
+                "llm_start" -> AudioWebSocketMessage.LlmStart(raw.timestamp ?: "")
+                "llm_token" -> AudioWebSocketMessage.LlmToken(raw.token ?: "")
+                "llm_complete" -> parseLlmComplete(raw)
+                "tts_start" -> AudioWebSocketMessage.TtsStart(raw.textLength ?: 0)
+                "tts_complete" -> parseTtsComplete(raw)
+                "turn_complete" -> parseTurnComplete(raw)
+                "visual_asset" -> parseVisualAsset(raw)
+                "error" -> parseError(raw)
+                else -> {
+                    Log.w(TAG, "Unknown audio message type: ${raw.type}")
+                    null
+                }
+            }
+
+        private fun parseVadEnd(raw: RawAudioMessage) =
+            AudioWebSocketMessage.VadEnd(
+                timestamp = raw.timestamp ?: "",
+                durationMs = raw.durationMs ?: 0,
+            )
+
+        private fun parseTranscript(raw: RawAudioMessage) =
+            AudioWebSocketMessage.Transcript(
+                text = raw.text ?: "",
+                confidence = raw.confidence ?: 0.0,
+                latencyMs = raw.latencyMs ?: 0,
+            )
+
+        private fun parseLlmComplete(raw: RawAudioMessage) =
+            AudioWebSocketMessage.LlmComplete(
+                text = raw.text ?: "",
+                latencyMs = raw.latencyMs ?: 0,
+            )
+
+        private fun parseTtsComplete(raw: RawAudioMessage) =
+            AudioWebSocketMessage.TtsComplete(
+                durationMs = raw.durationMs ?: 0,
+                latencyMs = raw.latencyMs ?: 0,
+            )
+
+        private fun parseTurnComplete(raw: RawAudioMessage): AudioWebSocketMessage {
+            val metrics = raw.metrics
+            _state.value = AudioWebSocketState.CONNECTED
+            return AudioWebSocketMessage.TurnComplete(
+                turnId = raw.turnId ?: "",
+                sttMs = metrics?.sttMs ?: 0,
+                llmMs = metrics?.llmMs ?: 0,
+                ttsMs = metrics?.ttsMs ?: 0,
+                totalMs = metrics?.totalMs ?: 0,
+            )
+        }
+
+        private fun parseVisualAsset(raw: RawAudioMessage): AudioWebSocketMessage? =
+            raw.asset?.let { asset ->
+                AudioWebSocketMessage.VisualAsset(
+                    id = asset.id,
+                    type = asset.type,
+                    url = asset.url,
+                    caption = asset.caption,
+                )
+            }
+
+        private fun parseError(raw: RawAudioMessage): AudioWebSocketMessage {
+            if (raw.recoverable != true && _state.value != AudioWebSocketState.DISCONNECTED) {
+                _state.value = AudioWebSocketState.CONNECTED
+            }
+            return AudioWebSocketMessage.Error(
+                code = raw.code ?: "UNKNOWN",
+                message = raw.message ?: "Unknown error",
+                recoverable = raw.recoverable ?: false,
+            )
         }
 
         /**

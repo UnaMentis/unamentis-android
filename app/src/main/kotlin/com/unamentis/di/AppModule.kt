@@ -158,15 +158,13 @@ object AppModule {
         okHttpClient: OkHttpClient,
         json: Json,
     ): ApiClient {
-        // Note: tokenProvider and onTokenExpired are set to null here
+        // Note: tokenProvider and onTokenExpired are set to null here (via default config)
         // and will be configured by AuthRepository after initialization.
         // This avoids circular dependency issues.
         return ApiClient(
-            context = context,
+            _context = context,
             okHttpClient = okHttpClient,
             json = json,
-            tokenProvider = null,
-            onTokenExpired = null,
         )
     }
 

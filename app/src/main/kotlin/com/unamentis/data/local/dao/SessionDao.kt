@@ -6,6 +6,23 @@ import com.unamentis.data.local.entity.TranscriptEntryEntity
 import kotlinx.coroutines.flow.Flow
 
 /**
+ * Statistics for updating a session.
+ *
+ * @property endTime End timestamp
+ * @property durationSeconds Session duration
+ * @property turnCount Number of turns
+ * @property interruptionCount Number of interruptions
+ * @property totalCost Total cost
+ */
+data class SessionStatsUpdate(
+    val endTime: Long,
+    val durationSeconds: Long,
+    val turnCount: Int,
+    val interruptionCount: Int,
+    val totalCost: Double,
+)
+
+/**
  * Data Access Object for sessions and transcripts.
  *
  * Provides methods to query and manage session history.
@@ -49,6 +66,9 @@ interface SessionDao {
     /**
      * Update session end time and stats.
      *
+     * Note: Room requires individual parameters for raw SQL queries.
+     * Use [SessionStatsUpdate] data class when calling from repository layer.
+     *
      * @param id Session identifier
      * @param endTime End timestamp
      * @param durationSeconds Session duration
@@ -56,6 +76,7 @@ interface SessionDao {
      * @param interruptionCount Number of interruptions
      * @param totalCost Total cost
      */
+    @Suppress("LongParameterList")
     @Query(
         """
         UPDATE sessions

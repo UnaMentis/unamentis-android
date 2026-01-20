@@ -212,7 +212,6 @@ class SileroOnnxVADService(
             )
         } catch (e: Exception) {
             android.util.Log.e(TAG, "Inference failed", e)
-            e.printStackTrace()
             VADResult(isSpeech = false, confidence = 0f)
         }
     }

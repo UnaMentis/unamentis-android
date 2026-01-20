@@ -147,7 +147,7 @@ class QuickActionWidget : GlanceAppWidget() {
     private fun ActionButton(
         icon: Int,
         label: String,
-        deepLink: String,
+        @Suppress("unused") deepLink: String,
         modifier: GlanceModifier = GlanceModifier,
     ) {
         val context = LocalContext.current

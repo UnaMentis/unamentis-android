@@ -92,10 +92,18 @@ class TelemetryEngine
             return listOf(
                 TurnMetrics(
                     turnNumber = 1,
-                    sttLatency = sttLatencies.map { it.durationMs.toInt() }.average().takeIf { !it.isNaN() }?.toInt() ?: 0,
-                    llmTTFT = llmLatencies.map { it.durationMs.toInt() }.average().takeIf { !it.isNaN() }?.toInt() ?: 0,
-                    ttsTTFB = ttsLatencies.map { it.durationMs.toInt() }.average().takeIf { !it.isNaN() }?.toInt() ?: 0,
-                    e2eLatency = e2eLatencies.map { it.durationMs.toInt() }.average().takeIf { !it.isNaN() }?.toInt() ?: 0,
+                    sttLatency =
+                        sttLatencies.map { it.durationMs.toInt() }
+                            .average().takeIf { !it.isNaN() }?.toInt() ?: 0,
+                    llmTTFT =
+                        llmLatencies.map { it.durationMs.toInt() }
+                            .average().takeIf { !it.isNaN() }?.toInt() ?: 0,
+                    ttsTTFB =
+                        ttsLatencies.map { it.durationMs.toInt() }
+                            .average().takeIf { !it.isNaN() }?.toInt() ?: 0,
+                    e2eLatency =
+                        e2eLatencies.map { it.durationMs.toInt() }
+                            .average().takeIf { !it.isNaN() }?.toInt() ?: 0,
                     estimatedCost = totalCost,
                 ),
             )
@@ -228,31 +236,30 @@ class TelemetryEngine
          */
         private fun categorizeProvider(provider: String): String {
             val normalized = provider.lowercase()
-            return when {
-                // STT providers
-                normalized.contains("deepgram") -> "STT"
-                normalized.contains("whisper") -> "STT"
-                normalized.contains("speechrecognizer") -> "STT"
-                normalized == "android" && normalized.contains("stt") -> "STT"
-
-                // TTS providers
-                normalized.contains("elevenlabs") -> "TTS"
-                normalized.contains("eleven_labs") -> "TTS"
-                normalized.contains("texttospeech") -> "TTS"
-                normalized == "android" && normalized.contains("tts") -> "TTS"
-
-                // LLM providers
-                normalized.contains("openai") -> "LLM"
-                normalized.contains("anthropic") -> "LLM"
-                normalized.contains("claude") -> "LLM"
-                normalized.contains("gpt") -> "LLM"
-                normalized.contains("patchpanel") -> "LLM"
-                normalized.contains("llama") -> "LLM"
-
-                // Default fallback based on common patterns
-                else -> "LLM"
-            }
+            return findProviderType(normalized) ?: "LLM"
         }
+
+        /**
+         * Find the provider type by matching against known provider patterns.
+         */
+        private fun findProviderType(normalized: String): String? {
+            for ((type, patterns) in providerPatterns) {
+                if (patterns.any { pattern -> normalized.contains(pattern) }) {
+                    return type
+                }
+            }
+            return null
+        }
+
+        /**
+         * Mapping of provider types to their identification patterns.
+         */
+        private val providerPatterns: Map<String, List<String>> =
+            mapOf(
+                "STT" to listOf("deepgram", "whisper", "speechrecognizer"),
+                "TTS" to listOf("elevenlabs", "eleven_labs", "texttospeech"),
+                "LLM" to listOf("openai", "anthropic", "claude", "gpt", "patchpanel", "llama"),
+            )
 
         /**
          * Clear all data for a session.

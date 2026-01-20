@@ -79,7 +79,8 @@ data class FeatureFlagContext(
                     Class.forName("com.unamentis.BuildConfig")
                         .getField("VERSION_NAME")
                         .get(null) as? String
-                } catch (e: Exception) {
+                } catch (_: Exception) {
+                    // BuildConfig may not be available in all contexts (e.g., tests)
                     null
                 }
 

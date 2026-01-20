@@ -1100,7 +1100,9 @@ private fun CurriculumSettingsSection(
             )
 
             Text(
-                text = "When a topic completes, seamlessly continue to the next topic in the curriculum with an audio announcement.",
+                text =
+                    "When a topic completes, seamlessly continue to the next topic " +
+                        "in the curriculum with an audio announcement.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

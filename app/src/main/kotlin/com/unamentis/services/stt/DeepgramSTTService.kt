@@ -112,7 +112,8 @@ class DeepgramSTTService(
                             if (t is javax.net.ssl.SSLPeerUnverifiedException) {
                                 android.util.Log.e(
                                     "DeepgramSTT",
-                                    "Certificate pinning failed for Deepgram. This may indicate a MITM attack or certificate rotation.",
+                                    "Certificate pinning failed for Deepgram. " +
+                                        "This may indicate a MITM attack or certificate rotation.",
                                     t,
                                 )
                                 close(

@@ -51,7 +51,6 @@ class FOVSessionContextCoordinator
     ) {
         companion object {
             private const val TAG = "FOVSessionCoordinator"
-            private const val DEFAULT_CONTEXT_WINDOW = 128_000
         }
 
         // Dependencies set via initialization
@@ -236,12 +235,21 @@ class FOVSessionContextCoordinator
             val results = mutableListOf<RetrievedContent>()
             results.addAll(searchCurrentTopic(query, curriculum))
 
-            val currentCurriculum = curriculum.currentCurriculum.value ?: return results
-            val currentTopic = curriculum.currentTopic.value ?: return results
+            val currentCurriculum = curriculum.currentCurriculum.value
+            val currentTopic = curriculum.currentTopic.value
+
+            // Early exit if curriculum or topic unavailable
+            if (currentCurriculum == null || currentTopic == null) {
+                return results
+            }
 
             val topics = currentCurriculum.topics
             val currentIndex = topics.indexOfFirst { it.id == currentTopic.id }
-            if (currentIndex == -1) return results
+
+            // Early exit if topic not found in curriculum
+            if (currentIndex == -1) {
+                return results
+            }
 
             // Search previous topic
             if (currentIndex > 0) {

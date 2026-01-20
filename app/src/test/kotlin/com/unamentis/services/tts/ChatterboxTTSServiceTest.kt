@@ -57,7 +57,7 @@ class ChatterboxTTSServiceTest {
         var exceptionThrown = false
         try {
             ChatterboxConfig(exaggeration = 2.0f)
-        } catch (e: IllegalArgumentException) {
+        } catch (_: IllegalArgumentException) {
             exceptionThrown = true
         }
         assertTrue("Should throw for exaggeration > 1.5", exceptionThrown)
@@ -65,7 +65,7 @@ class ChatterboxTTSServiceTest {
         exceptionThrown = false
         try {
             ChatterboxConfig(exaggeration = -0.1f)
-        } catch (e: IllegalArgumentException) {
+        } catch (_: IllegalArgumentException) {
             exceptionThrown = true
         }
         assertTrue("Should throw for exaggeration < 0", exceptionThrown)
@@ -82,7 +82,7 @@ class ChatterboxTTSServiceTest {
         var exceptionThrown = false
         try {
             ChatterboxConfig(cfgWeight = 1.5f)
-        } catch (e: IllegalArgumentException) {
+        } catch (_: IllegalArgumentException) {
             exceptionThrown = true
         }
         assertTrue("Should throw for cfgWeight > 1.0", exceptionThrown)
@@ -99,7 +99,7 @@ class ChatterboxTTSServiceTest {
         var exceptionThrown = false
         try {
             ChatterboxConfig(speed = 3.0f)
-        } catch (e: IllegalArgumentException) {
+        } catch (_: IllegalArgumentException) {
             exceptionThrown = true
         }
         assertTrue("Should throw for speed > 2.0", exceptionThrown)

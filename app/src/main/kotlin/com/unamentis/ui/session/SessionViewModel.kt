@@ -118,7 +118,13 @@ class SessionViewModel
                     sessionState = state,
                     isSessionActive = session != null,
                     canStart = state == SessionState.IDLE && session == null,
-                    canPause = state !in listOf(SessionState.IDLE, SessionState.PAUSED, SessionState.ERROR) && session != null,
+                    canPause =
+                        state !in
+                            listOf(
+                                SessionState.IDLE,
+                                SessionState.PAUSED,
+                                SessionState.ERROR,
+                            ) && session != null,
                     canResume = state == SessionState.PAUSED,
                     canStop = session != null,
                     transcript = transcriptList,
@@ -242,7 +248,7 @@ class SessionViewModel
         private fun getStatusMessage(
             state: SessionState,
             mode: RecordingMode,
-            isManuallyRecording: Boolean,
+            _isManuallyRecording: Boolean,
         ): String {
             return when (state) {
                 SessionState.IDLE -> {

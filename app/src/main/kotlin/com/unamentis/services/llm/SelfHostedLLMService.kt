@@ -186,11 +186,12 @@ class SelfHostedLLMService(
      */
     private suspend fun processSSEStream(
         reader: BufferedReader,
-        startTime: Long,
+        _startTime: Long,
         emit: suspend (LLMToken) -> Unit,
     ) {
-        var line: String?
-        while (reader.readLine().also { line = it } != null) {
+        var line: String? = null
+        var streamComplete = false
+        while (!streamComplete && reader.readLine().also { line = it } != null) {
             val currentLine = line ?: continue
 
             if (currentLine.startsWith("data: ")) {
@@ -199,30 +200,43 @@ class SelfHostedLLMService(
                 // Check for stream end
                 if (data == "[DONE]") {
                     emit(LLMToken(content = "", isDone = true))
-                    break
-                }
-
-                if (data.isEmpty()) continue
-
-                try {
-                    val chunk = json.decodeFromString<StreamChunk>(data)
-                    val choice = chunk.choices.firstOrNull() ?: continue
-                    val content = choice.delta?.content ?: ""
-
-                    if (content.isNotEmpty()) {
-                        emit(LLMToken(content = content, isDone = false))
-                    }
-
-                    // Check if this is the last chunk
-                    val finishReason = choice.finishReason
-                    if (finishReason != null) {
-                        emit(LLMToken(content = "", isDone = true))
-                        break
-                    }
-                } catch (e: Exception) {
-                    Log.w(TAG, "Failed to parse chunk: $data", e)
+                    streamComplete = true
+                } else if (data.isNotEmpty()) {
+                    streamComplete = processSSEChunk(data, emit)
                 }
             }
+        }
+    }
+
+    /**
+     * Process a single SSE chunk.
+     *
+     * @return true if stream is complete, false otherwise
+     */
+    private suspend fun processSSEChunk(
+        data: String,
+        emit: suspend (LLMToken) -> Unit,
+    ): Boolean {
+        return try {
+            val chunk = json.decodeFromString<StreamChunk>(data)
+            val choice = chunk.choices.firstOrNull() ?: return false
+            val content = choice.delta?.content ?: ""
+
+            if (content.isNotEmpty()) {
+                emit(LLMToken(content = content, isDone = false))
+            }
+
+            // Check if this is the last chunk
+            val finishReason = choice.finishReason
+            if (finishReason != null) {
+                emit(LLMToken(content = "", isDone = true))
+                true
+            } else {
+                false
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to parse chunk: $data", e)
+            false
         }
     }
 
@@ -324,8 +338,8 @@ class SelfHostedLLMService(
                 client.newCall(request).execute().use { response ->
                     if (response.isSuccessful) return@withContext true
                 }
-            } catch (e: Exception) {
-                // Try fallback
+            } catch (_: Exception) {
+                // /health endpoint not available, try fallback
             }
 
             // Try Ollama-specific endpoint
@@ -339,7 +353,8 @@ class SelfHostedLLMService(
                 client.newCall(request).execute().use { response ->
                     response.isSuccessful
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
+                // Server not reachable
                 false
             }
         }

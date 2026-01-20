@@ -90,7 +90,8 @@ data class LLMToolCall(
         return arguments[name]?.let { element ->
             try {
                 toolJson.decodeFromJsonElement<String>(element)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
+                // Failed to decode as string, fall back to raw string representation
                 element.toString().removeSurrounding("\"")
             }
         }
@@ -106,7 +107,8 @@ data class LLMToolCall(
         return arguments[name]?.let { element ->
             try {
                 toolJson.decodeFromJsonElement<Int>(element)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
+                // Failed to decode as Int, return null
                 null
             }
         }
@@ -122,7 +124,8 @@ data class LLMToolCall(
         return arguments[name]?.let { element ->
             try {
                 toolJson.decodeFromJsonElement<Boolean>(element)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
+                // Failed to decode as Boolean, return null
                 null
             }
         }
