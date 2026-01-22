@@ -30,13 +30,6 @@ class OnDeviceLLMServiceTest {
     }
 
     @Test
-    fun `provider name is OnDevice`() {
-        // We can't instantiate the real service in unit tests due to native library,
-        // but we can verify the expected provider name
-        assertEquals("OnDevice", "OnDevice")
-    }
-
-    @Test
     fun `Mistral prompt format is correct`() {
         // Test the expected Mistral/Ministral prompt format
         val systemMessage = "You are a helpful tutor."

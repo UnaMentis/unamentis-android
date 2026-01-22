@@ -30,6 +30,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
 import javax.inject.Named
+import javax.inject.Provider
 import javax.inject.Singleton
 
 /**
@@ -192,6 +193,9 @@ object ProviderModule {
      * - OpenAI (cloud, requires API key)
      * - Anthropic (cloud, requires API key)
      * - OnDevice (offline, uses llama.cpp with GGUF models)
+     *
+     * Note: OnDevice uses Provider<LLMService> to defer construction until needed,
+     * avoiding expensive System.loadLibrary calls on devices that don't support it.
      */
     @Provides
     @Singleton
@@ -199,7 +203,7 @@ object ProviderModule {
     fun providePatchPanelService(
         @Named("OpenAILLM") openai: LLMService,
         @Named("AnthropicLLM") anthropic: LLMService,
-        @Named("OnDeviceLLM") onDevice: LLMService,
+        @Named("OnDeviceLLM") onDeviceProvider: Provider<LLMService>,
         deviceCapabilityDetector: DeviceCapabilityDetector,
     ): LLMService {
         val providers =
@@ -208,8 +212,10 @@ object ProviderModule {
                 put("Anthropic", anthropic)
 
                 // Add OnDevice provider only if device supports it
+                // Using Provider.get() defers OnDeviceLLMService construction
+                // (including System.loadLibrary) until this point
                 if (deviceCapabilityDetector.supportsOnDeviceLLM()) {
-                    put("OnDevice", onDevice)
+                    put("OnDevice", onDeviceProvider.get())
                 }
             }
         return PatchPanelService(providers)

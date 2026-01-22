@@ -143,19 +143,31 @@ void LlamaInference::generate(
     std::vector<llama_token> tokens = tokenize(prompt, true);
     LOGD("Tokenized to %zu tokens", tokens.size());
 
+    // Handle empty prompt edge case
+    if (tokens.empty()) {
+        LOGW("Empty prompt after tokenization, cannot generate");
+        is_generating_.store(false);
+        callback("", true);
+        return;
+    }
+
     // Reset context for new generation
     resetContext();
 
-    // Create batch for processing
-    llama_batch batch = llama_batch_init(512, 0, 1);
+    // Create batch for processing with dynamic capacity based on token count
+    // Use at least 1 to avoid zero-capacity allocation, and ensure room for generation
+    const size_t batch_capacity = std::max<size_t>(1, tokens.size());
+    llama_batch batch = llama_batch_init(static_cast<int32_t>(batch_capacity), 0, 1);
 
     // Add prompt tokens to batch
     llama_batch_clear(batch);
-    for (size_t i = 0; i < tokens.size(); ++i) {
+    for (size_t i = 0; i < tokens.size() && i < batch_capacity; ++i) {
         llama_batch_add(batch, tokens[i], static_cast<llama_pos>(i), {0}, false);
     }
-    // Enable logits for last token
-    batch.logits[batch.n_tokens - 1] = 1;
+    // Enable logits for last token (guard against empty prompt)
+    if (!tokens.empty()) {
+        batch.logits[batch.n_tokens - 1] = 1;
+    }
 
     // Process prompt
     LOGD("Processing prompt through decoder...");

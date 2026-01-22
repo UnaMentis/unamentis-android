@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
+import okhttp3.Call
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
@@ -103,6 +104,9 @@ class ModelDownloadManager
 
         @Volatile
         private var currentDownloadJob: kotlinx.coroutines.Job? = null
+
+        @Volatile
+        private var currentCall: Call? = null
         private val isCancelled = AtomicBoolean(false)
 
         // OkHttp client with long timeout for large downloads
@@ -206,9 +210,12 @@ class ModelDownloadManager
                         }
 
                     val request = requestBuilder.build()
-                    val response = downloadClient.newCall(request).execute()
+                    val call = downloadClient.newCall(request)
+                    currentCall = call
+                    val response = call.execute()
 
                     if (!response.isSuccessful && response.code != 206) {
+                        currentCall = null
                         val error = "Download failed: HTTP ${response.code}"
                         Log.e(TAG, error)
                         _downloadState.value = DownloadState.Error(error)
@@ -217,6 +224,7 @@ class ModelDownloadManager
 
                     val body =
                         response.body ?: run {
+                            currentCall = null
                             val error = "Empty response body"
                             Log.e(TAG, error)
                             _downloadState.value = DownloadState.Error(error)
@@ -250,6 +258,7 @@ class ModelDownloadManager
                         inputStream.use { input ->
                             while (input.read(buffer).also { bytesRead = it } != -1) {
                                 if (isCancelled.get()) {
+                                    currentCall = null
                                     Log.i(TAG, "Download cancelled")
                                     _downloadState.value = DownloadState.Cancelled
                                     return@withContext Result.failure(
@@ -284,6 +293,7 @@ class ModelDownloadManager
                     if (expectedChecksum != null) {
                         val actualChecksum = calculateSha256(tempFile)
                         if (actualChecksum != expectedChecksum) {
+                            currentCall = null
                             tempFile.delete()
                             val error = "Checksum verification failed"
                             Log.e(TAG, "$error: expected $expectedChecksum, got $actualChecksum")
@@ -297,16 +307,19 @@ class ModelDownloadManager
 
                     // Rename temp file to final
                     if (!tempFile.renameTo(targetFile)) {
+                        currentCall = null
                         val error = "Failed to rename temp file"
                         Log.e(TAG, error)
                         _downloadState.value = DownloadState.Error(error)
                         return@withContext Result.failure(IOException(error))
                     }
 
+                    currentCall = null
                     Log.i(TAG, "Model ready: ${targetFile.absolutePath}")
                     _downloadState.value = DownloadState.Complete(targetFile.absolutePath)
                     Result.success(targetFile.absolutePath)
                 } catch (e: Exception) {
+                    currentCall = null
                     Log.e(TAG, "Download failed", e)
                     _downloadState.value = DownloadState.Error(e.message ?: "Unknown error")
                     Result.failure(e)
@@ -315,9 +328,15 @@ class ModelDownloadManager
 
         /**
          * Cancel the current download.
+         *
+         * This cancels both the coroutine job and the underlying OkHttp call,
+         * ensuring that blocking network I/O is interrupted immediately.
          */
         fun cancelDownload() {
             isCancelled.set(true)
+            // Cancel the OkHttp call to abort blocking network I/O
+            currentCall?.cancel()
+            currentCall = null
             currentDownloadJob?.cancel()
         }
 

@@ -312,10 +312,33 @@ After downloading a model:
 
 Models are stored in: `Android/data/com.unamentis/files/models/`
 
-To free up space:
+> **Note:** On Android 11 (API 30) and later, the `Android/data/` directory is
+> protected by scoped storage. Standard file manager apps cannot access this
+> location. Use the in-app deletion method below.
+
+**Recommended: In-App Deletion**
+
+To free up space, use the built-in model management:
 1. Go to **Settings** > **On-Device LLM**
 2. Tap **Delete Downloaded Models**
-3. Or manually delete via file manager
+3. Confirm deletion when prompted
+
+**Advanced Users: Alternative Methods**
+
+If you need to manually remove model files (e.g., corrupted downloads):
+
+- **Via ADB (requires USB debugging enabled):**
+  ```bash
+  adb shell rm -rf /sdcard/Android/data/com.unamentis/files/models/*
+  ```
+
+- **Via PC connection:** Connect your device to a computer. On Windows/macOS/Linux,
+  you may be able to navigate to `Android/data/com.unamentis/files/models/` when
+  the device is connected in File Transfer mode (though Android 11+ may still
+  restrict access depending on your OS and device).
+
+- **Uninstall and reinstall:** As a last resort, uninstalling the app will remove
+  all downloaded models. Reinstall from the Play Store or APK afterward.
 
 ---
 
@@ -327,10 +350,37 @@ For additional flexibility, you can run an LLM server on your computer.
 
 On your computer:
 
-```bash
-# Install Ollama
-curl -fsSL https://ollama.com/install.sh | sh
+**Installation Options:**
 
+1. **Recommended: Use official installers** (safest)
+   - Visit [ollama.com/download](https://ollama.com/download) for platform-specific installers
+   - macOS: Download the `.dmg` installer
+   - Windows: Download the `.exe` installer
+   - Linux: Use your package manager if available, or follow the manual install below
+
+2. **Linux manual install with verification:**
+   ```bash
+   # Download the install script first (don't pipe directly to shell)
+   curl -fsSL https://ollama.com/install.sh -o ollama-install.sh
+
+   # Review the script contents before running
+   less ollama-install.sh
+
+   # Make executable and run only after review
+   chmod +x ollama-install.sh
+   ./ollama-install.sh
+
+   # Clean up
+   rm ollama-install.sh
+   ```
+
+> **Security Note:** Never pipe untrusted scripts directly to `sh`. Always download,
+> inspect, and verify scripts before execution. See [Ollama's official documentation](https://github.com/ollama/ollama)
+> for additional installation methods and verification steps.
+
+**After installation:**
+
+```bash
 # Download a model
 ollama pull llama3.2:3b
 
@@ -356,6 +406,11 @@ In the UnaMentis app:
 
 To run a llama.cpp server on your computer for phone access:
 
+> **Security Note:** Always verify downloaded model files before use. Model files from
+> untrusted sources could be corrupted or malicious. HuggingFace model repositories
+> typically include SHA256 checksums in `.sha256` files or in the model card README.
+> Never skip integrity verification.
+
 ```bash
 # Build llama.cpp (from the submodule or a separate clone)
 cd app/src/main/cpp/vendor/llama.cpp
@@ -367,7 +422,17 @@ make -j
 # Example: Llama 3.2 3B
 wget https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_K_M.gguf
 
-# Start the server
+# IMPORTANT: Verify the download integrity
+# 1. Get the expected SHA256 from the model's HuggingFace page
+#    (look for a .sha256 file or checksums in the model card/README)
+# 2. Verify the downloaded file:
+sha256sum Llama-3.2-3B-Instruct-Q4_K_M.gguf
+# 3. Compare the output with the expected checksum
+#    If they don't match, DELETE the file and re-download:
+#    rm Llama-3.2-3B-Instruct-Q4_K_M.gguf
+#    DO NOT proceed with a file that fails verification
+
+# Start the server (only after successful verification)
 ./bin/llama-server -m Llama-3.2-3B-Instruct-Q4_K_M.gguf --host 0.0.0.0 --port 8080
 ```
 

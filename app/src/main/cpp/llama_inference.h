@@ -7,6 +7,7 @@
 #ifndef UNAMENTIS_LLAMA_INFERENCE_H
 #define UNAMENTIS_LLAMA_INFERENCE_H
 
+#include <cstdint>
 #include <string>
 #include <vector>
 #include <functional>

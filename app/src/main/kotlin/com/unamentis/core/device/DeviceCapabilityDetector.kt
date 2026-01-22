@@ -218,8 +218,8 @@ class DeviceCapabilityDetector
                         useCloudSTT = true,
                         // Use Android TTS
                         useCloudTTS = false,
-                        // Use on-device LLM
-                        useCloudLLM = false,
+                        // Use on-device LLM if supported, otherwise fall back to cloud
+                        useCloudLLM = !capabilities.supportsOnDeviceLLM,
                         // 128ms at 16kHz
                         audioBufferSize = 2048,
                         maxConcurrentRequests = 1,

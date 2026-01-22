@@ -425,7 +425,10 @@ When testing on-device inference performance:
 @Test
 fun `TTFT under 2 seconds on flagship device`() = runBlocking {
     // Only run on devices with 8GB+ RAM
-    assumeTrue(DeviceCapabilityDetector.getDeviceRamGB() >= 8)
+    val detector = DeviceCapabilityDetector(context)
+    val capabilities = detector.detect()
+    val ramGB = capabilities.totalRamMB / 1024
+    assumeTrue(ramGB >= 8)
 
     val service = OnDeviceLLMService(context)
     service.loadModel(ModelConfig(modelPath))
