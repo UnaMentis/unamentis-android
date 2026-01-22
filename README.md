@@ -59,8 +59,8 @@ This is the Android port of the iOS application, maintaining **strict feature pa
 
 ### Fully Offline Mode
 - **On-Device LLM** — llama.cpp with Ministral-3B or TinyLlama-1.1B (6GB+ RAM devices)
-- **On-Device STT** — Android Speech Recognition (no network required)
-- **On-Device TTS** — Android Text-to-Speech (no network required)
+- **On-Device STT** — Android Speech Recognition (requires offline language pack; without it, recognition may fail or use network)
+- **On-Device TTS** — Android Text-to-Speech (requires offline voice data; without it, synthesis may fail or use network)
 - **In-App Model Download** — Download GGUF models directly from settings
 - **iOS Feature Parity** — Same llama.cpp engine and models as iOS app
 

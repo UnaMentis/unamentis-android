@@ -53,6 +53,7 @@ class OnDeviceLLMService
             private const val DEFAULT_CONTEXT_SIZE = 4096
             private const val DEFAULT_GPU_LAYERS = 99 // All layers to GPU
             private const val DEFAULT_MAX_TOKENS = 512
+            private const val MAX_TTFT_MEASUREMENTS = 100 // Limit metrics history
 
             init {
                 try {
@@ -230,6 +231,10 @@ class OnDeviceLLMService
                     // Record TTFT (time to first token)
                     if (!firstTokenEmitted && content.isNotEmpty()) {
                         val ttft = System.currentTimeMillis() - startTime
+                        // Keep only recent measurements to prevent unbounded memory growth
+                        if (ttftMeasurements.size >= MAX_TTFT_MEASUREMENTS) {
+                            ttftMeasurements.removeAt(0)
+                        }
                         ttftMeasurements.add(ttft)
                         firstTokenEmitted = true
                         Log.i(TAG, "TTFT: ${ttft}ms")
@@ -371,6 +376,16 @@ class OnDeviceLLMService
             val medianTTFT: Long,
             val p99TTFT: Long,
         )
+
+        /**
+         * Clear all metrics.
+         * Useful when starting a new session or for testing.
+         */
+        fun clearMetrics() {
+            totalInputTokens.set(0)
+            totalOutputTokens.set(0)
+            ttftMeasurements.clear()
+        }
 
         // Native method declarations
         private external fun nativeLoadModel(

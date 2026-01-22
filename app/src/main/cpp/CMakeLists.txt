@@ -30,7 +30,7 @@ set(LLAMA_NATIVE OFF CACHE BOOL "" FORCE)
 set(GGML_OPENMP OFF CACHE BOOL "" FORCE)
 set(GGML_LLAMAFILE OFF CACHE BOOL "" FORCE)
 
-# Enable optimizations for mobile
+# GGML_ACCELERATE uses Apple's Accelerate framework, which is unavailable on Android
 set(GGML_ACCELERATE OFF CACHE BOOL "" FORCE)
 
 # Add llama.cpp subdirectory

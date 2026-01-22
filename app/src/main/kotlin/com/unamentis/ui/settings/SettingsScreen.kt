@@ -56,6 +56,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -63,6 +65,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.unamentis.R
 import com.unamentis.core.config.ConfigurationPreset
 import com.unamentis.core.config.RecordingMode
 import com.unamentis.core.device.DeviceCapabilityDetector
@@ -164,7 +167,8 @@ fun SettingsScreen(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(paddingValues),
+                    .padding(paddingValues)
+                    .testTag("SettingsLazyColumn"),
             contentPadding =
                 PaddingValues(
                     horizontal = Dimensions.ScreenHorizontalPadding,
@@ -303,7 +307,7 @@ fun SettingsScreen(
             // On-Device LLM section
             item {
                 Text(
-                    text = "On-Device AI",
+                    text = stringResource(R.string.settings_on_device_ai),
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(top = 16.dp),
                 )
@@ -1260,7 +1264,7 @@ private fun OnDeviceLlmSection(
                     tint = MaterialTheme.colorScheme.primary,
                 )
                 Text(
-                    text = "On-Device AI Models",
+                    text = stringResource(R.string.settings_on_device_models),
                     style = MaterialTheme.typography.titleSmall,
                 )
             }
@@ -1293,7 +1297,7 @@ private fun OnDeviceLlmSection(
 
             // Available models
             Text(
-                text = "Available Models",
+                text = stringResource(R.string.settings_available_models),
                 style = MaterialTheme.typography.bodyMedium,
             )
 
@@ -1317,7 +1321,7 @@ private fun OnDeviceLlmSection(
                 ) {
                     Icon(Icons.Default.Download, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
-                    Text("Download Recommended Model")
+                    Text(stringResource(R.string.settings_download_recommended))
                 }
             }
 

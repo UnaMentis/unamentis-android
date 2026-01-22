@@ -41,7 +41,7 @@ class AppDatabaseTest {
     }
 
     @Test
-    fun testInsertAndRetrieveSession() =
+    fun testInsertAndRetrieveSession() {
         runBlocking {
             // Given
             val session =
@@ -60,8 +60,9 @@ class AppDatabaseTest {
             assertNotNull(retrieved)
             assertEquals("session-001", retrieved?.id)
             assertEquals(5, retrieved?.turnCount)
-            assertEquals(0.50, retrieved?.totalCost, 0.001)
+            assertEquals(0.50, retrieved!!.totalCost, 0.001)
         }
+    }
 
     @Test
     fun testInsertTranscriptEntry() =
@@ -93,7 +94,7 @@ class AppDatabaseTest {
         }
 
     @Test
-    fun testTopicProgressTracking() =
+    fun testTopicProgressTracking() {
         runBlocking {
             // Given
             val progress =
@@ -111,9 +112,10 @@ class AppDatabaseTest {
 
             // Then
             assertNotNull(retrieved)
-            assertEquals(300L, retrieved?.timeSpentSeconds)
-            assertEquals(0.5f, retrieved?.masteryLevel, 0.001f)
+            assertEquals(300L, retrieved!!.timeSpentSeconds)
+            assertEquals(0.5f, retrieved.masteryLevel, 0.001f)
         }
+    }
 
     @Test
     fun testUpdateTimeSpent() =

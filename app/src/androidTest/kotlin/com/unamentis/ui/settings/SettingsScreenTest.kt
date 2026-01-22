@@ -1,10 +1,13 @@
 package com.unamentis.ui.settings
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.unamentis.MainActivity
 import dagger.hilt.android.testing.HiltAndroidRule
@@ -96,11 +99,15 @@ class SettingsScreenTest {
         // Navigate to Settings tab
         composeTestRule.onNodeWithText("Settings").performClick()
 
-        // Wait for screen to load and scroll to find On-Device AI section
+        // Wait for LazyColumn to be available
         composeTestRule.waitUntil(timeoutMillis = 5000) {
-            composeTestRule.onAllNodesWithText("On-Device AI")
-                .fetchSemanticsNodes().isNotEmpty()
+            composeTestRule.onAllNodesWithText("Settings")
+                .fetchSemanticsNodes().size > 1
         }
+
+        // Scroll to On-Device AI section
+        composeTestRule.onNodeWithTag("SettingsLazyColumn")
+            .performScrollToNode(hasText("On-Device AI"))
 
         // Verify On-Device AI section is displayed
         composeTestRule.onNodeWithText("On-Device AI").assertIsDisplayed()
@@ -111,11 +118,15 @@ class SettingsScreenTest {
         // Navigate to Settings tab
         composeTestRule.onNodeWithText("Settings").performClick()
 
-        // Wait for screen to load
+        // Wait for LazyColumn to be available
         composeTestRule.waitUntil(timeoutMillis = 5000) {
-            composeTestRule.onAllNodesWithText("On-Device AI Models")
-                .fetchSemanticsNodes().isNotEmpty()
+            composeTestRule.onAllNodesWithText("Settings")
+                .fetchSemanticsNodes().size > 1
         }
+
+        // Scroll to On-Device AI Models card
+        composeTestRule.onNodeWithTag("SettingsLazyColumn")
+            .performScrollToNode(hasText("On-Device AI Models"))
 
         // Verify On-Device AI Models card is displayed
         composeTestRule.onNodeWithText("On-Device AI Models").assertIsDisplayed()
@@ -126,11 +137,15 @@ class SettingsScreenTest {
         // Navigate to Settings tab
         composeTestRule.onNodeWithText("Settings").performClick()
 
-        // Wait for screen to load
+        // Wait for LazyColumn to be available
         composeTestRule.waitUntil(timeoutMillis = 5000) {
-            composeTestRule.onAllNodesWithText("Device RAM")
-                .fetchSemanticsNodes().isNotEmpty()
+            composeTestRule.onAllNodesWithText("Settings")
+                .fetchSemanticsNodes().size > 1
         }
+
+        // Scroll to Device RAM info
+        composeTestRule.onNodeWithTag("SettingsLazyColumn")
+            .performScrollToNode(hasText("Device RAM"))
 
         // Verify Device RAM info is displayed
         composeTestRule.onNodeWithText("Device RAM").assertIsDisplayed()
@@ -141,11 +156,15 @@ class SettingsScreenTest {
         // Navigate to Settings tab
         composeTestRule.onNodeWithText("Settings").performClick()
 
-        // Wait for screen to load
+        // Wait for LazyColumn to be available
         composeTestRule.waitUntil(timeoutMillis = 5000) {
-            composeTestRule.onAllNodesWithText("Available Models")
-                .fetchSemanticsNodes().isNotEmpty()
+            composeTestRule.onAllNodesWithText("Settings")
+                .fetchSemanticsNodes().size > 1
         }
+
+        // Scroll to Available Models section
+        composeTestRule.onNodeWithTag("SettingsLazyColumn")
+            .performScrollToNode(hasText("Available Models"))
 
         // Verify Available Models section is displayed
         composeTestRule.onNodeWithText("Available Models").assertIsDisplayed()

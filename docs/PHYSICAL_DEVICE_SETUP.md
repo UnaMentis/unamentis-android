@@ -77,9 +77,9 @@ adb devices
 ```
 
 You should see your device listed:
-```
+```text
 List of devices attached
-XXXXXXXXXX	device
+XXXXXXXXXX    device
 ```
 
 If it shows "unauthorized", check your phone for the authorization prompt.
@@ -110,7 +110,7 @@ Or manually:
 ```
 
 The APK will be at:
-```
+```text
 app/build/outputs/apk/debug/app-debug.apk
 ```
 
@@ -180,7 +180,7 @@ python3 scripts/log-server.py
 ```
 
 You'll see:
-```
+```text
 UnaMentis Remote Log Server v2.0
 
 Server running on:
@@ -350,18 +350,25 @@ In the UnaMentis app:
 
 ### 9.2 Option B: llama.cpp Server
 
+> **Note:** llama.cpp is included as a git submodule in this repository for on-device inference.
+> After cloning the repo, run `git submodule update --init --recursive` to fetch it.
+> The build scripts handle this automatically.
+
+To run a llama.cpp server on your computer for phone access:
+
 ```bash
-# Clone and build llama.cpp
-git clone https://github.com/ggerganov/llama.cpp
-cd llama.cpp
-make
+# Build llama.cpp (from the submodule or a separate clone)
+cd app/src/main/cpp/vendor/llama.cpp
+mkdir build && cd build
+cmake ..
+make -j
 
 # Download a model (GGUF format)
 # Example: Llama 3.2 3B
 wget https://huggingface.co/bartowski/Llama-3.2-3B-Instruct-GGUF/resolve/main/Llama-3.2-3B-Instruct-Q4_K_M.gguf
 
 # Start the server
-./llama-server -m Llama-3.2-3B-Instruct-Q4_K_M.gguf --host 0.0.0.0 --port 8080
+./bin/llama-server -m Llama-3.2-3B-Instruct-Q4_K_M.gguf --host 0.0.0.0 --port 8080
 ```
 
 Configure in the app:

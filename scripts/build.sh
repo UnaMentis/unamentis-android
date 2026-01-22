@@ -7,6 +7,12 @@ echo "=========================================="
 echo "Building UnaMentis Android (Debug)"
 echo "=========================================="
 
+# Initialize git submodules (llama.cpp for on-device LLM)
+if [ -f ".gitmodules" ]; then
+    echo "Initializing git submodules..."
+    git submodule update --init --recursive
+fi
+
 ./gradlew assembleDebug --console=plain
 
 APK_PATH="app/build/outputs/apk/debug/app-debug.apk"

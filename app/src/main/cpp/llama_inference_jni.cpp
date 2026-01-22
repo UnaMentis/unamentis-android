@@ -15,7 +15,11 @@
 
 // Global state (following audio_engine_jni.cpp pattern)
 static JavaVM* g_jvm = nullptr;
-static std::map<jlong, std::unique_ptr<unamentis::LlamaInference>> g_engines;
+// Using shared_ptr to prevent use-after-free when nativeFreeModel is called
+// while nativeStartGeneration's generate() is still running on another thread.
+// In-flight operations hold their own shared_ptr, so erasure from the map
+// only drops the map's reference while the operation keeps the engine alive.
+static std::map<jlong, std::shared_ptr<unamentis::LlamaInference>> g_engines;
 static std::mutex g_engines_mutex;
 
 // Callback context for token streaming
@@ -29,6 +33,8 @@ struct TokenCallbackContext {
         // Kotlin lambda implements Function2<String, Boolean, Unit>
         callback_method = env->GetMethodID(callback_class, "invoke",
             "(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;");
+        // Delete local ref to avoid accumulation (callback_object is a global ref)
+        env->DeleteLocalRef(callback_class);
     }
 
     ~TokenCallbackContext() {
@@ -91,7 +97,7 @@ Java_com_unamentis_services_llm_OnDeviceLLMService_nativeLoadModel(
     LOGI("nativeLoadModel: path=%s, ctx=%d, gpu=%d, threads=%d",
          path.c_str(), context_size, gpu_layers, n_threads);
 
-    auto engine = std::make_unique<unamentis::LlamaInference>();
+    auto engine = std::make_shared<unamentis::LlamaInference>();
 
     unamentis::LlamaConfig config;
     config.context_size = context_size;
@@ -128,7 +134,11 @@ Java_com_unamentis_services_llm_OnDeviceLLMService_nativeStartGeneration(
         return;
     }
 
-    unamentis::LlamaInference* engine = nullptr;
+    // Acquire a shared_ptr to the engine to keep it alive during generation.
+    // This prevents use-after-free if nativeFreeModel is called while generate()
+    // is still running - the engine won't be destroyed until this shared_ptr
+    // goes out of scope after generate() completes.
+    std::shared_ptr<unamentis::LlamaInference> engine;
     {
         std::lock_guard<std::mutex> lock(g_engines_mutex);
         auto it = g_engines.find(context_ptr);
@@ -136,7 +146,7 @@ Java_com_unamentis_services_llm_OnDeviceLLMService_nativeStartGeneration(
             LOGE("Engine not found for handle: %ld", static_cast<long>(context_ptr));
             return;
         }
-        engine = it->second.get();
+        engine = it->second;  // Copy shared_ptr to extend lifetime
     }
 
     const char* prompt_cstr = env->GetStringUTFChars(prompt, nullptr);
@@ -161,13 +171,17 @@ Java_com_unamentis_services_llm_OnDeviceLLMService_nativeStartGeneration(
             if (callback_env != nullptr && callback_ctx->callback_object != nullptr) {
                 // Create Java strings
                 jstring j_content = callback_env->NewStringUTF(content.c_str());
+
+                // Create Boolean object - find class once to avoid leaking multiple local refs
+                jclass boolean_class = callback_env->FindClass("java/lang/Boolean");
+                jmethodID boolean_ctor = callback_env->GetMethodID(boolean_class, "<init>", "(Z)V");
                 jobject j_is_done = callback_env->NewObject(
-                    callback_env->FindClass("java/lang/Boolean"),
-                    callback_env->GetMethodID(
-                        callback_env->FindClass("java/lang/Boolean"),
-                        "<init>", "(Z)V"),
+                    boolean_class,
+                    boolean_ctor,
                     is_done ? JNI_TRUE : JNI_FALSE
                 );
+                // Delete Boolean class local ref immediately after use
+                callback_env->DeleteLocalRef(boolean_class);
 
                 // Invoke Kotlin callback
                 callback_env->CallObjectMethod(

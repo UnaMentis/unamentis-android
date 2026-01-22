@@ -244,6 +244,7 @@ class ModelDownloadManager
                     val buffer = ByteArray(BUFFER_SIZE)
                     var downloadedBytes = startByte
                     var bytesRead: Int
+                    var lastReportedProgress = -1 // Track last reported % to throttle updates
 
                     outputStream.use { output ->
                         inputStream.use { input ->
@@ -259,13 +260,18 @@ class ModelDownloadManager
                                 output.write(buffer, 0, bytesRead)
                                 downloadedBytes += bytesRead
 
+                                // Throttle progress updates to ~1% increments to reduce UI churn
                                 val progress = downloadedBytes.toFloat() / totalBytes
-                                _downloadState.value =
-                                    DownloadState.Downloading(
-                                        progress = progress,
-                                        downloadedBytes = downloadedBytes,
-                                        totalBytes = totalBytes,
-                                    )
+                                val currentPercent = (progress * 100).toInt()
+                                if (currentPercent > lastReportedProgress) {
+                                    lastReportedProgress = currentPercent
+                                    _downloadState.value =
+                                        DownloadState.Downloading(
+                                            progress = progress,
+                                            downloadedBytes = downloadedBytes,
+                                            totalBytes = totalBytes,
+                                        )
+                                }
                             }
                         }
                     }
