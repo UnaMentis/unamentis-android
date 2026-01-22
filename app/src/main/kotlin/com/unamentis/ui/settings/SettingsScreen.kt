@@ -56,6 +56,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -1398,7 +1400,7 @@ private fun DeviceCapabilityInfo(
             ) {
                 Icon(
                     if (supportsOnDeviceLLM) Icons.Default.Check else Icons.Default.Close,
-                    contentDescription = null,
+                    contentDescription = if (supportsOnDeviceLLM) "Supported" else "Not supported",
                     tint =
                         if (supportsOnDeviceLLM) {
                             MaterialTheme.colorScheme.primary
@@ -1478,9 +1480,15 @@ private fun DownloadStateIndicator(
                             Text("Cancel")
                         }
                     }
+                    val progressPercent = (downloadState.progress * 100).toInt()
                     LinearProgressIndicator(
                         progress = { downloadState.progress },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .semantics {
+                                    contentDescription = "Download progress: $progressPercent percent"
+                                },
                     )
                 }
                 is ModelDownloadManager.DownloadState.Verifying -> {
@@ -1488,7 +1496,12 @@ private fun DownloadStateIndicator(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        LinearProgressIndicator(modifier = Modifier.weight(1f))
+                        LinearProgressIndicator(
+                            modifier =
+                                Modifier
+                                    .weight(1f)
+                                    .semantics { contentDescription = "Verifying download" },
+                        )
                         Text(
                             text = "Verifying...",
                             style = MaterialTheme.typography.bodySmall,
@@ -1502,7 +1515,7 @@ private fun DownloadStateIndicator(
                     ) {
                         Icon(
                             Icons.Default.Check,
-                            contentDescription = null,
+                            contentDescription = "Success",
                             tint = MaterialTheme.colorScheme.primary,
                         )
                         Text(
@@ -1519,7 +1532,7 @@ private fun DownloadStateIndicator(
                     ) {
                         Icon(
                             Icons.Default.Close,
-                            contentDescription = null,
+                            contentDescription = "Error",
                             tint = MaterialTheme.colorScheme.error,
                         )
                         Text(

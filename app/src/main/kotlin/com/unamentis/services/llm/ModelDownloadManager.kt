@@ -16,6 +16,7 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -100,8 +101,9 @@ class ModelDownloadManager
         private val _downloadState = MutableStateFlow<DownloadState>(DownloadState.Idle)
         val downloadState: Flow<DownloadState> = _downloadState.asStateFlow()
 
+        @Volatile
         private var currentDownloadJob: kotlinx.coroutines.Job? = null
-        private var isCancelled = false
+        private val isCancelled = AtomicBoolean(false)
 
         // OkHttp client with long timeout for large downloads
         private val downloadClient =
@@ -171,7 +173,7 @@ class ModelDownloadManager
         @Suppress("LongMethod", "CyclomaticComplexMethod")
         suspend fun downloadModel(spec: DeviceCapabilityDetector.OnDeviceModelSpec): Result<String> =
             withContext(Dispatchers.IO) {
-                isCancelled = false
+                isCancelled.set(false)
                 _downloadState.value = DownloadState.Downloading(0f, 0, spec.sizeBytes)
 
                 val modelsDir = getModelsDirectory()
@@ -246,7 +248,7 @@ class ModelDownloadManager
                     outputStream.use { output ->
                         inputStream.use { input ->
                             while (input.read(buffer).also { bytesRead = it } != -1) {
-                                if (isCancelled) {
+                                if (isCancelled.get()) {
                                     Log.i(TAG, "Download cancelled")
                                     _downloadState.value = DownloadState.Cancelled
                                     return@withContext Result.failure(
@@ -309,7 +311,7 @@ class ModelDownloadManager
          * Cancel the current download.
          */
         fun cancelDownload() {
-            isCancelled = true
+            isCancelled.set(true)
             currentDownloadJob?.cancel()
         }
 

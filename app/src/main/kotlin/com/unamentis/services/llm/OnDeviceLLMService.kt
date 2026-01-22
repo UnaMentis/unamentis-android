@@ -13,6 +13,10 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -71,17 +75,19 @@ class OnDeviceLLMService
 
         override val providerName: String = "OnDevice"
 
-        // Native context pointer (0 = not loaded)
-        private var nativeContextPtr: Long = 0
+        // Native context pointer (0 = not loaded) - accessed from multiple threads
+        private val nativeContextPtr = AtomicLong(0)
 
-        // Current model state
-        private var isModelLoaded: Boolean = false
+        // Current model state - accessed from multiple threads
+        private val isModelLoaded = AtomicBoolean(false)
+
+        @Volatile
         private var currentModelPath: String? = null
 
-        // Metrics tracking (matching iOS)
-        private var totalInputTokens: Int = 0
-        private var totalOutputTokens: Int = 0
-        private val ttftMeasurements = mutableListOf<Long>()
+        // Metrics tracking (matching iOS) - thread-safe collections
+        private val totalInputTokens = AtomicInteger(0)
+        private val totalOutputTokens = AtomicInteger(0)
+        private val ttftMeasurements = CopyOnWriteArrayList<Long>()
 
         /**
          * Load model from specified path.
@@ -91,13 +97,13 @@ class OnDeviceLLMService
          */
         suspend fun loadModel(config: ModelConfig): Boolean =
             withContext(Dispatchers.IO) {
-                if (isModelLoaded && currentModelPath == config.modelPath) {
+                if (isModelLoaded.get() && currentModelPath == config.modelPath) {
                     Log.d(TAG, "Model already loaded: ${config.modelPath}")
                     return@withContext true
                 }
 
                 // Unload existing model if different
-                if (isModelLoaded) {
+                if (isModelLoaded.get()) {
                     unloadModel()
                 }
 
@@ -110,20 +116,21 @@ class OnDeviceLLMService
                 Log.i(TAG, "Loading model: ${config.modelPath}")
                 val optimalThreads = getOptimalThreadCount()
 
-                nativeContextPtr =
+                val ptr =
                     nativeLoadModel(
                         config.modelPath,
                         config.contextSize,
                         config.gpuLayers,
                         optimalThreads,
                     )
+                nativeContextPtr.set(ptr)
 
-                if (nativeContextPtr == 0L) {
+                if (ptr == 0L) {
                     Log.e(TAG, "Failed to load model")
                     return@withContext false
                 }
 
-                isModelLoaded = true
+                isModelLoaded.set(true)
                 currentModelPath = config.modelPath
                 Log.i(TAG, "Model loaded successfully with $optimalThreads threads")
                 true
@@ -133,10 +140,11 @@ class OnDeviceLLMService
          * Unload model and free resources.
          */
         fun unloadModel() {
-            if (nativeContextPtr != 0L) {
-                nativeFreeModel(nativeContextPtr)
-                nativeContextPtr = 0
-                isModelLoaded = false
+            val ptr = nativeContextPtr.get()
+            if (ptr != 0L) {
+                nativeFreeModel(ptr)
+                nativeContextPtr.set(0)
+                isModelLoaded.set(false)
                 currentModelPath = null
                 Log.i(TAG, "Model unloaded")
             }
@@ -145,7 +153,7 @@ class OnDeviceLLMService
         /**
          * Check if model is loaded.
          */
-        fun isLoaded(): Boolean = isModelLoaded && nativeContextPtr != 0L
+        fun isLoaded(): Boolean = isModelLoaded.get() && nativeContextPtr.get() != 0L
 
         /**
          * Get available model path (Ministral first, then TinyLlama).
@@ -189,7 +197,7 @@ class OnDeviceLLMService
         ): Flow<LLMToken> =
             callbackFlow {
                 // Auto-load model if not loaded
-                if (!isModelLoaded) {
+                if (!isModelLoaded.get()) {
                     val modelPath = getAvailableModelPath()
                     if (modelPath == null) {
                         Log.e(TAG, "No model available for on-device inference")
@@ -208,12 +216,13 @@ class OnDeviceLLMService
                 val startTime = System.currentTimeMillis()
                 var firstTokenEmitted = false
                 var generatedTokens = 0
+                val contextPtr = nativeContextPtr.get()
 
                 Log.d(TAG, "Starting generation with ${prompt.length} char prompt")
 
                 // Start native generation with callback
                 nativeStartGeneration(
-                    nativeContextPtr,
+                    contextPtr,
                     prompt,
                     maxTokens.coerceAtMost(DEFAULT_MAX_TOKENS),
                     temperature,
@@ -233,24 +242,25 @@ class OnDeviceLLMService
                     trySend(LLMToken(content = content, isDone = isDone))
 
                     if (isDone) {
-                        totalOutputTokens += generatedTokens
+                        totalOutputTokens.addAndGet(generatedTokens)
                         Log.i(TAG, "Generation complete: $generatedTokens tokens")
                         close()
                     }
                 }
 
                 // Estimate input tokens (~4 chars per token)
-                totalInputTokens += prompt.length / 4
+                totalInputTokens.addAndGet(prompt.length / 4)
 
                 awaitClose {
                     Log.d(TAG, "Flow closed, stopping generation")
-                    nativeStopGeneration(nativeContextPtr)
+                    nativeStopGeneration(contextPtr)
                 }
             }.flowOn(Dispatchers.IO)
 
         override suspend fun stop() {
-            if (nativeContextPtr != 0L) {
-                nativeStopGeneration(nativeContextPtr)
+            val ptr = nativeContextPtr.get()
+            if (ptr != 0L) {
+                nativeStopGeneration(ptr)
             }
         }
 
@@ -328,7 +338,7 @@ class OnDeviceLLMService
          * Get metrics for telemetry.
          */
         fun getMetrics(): OnDeviceMetrics {
-            val sortedMeasurements = ttftMeasurements.sorted()
+            val sortedMeasurements = ttftMeasurements.toList().sorted()
             val medianTTFT =
                 if (sortedMeasurements.isNotEmpty()) {
                     sortedMeasurements[sortedMeasurements.size / 2]
@@ -345,8 +355,8 @@ class OnDeviceLLMService
                     0L
                 }
             return OnDeviceMetrics(
-                totalInputTokens = totalInputTokens,
-                totalOutputTokens = totalOutputTokens,
+                totalInputTokens = totalInputTokens.get(),
+                totalOutputTokens = totalOutputTokens.get(),
                 medianTTFT = medianTTFT,
                 p99TTFT = p99TTFT,
             )
