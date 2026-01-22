@@ -5,6 +5,8 @@ import android.util.Log
 import com.unamentis.core.device.DeviceCapabilityDetector
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -119,9 +121,11 @@ class ModelDownloadManager
 
         /**
          * Get the models directory.
+         * Falls back to internal storage if external storage is unavailable.
          */
         fun getModelsDirectory(): File {
-            val modelsDir = File(context.getExternalFilesDir(null), "models")
+            val baseDir = context.getExternalFilesDir(null) ?: context.filesDir
+            val modelsDir = File(baseDir, "models")
             if (!modelsDir.exists()) {
                 modelsDir.mkdirs()
             }
@@ -177,6 +181,8 @@ class ModelDownloadManager
         @Suppress("LongMethod", "CyclomaticComplexMethod")
         suspend fun downloadModel(spec: DeviceCapabilityDetector.OnDeviceModelSpec): Result<String> =
             withContext(Dispatchers.IO) {
+                // Track the current coroutine job so cancelDownload() can cancel it
+                currentDownloadJob = currentCoroutineContext()[Job]
                 isCancelled.set(false)
                 _downloadState.value = DownloadState.Downloading(0f, 0, spec.sizeBytes)
 
@@ -187,6 +193,7 @@ class ModelDownloadManager
                 try {
                     // Check if already downloaded
                     if (targetFile.exists() && targetFile.length() > 0) {
+                        currentDownloadJob = null
                         Log.i(TAG, "Model already exists: ${targetFile.absolutePath}")
                         _downloadState.value = DownloadState.Complete(targetFile.absolutePath)
                         return@withContext Result.success(targetFile.absolutePath)
@@ -220,6 +227,7 @@ class ModelDownloadManager
                     response.use { resp ->
                         if (!resp.isSuccessful && resp.code != 206) {
                             currentCall = null
+                            currentDownloadJob = null
                             val error = "Download failed: HTTP ${resp.code}"
                             Log.e(TAG, error)
                             _downloadState.value = DownloadState.Error(error)
@@ -237,6 +245,7 @@ class ModelDownloadManager
                                     "Restarting download from beginning.",
                             )
                             currentCall = null
+                            // Don't clear currentDownloadJob - recursive call will set it
                             // Delete the partial file and restart
                             tempFile.delete()
                             // Recursive call to restart without resume
@@ -249,6 +258,7 @@ class ModelDownloadManager
                         val body =
                             resp.body ?: run {
                                 currentCall = null
+                                currentDownloadJob = null
                                 val error = "Empty response body"
                                 Log.e(TAG, error)
                                 _downloadState.value = DownloadState.Error(error)
@@ -283,6 +293,7 @@ class ModelDownloadManager
                                 while (input.read(buffer).also { bytesRead = it } != -1) {
                                     if (isCancelled.get()) {
                                         currentCall = null
+                                        currentDownloadJob = null
                                         Log.i(TAG, "Download cancelled")
                                         _downloadState.value = DownloadState.Cancelled
                                         return@withContext Result.failure(
@@ -319,6 +330,7 @@ class ModelDownloadManager
                         val actualChecksum = calculateSha256(tempFile)
                         if (actualChecksum != expectedChecksum) {
                             currentCall = null
+                            currentDownloadJob = null
                             tempFile.delete()
                             val error = "Checksum verification failed"
                             Log.e(TAG, "$error: expected $expectedChecksum, got $actualChecksum")
@@ -333,6 +345,7 @@ class ModelDownloadManager
                     // Rename temp file to final
                     if (!tempFile.renameTo(targetFile)) {
                         currentCall = null
+                        currentDownloadJob = null
                         val error = "Failed to rename temp file"
                         Log.e(TAG, error)
                         _downloadState.value = DownloadState.Error(error)
@@ -340,14 +353,23 @@ class ModelDownloadManager
                     }
 
                     currentCall = null
+                    currentDownloadJob = null
                     Log.i(TAG, "Model ready: ${targetFile.absolutePath}")
                     _downloadState.value = DownloadState.Complete(targetFile.absolutePath)
                     Result.success(targetFile.absolutePath)
                 } catch (e: Exception) {
                     currentCall = null
-                    Log.e(TAG, "Download failed", e)
-                    _downloadState.value = DownloadState.Error(e.message ?: "Unknown error")
-                    Result.failure(e)
+                    currentDownloadJob = null
+                    // Check if the exception was due to cancellation
+                    if (isCancelled.get()) {
+                        Log.i(TAG, "Download cancelled")
+                        _downloadState.value = DownloadState.Cancelled
+                        Result.failure(IOException("Download cancelled"))
+                    } else {
+                        Log.e(TAG, "Download failed", e)
+                        _downloadState.value = DownloadState.Error(e.message ?: "Unknown error")
+                        Result.failure(e)
+                    }
                 }
             }
 
@@ -363,6 +385,7 @@ class ModelDownloadManager
             currentCall?.cancel()
             currentCall = null
             currentDownloadJob?.cancel()
+            currentDownloadJob = null
         }
 
         /**
