@@ -244,4 +244,10 @@
 # ===== CERTIFICATE PINNING (if implemented) =====
 -keep class com.unamentis.data.remote.CertificatePinner { *; }
 
+# ===== GOOGLE TINK / ERRORPRONE ANNOTATIONS =====
+# Google Tink references errorprone annotations for static analysis.
+# These annotations are not required at runtime - safe to suppress warnings.
+-dontwarn com.google.errorprone.annotations.**
+-keep class com.google.errorprone.annotations.** { *; }
+
 # ===== END OF PROGUARD RULES =====
