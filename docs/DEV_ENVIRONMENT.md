@@ -375,7 +375,127 @@ adb logcat -v time -s UnaMentis:V *:S > debug.log
 3. Select running device
 4. Reproduce issue to hit breakpoint
 
-## 10. Troubleshooting
+## 10. Native Code & llama.cpp Setup
+
+The app includes native C++ code for two components:
+- **Oboe** - Low-latency audio engine
+- **llama.cpp** - On-device LLM inference
+
+### 10.1 Prerequisites
+
+Native code building requires:
+- NDK 26.x (installed via SDK Manager)
+- CMake 3.22.1+ (installed via SDK Manager)
+
+Verify installation:
+```bash
+ls $ANDROID_HOME/ndk/
+ls $ANDROID_HOME/cmake/
+```
+
+### 10.2 llama.cpp Submodule
+
+llama.cpp is included as a git submodule for on-device LLM inference:
+
+```bash
+# Initialize submodule (automatically done by build.sh)
+git submodule update --init --recursive
+
+# Verify it's present
+ls app/src/main/cpp/vendor/llama.cpp/
+```
+
+The submodule is pinned to a specific commit for API stability.
+
+### 10.3 CMake Configuration
+
+The native build is configured in `app/src/main/cpp/CMakeLists.txt`:
+
+```cmake
+# Two native libraries are built:
+# 1. audio_engine - Oboe-based audio I/O
+# 2. llama_inference - llama.cpp JNI wrapper
+
+# llama.cpp settings for Android:
+set(LLAMA_NATIVE OFF)      # Disable native CPU optimizations (cross-compile)
+set(GGML_OPENMP OFF)       # Disable OpenMP (not available on Android)
+set(GGML_ACCELERATE OFF)   # Apple-only framework
+```
+
+### 10.4 Build Architecture
+
+The build produces native libraries for:
+- `arm64-v8a` - Modern ARM64 devices (primary)
+- `x86_64` - Emulator support
+
+Libraries are placed in:
+```
+app/build/intermediates/cmake/debug/obj/
+├── arm64-v8a/
+│   ├── libaudio_engine.so
+│   └── libllama_inference.so
+└── x86_64/
+    ├── libaudio_engine.so
+    └── libllama_inference.so
+```
+
+### 10.5 GGUF Model Files
+
+On-device LLM requires GGUF model files (not included in repo due to size):
+
+| Model | Size | Download |
+|-------|------|----------|
+| Ministral-3B-Q4_K_M | ~2.1 GB | Via Settings > On-Device AI |
+| TinyLlama-1.1B-Q4_K_M | ~670 MB | Via Settings > On-Device AI |
+
+Models are stored in:
+```
+Android/data/com.unamentis/files/models/
+```
+
+For development, you can manually place GGUF files:
+```bash
+adb push ministral-3b-instruct-q4_k_m.gguf /sdcard/Android/data/com.unamentis/files/models/
+```
+
+### 10.6 Troubleshooting Native Builds
+
+**CMake errors:**
+```bash
+# Clean and rebuild native code
+./gradlew clean
+./gradlew assembleDebug
+
+# Or force CMake reconfigure
+rm -rf app/.cxx/
+./gradlew assembleDebug
+```
+
+**NDK not found:**
+```bash
+# Verify NDK path
+echo $ANDROID_NDK_HOME
+ls $ANDROID_HOME/ndk/
+
+# Should show version like 26.3.11579264
+```
+
+**llama.cpp submodule missing:**
+```bash
+git submodule update --init --recursive
+```
+
+**JNI crash on model load:**
+- Ensure model file exists at expected path
+- Check device has sufficient RAM (6GB+ for Ministral-3B)
+- Review logcat for native crash details:
+  ```bash
+  adb logcat -s LlamaInferenceJNI:V
+  ```
+
+---
+
+## 11. Troubleshooting
 
 ### Emulator won't start
 
@@ -434,7 +554,7 @@ curl -s http://localhost:8765/health
 adb shell ping -c 3 10.0.2.2
 ```
 
-## 11. Quick Reference
+## 12. Quick Reference
 
 ### Daily Development Commands
 
