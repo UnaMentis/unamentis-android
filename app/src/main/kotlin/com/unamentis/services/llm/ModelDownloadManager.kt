@@ -214,76 +214,101 @@ class ModelDownloadManager
                     currentCall = call
                     val response = call.execute()
 
-                    if (!response.isSuccessful && response.code != 206) {
-                        currentCall = null
-                        val error = "Download failed: HTTP ${response.code}"
-                        Log.e(TAG, error)
-                        _downloadState.value = DownloadState.Error(error)
-                        return@withContext Result.failure(IOException(error))
-                    }
-
-                    val body =
-                        response.body ?: run {
+                    // Use response.use to guarantee the response is closed on all paths
+                    // (success, error, early return, or exception). The finally block in
+                    // use() ensures closure even with non-local returns.
+                    response.use { resp ->
+                        if (!resp.isSuccessful && resp.code != 206) {
                             currentCall = null
-                            val error = "Empty response body"
+                            val error = "Download failed: HTTP ${resp.code}"
                             Log.e(TAG, error)
                             _downloadState.value = DownloadState.Error(error)
                             return@withContext Result.failure(IOException(error))
                         }
 
-                    // Get total size (handle Content-Range for resumed downloads)
-                    val contentLength = body.contentLength()
-                    val totalBytes =
-                        if (response.code == 206) {
-                            // Parse Content-Range header: bytes 0-999/1000
-                            val contentRange = response.header("Content-Range")
-                            contentRange?.substringAfter("/")?.toLongOrNull()
-                                ?: (startByte + contentLength)
+                        // Handle server ignoring Range header: if we requested a resume
+                        // (startByte > 0) but got a 200 instead of 206, the server is sending
+                        // the full file. We must restart the download to avoid corruption.
+                        val actualStartByte: Long
+                        if (startByte > 0 && resp.code != 206) {
+                            Log.w(
+                                TAG,
+                                "Server ignored Range header (got 200 instead of 206). " +
+                                    "Restarting download from beginning.",
+                            )
+                            currentCall = null
+                            // Delete the partial file and restart
+                            tempFile.delete()
+                            // Recursive call to restart without resume
+                            // (response.use will close the response as we exit)
+                            return@withContext downloadModel(spec)
                         } else {
-                            contentLength
+                            actualStartByte = startByte
                         }
 
-                    Log.i(TAG, "Total size: $totalBytes bytes")
+                        val body =
+                            resp.body ?: run {
+                                currentCall = null
+                                val error = "Empty response body"
+                                Log.e(TAG, error)
+                                _downloadState.value = DownloadState.Error(error)
+                                return@withContext Result.failure(IOException(error))
+                            }
 
-                    // Write to temp file
-                    val outputStream =
-                        FileOutputStream(tempFile, startByte > 0) // append if resuming
-                    val inputStream = body.byteStream()
-                    val buffer = ByteArray(BUFFER_SIZE)
-                    var downloadedBytes = startByte
-                    var bytesRead: Int
-                    var lastReportedProgress = -1 // Track last reported % to throttle updates
+                        // Get total size (handle Content-Range for resumed downloads)
+                        val contentLength = body.contentLength()
+                        val totalBytes =
+                            if (resp.code == 206) {
+                                // Parse Content-Range header: bytes 0-999/1000
+                                val contentRange = resp.header("Content-Range")
+                                contentRange?.substringAfter("/")?.toLongOrNull()
+                                    ?: (actualStartByte + contentLength)
+                            } else {
+                                contentLength
+                            }
 
-                    outputStream.use { output ->
-                        inputStream.use { input ->
-                            while (input.read(buffer).also { bytesRead = it } != -1) {
-                                if (isCancelled.get()) {
-                                    currentCall = null
-                                    Log.i(TAG, "Download cancelled")
-                                    _downloadState.value = DownloadState.Cancelled
-                                    return@withContext Result.failure(
-                                        IOException("Download cancelled"),
-                                    )
-                                }
+                        Log.i(TAG, "Total size: $totalBytes bytes")
 
-                                output.write(buffer, 0, bytesRead)
-                                downloadedBytes += bytesRead
+                        // Write to temp file
+                        val outputStream =
+                            FileOutputStream(tempFile, actualStartByte > 0) // append if resuming
+                        val inputStream = body.byteStream()
+                        val buffer = ByteArray(BUFFER_SIZE)
+                        var downloadedBytes = actualStartByte
+                        var bytesRead: Int
+                        var lastReportedProgress = -1 // Track last reported % to throttle updates
 
-                                // Throttle progress updates to ~1% increments to reduce UI churn
-                                val progress = downloadedBytes.toFloat() / totalBytes
-                                val currentPercent = (progress * 100).toInt()
-                                if (currentPercent > lastReportedProgress) {
-                                    lastReportedProgress = currentPercent
-                                    _downloadState.value =
-                                        DownloadState.Downloading(
-                                            progress = progress,
-                                            downloadedBytes = downloadedBytes,
-                                            totalBytes = totalBytes,
+                        outputStream.use { output ->
+                            inputStream.use { input ->
+                                while (input.read(buffer).also { bytesRead = it } != -1) {
+                                    if (isCancelled.get()) {
+                                        currentCall = null
+                                        Log.i(TAG, "Download cancelled")
+                                        _downloadState.value = DownloadState.Cancelled
+                                        return@withContext Result.failure(
+                                            IOException("Download cancelled"),
                                         )
+                                    }
+
+                                    output.write(buffer, 0, bytesRead)
+                                    downloadedBytes += bytesRead
+
+                                    // Throttle progress updates to ~1% increments to reduce UI churn
+                                    val progress = downloadedBytes.toFloat() / totalBytes
+                                    val currentPercent = (progress * 100).toInt()
+                                    if (currentPercent > lastReportedProgress) {
+                                        lastReportedProgress = currentPercent
+                                        _downloadState.value =
+                                            DownloadState.Downloading(
+                                                progress = progress,
+                                                downloadedBytes = downloadedBytes,
+                                                totalBytes = totalBytes,
+                                            )
+                                    }
                                 }
                             }
                         }
-                    }
+                    } // response.use closes the response here
 
                     Log.i(TAG, "Download complete, verifying...")
                     _downloadState.value = DownloadState.Verifying(spec.filename)
