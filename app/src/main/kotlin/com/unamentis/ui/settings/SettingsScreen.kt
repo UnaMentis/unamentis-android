@@ -1,11 +1,52 @@
 package com.unamentis.ui.settings
 
-import androidx.compose.foundation.layout.*
+import android.text.format.Formatter
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.GraphicEq
+import androidx.compose.material.icons.filled.Memory
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.PlaylistPlay
+import androidx.compose.material.icons.filled.Psychology
+import androidx.compose.material.icons.filled.RecordVoiceOver
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -14,6 +55,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -21,6 +63,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.unamentis.core.config.ConfigurationPreset
 import com.unamentis.core.config.RecordingMode
+import com.unamentis.core.device.DeviceCapabilityDetector
+import com.unamentis.services.llm.ModelDownloadManager
 import com.unamentis.ui.components.IOSCard
 import com.unamentis.ui.theme.Dimensions
 
@@ -34,6 +78,7 @@ enum class SettingsSection {
     AUDIO,
     VAD,
     LLM,
+    ON_DEVICE_LLM,
     TTS,
     CURRICULUM,
     API_KEYS,
@@ -78,6 +123,10 @@ fun SettingsScreen(
     val ttsPlaybackSpeed by viewModel.ttsPlaybackSpeed.collectAsStateWithLifecycle()
     val autoContinueTopics by viewModel.autoContinueTopics.collectAsStateWithLifecycle()
 
+    // On-Device LLM settings
+    val downloadState by viewModel.downloadState.collectAsStateWithLifecycle()
+    val availableModels by viewModel.availableModels.collectAsStateWithLifecycle()
+
     // Handle deep link to specific section
     LaunchedEffect(initialSection) {
         if (initialSection != null) {
@@ -89,9 +138,10 @@ fun SettingsScreen(
                     "AUDIO" -> 8
                     "VAD" -> 10
                     "LLM" -> 12
-                    "TTS" -> 14
-                    "CURRICULUM" -> 16
-                    "API_KEYS" -> 18
+                    "ON_DEVICE_LLM" -> 14
+                    "TTS" -> 16
+                    "CURRICULUM" -> 18
+                    "API_KEYS" -> 20
                     else -> null
                 }
             sectionIndex?.let {
@@ -245,6 +295,29 @@ fun SettingsScreen(
                     onTemperatureChange = { viewModel.setLlmTemperature(it) },
                     maxTokens = llmMaxTokens,
                     onMaxTokensChange = { viewModel.setLlmMaxTokens(it) },
+                )
+            }
+
+            // On-Device LLM section
+            item {
+                Text(
+                    text = "On-Device AI",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(top = 16.dp),
+                )
+            }
+
+            item {
+                OnDeviceLlmSection(
+                    supportsOnDeviceLLM = viewModel.supportsOnDeviceLLM,
+                    deviceRamMB = viewModel.deviceRamMB,
+                    recommendedModel = viewModel.recommendedModel,
+                    downloadState = downloadState,
+                    availableModels = availableModels,
+                    onDownloadRecommended = { viewModel.downloadRecommendedModel() },
+                    onDownloadModel = { viewModel.downloadModel(it) },
+                    onCancelDownload = { viewModel.cancelDownload() },
+                    onDeleteModel = { viewModel.deleteModel(it) },
                 )
             }
 
@@ -1140,5 +1213,431 @@ private fun SettingsToggle(
             checked = checked,
             onCheckedChange = onCheckedChange,
         )
+    }
+}
+
+/**
+ * On-device LLM settings section.
+ *
+ * Shows device capability, download status, and available models.
+ * Allows downloading models for fully offline AI tutoring.
+ */
+@Composable
+private fun OnDeviceLlmSection(
+    supportsOnDeviceLLM: Boolean,
+    deviceRamMB: Int,
+    recommendedModel: DeviceCapabilityDetector.OnDeviceModelSpec?,
+    downloadState: ModelDownloadManager.DownloadState,
+    availableModels: List<ModelDownloadManager.ModelInfo>,
+    onDownloadRecommended: () -> Unit,
+    onDownloadModel: (DeviceCapabilityDetector.OnDeviceModelSpec) -> Unit,
+    onCancelDownload: () -> Unit,
+    onDeleteModel: (DeviceCapabilityDetector.OnDeviceModelSpec) -> Unit,
+) {
+    val context = LocalContext.current
+    var showDeleteDialog by remember { mutableStateOf<DeviceCapabilityDetector.OnDeviceModelSpec?>(null) }
+
+    Card(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .animateContentSize(),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            // Header
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Icon(
+                    Icons.Default.Memory,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                Text(
+                    text = "On-Device AI Models",
+                    style = MaterialTheme.typography.titleSmall,
+                )
+            }
+
+            // Device capability info
+            DeviceCapabilityInfo(
+                supportsOnDeviceLLM = supportsOnDeviceLLM,
+                deviceRamMB = deviceRamMB,
+                recommendedModel = recommendedModel,
+            )
+
+            if (!supportsOnDeviceLLM) {
+                Text(
+                    text =
+                        "Your device doesn't meet the minimum requirements for on-device AI. " +
+                            "Cloud-based AI will be used instead.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                return@Column
+            }
+
+            HorizontalDivider()
+
+            // Download state indicator
+            DownloadStateIndicator(
+                downloadState = downloadState,
+                onCancel = onCancelDownload,
+            )
+
+            // Available models
+            Text(
+                text = "Available Models",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+
+            availableModels.forEach { modelInfo ->
+                ModelCard(
+                    modelInfo = modelInfo,
+                    isRecommended = modelInfo.spec == recommendedModel,
+                    isDownloading = downloadState is ModelDownloadManager.DownloadState.Downloading,
+                    onDownload = { onDownloadModel(modelInfo.spec) },
+                    onDelete = { showDeleteDialog = modelInfo.spec },
+                )
+            }
+
+            // Quick download for recommended model
+            if (availableModels.none { it.isDownloaded } &&
+                downloadState is ModelDownloadManager.DownloadState.Idle
+            ) {
+                TextButton(
+                    onClick = onDownloadRecommended,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(Icons.Default.Download, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Download Recommended Model")
+                }
+            }
+
+            // Storage info
+            Text(
+                text = "Models are stored locally and can be deleted anytime to free space.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+
+    // Delete confirmation dialog
+    showDeleteDialog?.let { spec ->
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = null },
+            title = { Text("Delete Model?") },
+            text = {
+                Text(
+                    "Delete ${spec.displayName}? You can re-download it later. " +
+                        "This will free up ${Formatter.formatFileSize(context, spec.sizeBytes)}.",
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onDeleteModel(spec)
+                        showDeleteDialog = null
+                    },
+                ) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = null }) {
+                    Text("Cancel")
+                }
+            },
+        )
+    }
+}
+
+/**
+ * Device capability information display.
+ */
+@Composable
+private fun DeviceCapabilityInfo(
+    supportsOnDeviceLLM: Boolean,
+    deviceRamMB: Int,
+    recommendedModel: DeviceCapabilityDetector.OnDeviceModelSpec?,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(
+                text = "Device RAM",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = "${deviceRamMB / 1024} GB",
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(
+                text = "On-Device AI",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Icon(
+                    if (supportsOnDeviceLLM) Icons.Default.Check else Icons.Default.Close,
+                    contentDescription = null,
+                    tint =
+                        if (supportsOnDeviceLLM) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.error
+                        },
+                    modifier = Modifier.height(16.dp),
+                )
+                Text(
+                    text = if (supportsOnDeviceLLM) "Supported" else "Not Supported",
+                    style = MaterialTheme.typography.bodySmall,
+                    color =
+                        if (supportsOnDeviceLLM) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.error
+                        },
+                )
+            }
+        }
+
+        if (recommendedModel != null) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    text = "Recommended Model",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = recommendedModel.displayName,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Download state indicator with progress.
+ */
+@Composable
+private fun DownloadStateIndicator(
+    downloadState: ModelDownloadManager.DownloadState,
+    onCancel: () -> Unit,
+) {
+    val context = LocalContext.current
+
+    AnimatedVisibility(visible = downloadState !is ModelDownloadManager.DownloadState.Idle) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            when (downloadState) {
+                is ModelDownloadManager.DownloadState.Downloading -> {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Downloading...",
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                            Text(
+                                text =
+                                    "${Formatter.formatFileSize(context, downloadState.downloadedBytes)} / " +
+                                        Formatter.formatFileSize(context, downloadState.totalBytes),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        TextButton(onClick = onCancel) {
+                            Text("Cancel")
+                        }
+                    }
+                    LinearProgressIndicator(
+                        progress = { downloadState.progress },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                is ModelDownloadManager.DownloadState.Verifying -> {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        LinearProgressIndicator(modifier = Modifier.weight(1f))
+                        Text(
+                            text = "Verifying...",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                }
+                is ModelDownloadManager.DownloadState.Complete -> {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Icon(
+                            Icons.Default.Check,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                        Text(
+                            text = "Download complete!",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
+                is ModelDownloadManager.DownloadState.Error -> {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error,
+                        )
+                        Text(
+                            text = "Error: ${downloadState.message}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                }
+                is ModelDownloadManager.DownloadState.Cancelled -> {
+                    Text(
+                        text = "Download cancelled",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                ModelDownloadManager.DownloadState.Idle -> {
+                    // No indicator when idle
+                }
+            }
+
+            HorizontalDivider()
+        }
+    }
+}
+
+/**
+ * Model card showing download/delete options.
+ */
+@Composable
+private fun ModelCard(
+    modelInfo: ModelDownloadManager.ModelInfo,
+    isRecommended: Boolean,
+    isDownloading: Boolean,
+    onDownload: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    val context = LocalContext.current
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text = modelInfo.spec.displayName,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    if (isRecommended) {
+                        FilterChip(
+                            selected = true,
+                            onClick = {},
+                            label = {
+                                Text(
+                                    "Recommended",
+                                    style = MaterialTheme.typography.labelSmall,
+                                )
+                            },
+                        )
+                    }
+                }
+
+                Text(
+                    text =
+                        buildString {
+                            append(Formatter.formatFileSize(context, modelInfo.spec.sizeBytes))
+                            append(" • ")
+                            append("Requires ${modelInfo.spec.minRamMB / 1024}GB+ RAM")
+                        },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
+                if (modelInfo.isDownloaded) {
+                    Text(
+                        text = "Downloaded",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
+
+            if (modelInfo.isDownloaded) {
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "Delete model",
+                        tint = MaterialTheme.colorScheme.error,
+                    )
+                }
+            } else {
+                IconButton(
+                    onClick = onDownload,
+                    enabled = !isDownloading,
+                ) {
+                    Icon(
+                        Icons.Default.Download,
+                        contentDescription = "Download model",
+                        tint =
+                            if (isDownloading) {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            } else {
+                                MaterialTheme.colorScheme.primary
+                            },
+                    )
+                }
+            }
+        }
     }
 }

@@ -34,13 +34,24 @@ android {
         // Enable NNAPI for TensorFlow Lite acceleration
         buildConfigField("boolean", "ENABLE_NNAPI", "true")
 
-        // CMake configuration for native code
+        // CMake configuration for native code (Oboe audio + llama.cpp LLM)
         externalNativeBuild {
             cmake {
                 cppFlags += "-std=c++17"
                 arguments +=
                     listOf(
                         "-DANDROID_STL=c++_shared",
+                        // llama.cpp configuration for Android:
+                        // - Disable native CPU optimizations for cross-compile
+                        // - Disable OpenMP (not available on Android)
+                        // - Disable llamafile, tests, examples, server, curl
+                        "-DLLAMA_NATIVE=OFF",
+                        "-DGGML_OPENMP=OFF",
+                        "-DGGML_LLAMAFILE=OFF",
+                        "-DLLAMA_BUILD_TESTS=OFF",
+                        "-DLLAMA_BUILD_EXAMPLES=OFF",
+                        "-DLLAMA_BUILD_SERVER=OFF",
+                        "-DLLAMA_CURL=OFF",
                     )
             }
         }

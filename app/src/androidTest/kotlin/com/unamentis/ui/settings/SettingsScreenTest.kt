@@ -90,4 +90,64 @@ class SettingsScreenTest {
         // Verify voice section is displayed
         composeTestRule.onNodeWithText("Voice").assertIsDisplayed()
     }
+
+    @Test
+    fun settingsScreen_displaysOnDeviceAiSection() {
+        // Navigate to Settings tab
+        composeTestRule.onNodeWithText("Settings").performClick()
+
+        // Wait for screen to load and scroll to find On-Device AI section
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule.onAllNodesWithText("On-Device AI")
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+
+        // Verify On-Device AI section is displayed
+        composeTestRule.onNodeWithText("On-Device AI").assertIsDisplayed()
+    }
+
+    @Test
+    fun settingsScreen_displaysOnDeviceAiModelsCard() {
+        // Navigate to Settings tab
+        composeTestRule.onNodeWithText("Settings").performClick()
+
+        // Wait for screen to load
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule.onAllNodesWithText("On-Device AI Models")
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+
+        // Verify On-Device AI Models card is displayed
+        composeTestRule.onNodeWithText("On-Device AI Models").assertIsDisplayed()
+    }
+
+    @Test
+    fun settingsScreen_displaysDeviceRamInfo() {
+        // Navigate to Settings tab
+        composeTestRule.onNodeWithText("Settings").performClick()
+
+        // Wait for screen to load
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule.onAllNodesWithText("Device RAM")
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+
+        // Verify Device RAM info is displayed
+        composeTestRule.onNodeWithText("Device RAM").assertIsDisplayed()
+    }
+
+    @Test
+    fun settingsScreen_displaysAvailableModelsSection() {
+        // Navigate to Settings tab
+        composeTestRule.onNodeWithText("Settings").performClick()
+
+        // Wait for screen to load
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule.onAllNodesWithText("Available Models")
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+
+        // Verify Available Models section is displayed
+        composeTestRule.onNodeWithText("Available Models").assertIsDisplayed()
+    }
 }

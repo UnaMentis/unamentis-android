@@ -5,8 +5,15 @@ import androidx.lifecycle.viewModelScope
 import com.unamentis.core.config.ConfigurationPreset
 import com.unamentis.core.config.ProviderConfig
 import com.unamentis.core.config.RecordingMode
+import com.unamentis.core.device.DeviceCapabilityDetector
+import com.unamentis.services.llm.ModelDownloadManager
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -17,15 +24,20 @@ import javax.inject.Inject
  * - Manage provider configuration
  * - Handle API key updates
  * - Apply configuration presets
+ * - Manage on-device LLM model downloads
  * - Expose settings state to UI
  *
  * @property providerConfig Provider configuration manager
+ * @property modelDownloadManager On-device LLM model download manager
+ * @property deviceCapabilityDetector Device capability detector for LLM support
  */
 @HiltViewModel
 class SettingsViewModel
     @Inject
     constructor(
         private val providerConfig: ProviderConfig,
+        private val modelDownloadManager: ModelDownloadManager,
+        private val deviceCapabilityDetector: DeviceCapabilityDetector,
     ) : ViewModel() {
         /**
          * Current configuration preset.
@@ -148,6 +160,61 @@ class SettingsViewModel
         val autoContinueTopics: StateFlow<Boolean> =
             providerConfig.autoContinueTopics
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+        // ==================== On-Device LLM Settings ====================
+
+        /**
+         * Whether device supports on-device LLM.
+         */
+        val supportsOnDeviceLLM: Boolean = deviceCapabilityDetector.supportsOnDeviceLLM()
+
+        /**
+         * Recommended on-device model for this device.
+         */
+        val recommendedModel: DeviceCapabilityDetector.OnDeviceModelSpec? =
+            deviceCapabilityDetector.getRecommendedOnDeviceModel()
+
+        /**
+         * Device RAM in MB.
+         */
+        val deviceRamMB: Int = deviceCapabilityDetector.detect().totalRamMB
+
+        /**
+         * Download state for on-device LLM models.
+         */
+        val downloadState: StateFlow<ModelDownloadManager.DownloadState> =
+            modelDownloadManager.downloadState
+                .stateIn(
+                    viewModelScope,
+                    SharingStarted.WhileSubscribed(5000),
+                    ModelDownloadManager.DownloadState.Idle,
+                )
+
+        /**
+         * Available models with download status.
+         */
+        private val _availableModels =
+            MutableStateFlow(modelDownloadManager.getAvailableModels())
+        val availableModels: StateFlow<List<ModelDownloadManager.ModelInfo>> =
+            _availableModels.asStateFlow()
+
+        /**
+         * Whether recommended model is downloaded.
+         */
+        val isRecommendedModelDownloaded: Boolean
+            get() = modelDownloadManager.isRecommendedModelDownloaded()
+
+        /**
+         * Total storage used by models.
+         */
+        val totalStorageUsed: Long
+            get() = modelDownloadManager.getTotalStorageUsed()
+
+        /**
+         * Available storage space.
+         */
+        val availableStorage: Long
+            get() = modelDownloadManager.getAvailableStorage()
 
         /**
          * UI state combining all settings.
@@ -375,6 +442,50 @@ class SettingsViewModel
             } else {
                 "••••••••"
             }
+        }
+
+        // ==================== On-Device LLM Methods ====================
+
+        /**
+         * Download the recommended model for this device.
+         */
+        fun downloadRecommendedModel() {
+            viewModelScope.launch {
+                modelDownloadManager.downloadRecommendedModel()
+                refreshAvailableModels()
+            }
+        }
+
+        /**
+         * Download a specific model.
+         */
+        fun downloadModel(spec: DeviceCapabilityDetector.OnDeviceModelSpec) {
+            viewModelScope.launch {
+                modelDownloadManager.downloadModel(spec)
+                refreshAvailableModels()
+            }
+        }
+
+        /**
+         * Cancel the current download.
+         */
+        fun cancelDownload() {
+            modelDownloadManager.cancelDownload()
+        }
+
+        /**
+         * Delete a downloaded model.
+         */
+        fun deleteModel(spec: DeviceCapabilityDetector.OnDeviceModelSpec) {
+            modelDownloadManager.deleteModel(spec)
+            refreshAvailableModels()
+        }
+
+        /**
+         * Refresh the available models list.
+         */
+        fun refreshAvailableModels() {
+            _availableModels.value = modelDownloadManager.getAvailableModels()
         }
     }
 

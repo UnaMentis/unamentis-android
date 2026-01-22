@@ -116,9 +116,17 @@
 -keep class com.unamentis.core.audio.AudioEngine { *; }
 -keep class com.unamentis.core.audio.AudioEngine$** { *; }
 
-# Keep llama.cpp JNI interface (if implemented)
+# Keep llama.cpp JNI interface for on-device LLM
 -keep class com.unamentis.services.llm.OnDeviceLLMService { *; }
 -keep class com.unamentis.services.llm.OnDeviceLLMService$** { *; }
+
+# Keep ModelDownloadManager for model downloads
+-keep class com.unamentis.services.llm.ModelDownloadManager { *; }
+-keep class com.unamentis.services.llm.ModelDownloadManager$** { *; }
+
+# Keep DeviceCapabilityDetector and its enums
+-keep class com.unamentis.core.device.DeviceCapabilityDetector { *; }
+-keep class com.unamentis.core.device.DeviceCapabilityDetector$** { *; }
 
 # ===== SERVICES =====
 # Keep all service interfaces
