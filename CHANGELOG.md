@@ -58,7 +58,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - LLM provider abstraction and implementations:
   - OpenAILLMService (streaming SSE)
   - AnthropicLLMService (streaming SSE)
+  - OnDeviceLLMService (llama.cpp via JNI)
 - PatchPanel service for intelligent routing
+- ModelDownloadManager for GGUF model downloads
 - Provider configuration management
 
 #### Session Management (Phase 4)
@@ -124,7 +126,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Server configuration management
 
 ### Known Issues
-- On-device LLM (llama.cpp) integration pending
 - LiveKit provider integration pending
 
 ---

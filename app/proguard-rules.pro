@@ -116,9 +116,17 @@
 -keep class com.unamentis.core.audio.AudioEngine { *; }
 -keep class com.unamentis.core.audio.AudioEngine$** { *; }
 
-# Keep llama.cpp JNI interface (if implemented)
+# Keep llama.cpp JNI interface for on-device LLM
 -keep class com.unamentis.services.llm.OnDeviceLLMService { *; }
 -keep class com.unamentis.services.llm.OnDeviceLLMService$** { *; }
+
+# Keep ModelDownloadManager for model downloads
+-keep class com.unamentis.services.llm.ModelDownloadManager { *; }
+-keep class com.unamentis.services.llm.ModelDownloadManager$** { *; }
+
+# Keep DeviceCapabilityDetector and its enums
+-keep class com.unamentis.core.device.DeviceCapabilityDetector { *; }
+-keep class com.unamentis.core.device.DeviceCapabilityDetector$** { *; }
 
 # ===== SERVICES =====
 # Keep all service interfaces
@@ -235,5 +243,11 @@
 
 # ===== CERTIFICATE PINNING (if implemented) =====
 -keep class com.unamentis.data.remote.CertificatePinner { *; }
+
+# ===== GOOGLE TINK / ERRORPRONE ANNOTATIONS =====
+# Google Tink references errorprone annotations for static analysis.
+# These annotations are not required at runtime - safe to suppress warnings.
+-dontwarn com.google.errorprone.annotations.**
+-keep class com.google.errorprone.annotations.** { *; }
 
 # ===== END OF PROGUARD RULES =====

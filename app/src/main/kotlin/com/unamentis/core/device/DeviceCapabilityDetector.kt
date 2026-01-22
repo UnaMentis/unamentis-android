@@ -43,6 +43,46 @@ class DeviceCapabilityDetector
         }
 
         /**
+         * On-device LLM model specifications.
+         *
+         * Matches iOS implementation for feature parity.
+         * Models are GGUF format, compatible with llama.cpp.
+         */
+        enum class OnDeviceModelSpec(
+            val filename: String,
+            val displayName: String,
+            val sizeBytes: Long,
+            val minRamMB: Int,
+            val recommendedRamMB: Int,
+        ) {
+            /**
+             * Ministral 3B Instruct Q4_K_M - Primary model.
+             * Best quality for devices with 6GB+ RAM.
+             * Size: ~2.1GB, requires 6GB RAM, recommended 8GB.
+             */
+            MINISTRAL_3B(
+                filename = "ministral-3b-instruct-q4_k_m.gguf",
+                displayName = "Ministral 3B",
+                sizeBytes = 2_100_000_000L,
+                minRamMB = 6144,
+                recommendedRamMB = 8192,
+            ),
+
+            /**
+             * TinyLlama 1.1B Chat Q4_K_M - Fallback model.
+             * Works on devices with 3GB+ RAM.
+             * Size: ~670MB, requires 3GB RAM, recommended 4GB.
+             */
+            TINYLLAMA_1B(
+                filename = "tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf",
+                displayName = "TinyLlama 1.1B",
+                sizeBytes = 670_000_000L,
+                minRamMB = 3072,
+                recommendedRamMB = 4096,
+            ),
+        }
+
+        /**
          * Device capabilities summary.
          */
         data class DeviceCapabilities(
@@ -53,6 +93,8 @@ class DeviceCapabilityDetector
             val apiLevel: Int,
             val supportsNNAPI: Boolean,
             val supportsVulkan: Boolean,
+            val supportsOnDeviceLLM: Boolean,
+            val recommendedLLMModel: OnDeviceModelSpec?,
             val manufacturer: String,
             val model: String,
         )
@@ -70,6 +112,24 @@ class DeviceCapabilityDetector
 
             val tier = classifyTier(totalRamMB, cpuCores, apiLevel)
 
+            // Check on-device LLM support (3GB+ RAM, 4+ cores, Android 8.0+)
+            val canRunOnDeviceLLM =
+                totalRamMB >= OnDeviceModelSpec.TINYLLAMA_1B.minRamMB &&
+                    cpuCores >= 4 &&
+                    apiLevel >= 26
+
+            // Determine recommended LLM model
+            val recommendedModel =
+                if (canRunOnDeviceLLM) {
+                    if (totalRamMB >= OnDeviceModelSpec.MINISTRAL_3B.minRamMB) {
+                        OnDeviceModelSpec.MINISTRAL_3B
+                    } else {
+                        OnDeviceModelSpec.TINYLLAMA_1B
+                    }
+                } else {
+                    null
+                }
+
             return DeviceCapabilities(
                 tier = tier,
                 totalRamMB = totalRamMB,
@@ -78,6 +138,8 @@ class DeviceCapabilityDetector
                 apiLevel = apiLevel,
                 supportsNNAPI = supportsNNAPI,
                 supportsVulkan = supportsVulkan,
+                supportsOnDeviceLLM = canRunOnDeviceLLM,
+                recommendedLLMModel = recommendedModel,
                 manufacturer = Build.MANUFACTURER,
                 model = Build.MODEL,
             )
@@ -156,8 +218,8 @@ class DeviceCapabilityDetector
                         useCloudSTT = true,
                         // Use Android TTS
                         useCloudTTS = false,
-                        // Use on-device LLM
-                        useCloudLLM = false,
+                        // Use on-device LLM if supported, otherwise fall back to cloud
+                        useCloudLLM = !capabilities.supportsOnDeviceLLM,
                         // 128ms at 16kHz
                         audioBufferSize = 2048,
                         maxConcurrentRequests = 1,
@@ -190,6 +252,66 @@ class DeviceCapabilityDetector
         }
 
         /**
+         * Check if device supports on-device LLM inference.
+         *
+         * Requires:
+         * - At least 3GB RAM (for TinyLlama fallback)
+         * - At least 4 CPU cores
+         * - Android 8.0+ (API 26)
+         *
+         * @return true if device can run on-device LLM (at least TinyLlama)
+         */
+        fun supportsOnDeviceLLM(): Boolean {
+            val capabilities = detect()
+            return capabilities.totalRamMB >= OnDeviceModelSpec.TINYLLAMA_1B.minRamMB &&
+                capabilities.cpuCores >= 4 &&
+                capabilities.apiLevel >= 26
+        }
+
+        /**
+         * Get the recommended on-device LLM model for this device.
+         *
+         * Selection logic:
+         * - 6GB+ RAM: Ministral 3B (best quality)
+         * - 3GB+ RAM: TinyLlama 1.1B (fallback)
+         * - <3GB RAM: null (on-device LLM not supported)
+         *
+         * @return Recommended model spec, or null if device doesn't support on-device LLM
+         */
+        fun getRecommendedOnDeviceModel(): OnDeviceModelSpec? {
+            val capabilities = detect()
+
+            if (!supportsOnDeviceLLM()) {
+                return null
+            }
+
+            // Prefer Ministral 3B if device has enough RAM
+            if (capabilities.totalRamMB >= OnDeviceModelSpec.MINISTRAL_3B.minRamMB) {
+                return OnDeviceModelSpec.MINISTRAL_3B
+            }
+
+            // Fall back to TinyLlama for lower-RAM devices
+            return OnDeviceModelSpec.TINYLLAMA_1B
+        }
+
+        /**
+         * Get all on-device models that can run on this device.
+         *
+         * @return List of supported models, ordered by quality (best first)
+         */
+        fun getSupportedOnDeviceModels(): List<OnDeviceModelSpec> {
+            val capabilities = detect()
+
+            if (!supportsOnDeviceLLM()) {
+                return emptyList()
+            }
+
+            return OnDeviceModelSpec.entries
+                .filter { it.minRamMB <= capabilities.totalRamMB }
+                .sortedByDescending { it.minRamMB } // Best quality first
+        }
+
+        /**
          * Get human-readable device summary.
          */
         fun getDeviceSummary(): String {
@@ -202,6 +324,10 @@ class DeviceCapabilityDetector
                 appendLine("Android: API ${capabilities.apiLevel} (${getAndroidVersionName(capabilities.apiLevel)})")
                 appendLine("NNAPI: ${if (capabilities.supportsNNAPI) "Yes" else "No"}")
                 appendLine("Vulkan: ${if (capabilities.supportsVulkan) "Yes" else "No"}")
+                appendLine("On-Device LLM: ${if (capabilities.supportsOnDeviceLLM) "Yes" else "No"}")
+                capabilities.recommendedLLMModel?.let { model ->
+                    appendLine("Recommended LLM: ${model.displayName}")
+                }
             }
         }
 

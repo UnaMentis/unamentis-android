@@ -151,7 +151,8 @@ Before any code is considered "done", it must pass these gates:
 ## Key Technical Requirements
 
 **Testing Philosophy (Real Over Mock):**
-- Only mock paid external APIs (LLM, STT, TTS, Embeddings)
+- Only mock paid external APIs (cloud LLM, STT, TTS, Embeddings)
+- OnDeviceLLMService (llama.cpp) is NOT a paid API - test with real JNI, mock only model loading
 - Use real implementations for all internal services
 - Use in-memory Room database for testing
 - See `docs/TESTING.md` for detailed testing philosophy and guidelines

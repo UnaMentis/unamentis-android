@@ -351,6 +351,104 @@ See `app/src/test/kotlin/com/unamentis/helpers/MockServices.kt` for reference im
 
 ---
 
+## On-Device LLM Testing
+
+The OnDeviceLLMService uses llama.cpp via JNI for local inference. Unlike cloud LLM providers, this is a **real implementation that does not require mocking**.
+
+### Testing Philosophy for OnDevice LLM
+
+1. **Unit Tests** - Test Kotlin logic without loading models
+   - Prompt formatting (Mistral vs ChatML templates)
+   - Device capability detection
+   - Model path resolution
+   - Metrics calculation
+
+2. **Instrumented Tests** - Test JNI integration with lightweight models
+   - Native library loading
+   - Model loading/unloading
+   - Generation flow with small test prompts
+
+### Example: Unit Test (No Model Required)
+
+```kotlin
+@Test
+fun `formatPrompt uses Mistral template for Ministral model`() {
+    val service = OnDeviceLLMService(context)
+    service.currentModelPath = "/path/to/ministral-3b-instruct.gguf"
+
+    val messages = listOf(
+        LLMMessage("system", "You are helpful."),
+        LLMMessage("user", "Hello")
+    )
+
+    val prompt = service.formatPrompt(messages)
+
+    assertTrue(prompt.contains("[INST]"))
+    assertTrue(prompt.contains("[/INST]"))
+}
+```
+
+### Example: Instrumented Test (JNI Verification)
+
+```kotlin
+@Test
+fun nativeLibrary_loadsSuccessfully() {
+    // Verify llama_inference.so loads without crashing
+    val service = OnDeviceLLMService(context)
+    // If we get here, the native library loaded
+    assertTrue(true)
+}
+
+@Test
+fun modelLoading_failsGracefullyForMissingFile() = runBlocking {
+    val service = OnDeviceLLMService(context)
+    val result = service.loadModel(
+        OnDeviceLLMService.ModelConfig("/nonexistent/model.gguf")
+    )
+    assertFalse(result)
+}
+```
+
+### Model Files for Testing
+
+For CI/CD, we do NOT include GGUF models in the repository (too large). Instead:
+
+1. **Unit tests** - Don't require model files (test formatting, routing, metrics)
+2. **Instrumented tests** - Test JNI loading and graceful failure handling
+3. **Manual testing** - Download models via Settings > On-Device AI
+
+### Performance Benchmarks
+
+When testing on-device inference performance:
+
+```kotlin
+@Test
+fun `TTFT under 2 seconds on flagship device`() = runBlocking {
+    // Only run on devices with 8GB+ RAM
+    val detector = DeviceCapabilityDetector(context)
+    val capabilities = detector.detect()
+    val ramGB = capabilities.totalRamMB / 1024
+    assumeTrue(ramGB >= 8)
+
+    val service = OnDeviceLLMService(context)
+    service.loadModel(ModelConfig(modelPath))
+
+    val startTime = System.currentTimeMillis()
+    var firstTokenTime: Long? = null
+
+    service.streamCompletion(messages, 0.7f, 50).collect { token ->
+        if (firstTokenTime == null && token.content.isNotEmpty()) {
+            firstTokenTime = System.currentTimeMillis() - startTime
+        }
+    }
+
+    assertNotNull(firstTokenTime)
+    assertTrue(firstTokenTime!! < 2000, "TTFT was ${firstTokenTime}ms")
+}
+```
+
+---
+
 ## Test Data
 
 ### Test Fixtures

@@ -57,6 +57,13 @@ This is the Android port of the iOS application, maintaining **strict feature pa
 - **Session Persistence** — Full conversation history with transcript storage
 - **Server Synchronization** — Local-first architecture with real-time sync
 
+### Fully Offline Mode
+- **On-Device LLM** — llama.cpp with Ministral-3B or TinyLlama-1.1B (6GB+ RAM devices)
+- **On-Device STT** — Android Speech Recognition (requires offline language pack; without it, recognition may fail or use network)
+- **On-Device TTS** — Android Text-to-Speech (requires offline voice data; without it, synthesis may fail or use network)
+- **In-App Model Download** — Download GGUF models directly from settings
+- **iOS Feature Parity** — Same llama.cpp engine and models as iOS app
+
 ### Performance & Reliability
 - **Low-Latency Audio** — Native Oboe engine with JNI for sub-10ms audio I/O
 - **Thermal Management** — Automatic adaptation to device thermal state

@@ -181,4 +181,26 @@
     <string name="kb_reset_stats_title">Reset Statistics?</string>
     <string name="kb_reset_stats_message">This will permanently delete all your practice history and statistics. This action cannot be undone.</string>
     <string name="kb_reset">Reset</string>
+
+    <!-- On-Device LLM Settings -->
+    <string name="settings_on_device_ai">On-Device AI</string>
+    <string name="settings_on_device_models">On-Device AI Models</string>
+    <string name="settings_device_ram">Device RAM</string>
+    <string name="settings_on_device_supported">Supported</string>
+    <string name="settings_on_device_not_supported">Not Supported</string>
+    <string name="settings_recommended_model">Recommended Model</string>
+    <string name="settings_device_not_supported_message">Your device doesn\'t meet the minimum requirements for on-device AI. Cloud-based AI will be used instead.</string>
+    <string name="settings_available_models">Available Models</string>
+    <string name="settings_download_recommended">Download Recommended Model</string>
+    <string name="settings_models_storage_info">Models are stored locally and can be deleted anytime to free space.</string>
+    <string name="settings_delete_model">Delete Model?</string>
+    <string name="settings_delete_model_message">Delete %1$s? You can re-download it later. This will free up %2$s.</string>
+    <string name="settings_delete">Delete</string>
+    <string name="settings_downloading">Downloading…</string>
+    <string name="settings_verifying">Verifying…</string>
+    <string name="settings_download_complete">Download complete!</string>
+    <string name="settings_download_cancelled">Download cancelled</string>
+    <string name="settings_downloaded">Downloaded</string>
+    <string name="settings_recommended">Recommended</string>
+    <string name="settings_requires_ram">Requires %1$dGB+ RAM</string>
 </resources>

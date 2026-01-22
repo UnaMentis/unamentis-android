@@ -65,7 +65,9 @@
 - ✅ LLM Services:
   - OpenAILLMService (SSE streaming)
   - AnthropicLLMService (SSE streaming)
-  - PatchPanelService (intelligent routing)
+  - OnDeviceLLMService (llama.cpp via JNI - iOS parity)
+  - PatchPanelService (intelligent routing with OnDevice support)
+  - ModelDownloadManager (in-app GGUF model downloads)
 - ✅ ProviderConfig (secure API key storage)
 - ✅ Configuration presets (BALANCED, LOW_LATENCY, etc.)
 - ✅ Hilt ProviderModule for DI
@@ -419,6 +421,7 @@
 - ✅ Complete audio pipeline with low-latency Oboe
 - ✅ Multiple provider support (STT, TTS, LLM)
 - ✅ Intelligent LLM routing (PatchPanel)
+- ✅ On-device LLM via llama.cpp (iOS feature parity)
 - ✅ Secure API key storage
 - ✅ Session state machine with barge-in
 - ✅ Curriculum progress tracking

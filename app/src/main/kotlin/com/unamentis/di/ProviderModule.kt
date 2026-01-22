@@ -2,12 +2,15 @@ package com.unamentis.di
 
 import android.content.Context
 import com.unamentis.core.config.ProviderConfig
+import com.unamentis.core.device.DeviceCapabilityDetector
 import com.unamentis.core.health.HealthMonitorConfig
 import com.unamentis.core.health.ProviderHealthMonitor
 import com.unamentis.data.model.LLMService
 import com.unamentis.data.model.STTService
 import com.unamentis.data.model.TTSService
 import com.unamentis.services.llm.AnthropicLLMService
+import com.unamentis.services.llm.ModelDownloadManager
+import com.unamentis.services.llm.OnDeviceLLMService
 import com.unamentis.services.llm.OpenAILLMService
 import com.unamentis.services.llm.PatchPanelService
 import com.unamentis.services.stt.AndroidSTTService
@@ -27,6 +30,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
 import javax.inject.Named
+import javax.inject.Provider
 import javax.inject.Singleton
 
 /**
@@ -35,8 +39,9 @@ import javax.inject.Singleton
  * Provides:
  * - STT services (Deepgram, Android)
  * - TTS services (ElevenLabs, Android)
- * - LLM services (OpenAI, Anthropic, PatchPanel)
+ * - LLM services (OpenAI, Anthropic, OnDevice, PatchPanel)
  * - ProviderConfig for configuration management
+ * - DeviceCapabilityDetector for hardware detection
  *
  * Note: OkHttpClient is provided by AppModule.
  */
@@ -52,6 +57,29 @@ object ProviderModule {
         @ApplicationContext context: Context,
     ): ProviderConfig {
         return ProviderConfig(context)
+    }
+
+    /**
+     * Provide DeviceCapabilityDetector for hardware detection.
+     */
+    @Provides
+    @Singleton
+    fun provideDeviceCapabilityDetector(
+        @ApplicationContext context: Context,
+    ): DeviceCapabilityDetector {
+        return DeviceCapabilityDetector(context)
+    }
+
+    /**
+     * Provide ModelDownloadManager for on-device LLM models.
+     */
+    @Provides
+    @Singleton
+    fun provideModelDownloadManager(
+        @ApplicationContext context: Context,
+        deviceCapabilityDetector: DeviceCapabilityDetector,
+    ): ModelDownloadManager {
+        return ModelDownloadManager(context, deviceCapabilityDetector)
     }
 
     // STT Service Providers
@@ -141,7 +169,33 @@ object ProviderModule {
     }
 
     /**
+     * Provide OnDevice LLM service using llama.cpp.
+     *
+     * This provides fully offline LLM inference using:
+     * - Ministral-3B-Instruct (primary, ~2.1GB) for 6GB+ RAM devices
+     * - TinyLlama-1.1B-Chat (fallback, ~670MB) for 3GB+ RAM devices
+     *
+     * Models are downloaded on demand via ModelDownloadManager.
+     */
+    @Provides
+    @Singleton
+    @Named("OnDeviceLLM")
+    fun provideOnDeviceLLMService(
+        @ApplicationContext context: Context,
+    ): LLMService {
+        return OnDeviceLLMService(context)
+    }
+
+    /**
      * Provide PatchPanel LLM routing service.
+     *
+     * Routes to multiple LLM providers based on configuration:
+     * - OpenAI (cloud, requires API key)
+     * - Anthropic (cloud, requires API key)
+     * - OnDevice (offline, uses llama.cpp with GGUF models)
+     *
+     * Note: OnDevice uses Provider<LLMService> to defer construction until needed,
+     * avoiding expensive System.loadLibrary calls on devices that don't support it.
      */
     @Provides
     @Singleton
@@ -149,12 +203,21 @@ object ProviderModule {
     fun providePatchPanelService(
         @Named("OpenAILLM") openai: LLMService,
         @Named("AnthropicLLM") anthropic: LLMService,
+        @Named("OnDeviceLLM") onDeviceProvider: Provider<LLMService>,
+        deviceCapabilityDetector: DeviceCapabilityDetector,
     ): LLMService {
         val providers =
-            mapOf(
-                "OpenAI" to openai,
-                "Anthropic" to anthropic,
-            )
+            buildMap {
+                put("OpenAI", openai)
+                put("Anthropic", anthropic)
+
+                // Add OnDevice provider only if device supports it
+                // Using Provider.get() defers OnDeviceLLMService construction
+                // (including System.loadLibrary) until this point
+                if (deviceCapabilityDetector.supportsOnDeviceLLM()) {
+                    put("OnDevice", onDeviceProvider.get())
+                }
+            }
         return PatchPanelService(providers)
     }
 
