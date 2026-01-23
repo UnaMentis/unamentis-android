@@ -381,8 +381,9 @@ private fun CostLegendItem(
                     .size(12.dp)
                     .background(color, RoundedCornerShape(2.dp)),
         )
+        val formattedCost = NumberFormat.getCurrencyInstance(Locale.getDefault()).format(cost)
         Text(
-            text = "$label: ${NumberFormat.getCurrencyInstance(Locale.getDefault()).format(cost)}",
+            text = stringResource(R.string.analytics_cost_legend_format, label, formattedCost),
             style = MaterialTheme.typography.bodySmall,
         )
     }

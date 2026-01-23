@@ -7,8 +7,13 @@ import com.unamentis.data.local.dao.ModuleDao
 import com.unamentis.data.local.entity.DownloadedModuleEntity
 import io.mockk.clearAllMocks
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
@@ -31,6 +36,7 @@ import org.robolectric.annotation.Config
  * database interactions, following the project's testing philosophy
  * of using real implementations over mocks.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class ModuleRegistryTest {
@@ -39,8 +45,13 @@ class ModuleRegistryTest {
     private lateinit var json: Json
     private lateinit var registry: ModuleRegistry
 
+    private val testDispatcher = StandardTestDispatcher()
+    private val testScope = TestScope(testDispatcher)
+
     @Before
     fun setup() {
+        Dispatchers.setMain(testDispatcher)
+
         // Create real in-memory Room database
         database = AppDatabase.createInMemory(ApplicationProvider.getApplicationContext())
         moduleDao = database.moduleDao()
@@ -52,11 +63,16 @@ class ModuleRegistryTest {
                 encodeDefaults = true
             }
 
-        registry = ModuleRegistry(moduleDao, json)
+        // Inject testScope to control coroutines launched in ModuleRegistry's init block
+        registry = ModuleRegistry(moduleDao, json, externalScope = testScope)
     }
 
     @After
     fun tearDown() {
+        // Close the registry to cancel its coroutines
+        registry.close()
+        // Reset Main dispatcher
+        Dispatchers.resetMain()
         // Close the in-memory database
         database.close()
         // Clear any mocks that may have been created in tests
@@ -122,15 +138,20 @@ class ModuleRegistryTest {
             val entity = createTestModuleEntity("test-module", "1.0.0")
             moduleDao.insertModule(entity)
 
-            // Create new registry to pick up the inserted module
-            val newRegistry = ModuleRegistry(moduleDao, json)
+            // Create new registry with a fresh test scope to pick up the inserted module
+            val newTestScope = TestScope(testDispatcher)
+            val newRegistry = ModuleRegistry(moduleDao, json, externalScope = newTestScope)
 
-            // Await for IO dispatcher to collect flow
-            awaitCondition { newRegistry.isDownloaded("test-module") }
+            try {
+                // Await for IO dispatcher to collect flow
+                awaitCondition { newRegistry.isDownloaded("test-module") }
 
-            assertTrue(newRegistry.hasUpdate("test-module", "2.0.0"))
-            assertTrue(newRegistry.hasUpdate("test-module", "1.0.1"))
-            assertTrue(newRegistry.hasUpdate("test-module", "1.1.0"))
+                assertTrue(newRegistry.hasUpdate("test-module", "2.0.0"))
+                assertTrue(newRegistry.hasUpdate("test-module", "1.0.1"))
+                assertTrue(newRegistry.hasUpdate("test-module", "1.1.0"))
+            } finally {
+                newRegistry.close()
+            }
         }
 
     @Test
@@ -140,15 +161,20 @@ class ModuleRegistryTest {
             val entity = createTestModuleEntity("test-module", "2.0.0")
             moduleDao.insertModule(entity)
 
-            // Create new registry to pick up the inserted module
-            val newRegistry = ModuleRegistry(moduleDao, json)
+            // Create new registry with a fresh test scope to pick up the inserted module
+            val newTestScope = TestScope(testDispatcher)
+            val newRegistry = ModuleRegistry(moduleDao, json, externalScope = newTestScope)
 
-            // Await for IO dispatcher to collect flow
-            awaitCondition { newRegistry.isDownloaded("test-module") }
+            try {
+                // Await for IO dispatcher to collect flow
+                awaitCondition { newRegistry.isDownloaded("test-module") }
 
-            assertFalse(newRegistry.hasUpdate("test-module", "2.0.0"))
-            assertFalse(newRegistry.hasUpdate("test-module", "1.9.9"))
-            assertFalse(newRegistry.hasUpdate("test-module", "1.0.0"))
+                assertFalse(newRegistry.hasUpdate("test-module", "2.0.0"))
+                assertFalse(newRegistry.hasUpdate("test-module", "1.9.9"))
+                assertFalse(newRegistry.hasUpdate("test-module", "1.0.0"))
+            } finally {
+                newRegistry.close()
+            }
         }
 
     @Test
@@ -248,13 +274,18 @@ class ModuleRegistryTest {
             val entity = createTestModuleEntity("test-module", "1.0.0")
             moduleDao.insertModule(entity)
 
-            val newRegistry = ModuleRegistry(moduleDao, json)
+            val newTestScope = TestScope(testDispatcher)
+            val newRegistry = ModuleRegistry(moduleDao, json, externalScope = newTestScope)
 
-            // Await for IO dispatcher to collect flow
-            awaitCondition { newRegistry.isDownloaded("test-module") }
+            try {
+                // Await for IO dispatcher to collect flow
+                awaitCondition { newRegistry.isDownloaded("test-module") }
 
-            assertTrue(newRegistry.hasUpdate("test-module", "2.0.0"))
-            assertFalse(newRegistry.hasUpdate("test-module", "0.9.0"))
+                assertTrue(newRegistry.hasUpdate("test-module", "2.0.0"))
+                assertFalse(newRegistry.hasUpdate("test-module", "0.9.0"))
+            } finally {
+                newRegistry.close()
+            }
         }
 
     @Test
@@ -263,13 +294,18 @@ class ModuleRegistryTest {
             val entity = createTestModuleEntity("test-module", "1.5.0")
             moduleDao.insertModule(entity)
 
-            val newRegistry = ModuleRegistry(moduleDao, json)
+            val newTestScope = TestScope(testDispatcher)
+            val newRegistry = ModuleRegistry(moduleDao, json, externalScope = newTestScope)
 
-            // Await for IO dispatcher to collect flow
-            awaitCondition { newRegistry.isDownloaded("test-module") }
+            try {
+                // Await for IO dispatcher to collect flow
+                awaitCondition { newRegistry.isDownloaded("test-module") }
 
-            assertTrue(newRegistry.hasUpdate("test-module", "1.6.0"))
-            assertFalse(newRegistry.hasUpdate("test-module", "1.4.0"))
+                assertTrue(newRegistry.hasUpdate("test-module", "1.6.0"))
+                assertFalse(newRegistry.hasUpdate("test-module", "1.4.0"))
+            } finally {
+                newRegistry.close()
+            }
         }
 
     @Test
@@ -278,13 +314,18 @@ class ModuleRegistryTest {
             val entity = createTestModuleEntity("test-module", "1.0.5")
             moduleDao.insertModule(entity)
 
-            val newRegistry = ModuleRegistry(moduleDao, json)
+            val newTestScope = TestScope(testDispatcher)
+            val newRegistry = ModuleRegistry(moduleDao, json, externalScope = newTestScope)
 
-            // Await for IO dispatcher to collect flow
-            awaitCondition { newRegistry.isDownloaded("test-module") }
+            try {
+                // Await for IO dispatcher to collect flow
+                awaitCondition { newRegistry.isDownloaded("test-module") }
 
-            assertTrue(newRegistry.hasUpdate("test-module", "1.0.6"))
-            assertFalse(newRegistry.hasUpdate("test-module", "1.0.4"))
+                assertTrue(newRegistry.hasUpdate("test-module", "1.0.6"))
+                assertFalse(newRegistry.hasUpdate("test-module", "1.0.4"))
+            } finally {
+                newRegistry.close()
+            }
         }
 
     private fun createTestModuleProtocol(id: String): ModuleProtocol {

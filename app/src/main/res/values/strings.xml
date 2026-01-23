@@ -292,6 +292,7 @@
     <string name="analytics_label_llm_ttft">LLM TTFT</string>
     <string name="analytics_label_tts_ttfb">TTS TTFB</string>
     <string name="analytics_label_e2e">E2E</string>
+    <string name="analytics_cost_legend_format">%1$s: %2$s</string>
 
     <!-- On-Device LLM Settings -->
     <string name="settings_on_device_ai">On-Device AI</string>

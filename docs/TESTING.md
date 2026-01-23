@@ -829,6 +829,92 @@ This pattern is especially important when testing classes that:
 - Use `CoroutineScope(SupervisorJob() + Dispatchers.IO)` internally
 - Create background coroutines that outlive the test
 
+### Issue: Classes with internal CoroutineScope cause UncaughtExceptionsBeforeTest
+
+**Cause**: Classes that create their own `CoroutineScope` (e.g., `CoroutineScope(SupervisorJob() + Dispatchers.IO)`) and launch coroutines in their `init` block will have those coroutines running outside the test's control. When the test ends, `kotlinx.coroutines.test` detects these as uncaught exceptions.
+
+**Solution**: Make the class testable by accepting an optional external `CoroutineScope`:
+
+```kotlin
+// Production class - accept optional external scope for testability
+@Singleton
+class ModuleRegistry
+    @Inject
+    constructor(
+        private val moduleDao: ModuleDao,
+        private val json: Json,
+        externalScope: CoroutineScope? = null,  // Optional for tests
+    ) {
+        // Use external scope if provided, otherwise create internal scope
+        private val scope: CoroutineScope = externalScope ?: CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        private val ownsScope: Boolean = externalScope == null
+
+        init {
+            // This coroutine is now controlled by the test when externalScope is provided
+            scope.launch {
+                moduleDao.getAllModules().collect { entities ->
+                    _downloadedModules.value = entities.map { it.toDownloadedModule() }
+                }
+            }
+        }
+
+        /**
+         * Close the registry and cancel any ongoing coroutines.
+         * Only cancels if this instance owns the scope.
+         */
+        fun close() {
+            if (ownsScope) {
+                scope.cancel()
+            }
+        }
+    }
+```
+
+**Test setup with injected TestScope:**
+
+```kotlin
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.setMain
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class ModuleRegistryTest {
+    private lateinit var registry: ModuleRegistry
+
+    private val testDispatcher = StandardTestDispatcher()
+    private val testScope = TestScope(testDispatcher)
+
+    @Before
+    fun setup() {
+        Dispatchers.setMain(testDispatcher)
+
+        // Inject testScope to control coroutines launched in init block
+        registry = ModuleRegistry(moduleDao, json, externalScope = testScope)
+    }
+
+    @After
+    fun tearDown() {
+        // Close the registry to cancel its coroutines
+        registry.close()
+        // Reset Main dispatcher
+        Dispatchers.resetMain()
+    }
+
+    @Test
+    fun `test with controlled coroutines`() = runTest(testDispatcher) {
+        // Test code here - coroutines are now controlled by testDispatcher
+    }
+}
+```
+
+**Key points:**
+- The default parameter (`externalScope: CoroutineScope? = null`) maintains backward compatibility; production code doesn't need to change
+- Tests inject a `TestScope` to control all coroutines
+- The `close()` method allows proper cleanup in `@After`
+- Use `Dispatchers.setMain(testDispatcher)` to also control Main-bound coroutines
+
 ### Issue: Tests fail in CI but pass locally
 
 **Check**:

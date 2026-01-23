@@ -6,6 +6,7 @@ import com.unamentis.data.local.entity.DownloadedModuleEntity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -48,8 +49,10 @@ class ModuleRegistry
     constructor(
         private val moduleDao: ModuleDao,
         private val json: Json,
+        externalScope: CoroutineScope? = null,
     ) {
-        private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        private val scope: CoroutineScope = externalScope ?: CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        private val ownsScope: Boolean = externalScope == null
 
         private val _downloadedModules = MutableStateFlow<List<DownloadedModule>>(emptyList())
         val downloadedModules: StateFlow<List<DownloadedModule>> = _downloadedModules.asStateFlow()
@@ -239,6 +242,18 @@ class ModuleRegistry
          */
         fun getAllImplementations(): List<ModuleProtocol> {
             return implementations.values.toList()
+        }
+
+        /**
+         * Close the registry and cancel any ongoing coroutines.
+         *
+         * Only cancels the scope if this instance owns it (i.e., no external scope was provided).
+         * Call this method during cleanup/testing to prevent uncaught coroutine exceptions.
+         */
+        fun close() {
+            if (ownsScope) {
+                scope.cancel()
+            }
         }
 
         /**
