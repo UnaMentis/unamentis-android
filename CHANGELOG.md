@@ -14,6 +14,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - QUICK_START.md for rapid developer onboarding
 - CHANGELOG.md for tracking project changes
 
+### Fixed
+- **Knowledge Bowl**: CancellationException handling in KBQuestionService - now properly re-throws to preserve cooperative cancellation
+- **Knowledge Bowl**: LazyVerticalGrid in KBDashboardScreen now uses flexible height (`heightIn(max = 400.dp)`) instead of fixed `height(260.dp)`
+- **Knowledge Bowl**: `isLastQuestion` getter in KBPracticeSessionViewModel now requires `totalQuestions > 0` to prevent false positives
+- **CI**: Instrumented tests now stable with en-US locale enforcement and 10s timeouts
+- **Navigation**: Tests now use testTag selectors instead of fragile text-based selectors
+
+### Changed
+- **Knowledge Bowl**: Error messages in KBQuestionService now use localized string resources (`R.string.kb_error_*`)
+- **Navigation**: All NavigationBarItem and DropdownMenuItem components now have testTag modifiers for testing stability
+- **CI Workflow**: Added locale enforcement (`persist.sys.locales=en-US`) in GitHub Actions emulator configuration
+- **Instrumented Tests**: Increased waitUntil timeouts from 5000ms to 10000ms across all test files
+- **Instrumented Tests**: Updated all navigation tests to use testTag-based selectors:
+  - NavigationFlowTest.kt
+  - AnalyticsScreenTest.kt
+  - SettingsScreenTest.kt
+  - SessionScreenTest.kt
+  - CurriculumScreenTest.kt
+  - HistoryScreenTest.kt
+  - TodoScreenTest.kt
+
+### Documentation
+- Updated docs/TESTING.md with CI locale enforcement and testTag testing patterns
+- Updated docs/KNOWLEDGE_BOWL.md with code quality improvements section
+
 ---
 
 ## [0.1.0] - 2026-01-19

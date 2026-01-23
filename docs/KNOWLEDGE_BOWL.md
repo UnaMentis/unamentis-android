@@ -1,6 +1,6 @@
 # Knowledge Bowl Module
 
-**Last Updated**: 2026-01-22
+**Last Updated**: 2026-01-22 (Updated)
 **iOS Parity**: Full feature parity with iOS implementation
 
 ## Overview
@@ -352,3 +352,77 @@ New entries in `res/values/strings.xml`:
 - `kb_stat_correct`, `kb_speed_target`
 - `cd_within_speed_target` (accessibility)
 - Plurals: `kb_questions_answered_count`, `kb_correct_count`
+
+### KBQuestionService Coroutine Safety (2026-01-22)
+
+Added proper `CancellationException` handling to prevent swallowing structured concurrency cancellations:
+
+```kotlin
+import kotlin.coroutines.cancellation.CancellationException
+
+suspend fun loadQuestions() {
+    try {
+        fetchQuestionsFromServer()
+    } catch (e: CancellationException) {
+        throw e  // Re-throw to preserve cooperative cancellation
+    } catch (e: Exception) {
+        Log.w(TAG, "Server fetch failed, using bundled questions: ${e.message}")
+        loadBundledFallback()
+    }
+}
+```
+
+### KBQuestionService Localized Error Messages (2026-01-22)
+
+Replaced hardcoded error strings with Android string resources for i18n support:
+
+```kotlin
+// Before (hardcoded)
+throw IOException("Self-hosted server not configured")
+
+// After (localized)
+throw IOException(context.getString(R.string.kb_error_server_not_configured))
+```
+
+New error string resources:
+- `kb_error_failed_to_load_questions` - Generic load failure
+- `kb_error_server_not_configured` - Server not configured
+- `kb_error_server_returned` - Server HTTP error (with format placeholder)
+- `kb_error_empty_response` - Empty response body
+
+### KBDashboardScreen LazyVerticalGrid Fix (2026-01-22)
+
+Fixed the study modes grid to use flexible height instead of fixed height:
+
+```kotlin
+// Before (fixed height caused truncation)
+LazyVerticalGrid(
+    modifier = Modifier.height(260.dp),
+    // ...
+)
+
+// After (flexible height with maximum)
+LazyVerticalGrid(
+    modifier = Modifier
+        .fillMaxWidth()
+        .heightIn(max = 400.dp),
+    userScrollEnabled = false,
+    // ...
+)
+```
+
+This prevents content truncation when displaying all 6 study modes.
+
+### KBPracticeSessionViewModel isLastQuestion Fix (2026-01-22)
+
+Fixed the `isLastQuestion` getter to prevent false positives when session hasn't started:
+
+```kotlin
+// Before (could return true when totalQuestions == 0)
+val isLastQuestion: Boolean
+    get() = _questionIndex.value >= _totalQuestions.value - 1
+
+// After (requires at least one question)
+val isLastQuestion: Boolean
+    get() = _totalQuestions.value > 0 && _questionIndex.value >= _totalQuestions.value - 1
+```

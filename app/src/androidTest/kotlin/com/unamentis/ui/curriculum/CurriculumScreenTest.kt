@@ -2,7 +2,9 @@ package com.unamentis.ui.curriculum
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -29,30 +31,43 @@ class CurriculumScreenTest {
     @get:Rule(order = 1)
     val composeTestRule = createAndroidComposeRule<MainActivity>()
 
+    companion object {
+        private const val DEFAULT_TIMEOUT = 10_000L
+    }
+
     @Before
     fun setup() {
         hiltRule.inject()
     }
 
+    /**
+     * Navigate to Curriculum tab using testTag.
+     */
+    private fun navigateToCurriculum() {
+        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+            composeTestRule.onAllNodesWithTag("nav_curriculum")
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+        composeTestRule.onNodeWithTag("nav_curriculum").performClick()
+    }
+
     @Test
     fun curriculumScreen_navigateToCurriculumTab_displaysScreen() {
-        // Navigate to Curriculum tab
-        composeTestRule.onNodeWithText("Curriculum").performClick()
+        navigateToCurriculum()
 
-        // Verify the screen title is displayed
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
-            composeTestRule.onAllNodesWithText("Curriculum")
+        // Verify the screen is displayed
+        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+            composeTestRule.onAllNodesWithText("Server Curriculum")
                 .fetchSemanticsNodes().isNotEmpty()
         }
     }
 
     @Test
     fun curriculumScreen_displaysServerSection() {
-        // Navigate to Curriculum tab
-        composeTestRule.onNodeWithText("Curriculum").performClick()
+        navigateToCurriculum()
 
         // Wait for screen to load
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithText("Server Curriculum")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -63,11 +78,10 @@ class CurriculumScreenTest {
 
     @Test
     fun curriculumScreen_displaysDownloadedSection() {
-        // Navigate to Curriculum tab
-        composeTestRule.onNodeWithText("Curriculum").performClick()
+        navigateToCurriculum()
 
         // Wait for screen to load
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithText("Downloaded")
                 .fetchSemanticsNodes().isNotEmpty()
         }

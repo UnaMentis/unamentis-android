@@ -2,6 +2,7 @@ package com.unamentis.modules.knowledgebowl.data.remote
 
 import android.content.Context
 import android.util.Log
+import com.unamentis.R
 import com.unamentis.modules.knowledgebowl.core.engine.KBQuestionEngine
 import com.unamentis.modules.knowledgebowl.core.stats.KBStatsManager
 import com.unamentis.modules.knowledgebowl.data.model.KBDifficulty
@@ -24,6 +25,7 @@ import java.io.IOException
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.coroutines.cancellation.CancellationException
 
 /**
  * Service for fetching Knowledge Bowl questions from the server.
@@ -95,6 +97,8 @@ class KBQuestionService
                 _allQuestions.value = questions
                 _isLoaded.value = true
                 Log.i(TAG, "Loaded ${questions.size} questions from server")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.w(TAG, "Server fetch failed, using bundled questions: ${e.message}")
                 loadBundledFallback()
@@ -118,8 +122,10 @@ class KBQuestionService
                 _allQuestions.value = questionEngine.questions.value
                 _isLoaded.value = true
                 Log.i(TAG, "Using ${_allQuestions.value.size} bundled questions")
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                _error.value = "Failed to load questions: ${e.message}"
+                _error.value = context.getString(R.string.kb_error_failed_to_load_questions)
                 Log.e(TAG, "Failed to load bundled questions", e)
             }
         }
@@ -131,7 +137,7 @@ class KBQuestionService
                 val serverIP = prefs.getString(KEY_PRIMARY_SERVER_IP, "") ?: ""
 
                 if (!selfHostedEnabled || serverIP.isEmpty()) {
-                    throw IOException("Self-hosted server not configured")
+                    throw IOException(context.getString(R.string.kb_error_server_not_configured))
                 }
 
                 val url = "http://$serverIP:$DEFAULT_PORT/api/modules/knowledge-bowl/download"
@@ -145,10 +151,12 @@ class KBQuestionService
 
                 httpClient.newCall(request).execute().use { response ->
                     if (!response.isSuccessful) {
-                        throw IOException("Server returned ${response.code}")
+                        throw IOException(context.getString(R.string.kb_error_server_returned, response.code))
                     }
 
-                    val body = response.body?.string() ?: throw IOException("Empty response body")
+                    val body =
+                        response.body?.string()
+                            ?: throw IOException(context.getString(R.string.kb_error_empty_response))
                     val moduleContent = json.decodeFromString<ModuleContent>(body)
 
                     // Extract module features

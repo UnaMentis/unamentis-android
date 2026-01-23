@@ -28,6 +28,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
@@ -364,7 +367,11 @@ private fun UnaMentisBottomBar(
                 } == true
 
             NavigationBarItem(
-                icon = { Icon(screen.icon, contentDescription = screen.title) },
+                modifier =
+                    Modifier
+                        .testTag("nav_${screen.route}")
+                        .semantics { contentDescription = "${screen.title} tab" },
+                icon = { Icon(screen.icon, contentDescription = null) },
                 label = { Text(screen.title) },
                 selected = isSelected,
                 onClick = {
@@ -387,10 +394,14 @@ private fun UnaMentisBottomBar(
 
         // More menu item
         NavigationBarItem(
+            modifier =
+                Modifier
+                    .testTag("nav_more")
+                    .semantics { contentDescription = "More tab" },
             icon = {
                 Icon(
                     Icons.Default.MoreHoriz,
-                    contentDescription = "More",
+                    contentDescription = null,
                 )
             },
             label = { Text("More") },
@@ -405,6 +416,10 @@ private fun UnaMentisBottomBar(
         ) {
             moreItems.forEach { screen ->
                 DropdownMenuItem(
+                    modifier =
+                        Modifier
+                            .testTag("menu_${screen.route}")
+                            .semantics { contentDescription = "${screen.title} tab" },
                     text = { Text(screen.title) },
                     onClick = {
                         showMoreMenu = false

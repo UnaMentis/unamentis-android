@@ -3,6 +3,7 @@ package com.unamentis.ui.settings
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -22,6 +23,8 @@ import org.junit.runner.RunWith
  *
  * Tests configuration management, provider selection, and user interactions.
  * Uses Hilt for dependency injection to test with real ViewModels.
+ *
+ * Note: Settings is accessed via the "More" menu in the bottom navigation.
  */
 @HiltAndroidTest
 @RunWith(AndroidJUnit4::class)
@@ -32,30 +35,52 @@ class SettingsScreenTest {
     @get:Rule(order = 1)
     val composeTestRule = createAndroidComposeRule<MainActivity>()
 
+    companion object {
+        private const val DEFAULT_TIMEOUT = 10_000L
+    }
+
     @Before
     fun setup() {
         hiltRule.inject()
     }
 
+    /**
+     * Navigate to Settings via the More menu.
+     */
+    private fun navigateToSettings() {
+        // Wait for bottom nav to load
+        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+            composeTestRule.onAllNodesWithTag("nav_more")
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+        // Open More menu
+        composeTestRule.onNodeWithTag("nav_more").performClick()
+        // Wait for menu to appear
+        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+            composeTestRule.onAllNodesWithTag("menu_settings")
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+        // Click Settings
+        composeTestRule.onNodeWithTag("menu_settings").performClick()
+    }
+
     @Test
     fun settingsScreen_navigateToSettingsTab_displaysScreen() {
-        // Navigate to Settings tab
-        composeTestRule.onNodeWithText("Settings").performClick()
+        navigateToSettings()
 
-        // Verify the screen title is displayed
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
-            composeTestRule.onAllNodesWithText("Settings")
-                .fetchSemanticsNodes().size > 1
+        // Verify the screen content is displayed
+        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+            composeTestRule.onAllNodesWithText("API Providers")
+                .fetchSemanticsNodes().isNotEmpty()
         }
     }
 
     @Test
     fun settingsScreen_displaysApiProvidersSection() {
-        // Navigate to Settings tab
-        composeTestRule.onNodeWithText("Settings").performClick()
+        navigateToSettings()
 
         // Wait for screen to load
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithText("API Providers")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -66,11 +91,10 @@ class SettingsScreenTest {
 
     @Test
     fun settingsScreen_displaysServerSection() {
-        // Navigate to Settings tab
-        composeTestRule.onNodeWithText("Settings").performClick()
+        navigateToSettings()
 
         // Wait for screen to load
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithText("Server")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -81,11 +105,10 @@ class SettingsScreenTest {
 
     @Test
     fun settingsScreen_displaysVoiceSection() {
-        // Navigate to Settings tab
-        composeTestRule.onNodeWithText("Settings").performClick()
+        navigateToSettings()
 
         // Wait for screen to load
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithText("Voice")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -96,13 +119,12 @@ class SettingsScreenTest {
 
     @Test
     fun settingsScreen_displaysOnDeviceAiSection() {
-        // Navigate to Settings tab
-        composeTestRule.onNodeWithText("Settings").performClick()
+        navigateToSettings()
 
         // Wait for LazyColumn to be available
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
-            composeTestRule.onAllNodesWithText("Settings")
-                .fetchSemanticsNodes().size > 1
+        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+            composeTestRule.onAllNodesWithTag("SettingsLazyColumn")
+                .fetchSemanticsNodes().isNotEmpty()
         }
 
         // Scroll to On-Device AI section
@@ -115,13 +137,12 @@ class SettingsScreenTest {
 
     @Test
     fun settingsScreen_displaysOnDeviceAiModelsCard() {
-        // Navigate to Settings tab
-        composeTestRule.onNodeWithText("Settings").performClick()
+        navigateToSettings()
 
         // Wait for LazyColumn to be available
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
-            composeTestRule.onAllNodesWithText("Settings")
-                .fetchSemanticsNodes().size > 1
+        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+            composeTestRule.onAllNodesWithTag("SettingsLazyColumn")
+                .fetchSemanticsNodes().isNotEmpty()
         }
 
         // Scroll to On-Device AI Models card
@@ -134,13 +155,12 @@ class SettingsScreenTest {
 
     @Test
     fun settingsScreen_displaysDeviceRamInfo() {
-        // Navigate to Settings tab
-        composeTestRule.onNodeWithText("Settings").performClick()
+        navigateToSettings()
 
         // Wait for LazyColumn to be available
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
-            composeTestRule.onAllNodesWithText("Settings")
-                .fetchSemanticsNodes().size > 1
+        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+            composeTestRule.onAllNodesWithTag("SettingsLazyColumn")
+                .fetchSemanticsNodes().isNotEmpty()
         }
 
         // Scroll to Device RAM info
@@ -153,13 +173,12 @@ class SettingsScreenTest {
 
     @Test
     fun settingsScreen_displaysAvailableModelsSection() {
-        // Navigate to Settings tab
-        composeTestRule.onNodeWithText("Settings").performClick()
+        navigateToSettings()
 
         // Wait for LazyColumn to be available
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
-            composeTestRule.onAllNodesWithText("Settings")
-                .fetchSemanticsNodes().size > 1
+        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+            composeTestRule.onAllNodesWithTag("SettingsLazyColumn")
+                .fetchSemanticsNodes().isNotEmpty()
         }
 
         // Scroll to Available Models section

@@ -133,11 +133,12 @@ class KBPracticeSessionViewModel
         /**
          * Whether the current question is the last in the session.
          *
-         * Returns true when [questionIndex] equals [totalQuestions] - 1.
+         * Returns true when [questionIndex] equals [totalQuestions] - 1 and there are questions.
          * Used to show "See Results" instead of "Next Question" in the UI.
+         * Returns false when totalQuestions is 0 to avoid false positive on empty sessions.
          */
         val isLastQuestion: Boolean
-            get() = _questionIndex.value >= _totalQuestions.value - 1
+            get() = _totalQuestions.value > 0 && _questionIndex.value >= _totalQuestions.value - 1
 
         /**
          * Start a new practice session.

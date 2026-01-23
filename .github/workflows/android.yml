@@ -155,7 +155,7 @@ jobs:
         arch: x86_64
         profile: pixel_6
         target: google_apis
-        emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+        emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -prop persist.sys.locales=en-US
         emulator-boot-timeout: 600
         disable-animations: true
         script: |
@@ -163,6 +163,17 @@ jobs:
           adb wait-for-device
           adb shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done'
           adb shell input keyevent 82
+
+          # Ensure device locale is English (en-US) so tests that search for literal English strings succeed
+          # Set modern property and also legacy language/country for compatibility
+          adb shell "setprop persist.sys.locales en-US; setprop persist.sys.locale en-US; setprop persist.sys.language en; setprop persist.sys.country US" || true
+
+          # Restart runtime so locale changes apply, then wait for boot again
+          adb shell stop || true
+          adb shell start || true
+          adb shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done'
+          adb shell input keyevent 82
+
           # Run instrumented tests
           ./gradlew connectedAndroidTest --console=plain
 

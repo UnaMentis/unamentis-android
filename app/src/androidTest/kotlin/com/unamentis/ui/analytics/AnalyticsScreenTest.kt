@@ -2,7 +2,9 @@ package com.unamentis.ui.analytics
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -19,6 +21,8 @@ import org.junit.runner.RunWith
  *
  * Tests metrics display, charts, filtering, and export functionality.
  * Uses Hilt for dependency injection to test with real ViewModels.
+ *
+ * Note: Analytics is accessed via the "More" menu in the bottom navigation.
  */
 @HiltAndroidTest
 @RunWith(AndroidJUnit4::class)
@@ -29,18 +33,41 @@ class AnalyticsScreenTest {
     @get:Rule(order = 1)
     val composeTestRule = createAndroidComposeRule<MainActivity>()
 
+    companion object {
+        private const val DEFAULT_TIMEOUT = 10_000L
+    }
+
     @Before
     fun setup() {
         hiltRule.inject()
     }
 
+    /**
+     * Navigate to Analytics via the More menu.
+     */
+    private fun navigateToAnalytics() {
+        // Wait for bottom nav to load
+        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+            composeTestRule.onAllNodesWithTag("nav_more")
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+        // Open More menu
+        composeTestRule.onNodeWithTag("nav_more").performClick()
+        // Wait for menu to appear
+        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+            composeTestRule.onAllNodesWithTag("menu_analytics")
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+        // Click Analytics
+        composeTestRule.onNodeWithTag("menu_analytics").performClick()
+    }
+
     @Test
     fun analyticsScreen_navigateToAnalyticsTab_displaysScreen() {
-        // Navigate to Analytics tab
-        composeTestRule.onNodeWithText("Analytics").performClick()
+        navigateToAnalytics()
 
         // Verify the screen title is displayed
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithText("Analytics")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -48,11 +75,10 @@ class AnalyticsScreenTest {
 
     @Test
     fun analyticsScreen_displaysTimeRangeSection() {
-        // Navigate to Analytics tab
-        composeTestRule.onNodeWithText("Analytics").performClick()
+        navigateToAnalytics()
 
         // Wait for screen to load
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithText("Time Range")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -63,11 +89,10 @@ class AnalyticsScreenTest {
 
     @Test
     fun analyticsScreen_displaysOverviewSection() {
-        // Navigate to Analytics tab
-        composeTestRule.onNodeWithText("Analytics").performClick()
+        navigateToAnalytics()
 
         // Wait for screen to load
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithText("Overview")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -78,11 +103,10 @@ class AnalyticsScreenTest {
 
     @Test
     fun analyticsScreen_displaysLatencyBreakdown() {
-        // Navigate to Analytics tab
-        composeTestRule.onNodeWithText("Analytics").performClick()
+        navigateToAnalytics()
 
         // Wait for screen to load
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithText("Latency Breakdown")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -93,11 +117,10 @@ class AnalyticsScreenTest {
 
     @Test
     fun analyticsScreen_displaysCostBreakdown() {
-        // Navigate to Analytics tab
-        composeTestRule.onNodeWithText("Analytics").performClick()
+        navigateToAnalytics()
 
         // Wait for screen to load
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithText("Cost Breakdown")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -108,11 +131,10 @@ class AnalyticsScreenTest {
 
     @Test
     fun analyticsScreen_displaysSessionTrends() {
-        // Navigate to Analytics tab
-        composeTestRule.onNodeWithText("Analytics").performClick()
+        navigateToAnalytics()
 
         // Wait for screen to load
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithText("Session Trends")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -123,11 +145,10 @@ class AnalyticsScreenTest {
 
     @Test
     fun analyticsScreen_timeRangeChips_areClickable() {
-        // Navigate to Analytics tab
-        composeTestRule.onNodeWithText("Analytics").performClick()
+        navigateToAnalytics()
 
         // Wait for screen to load
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithText("7 Days")
                 .fetchSemanticsNodes().isNotEmpty()
         }

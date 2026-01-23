@@ -190,42 +190,56 @@ class AudioEngineTest {
 package com.unamentis.ui.session
 
 import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.unamentis.MainActivity
+import dagger.hilt.android.testing.HiltAndroidRule
+import dagger.hilt.android.testing.HiltAndroidTest
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.runner.RunWith
 
+@HiltAndroidTest
+@RunWith(AndroidJUnit4::class)
 class SessionScreenTest {
 
-    @get:Rule
-    val composeTestRule = createComposeRule()
+    @get:Rule(order = 0)
+    val hiltRule = HiltAndroidRule(this)
 
-    @Test
-    fun sessionScreen_displaysStartButton() {
-        composeTestRule.setContent {
-            SessionScreen(
-                viewModel = SessionViewModel(/* real dependencies */)
-            )
-        }
+    @get:Rule(order = 1)
+    val composeTestRule = createAndroidComposeRule<MainActivity>()
 
-        composeTestRule
-            .onNodeWithText("Start Session")
-            .assertIsDisplayed()
-            .assertHasClickAction()
+    companion object {
+        private const val DEFAULT_TIMEOUT = 10_000L
+    }
+
+    @Before
+    fun setup() {
+        hiltRule.inject()
     }
 
     @Test
-    fun sessionScreen_startsSessionOnButtonClick() {
-        composeTestRule.setContent {
-            SessionScreen(viewModel = viewModel)
+    fun sessionScreen_displaysStartButton() {
+        // Wait for UI to load using testTag or text
+        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+            composeTestRule.onAllNodesWithText("Start Session")
+                .fetchSemanticsNodes().isNotEmpty()
         }
 
         composeTestRule
             .onNodeWithText("Start Session")
-            .performClick()
-
-        composeTestRule
-            .onNodeWithText("Listening...")
             .assertIsDisplayed()
+    }
+
+    @Test
+    fun sessionScreen_displaysStateIndicator() {
+        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+            composeTestRule.onAllNodesWithText("IDLE")
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+
+        composeTestRule.onNodeWithText("IDLE").assertIsDisplayed()
     }
 }
 ```
@@ -544,6 +558,88 @@ See `.github/workflows/android.yml` for configuration.
 - **JDK**: 17 (Temurin)
 - **Emulator**: Pixel 6, API 34
 - **Timeout**: 30 minutes
+- **Locale**: en-US (enforced)
+
+### CI Locale Enforcement
+
+The CI workflow enforces `en-US` locale to prevent test failures due to localized strings:
+
+```yaml
+# In .github/workflows/android.yml
+emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -prop persist.sys.locales=en-US
+
+script: |
+  # Ensure device locale is English (en-US)
+  adb shell "setprop persist.sys.locales en-US; setprop persist.sys.locale en-US; setprop persist.sys.language en; setprop persist.sys.country US" || true
+
+  # Restart runtime so locale changes apply
+  adb shell stop || true
+  adb shell start || true
+  adb shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done'
+```
+
+This ensures consistent test behavior regardless of the CI runner's default locale.
+
+### TestTag-Based Navigation Testing
+
+Navigation tests use `testTag` modifiers instead of text selectors for stability:
+
+```kotlin
+// In Navigation.kt - stable test hooks
+NavigationBarItem(
+    modifier = Modifier
+        .testTag("nav_session")
+        .semantics { contentDescription = "Session tab" },
+    // ...
+)
+
+// For More menu items
+DropdownMenuItem(
+    modifier = Modifier
+        .testTag("menu_settings")
+        .semantics { contentDescription = "Settings tab" },
+    // ...
+)
+```
+
+**Test patterns using testTags:**
+
+```kotlin
+// Navigate to a primary tab
+private fun navigateToCurriculum() {
+    composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.onAllNodesWithTag("nav_curriculum")
+            .fetchSemanticsNodes().isNotEmpty()
+    }
+    composeTestRule.onNodeWithTag("nav_curriculum").performClick()
+}
+
+// Navigate via More menu (Settings, Analytics)
+private fun navigateToSettings() {
+    composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.onAllNodesWithTag("nav_more")
+            .fetchSemanticsNodes().isNotEmpty()
+    }
+    composeTestRule.onNodeWithTag("nav_more").performClick()
+    composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.onAllNodesWithTag("menu_settings")
+            .fetchSemanticsNodes().isNotEmpty()
+    }
+    composeTestRule.onNodeWithTag("menu_settings").performClick()
+}
+```
+
+**Available navigation testTags:**
+
+| TestTag | Description |
+|---------|-------------|
+| `nav_session` | Session tab (primary) |
+| `nav_curriculum` | Curriculum tab (primary) |
+| `nav_history` | History tab (primary) |
+| `nav_todo` | Todo tab (primary) |
+| `nav_more` | More menu button |
+| `menu_settings` | Settings menu item |
+| `menu_analytics` | Analytics menu item |
 
 ---
 
@@ -645,12 +741,45 @@ delay(1000)  // In runTest
 
 **Check**:
 - Emulator differences (API level, screen size)
+- **Locale differences** - CI now enforces en-US, ensure tests use testTags not text
 - Environment variables
 - File paths (use context for resources)
 - Network availability (mock external calls)
 - Timing issues (use `runTest` properly)
 - DataStore singleton conflicts (see below)
 - CI emulator boot timing (see below)
+
+### Issue: Navigation tests can't find text like "Settings" or "Analytics"
+
+**Cause**: These screens are accessed via the "More" menu, not primary navigation tabs. Also, text-based selectors are locale-dependent.
+
+**Solution**: Use testTag-based navigation:
+
+```kotlin
+// WRONG: Text selectors are fragile and locale-dependent
+composeTestRule.onNodeWithText("Settings").performClick()
+
+// RIGHT: Use testTags for stable navigation
+composeTestRule.onNodeWithTag("nav_more").performClick()
+composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+    composeTestRule.onAllNodesWithTag("menu_settings")
+        .fetchSemanticsNodes().isNotEmpty()
+}
+composeTestRule.onNodeWithTag("menu_settings").performClick()
+```
+
+### Issue: Duplicate nodes found for text like "Session"
+
+**Cause**: Multiple UI elements may contain the same text (e.g., "Session" appears in nav tab and screen title).
+
+**Solution**: Use testTags with semantics for unique identification:
+
+```kotlin
+// Use testTag + contentDescription for accessibility and testing
+Modifier
+    .testTag("nav_session")
+    .semantics { contentDescription = "Session tab" }
+```
 
 ### Issue: DataStore "multiple instances active for same file"
 
@@ -686,15 +815,21 @@ fun provideProviderDataStore(@ApplicationContext context: Context): DataStore<Pr
 
 **Cause**: CI emulators are slower than local machines, and default 5000ms `waitUntil` timeouts may not be sufficient.
 
-**Solution**: Increase timeouts for CI environments:
+**Solution**: Use 10000ms (10s) timeouts as the standard for all instrumented tests:
 
 ```kotlin
-// Use 15000ms instead of 5000ms for CI stability
-composeTestRule.waitUntil(timeoutMillis = 15000) {
-    composeTestRule.onAllNodesWithText("Expected Text")
+companion object {
+    private const val DEFAULT_TIMEOUT = 10_000L
+}
+
+// Use consistent timeouts throughout the test class
+composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+    composeTestRule.onAllNodesWithTag("nav_session")
         .fetchSemanticsNodes().isNotEmpty()
 }
 ```
+
+**Best practice**: Define `DEFAULT_TIMEOUT` as a companion object constant and use it consistently across all `waitUntil` calls in the test class.
 
 ### Issue: Health monitor tests fail due to real HTTP requests
 

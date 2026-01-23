@@ -1,8 +1,10 @@
 package com.unamentis.ui.history
 
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
-import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.unamentis.MainActivity
@@ -28,32 +30,46 @@ class HistoryScreenTest {
     @get:Rule(order = 1)
     val composeTestRule = createAndroidComposeRule<MainActivity>()
 
+    companion object {
+        private const val DEFAULT_TIMEOUT = 10_000L
+        private const val LONG_TIMEOUT = 15_000L
+    }
+
     @Before
     fun setup() {
         hiltRule.inject()
     }
 
+    /**
+     * Navigate to History tab using testTag.
+     */
+    private fun navigateToHistory() {
+        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+            composeTestRule.onAllNodesWithTag("nav_history")
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+        composeTestRule.onNodeWithTag("nav_history").performClick()
+    }
+
     @Test
     fun historyScreen_navigateToHistoryTab_displaysScreen() {
-        // Navigate to History tab
-        composeTestRule.onNodeWithText("History").performClick()
+        navigateToHistory()
 
-        // Verify the screen title is displayed
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
-            composeTestRule.onAllNodesWithText("History")
+        // Verify the history tab is displayed
+        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+            composeTestRule.onAllNodesWithContentDescription("History tab")
                 .fetchSemanticsNodes().isNotEmpty()
         }
     }
 
     @Test
     fun historyScreen_displaysEmptyStateOrSessions() {
-        // Navigate to History tab
-        composeTestRule.onNodeWithText("History").performClick()
+        navigateToHistory()
 
         // Wait for screen to load - should either show sessions or empty state
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(LONG_TIMEOUT) {
             val hasHistory =
-                composeTestRule.onAllNodesWithText("History")
+                composeTestRule.onAllNodesWithContentDescription("History tab")
                     .fetchSemanticsNodes().isNotEmpty()
             val hasEmptyState =
                 composeTestRule.onAllNodesWithText("No sessions yet")
