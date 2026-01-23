@@ -5,16 +5,19 @@ import androidx.lifecycle.viewModelScope
 import com.unamentis.modules.knowledgebowl.core.engine.KBQuestionEngine
 import com.unamentis.modules.knowledgebowl.core.stats.KBStatsManager
 import com.unamentis.modules.knowledgebowl.data.model.KBDomain
+import com.unamentis.modules.knowledgebowl.data.model.KBModuleFeatures
 import com.unamentis.modules.knowledgebowl.data.model.KBQuestion
 import com.unamentis.modules.knowledgebowl.data.model.KBRegion
 import com.unamentis.modules.knowledgebowl.data.model.KBRoundType
 import com.unamentis.modules.knowledgebowl.data.model.KBSessionConfig
+import com.unamentis.modules.knowledgebowl.data.model.KBStudyMode
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -72,6 +75,64 @@ class KBDashboardViewModel
 
         val competitionReadiness: StateFlow<Float> =
             MutableStateFlow(statsManager.competitionReadiness).asStateFlow()
+
+        /**
+         * Module features controlling which study modes are available.
+         *
+         * Updated when loading questions from the server, where the server can
+         * specify feature flags. Defaults to [KBModuleFeatures.DEFAULT_ENABLED].
+         */
+        private val _moduleFeatures = MutableStateFlow(KBModuleFeatures.DEFAULT_ENABLED)
+        val moduleFeatures: StateFlow<KBModuleFeatures> = _moduleFeatures.asStateFlow()
+
+        /**
+         * List of available study modes based on current module features.
+         *
+         * Automatically updates when [moduleFeatures] changes. Consumers should
+         * use this to display available modes in the UI.
+         */
+        val availableStudyModes: StateFlow<List<KBStudyMode>> =
+            _moduleFeatures.map { features ->
+                features.availableStudyModes()
+            }.stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = KBModuleFeatures.DEFAULT_ENABLED.availableStudyModes(),
+            )
+
+        /**
+         * Currently selected study mode that triggers the practice launcher sheet.
+         *
+         * Set via [selectStudyMode] and cleared via [clearStudyMode].
+         * When non-null, the launcher sheet should be displayed.
+         */
+        private val _selectedStudyMode = MutableStateFlow<KBStudyMode?>(null)
+        val selectedStudyMode: StateFlow<KBStudyMode?> = _selectedStudyMode.asStateFlow()
+
+        /**
+         * Domain currently being viewed in detail, if any.
+         *
+         * Set via [showDomainDetail] and cleared via [hideDomainDetail].
+         * When non-null, the domain detail view should be displayed.
+         */
+        private val _showingDomainDetail = MutableStateFlow<KBDomain?>(null)
+        val showingDomainDetail: StateFlow<KBDomain?> = _showingDomainDetail.asStateFlow()
+
+        /**
+         * Total number of questions answered across all sessions.
+         *
+         * Sourced directly from [KBStatsManager]. Used to display
+         * overall progress and determine readiness calculations.
+         */
+        val totalQuestionsAnswered: StateFlow<Int> = statsManager.totalQuestionsAnswered
+
+        /**
+         * Average response time in seconds across all answered questions.
+         *
+         * Sourced directly from [KBStatsManager]. Displays as "--" in UI
+         * when no questions have been answered yet.
+         */
+        val averageResponseTime: StateFlow<Double> = statsManager.averageResponseTime
 
         // Questions ready for session
         private var loadedQuestions: List<KBQuestion> = emptyList()
@@ -139,6 +200,51 @@ class KBDashboardViewModel
          * Get stats for a specific domain.
          */
         fun getDomainMastery(domain: KBDomain): Float = statsManager.mastery(domain)
+
+        /**
+         * Select a study mode (opens launcher sheet).
+         */
+        fun selectStudyMode(mode: KBStudyMode) {
+            _selectedStudyMode.value = mode
+        }
+
+        /**
+         * Clear the selected study mode.
+         */
+        fun clearStudyMode() {
+            _selectedStudyMode.value = null
+        }
+
+        /**
+         * Show domain detail view.
+         */
+        fun showDomainDetail(domain: KBDomain) {
+            _showingDomainDetail.value = domain
+        }
+
+        /**
+         * Hide domain detail view.
+         */
+        fun hideDomainDetail() {
+            _showingDomainDetail.value = null
+        }
+
+        /**
+         * Get domain mastery map for all domains.
+         */
+        fun getDomainMasteryMap(): Map<KBDomain, Float> = KBDomain.entries.associateWith { statsManager.mastery(it) }
+
+        /**
+         * Get questions for oral session (convenience method for navigation).
+         */
+        fun getQuestionsForOral(): List<KBQuestion> = getOralSessionQuestions().first
+
+        /**
+         * Reset all statistics.
+         */
+        fun resetStats() {
+            statsManager.resetStats()
+        }
 
         private fun countByDomain(questions: List<KBQuestion>): Map<KBDomain, Int> =
             questions.groupBy { it.domain }.mapValues { it.value.size }

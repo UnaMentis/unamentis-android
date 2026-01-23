@@ -7,10 +7,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -23,7 +23,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -44,14 +43,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.unamentis.R
 import com.unamentis.modules.knowledgebowl.data.model.KBDomain
+import com.unamentis.modules.knowledgebowl.data.model.KBQuestion
 import com.unamentis.modules.knowledgebowl.data.model.KBRegion
+import com.unamentis.modules.knowledgebowl.data.model.KBStudyMode
 import com.unamentis.modules.knowledgebowl.ui.theme.KBTheme
 import com.unamentis.modules.knowledgebowl.ui.theme.color
+import com.unamentis.ui.util.safeProgress
 
 /**
  * Knowledge Bowl Dashboard - Entry point for the KB module.
@@ -62,6 +69,7 @@ fun KBDashboardScreen(
     onNavigateToWrittenSession: () -> Unit,
     onNavigateToOralSession: () -> Unit,
     onNavigateToSettings: () -> Unit,
+    onNavigateToPracticeSession: (KBStudyMode, List<KBQuestion>) -> Unit,
     viewModel: KBDashboardViewModel = hiltViewModel(),
 ) {
     val selectedRegion by viewModel.selectedRegion.collectAsState()
@@ -69,16 +77,22 @@ fun KBDashboardScreen(
     val error by viewModel.error.collectAsState()
     val questionsByDomain by viewModel.questionsByDomain.collectAsState()
     val totalQuestionCount by viewModel.totalQuestionCount.collectAsState()
+    val competitionReadiness by viewModel.competitionReadiness.collectAsState()
+    val availableStudyModes by viewModel.availableStudyModes.collectAsState()
+    val selectedStudyMode by viewModel.selectedStudyMode.collectAsState()
+    val totalQuestionsAnswered by viewModel.totalQuestionsAnswered.collectAsState()
+    val averageResponseTime by viewModel.averageResponseTime.collectAsState()
+    val overallAccuracy by viewModel.overallAccuracy.collectAsState()
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Knowledge Bowl") },
+                title = { Text(stringResource(R.string.kb_knowledge_bowl)) },
                 actions = {
                     IconButton(onClick = onNavigateToSettings) {
                         Icon(
                             imageVector = Icons.Default.Settings,
-                            contentDescription = "Settings",
+                            contentDescription = stringResource(R.string.kb_settings),
                         )
                     }
                 },
@@ -99,125 +113,323 @@ fun KBDashboardScreen(
                     .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
-            // Header card
-            HeaderCard(
-                isLoading = isLoading,
-                error = error,
-                totalQuestionCount = totalQuestionCount,
-                selectedRegion = selectedRegion,
+            // Hero section with competition readiness
+            HeroSection(
+                readiness = competitionReadiness,
+                totalQuestionsAnswered = totalQuestionsAnswered,
             )
 
-            // Quick start section
+            // Study modes section
+            StudyModesSection(
+                availableModes = availableStudyModes,
+                onModeSelected = { viewModel.selectStudyMode(it) },
+            )
+
+            // Quick start section (legacy)
             QuickStartSection(
                 enabled = totalQuestionCount > 0,
                 onWrittenClick = onNavigateToWrittenSession,
                 onOralClick = onNavigateToOralSession,
             )
 
+            // Stats section
+            StatsSection(
+                totalQuestionsAnswered = totalQuestionsAnswered,
+                averageResponseTime = averageResponseTime,
+                accuracy = overallAccuracy,
+            )
+
+            // Domain mastery section
+            if (totalQuestionCount > 0) {
+                DomainMasterySection(
+                    onDomainClick = { viewModel.showDomainDetail(it) },
+                    getDomainMastery = viewModel::getDomainMastery,
+                )
+            }
+
             // Region selector
             RegionSelector(
                 selectedRegion = selectedRegion,
                 onRegionSelected = { viewModel.selectRegion(it) },
             )
+        }
+    }
 
-            // Stats section
-            if (totalQuestionCount > 0) {
-                QuestionBankSection(questionsByDomain = questionsByDomain)
+    // Practice launcher sheet
+    selectedStudyMode?.let { mode ->
+        com.unamentis.modules.knowledgebowl.ui.launcher.KBPracticeLauncherSheet(
+            mode = mode,
+            sheetState = androidx.compose.material3.rememberModalBottomSheetState(),
+            onDismiss = { viewModel.clearStudyMode() },
+            onStart = { questions ->
+                viewModel.clearStudyMode()
+                onNavigateToPracticeSession(mode, questions)
+            },
+        )
+    }
+}
+
+@Composable
+private fun HeroSection(
+    readiness: Float,
+    totalQuestionsAnswered: Int,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = KBTheme.bgSecondary()),
+        shape = RoundedCornerShape(16.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            // Circular progress indicator
+            val safeReadiness = safeProgress(readiness)
+            Box(contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(
+                    progress = { 1f },
+                    modifier = Modifier.size(100.dp),
+                    strokeWidth = 12.dp,
+                    color = KBTheme.mathematics().copy(alpha = 0.2f),
+                )
+                CircularProgressIndicator(
+                    progress = { safeReadiness },
+                    modifier = Modifier.size(100.dp),
+                    strokeWidth = 12.dp,
+                    color = KBTheme.mathematics(),
+                )
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "${(safeReadiness * 100).toInt()}%",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = KBTheme.textPrimary(),
+                    )
+                    Text(
+                        text = stringResource(R.string.kb_ready_label),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = KBTheme.textSecondary(),
+                    )
+                }
+            }
+
+            Text(
+                text = stringResource(R.string.kb_competition_readiness),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = KBTheme.textPrimary(),
+            )
+
+            Text(
+                text =
+                    if (totalQuestionsAnswered == 0) {
+                        stringResource(R.string.kb_diagnostic_prompt)
+                    } else {
+                        pluralStringResource(
+                            R.plurals.kb_questions_answered_count,
+                            totalQuestionsAnswered,
+                            totalQuestionsAnswered,
+                        )
+                    },
+                style = MaterialTheme.typography.bodySmall,
+                color = KBTheme.textSecondary(),
+                textAlign = TextAlign.Center,
+            )
+        }
+    }
+}
+
+@Composable
+private fun StudyModesSection(
+    availableModes: List<KBStudyMode>,
+    onModeSelected: (KBStudyMode) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text(
+            text = stringResource(R.string.kb_study_sessions),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = KBTheme.textPrimary(),
+        )
+
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(2),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 400.dp),
+            userScrollEnabled = false,
+        ) {
+            items(availableModes) { mode ->
+                StudyModeCard(
+                    mode = mode,
+                    onClick = { onModeSelected(mode) },
+                )
             }
         }
     }
 }
 
 @Composable
-private fun HeaderCard(
-    isLoading: Boolean,
-    error: String?,
-    totalQuestionCount: Int,
-    selectedRegion: KBRegion,
+private fun StudyModeCard(
+    mode: KBStudyMode,
+    onClick: () -> Unit,
+) {
+    Card(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .semantics { contentDescription = mode.displayName }
+                .clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(containerColor = KBTheme.bgSecondary()),
+        shape = RoundedCornerShape(12.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = mode.displayName,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = KBTheme.textPrimary(),
+            )
+            Text(
+                text = mode.description,
+                style = MaterialTheme.typography.bodySmall,
+                color = KBTheme.textSecondary(),
+            )
+        }
+    }
+}
+
+@Composable
+private fun StatsSection(
+    totalQuestionsAnswered: Int,
+    averageResponseTime: Double,
+    accuracy: Float,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors =
-            CardDefaults.cardColors(
-                containerColor = KBTheme.bgSecondary(),
-            ),
+        colors = CardDefaults.cardColors(containerColor = KBTheme.bgSecondary()),
         shape = RoundedCornerShape(16.dp),
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            Text(
+                text = stringResource(R.string.kb_your_stats),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = KBTheme.textPrimary(),
+            )
+
             Row(
-                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
             ) {
-                Icon(
-                    imageVector = Icons.Default.Psychology,
-                    contentDescription = null,
-                    tint = KBTheme.mastered(),
-                    modifier = Modifier.size(40.dp),
+                StatBadge(
+                    value = "$totalQuestionsAnswered",
+                    label = stringResource(R.string.kb_questions),
                 )
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                Column {
-                    Text(
-                        text = "Knowledge Bowl",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = KBTheme.textPrimary(),
-                    )
-                    Text(
-                        text = "Train for academic competitions",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = KBTheme.textSecondary(),
-                    )
-                }
+                StatBadge(
+                    value =
+                        if (averageResponseTime > 0) {
+                            String.format("%.1fs", averageResponseTime)
+                        } else {
+                            "--"
+                        },
+                    label = stringResource(R.string.kb_avg_speed),
+                )
+                StatBadge(
+                    value =
+                        if (totalQuestionsAnswered > 0) {
+                            String.format("%.0f%%", accuracy * 100)
+                        } else {
+                            "--%"
+                        },
+                    label = stringResource(R.string.kb_accuracy),
+                )
             }
+        }
+    }
+}
 
-            when {
-                isLoading -> {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center,
-                    ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            color = KBTheme.mastered(),
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Loading questions...",
-                            color = KBTheme.textSecondary(),
-                        )
-                    }
-                }
-                error != null -> {
-                    Text(
-                        text = "Error: $error",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = KBTheme.focusArea(),
-                    )
-                }
-                else -> {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                    ) {
-                        StatBadge(
-                            value = "$totalQuestionCount",
-                            label = "Questions",
-                        )
-                        StatBadge(
-                            value = "${KBDomain.entries.size}",
-                            label = "Domains",
-                        )
-                        StatBadge(
-                            value = selectedRegion.abbreviation,
-                            label = "Region",
-                        )
-                    }
-                }
+@Composable
+private fun DomainMasterySection(
+    onDomainClick: (KBDomain) -> Unit,
+    getDomainMastery: (KBDomain) -> Float,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text(
+            text = stringResource(R.string.kb_domain_mastery),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = KBTheme.textPrimary(),
+        )
+
+        // Display all 12 domains in a 3-column grid with sufficient height
+        val domains = KBDomain.entries
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(3),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            // Height accommodates 4 rows of domains (12 domains / 3 columns = 4 rows)
+            modifier = Modifier.height(400.dp),
+        ) {
+            items(domains) { domain ->
+                DomainMasteryCard(
+                    domain = domain,
+                    mastery = getDomainMastery(domain),
+                    onClick = { onDomainClick(domain) },
+                )
             }
+        }
+    }
+}
+
+@Composable
+private fun DomainMasteryCard(
+    domain: KBDomain,
+    mastery: Float,
+    onClick: () -> Unit,
+) {
+    Card(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .semantics { contentDescription = domain.displayName }
+                .clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(containerColor = domain.color().copy(alpha = 0.1f)),
+        shape = RoundedCornerShape(8.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                text = domain.icon,
+                style = MaterialTheme.typography.titleLarge,
+                color = domain.color(),
+            )
+            Text(
+                text = domain.displayName,
+                style = MaterialTheme.typography.labelSmall,
+                color = KBTheme.textPrimary(),
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+            )
+            Text(
+                text = "${(mastery * 100).toInt()}%",
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = KBTheme.textSecondary(),
+            )
         }
     }
 }
@@ -254,7 +466,7 @@ private fun QuickStartSection(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(
-            text = "Quick Start",
+            text = stringResource(R.string.kb_quick_start),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = KBTheme.textPrimary(),
@@ -266,8 +478,8 @@ private fun QuickStartSection(
             QuickStartButton(
                 modifier = Modifier.weight(1f),
                 icon = Icons.Default.Edit,
-                title = "Written",
-                subtitle = "MCQ Practice",
+                title = stringResource(R.string.kb_written_practice),
+                subtitle = stringResource(R.string.kb_mcq_practice),
                 accentColor = KBTheme.intermediate(),
                 enabled = enabled,
                 onClick = onWrittenClick,
@@ -276,8 +488,8 @@ private fun QuickStartSection(
             QuickStartButton(
                 modifier = Modifier.weight(1f),
                 icon = Icons.Default.Mic,
-                title = "Oral",
-                subtitle = "Voice Q&A",
+                title = stringResource(R.string.kb_oral_practice),
+                subtitle = stringResource(R.string.kb_voice_qa),
                 accentColor = KBTheme.mastered(),
                 enabled = enabled,
                 onClick = onOralClick,
@@ -300,6 +512,7 @@ private fun QuickStartButton(
         modifier =
             modifier
                 .clip(RoundedCornerShape(12.dp))
+                .semantics { contentDescription = "$title, $subtitle" }
                 .clickable(enabled = enabled, onClick = onClick)
                 .border(
                     width = 2.dp,
@@ -349,7 +562,7 @@ private fun RegionSelector(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(
-            text = "Competition Region",
+            text = stringResource(R.string.kb_competition_region),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = KBTheme.textPrimary(),
@@ -400,80 +613,6 @@ private fun RegionButton(
             fontWeight = FontWeight.Bold,
             color = if (isSelected) Color.White else KBTheme.textPrimary(),
         )
-    }
-}
-
-@Composable
-private fun QuestionBankSection(questionsByDomain: Map<KBDomain, Int>) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Text(
-            text = "Question Bank",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = KBTheme.textPrimary(),
-        )
-
-        val domains = KBDomain.entries.take(6) // Show first 6 domains
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(3),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.height(200.dp),
-        ) {
-            items(domains) { domain ->
-                DomainCard(
-                    domain = domain,
-                    count = questionsByDomain[domain] ?: 0,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun DomainCard(
-    domain: KBDomain,
-    count: Int,
-) {
-    Card(
-        colors =
-            CardDefaults.cardColors(
-                containerColor = KBTheme.bgSecondary(),
-            ),
-        shape = RoundedCornerShape(8.dp),
-    ) {
-        Column(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            // Use a simple text icon since we don't have Material icons for all domains
-            Text(
-                text = domain.icon,
-                style = MaterialTheme.typography.titleLarge,
-                color = domain.color(),
-            )
-
-            Text(
-                text = "$count",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                color = KBTheme.textPrimary(),
-            )
-
-            Text(
-                text = domain.displayName,
-                style = MaterialTheme.typography.labelSmall,
-                color = KBTheme.textSecondary(),
-                textAlign = TextAlign.Center,
-                maxLines = 1,
-            )
-        }
     }
 }
 

@@ -68,6 +68,7 @@ import com.unamentis.modules.knowledgebowl.data.model.KBQuestion
 import com.unamentis.modules.knowledgebowl.data.model.KBSessionConfig
 import com.unamentis.modules.knowledgebowl.ui.theme.KBTheme
 import com.unamentis.modules.knowledgebowl.ui.theme.color
+import com.unamentis.ui.util.safeProgress
 
 /**
  * Knowledge Bowl oral practice session screen.
@@ -152,7 +153,7 @@ private fun SessionHeader(
     ) {
         // Progress bar
         LinearProgressIndicator(
-            progress = { progress },
+            progress = { safeProgress(progress) },
             modifier =
                 Modifier
                     .fillMaxWidth()
@@ -174,14 +175,14 @@ private fun SessionHeader(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "Question ${currentIndex + 1} of $totalQuestions",
+                text = stringResource(R.string.kb_question_of, currentIndex + 1, totalQuestions),
                 style = MaterialTheme.typography.bodyMedium,
                 color = KBTheme.textSecondary(),
             )
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = "$correctCount correct",
+                    text = stringResource(R.string.kb_correct_count_label, correctCount),
                     style = MaterialTheme.typography.bodyMedium,
                     color = KBTheme.mastered(),
                 )
@@ -275,10 +276,11 @@ private fun StartScreen(viewModel: KBOralSessionViewModel) {
                     value = viewModel.regionalConfig.region.displayName,
                 )
                 Spacer(modifier = Modifier.height(8.dp))
+                val perCorrectText = stringResource(R.string.kb_per_correct)
                 ConfigRow(
                     icon = Icons.Default.Star,
                     label = stringResource(R.string.kb_points),
-                    value = "${viewModel.regionalConfig.oralPointsPerCorrect} per correct",
+                    value = "${viewModel.regionalConfig.oralPointsPerCorrect} $perCorrectText",
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 ConfigRow(
@@ -405,7 +407,7 @@ private fun QuestionReadingScreen(viewModel: KBOralSessionViewModel) {
         // Speaking indicator
         Icon(
             imageVector = Icons.Default.VolumeUp,
-            contentDescription = "Speaking",
+            contentDescription = stringResource(R.string.cd_kb_speaking),
             modifier =
                 Modifier
                     .size(80.dp)
@@ -433,7 +435,7 @@ private fun QuestionReadingScreen(viewModel: KBOralSessionViewModel) {
 
         // TTS progress
         LinearProgressIndicator(
-            progress = { ttsProgress },
+            progress = { safeProgress(ttsProgress) },
             modifier =
                 Modifier
                     .fillMaxWidth()
@@ -485,7 +487,7 @@ private fun ConferenceScreen(viewModel: KBOralSessionViewModel) {
 
             // Progress circle
             CircularProgressIndicator(
-                progress = { conferenceProgress.toFloat() },
+                progress = { safeProgress(conferenceProgress.toFloat()) },
                 modifier = Modifier.size(150.dp),
                 color = timerColor,
                 strokeWidth = 8.dp,
@@ -624,9 +626,9 @@ private fun ListeningScreen(viewModel: KBOralSessionViewModel) {
                     },
                 contentDescription =
                     if (isListening) {
-                        "Listening"
+                        stringResource(R.string.cd_kb_listening)
                     } else {
-                        "Tap to speak"
+                        stringResource(R.string.cd_kb_tap_to_speak)
                     },
                 modifier = Modifier.size(60.dp),
                 tint = if (isListening) KBTheme.mastered() else KBTheme.intermediate(),
@@ -1046,7 +1048,7 @@ private fun AccuracyMeter(accuracy: Float) {
             )
 
             CircularProgressIndicator(
-                progress = { accuracy },
+                progress = { safeProgress(accuracy) },
                 modifier = Modifier.size(120.dp),
                 color = if (accuracy >= 0.7f) KBTheme.mastered() else KBTheme.beginner(),
                 strokeWidth = 12.dp,

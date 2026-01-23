@@ -50,10 +50,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.unamentis.R
 import com.unamentis.data.model.Curriculum
 import com.unamentis.data.model.Topic
 import com.unamentis.data.remote.CurriculumSummary
@@ -61,6 +63,7 @@ import com.unamentis.data.repository.ConnectionState
 import com.unamentis.ui.components.IOSCard
 import com.unamentis.ui.components.IOSProgressBar
 import com.unamentis.ui.theme.Dimensions
+import com.unamentis.ui.util.safeProgress
 
 /**
  * Curriculum screen - Browse and download curricula.
@@ -117,13 +120,13 @@ fun CurriculumScreen(
                 Tab(
                     selected = uiState.selectedTab == CurriculumTab.SERVER,
                     onClick = { viewModel.selectTab(CurriculumTab.SERVER) },
-                    text = { Text("Server") },
+                    text = { Text(stringResource(R.string.curriculum_server)) },
                     icon = { Icon(Icons.Default.Cloud, contentDescription = "Server curricula") },
                 )
                 Tab(
                     selected = uiState.selectedTab == CurriculumTab.LOCAL,
                     onClick = { viewModel.selectTab(CurriculumTab.LOCAL) },
-                    text = { Text("Local") },
+                    text = { Text(stringResource(R.string.curriculum_downloaded)) },
                     icon = { Icon(Icons.Default.Storage, contentDescription = "Local curricula") },
                 )
             }
@@ -466,7 +469,7 @@ private fun ServerCurriculumCard(
                 when {
                     isDownloading -> {
                         CircularProgressIndicator(
-                            progress = { downloadProgress },
+                            progress = { safeProgress(downloadProgress) },
                             modifier = Modifier.size(24.dp),
                         )
                     }

@@ -15,6 +15,49 @@
 | Phase 6: Polish & Testing | ✅ Complete | 98% | Infrastructure, 272+ tests, cert pinning, spec review (99%), ProGuard |
 | Phase 7: Server Synchronization | 🚧 In Progress | 80% | Local-first sync, WebSocket communication, auth tokens, conflict resolution |
 
+## Specialized Modules
+
+### Knowledge Bowl Module ✅ [NEW - 2026-01-22]
+
+**Status**: Complete (iOS Feature Parity)
+**Files Created/Modified**: 14 files
+**Tests**: 8 test classes
+
+A specialized learning module for academic competition training, ported from the iOS implementation with full feature parity.
+
+**Features**:
+- ✅ 6 Study Modes (Diagnostic, Targeted, Breadth, Speed, Competition, Team)
+- ✅ Feature flags system (`KBModuleFeatures`) for mode availability
+- ✅ Server question fetching with local fallback (`KBQuestionService`)
+- ✅ Practice launcher bottom sheet (`KBPracticeLauncherSheet`)
+- ✅ Unified practice session screen (`KBPracticeSessionScreen`)
+- ✅ Enhanced dashboard with readiness hero, study mode cards, stats
+- ✅ Domain mastery tracking across 12 academic domains
+- ✅ Voice coordinator with PCM audio playback (`KBVoiceCoordinator`)
+- ✅ Internal navigation host (`KBNavigationHost`)
+
+**New Files**:
+- `data/model/KBModuleFeatures.kt` - Feature flag management
+- `data/model/KBQuestionResult.kt` - Practice result tracking
+- `data/remote/KBQuestionService.kt` - Server question fetching
+- `ui/KBNavigation.kt` - Internal navigation
+- `ui/launcher/KBPracticeLauncherSheet.kt` - Pre-session setup UI
+- `ui/launcher/KBPracticeLauncherViewModel.kt` - Launcher state
+- `ui/session/KBPracticeSessionScreen.kt` - Unified practice UI
+- `ui/session/KBPracticeSessionViewModel.kt` - Practice state
+- `test/.../KBQuestionServiceTest.kt` - Service tests
+
+**Modified Files**:
+- `data/model/KBStudyMode.kt` - Added `requiredFeature` property
+- `ui/dashboard/KBDashboardScreen.kt` - Enhanced UI
+- `ui/dashboard/KBDashboardViewModel.kt` - Study mode state
+- `core/voice/KBVoiceCoordinator.kt` - PCM audio playback
+- `KnowledgeBowlModule.kt` - Navigation host entry point
+
+**Documentation**: See [KNOWLEDGE_BOWL.md](KNOWLEDGE_BOWL.md) for full details.
+
+---
+
 ## Detailed Status
 
 ### Phase 1: Project Foundation ✅

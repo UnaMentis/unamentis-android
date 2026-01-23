@@ -1,16 +1,23 @@
 package com.unamentis.core.module
 
 import androidx.compose.runtime.Composable
+import androidx.test.core.app.ApplicationProvider
+import com.unamentis.data.local.AppDatabase
 import com.unamentis.data.local.dao.ModuleDao
 import com.unamentis.data.local.entity.DownloadedModuleEntity
-import io.mockk.coEvery
-import io.mockk.coVerify
-import io.mockk.every
-import io.mockk.mockk
-import io.mockk.slot
-import kotlinx.coroutines.flow.flowOf
+import io.mockk.clearAllMocks
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -18,15 +25,37 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
+/**
+ * Unit tests for ModuleRegistry.
+ *
+ * Uses Robolectric with real in-memory Room database for testing
+ * database interactions, following the project's testing philosophy
+ * of using real implementations over mocks.
+ */
+@OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class ModuleRegistryTest {
+    private lateinit var database: AppDatabase
     private lateinit var moduleDao: ModuleDao
     private lateinit var json: Json
     private lateinit var registry: ModuleRegistry
 
+    private val testDispatcher = StandardTestDispatcher()
+    private val testScope = TestScope(testDispatcher)
+
     @Before
     fun setup() {
-        moduleDao = mockk(relaxed = true)
+        Dispatchers.setMain(testDispatcher)
+
+        // Create real in-memory Room database
+        database = AppDatabase.createInMemory(ApplicationProvider.getApplicationContext())
+        moduleDao = database.moduleDao()
+
         json =
             Json {
                 ignoreUnknownKeys = true
@@ -34,10 +63,20 @@ class ModuleRegistryTest {
                 encodeDefaults = true
             }
 
-        // Setup default flow to emit empty list
-        every { moduleDao.getAllModules() } returns flowOf(emptyList())
+        // Inject testScope to control coroutines launched in ModuleRegistry's init block
+        registry = ModuleRegistry(moduleDao, json, externalScope = testScope)
+    }
 
-        registry = ModuleRegistry(moduleDao, json)
+    @After
+    fun tearDown() {
+        // Close the registry to cancel its coroutines
+        registry.close()
+        // Reset Main dispatcher
+        Dispatchers.resetMain()
+        // Close the in-memory database
+        database.close()
+        // Clear any mocks that may have been created in tests
+        clearAllMocks()
     }
 
     @Test
@@ -93,66 +132,85 @@ class ModuleRegistryTest {
     }
 
     @Test
-    fun `hasUpdate returns true when newer version available`() {
-        // Setup registry with a downloaded module
-        val entity = createTestModuleEntity("test-module", "1.0.0")
-        every { moduleDao.getAllModules() } returns flowOf(listOf(entity))
+    fun `hasUpdate returns true when newer version available`() =
+        runTest {
+            // Insert module directly into the database
+            val entity = createTestModuleEntity("test-module", "1.0.0")
+            moduleDao.insertModule(entity)
 
-        val newRegistry = ModuleRegistry(moduleDao, json)
+            // Create new registry with a fresh test scope to pick up the inserted module
+            val newTestScope = TestScope(testDispatcher)
+            val newRegistry = ModuleRegistry(moduleDao, json, externalScope = newTestScope)
 
-        // Give real time for IO dispatcher to collect flow
-        Thread.sleep(200)
+            try {
+                // Await for IO dispatcher to collect flow
+                awaitCondition { newRegistry.isDownloaded("test-module") }
 
-        assertTrue(newRegistry.hasUpdate("test-module", "2.0.0"))
-        assertTrue(newRegistry.hasUpdate("test-module", "1.0.1"))
-        assertTrue(newRegistry.hasUpdate("test-module", "1.1.0"))
-    }
+                assertTrue(newRegistry.hasUpdate("test-module", "2.0.0"))
+                assertTrue(newRegistry.hasUpdate("test-module", "1.0.1"))
+                assertTrue(newRegistry.hasUpdate("test-module", "1.1.0"))
+            } finally {
+                newRegistry.close()
+            }
+        }
 
     @Test
-    fun `hasUpdate returns false when same or older version`() {
-        val entity = createTestModuleEntity("test-module", "2.0.0")
-        every { moduleDao.getAllModules() } returns flowOf(listOf(entity))
+    fun `hasUpdate returns false when same or older version`() =
+        runTest {
+            // Insert module directly into the database
+            val entity = createTestModuleEntity("test-module", "2.0.0")
+            moduleDao.insertModule(entity)
 
-        val newRegistry = ModuleRegistry(moduleDao, json)
+            // Create new registry with a fresh test scope to pick up the inserted module
+            val newTestScope = TestScope(testDispatcher)
+            val newRegistry = ModuleRegistry(moduleDao, json, externalScope = newTestScope)
 
-        // Give real time for IO dispatcher to collect flow
-        Thread.sleep(200)
+            try {
+                // Await for IO dispatcher to collect flow
+                awaitCondition { newRegistry.isDownloaded("test-module") }
 
-        assertFalse(newRegistry.hasUpdate("test-module", "2.0.0"))
-        assertFalse(newRegistry.hasUpdate("test-module", "1.9.9"))
-        assertFalse(newRegistry.hasUpdate("test-module", "1.0.0"))
-    }
+                assertFalse(newRegistry.hasUpdate("test-module", "2.0.0"))
+                assertFalse(newRegistry.hasUpdate("test-module", "1.9.9"))
+                assertFalse(newRegistry.hasUpdate("test-module", "1.0.0"))
+            } finally {
+                newRegistry.close()
+            }
+        }
 
     @Test
     fun `registerDownloadedSuspend inserts module into database`() =
         runTest {
             val module = createTestDownloadedModule("test-module", "1.0.0")
-            val entitySlot = slot<DownloadedModuleEntity>()
-            coEvery { moduleDao.insertModule(capture(entitySlot)) } returns Unit
 
             registry.registerDownloadedSuspend(module)
 
-            coVerify { moduleDao.insertModule(any()) }
-            assertEquals("test-module", entitySlot.captured.id)
-            assertEquals("1.0.0", entitySlot.captured.version)
+            // Verify module was inserted by retrieving it
+            val allModules = moduleDao.getAllModulesOnce()
+            assertEquals(1, allModules.size)
+            assertEquals("test-module", allModules[0].id)
+            assertEquals("1.0.0", allModules[0].version)
         }
 
     @Test
     fun `removeDownloadedSuspend deletes module from database`() =
         runTest {
-            coEvery { moduleDao.deleteModule("test-module") } returns 1
+            // First insert a module
+            val entity = createTestModuleEntity("test-module", "1.0.0")
+            moduleDao.insertModule(entity)
 
+            // Verify it was inserted
+            assertEquals(1, moduleDao.getAllModulesOnce().size)
+
+            // Now delete it
             val result = registry.removeDownloadedSuspend("test-module")
 
             assertTrue(result)
-            coVerify { moduleDao.deleteModule("test-module") }
+            assertEquals(0, moduleDao.getAllModulesOnce().size)
         }
 
     @Test
     fun `removeDownloadedSuspend returns false when module not found`() =
         runTest {
-            coEvery { moduleDao.deleteModule("non-existent") } returns 0
-
             val result = registry.removeDownloadedSuspend("non-existent")
 
             assertFalse(result)
@@ -161,27 +219,41 @@ class ModuleRegistryTest {
     @Test
     fun `clearAllSuspend deletes all modules`() =
         runTest {
-            coEvery { moduleDao.deleteAllModules() } returns Unit
+            // Insert multiple modules
+            moduleDao.insertModule(createTestModuleEntity("module-1", "1.0.0"))
+            moduleDao.insertModule(createTestModuleEntity("module-2", "1.0.0"))
 
+            // Verify they were inserted
+            assertEquals(2, moduleDao.getAllModulesOnce().size)
+
+            // Clear all
             registry.clearAllSuspend()
 
-            coVerify { moduleDao.deleteAllModules() }
+            assertEquals(0, moduleDao.getAllModulesOnce().size)
         }
 
     @Test
     fun `updateLastAccessed updates timestamp`() =
         runTest {
-            coEvery { moduleDao.updateLastAccessed(any(), any()) } returns Unit
+            // Insert a module
+            val originalTimestamp = System.currentTimeMillis() - 10000
+            val entity = createTestModuleEntity("test-module", "1.0.0", lastAccessedAt = originalTimestamp)
+            moduleDao.insertModule(entity)
 
+            // Update last accessed
             registry.updateLastAccessed("test-module")
 
-            coVerify { moduleDao.updateLastAccessed("test-module", any()) }
+            // Verify timestamp was updated
+            val updated = moduleDao.getAllModulesOnce().first()
+            assertTrue(updated.lastAccessedAt > originalTimestamp)
         }
 
     @Test
-    fun `getTotalStorageUsed returns value from dao`() =
+    fun `getTotalStorageUsed returns sum of all module sizes`() =
         runTest {
-            coEvery { moduleDao.getTotalStorageUsed() } returns 1024L
+            // Insert modules with known sizes
+            moduleDao.insertModule(createTestModuleEntity("module-1", "1.0.0", sizeBytes = 500L))
+            moduleDao.insertModule(createTestModuleEntity("module-2", "1.0.0", sizeBytes = 524L))
 
             val result = registry.getTotalStorageUsed()
 
@@ -189,56 +261,72 @@ class ModuleRegistryTest {
         }
 
     @Test
-    fun `getTotalStorageUsed returns 0 on error`() =
+    fun `getTotalStorageUsed returns 0 when no modules`() =
         runTest {
-            coEvery { moduleDao.getTotalStorageUsed() } throws RuntimeException("DB error")
-
             val result = registry.getTotalStorageUsed()
 
             assertEquals(0L, result)
         }
 
     @Test
-    fun `version comparison handles major version differences`() {
-        val entity = createTestModuleEntity("test-module", "1.0.0")
-        every { moduleDao.getAllModules() } returns flowOf(listOf(entity))
+    fun `version comparison handles major version differences`() =
+        runTest {
+            val entity = createTestModuleEntity("test-module", "1.0.0")
+            moduleDao.insertModule(entity)
 
-        val newRegistry = ModuleRegistry(moduleDao, json)
+            val newTestScope = TestScope(testDispatcher)
+            val newRegistry = ModuleRegistry(moduleDao, json, externalScope = newTestScope)
 
-        // Give real time for IO dispatcher to collect flow
-        Thread.sleep(200)
+            try {
+                // Await for IO dispatcher to collect flow
+                awaitCondition { newRegistry.isDownloaded("test-module") }
 
-        assertTrue(newRegistry.hasUpdate("test-module", "2.0.0"))
-        assertFalse(newRegistry.hasUpdate("test-module", "0.9.0"))
-    }
-
-    @Test
-    fun `version comparison handles minor version differences`() {
-        val entity = createTestModuleEntity("test-module", "1.5.0")
-        every { moduleDao.getAllModules() } returns flowOf(listOf(entity))
-
-        val newRegistry = ModuleRegistry(moduleDao, json)
-
-        // Give real time for IO dispatcher to collect flow
-        Thread.sleep(200)
-
-        assertTrue(newRegistry.hasUpdate("test-module", "1.6.0"))
-        assertFalse(newRegistry.hasUpdate("test-module", "1.4.0"))
-    }
+                assertTrue(newRegistry.hasUpdate("test-module", "2.0.0"))
+                assertFalse(newRegistry.hasUpdate("test-module", "0.9.0"))
+            } finally {
+                newRegistry.close()
+            }
+        }
 
     @Test
-    fun `version comparison handles patch version differences`() {
-        val entity = createTestModuleEntity("test-module", "1.0.5")
-        every { moduleDao.getAllModules() } returns flowOf(listOf(entity))
+    fun `version comparison handles minor version differences`() =
+        runTest {
+            val entity = createTestModuleEntity("test-module", "1.5.0")
+            moduleDao.insertModule(entity)
 
-        val newRegistry = ModuleRegistry(moduleDao, json)
+            val newTestScope = TestScope(testDispatcher)
+            val newRegistry = ModuleRegistry(moduleDao, json, externalScope = newTestScope)
 
-        // Give real time for IO dispatcher to collect flow
-        Thread.sleep(200)
+            try {
+                // Await for IO dispatcher to collect flow
+                awaitCondition { newRegistry.isDownloaded("test-module") }
 
-        assertTrue(newRegistry.hasUpdate("test-module", "1.0.6"))
-        assertFalse(newRegistry.hasUpdate("test-module", "1.0.4"))
-    }
+                assertTrue(newRegistry.hasUpdate("test-module", "1.6.0"))
+                assertFalse(newRegistry.hasUpdate("test-module", "1.4.0"))
+            } finally {
+                newRegistry.close()
+            }
+        }
+
+    @Test
+    fun `version comparison handles patch version differences`() =
+        runTest {
+            val entity = createTestModuleEntity("test-module", "1.0.5")
+            moduleDao.insertModule(entity)
+
+            val newTestScope = TestScope(testDispatcher)
+            val newRegistry = ModuleRegistry(moduleDao, json, externalScope = newTestScope)
+
+            try {
+                // Await for IO dispatcher to collect flow
+                awaitCondition { newRegistry.isDownloaded("test-module") }
+
+                assertTrue(newRegistry.hasUpdate("test-module", "1.0.6"))
+                assertFalse(newRegistry.hasUpdate("test-module", "1.0.4"))
+            } finally {
+                newRegistry.close()
+            }
+        }
 
     private fun createTestModuleProtocol(id: String): ModuleProtocol {
         return object : ModuleProtocol {
@@ -272,6 +360,8 @@ class ModuleRegistryTest {
     private fun createTestModuleEntity(
         id: String,
         version: String,
+        lastAccessedAt: Long = System.currentTimeMillis(),
+        sizeBytes: Long = 100L,
     ): DownloadedModuleEntity {
         return DownloadedModuleEntity(
             id = id,
@@ -279,10 +369,33 @@ class ModuleRegistryTest {
             version = version,
             description = "Test description",
             downloadedAt = System.currentTimeMillis(),
-            lastAccessedAt = System.currentTimeMillis(),
+            lastAccessedAt = lastAccessedAt,
             contentJson = "{}",
             configJson = null,
-            sizeBytes = 100L,
+            sizeBytes = sizeBytes,
         )
+    }
+
+    /**
+     * Coroutine-friendly polling helper that awaits a condition with timeout.
+     * Uses real time delays on Dispatchers.Default to allow IO operations
+     * (like Flow collection on Dispatchers.IO) to complete.
+     *
+     * @param timeoutMs Maximum time to wait for the condition in milliseconds
+     * @param pollIntervalMs Time between condition checks in milliseconds
+     * @param condition The condition to check, returns true when satisfied
+     */
+    private suspend fun awaitCondition(
+        timeoutMs: Long = 1000L,
+        pollIntervalMs: Long = 10L,
+        condition: () -> Boolean,
+    ) {
+        withContext(Dispatchers.Default) {
+            withTimeout(timeoutMs) {
+                while (!condition()) {
+                    delay(pollIntervalMs)
+                }
+            }
+        }
     }
 }

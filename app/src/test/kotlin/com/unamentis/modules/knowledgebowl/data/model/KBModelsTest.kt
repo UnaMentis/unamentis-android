@@ -13,7 +13,9 @@ import org.junit.Test
  * Unit tests for Knowledge Bowl data models.
  *
  * Tests serialization, computed properties, and factory methods.
+ * Comprehensive test coverage requires testing all model variations.
  */
+@Suppress("LargeClass")
 class KBModelsTest {
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -643,6 +645,172 @@ class KBModelsTest {
         val decoded = json.decodeFromString<DomainPerformance>(encoded)
         assertEquals(KBDomain.MATHEMATICS, decoded.domain)
         assertEquals(5, decoded.correct)
+    }
+
+    // MARK: - KBStudyMode Feature Flag Tests
+
+    @Test
+    fun `KBStudyMode requiredFeature returns correct values`() {
+        assertEquals(KBRequiredFeature.NONE, KBStudyMode.DIAGNOSTIC.requiredFeature)
+        assertEquals(KBRequiredFeature.NONE, KBStudyMode.TARGETED.requiredFeature)
+        assertEquals(KBRequiredFeature.NONE, KBStudyMode.BREADTH.requiredFeature)
+        assertEquals(KBRequiredFeature.SPEED_TRAINING, KBStudyMode.SPEED.requiredFeature)
+        assertEquals(KBRequiredFeature.COMPETITION_SIM, KBStudyMode.COMPETITION.requiredFeature)
+        assertEquals(KBRequiredFeature.TEAM_MODE, KBStudyMode.TEAM.requiredFeature)
+    }
+
+    @Test
+    fun `KBStudyMode iconName returns non-empty values for all modes`() {
+        KBStudyMode.entries.forEach { mode ->
+            assertTrue(
+                "Mode ${mode.name} should have an icon",
+                mode.iconName.isNotEmpty(),
+            )
+        }
+    }
+
+    @Test
+    fun `KBRequiredFeature has all expected values`() {
+        assertEquals(4, KBRequiredFeature.entries.size)
+        assertTrue(KBRequiredFeature.entries.contains(KBRequiredFeature.NONE))
+        assertTrue(KBRequiredFeature.entries.contains(KBRequiredFeature.TEAM_MODE))
+        assertTrue(KBRequiredFeature.entries.contains(KBRequiredFeature.SPEED_TRAINING))
+        assertTrue(KBRequiredFeature.entries.contains(KBRequiredFeature.COMPETITION_SIM))
+    }
+
+    // MARK: - KBModuleFeatures Tests
+
+    @Test
+    fun `KBModuleFeatures DEFAULT_ENABLED has all features enabled`() {
+        val features = KBModuleFeatures.DEFAULT_ENABLED
+
+        assertTrue(features.supportsTeamMode)
+        assertTrue(features.supportsSpeedTraining)
+        assertTrue(features.supportsCompetitionSim)
+    }
+
+    @Test
+    fun `KBModuleFeatures MINIMAL has all special features disabled`() {
+        val features = KBModuleFeatures.MINIMAL
+
+        assertFalse(features.supportsTeamMode)
+        assertFalse(features.supportsSpeedTraining)
+        assertFalse(features.supportsCompetitionSim)
+    }
+
+    @Test
+    fun `KBModuleFeatures isAvailable returns correct values`() {
+        val features =
+            KBModuleFeatures(
+                supportsTeamMode = true,
+                supportsSpeedTraining = false,
+                supportsCompetitionSim = true,
+            )
+
+        assertTrue(features.isAvailable(KBRequiredFeature.NONE))
+        assertTrue(features.isAvailable(KBRequiredFeature.TEAM_MODE))
+        assertFalse(features.isAvailable(KBRequiredFeature.SPEED_TRAINING))
+        assertTrue(features.isAvailable(KBRequiredFeature.COMPETITION_SIM))
+    }
+
+    @Test
+    fun `KBModuleFeatures availableStudyModes returns correct modes`() {
+        val features =
+            KBModuleFeatures(
+                supportsTeamMode = false,
+                supportsSpeedTraining = true,
+                supportsCompetitionSim = false,
+            )
+
+        val available = features.availableStudyModes()
+
+        // Core modes should always be available
+        assertTrue(available.contains(KBStudyMode.DIAGNOSTIC))
+        assertTrue(available.contains(KBStudyMode.TARGETED))
+        assertTrue(available.contains(KBStudyMode.BREADTH))
+
+        // Speed should be available
+        assertTrue(available.contains(KBStudyMode.SPEED))
+
+        // Team and Competition should not be available
+        assertFalse(available.contains(KBStudyMode.TEAM))
+        assertFalse(available.contains(KBStudyMode.COMPETITION))
+    }
+
+    @Test
+    fun `KBModuleFeatures restrictedStudyModes returns correct modes`() {
+        val features =
+            KBModuleFeatures(
+                supportsTeamMode = false,
+                supportsSpeedTraining = true,
+                supportsCompetitionSim = false,
+            )
+
+        val restricted = features.restrictedStudyModes()
+
+        assertEquals(2, restricted.size)
+        assertTrue(restricted.contains(KBStudyMode.TEAM))
+        assertTrue(restricted.contains(KBStudyMode.COMPETITION))
+    }
+
+    @Test
+    fun `KBModuleFeatures serializes correctly`() {
+        // Use explicit values that differ from defaults to ensure they're serialized
+        val features =
+            KBModuleFeatures(
+                supportsTeamMode = false,
+                supportsSpeedTraining = false,
+                supportsCompetitionSim = false,
+            )
+
+        val encoded = json.encodeToString(features)
+
+        // Verify the encoded JSON contains the expected keys
+        assertTrue(
+            "Encoded should contain supports_team_mode, got: $encoded",
+            encoded.contains("supports_team_mode"),
+        )
+        assertTrue(
+            "Encoded should contain supports_speed_training, got: $encoded",
+            encoded.contains("supports_speed_training"),
+        )
+        assertTrue(
+            "Encoded should contain supports_competition_sim, got: $encoded",
+            encoded.contains("supports_competition_sim"),
+        )
+
+        // Verify roundtrip works
+        val decoded = json.decodeFromString<KBModuleFeatures>(encoded)
+        assertEquals(false, decoded.supportsTeamMode)
+        assertEquals(false, decoded.supportsSpeedTraining)
+        assertEquals(false, decoded.supportsCompetitionSim)
+    }
+
+    @Test
+    fun `KBModuleFeatures deserialization with missing fields uses defaults`() {
+        // Server may omit fields that are true (defaults)
+        val partialJson = """{"supports_speed_training":false}"""
+
+        val decoded = json.decodeFromString<KBModuleFeatures>(partialJson)
+
+        // Missing fields should use defaults (true)
+        assertEquals(true, decoded.supportsTeamMode)
+        assertEquals(false, decoded.supportsSpeedTraining)
+        assertEquals(true, decoded.supportsCompetitionSim)
+    }
+
+    @Test
+    fun `KBModuleFeatures with all features enabled shows all study modes`() {
+        val features = KBModuleFeatures.DEFAULT_ENABLED
+        val available = features.availableStudyModes()
+
+        assertEquals(KBStudyMode.entries.size, available.size)
+        KBStudyMode.entries.forEach { mode ->
+            assertTrue(
+                "Mode ${mode.name} should be available",
+                available.contains(mode),
+            )
+        }
     }
 
     // MARK: - Helper Functions

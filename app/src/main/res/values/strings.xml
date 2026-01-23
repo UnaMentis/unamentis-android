@@ -9,6 +9,8 @@
     <string name="tab_history">History</string>
     <string name="tab_analytics">Analytics</string>
     <string name="tab_settings">Settings</string>
+    <string name="nav_more_label">More</string>
+    <string name="nav_tab_content_description">%s tab</string>
 
     <!-- Session Screen -->
     <string name="session_start">Tap to start session</string>
@@ -24,6 +26,24 @@
     <string name="cd_mute_button">Mute microphone</string>
     <string name="cd_pause_button">Pause session</string>
     <string name="cd_stop_button">Stop session</string>
+    <string name="cd_start_session">Start session</string>
+    <string name="cd_add_todo">Add todo</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_api_providers">API Providers</string>
+    <string name="settings_speech_to_text">Speech-to-Text</string>
+    <string name="settings_text_to_speech">Text-to-Speech</string>
+
+    <!-- Curriculum Screen -->
+    <string name="curriculum_server">Server Curriculum</string>
+    <string name="curriculum_downloaded">Downloaded</string>
+
+    <!-- History Screen -->
+    <string name="history_no_sessions">No sessions yet</string>
+
+    <!-- Todo Dialog -->
+    <string name="todo_title_label">Title</string>
+    <string name="todo_save">Save</string>
 
     <!-- Onboarding Screen -->
     <string name="onboarding_skip">Skip</string>
@@ -108,6 +128,8 @@
     <!-- KB Dashboard -->
     <string name="kb_written_practice">Written Practice</string>
     <string name="kb_oral_practice">Oral Practice</string>
+    <string name="kb_mcq_practice">MCQ Practice</string>
+    <string name="kb_voice_qa">Voice Q&amp;A</string>
     <string name="kb_quick_start">Quick Start</string>
     <string name="kb_select_region">Select Region</string>
     <string name="kb_question_bank">Question Bank</string>
@@ -152,6 +174,7 @@
     <string name="kb_overview">Overview</string>
     <string name="kb_questions_answered">Answered</string>
     <string name="kb_avg_time">Avg Time</string>
+    <string name="kb_avg_speed">Avg Speed</string>
     <string name="kb_competition_readiness">Competition Readiness</string>
     <string name="kb_readiness_excellent">Excellent! Ready for competition.</string>
     <string name="kb_readiness_good">Good progress. Keep practicing!</string>
@@ -181,6 +204,95 @@
     <string name="kb_reset_stats_title">Reset Statistics?</string>
     <string name="kb_reset_stats_message">This will permanently delete all your practice history and statistics. This action cannot be undone.</string>
     <string name="kb_reset">Reset</string>
+
+    <!-- Knowledge Bowl Dashboard -->
+    <string name="kb_ready_label">Ready</string>
+    <string name="kb_diagnostic_prompt">Complete a diagnostic session to see your readiness score</string>
+    <string name="kb_study_sessions">Study Sessions</string>
+    <string name="kb_your_stats">Your Stats</string>
+
+    <!-- Knowledge Bowl Practice Session -->
+    <string name="kb_exit_practice_title">Exit Practice?</string>
+    <string name="kb_exit_practice_message">Your progress will be saved, but the session will end.</string>
+    <string name="kb_exit_button">Exit</string>
+    <string name="kb_continue_practicing_button">Continue Practicing</string>
+    <string name="kb_stat_correct">Correct</string>
+    <string name="kb_speed_target">Speed Target</string>
+    <string name="cd_within_speed_target">Within speed target</string>
+
+    <!-- Knowledge Bowl Plurals -->
+    <plurals name="kb_questions_answered_count">
+        <item quantity="one">Based on %d question answered</item>
+        <item quantity="other">Based on %d questions answered</item>
+    </plurals>
+    <plurals name="kb_correct_count">
+        <item quantity="one">%d correct</item>
+        <item quantity="other">%d correct</item>
+    </plurals>
+
+    <!-- Knowledge Bowl Error Messages -->
+    <string name="kb_error_failed_to_load_questions">Failed to load questions</string>
+    <string name="kb_error_server_not_configured">Self-hosted server not configured</string>
+    <string name="kb_error_server_returned">Server returned %1$d</string>
+    <string name="kb_error_empty_response">Empty response body</string>
+
+    <!-- Knowledge Bowl Launcher -->
+    <string name="kb_preparing_questions">Preparing questions…</string>
+    <string name="kb_try_again">Try Again</string>
+    <string name="kb_questions_label">Questions</string>
+    <string name="kb_time_limit_label">Time Limit</string>
+    <string name="kb_difficulty_label">Difficulty</string>
+    <string name="kb_tips_title">Tips</string>
+    <string name="kb_cancel">Cancel</string>
+
+    <!-- Knowledge Bowl Stats -->
+    <string name="kb_answered_count">%d answered</string>
+    <string name="kb_correct_count_label">%d correct</string>
+
+    <!-- Knowledge Bowl Written Session -->
+    <string name="kb_written_round_practice">Written Round Practice</string>
+    <string name="kb_per_correct">per correct</string>
+    <string name="kb_submit_answer">Submit Answer</string>
+    <string name="kb_times_up">Time\'s Up!</string>
+
+    <!-- Knowledge Bowl Accessibility -->
+    <string name="cd_kb_correct_answer">Correct</string>
+    <string name="cd_kb_incorrect_answer">Incorrect</string>
+    <string name="cd_kb_speaking">Speaking</string>
+    <string name="cd_kb_listening">Listening</string>
+    <string name="cd_kb_tap_to_speak">Tap to speak</string>
+
+    <!-- Analytics Screen -->
+    <string name="analytics_title">Analytics</string>
+    <string name="analytics_export_metrics">Export metrics</string>
+    <string name="analytics_time_range">Time Range</string>
+    <string name="analytics_7_days">7 Days</string>
+    <string name="analytics_30_days">30 Days</string>
+    <string name="analytics_90_days">90 Days</string>
+    <string name="analytics_all_time">All Time</string>
+    <string name="analytics_overview">Overview</string>
+    <string name="analytics_sessions">Sessions</string>
+    <string name="analytics_turns">Turns</string>
+    <string name="analytics_avg_latency">Avg Latency</string>
+    <string name="analytics_total_cost">Total Cost</string>
+    <string name="analytics_latency_breakdown">Latency Breakdown</string>
+    <string name="analytics_cost_breakdown">Cost Breakdown</string>
+    <string name="analytics_provider_details">Provider Details</string>
+    <string name="analytics_no_provider_data">No provider data available</string>
+    <string name="analytics_requests_count">%d requests</string>
+    <string name="analytics_session_trends">Session Trends</string>
+    <string name="analytics_no_data">No data available</string>
+    <string name="analytics_export_title">Export Metrics</string>
+    <string name="analytics_json_format">Metrics in JSON format:</string>
+    <string name="analytics_close">Close</string>
+    <string name="analytics_latency_ms">%1$d ms</string>
+    <string name="analytics_label_stt">STT</string>
+    <string name="analytics_label_tts">TTS</string>
+    <string name="analytics_label_llm">LLM</string>
+    <string name="analytics_label_llm_ttft">LLM TTFT</string>
+    <string name="analytics_label_tts_ttfb">TTS TTFB</string>
+    <string name="analytics_label_e2e">E2E</string>
+    <string name="analytics_cost_legend_format">%1$s: %2$s</string>
 
     <!-- On-Device LLM Settings -->
     <string name="settings_on_device_ai">On-Device AI</string>

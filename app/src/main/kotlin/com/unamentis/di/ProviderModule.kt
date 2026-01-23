@@ -1,7 +1,10 @@
 package com.unamentis.di
 
 import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import com.unamentis.core.config.ProviderConfig
+import com.unamentis.core.config.ProviderDataStore
 import com.unamentis.core.device.DeviceCapabilityDetector
 import com.unamentis.core.health.HealthMonitorConfig
 import com.unamentis.core.health.ProviderHealthMonitor
@@ -49,14 +52,29 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object ProviderModule {
     /**
+     * Provide the singleton DataStore for provider configuration.
+     *
+     * This ensures only one DataStore instance exists for the "provider_config" file,
+     * preventing "multiple DataStores active for same file" errors in tests.
+     */
+    @Provides
+    @Singleton
+    fun provideProviderDataStore(
+        @ApplicationContext context: Context,
+    ): DataStore<Preferences> {
+        return ProviderDataStore.getInstance(context)
+    }
+
+    /**
      * Provide ProviderConfig for configuration management.
      */
     @Provides
     @Singleton
     fun provideProviderConfig(
         @ApplicationContext context: Context,
+        dataStore: DataStore<Preferences>,
     ): ProviderConfig {
-        return ProviderConfig(context)
+        return ProviderConfig(context, dataStore)
     }
 
     /**

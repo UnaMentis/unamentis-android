@@ -25,6 +25,7 @@ import com.unamentis.data.model.TodoPriority
 import com.unamentis.data.model.TodoStatus
 import com.unamentis.ui.LocalScrollToTopHandler
 import com.unamentis.ui.Routes
+import com.unamentis.ui.util.safeProgress
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -986,7 +987,7 @@ private fun SuggestionInfoDialog(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         LinearProgressIndicator(
-                            progress = { todo.suggestionConfidence },
+                            progress = { safeProgress(todo.suggestionConfidence) },
                             modifier = Modifier.weight(1f),
                         )
                         Text(

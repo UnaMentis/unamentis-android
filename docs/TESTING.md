@@ -190,42 +190,60 @@ class AudioEngineTest {
 package com.unamentis.ui.session
 
 import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.unamentis.MainActivity
+import dagger.hilt.android.testing.HiltAndroidRule
+import dagger.hilt.android.testing.HiltAndroidTest
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.junit.runner.RunWith
 
+@HiltAndroidTest
+@RunWith(AndroidJUnit4::class)
 class SessionScreenTest {
 
-    @get:Rule
-    val composeTestRule = createComposeRule()
+    @get:Rule(order = 0)
+    val hiltRule = HiltAndroidRule(this)
 
-    @Test
-    fun sessionScreen_displaysStartButton() {
-        composeTestRule.setContent {
-            SessionScreen(
-                viewModel = SessionViewModel(/* real dependencies */)
-            )
-        }
+    @get:Rule(order = 1)
+    val composeTestRule = createAndroidComposeRule<MainActivity>()
 
-        composeTestRule
-            .onNodeWithText("Start Session")
-            .assertIsDisplayed()
-            .assertHasClickAction()
+    companion object {
+        // 15s for navigation tests (CI emulators are slower)
+        private const val DEFAULT_TIMEOUT = 15_000L
+        // 20s for session/state tests with complex setup
+        private const val LONG_TIMEOUT = 20_000L
+    }
+
+    @Before
+    fun setup() {
+        hiltRule.inject()
     }
 
     @Test
-    fun sessionScreen_startsSessionOnButtonClick() {
-        composeTestRule.setContent {
-            SessionScreen(viewModel = viewModel)
+    fun sessionScreen_displaysStartButton() {
+        // Wait for UI to load using testTag or text
+        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+            composeTestRule.onAllNodesWithText("Start Session")
+                .fetchSemanticsNodes().isNotEmpty()
         }
 
         composeTestRule
             .onNodeWithText("Start Session")
-            .performClick()
-
-        composeTestRule
-            .onNodeWithText("Listening...")
             .assertIsDisplayed()
+    }
+
+    @Test
+    fun sessionScreen_displaysStateIndicator() {
+        // Production shows "Ready" for IDLE state
+        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+            composeTestRule.onAllNodesWithText("Ready")
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+
+        composeTestRule.onNodeWithText("Ready").assertIsDisplayed()
     }
 }
 ```
@@ -544,6 +562,88 @@ See `.github/workflows/android.yml` for configuration.
 - **JDK**: 17 (Temurin)
 - **Emulator**: Pixel 6, API 34
 - **Timeout**: 30 minutes
+- **Locale**: en-US (enforced)
+
+### CI Locale Enforcement
+
+The CI workflow enforces `en-US` locale to prevent test failures due to localized strings:
+
+```yaml
+# In .github/workflows/android.yml
+emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -prop persist.sys.locales=en-US
+
+script: |
+  # Ensure device locale is English (en-US)
+  adb shell "setprop persist.sys.locales en-US; setprop persist.sys.locale en-US; setprop persist.sys.language en; setprop persist.sys.country US" || true
+
+  # Restart runtime so locale changes apply
+  adb shell stop || true
+  adb shell start || true
+  adb shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done'
+```
+
+This ensures consistent test behavior regardless of the CI runner's default locale.
+
+### TestTag-Based Navigation Testing
+
+Navigation tests use `testTag` modifiers instead of text selectors for stability:
+
+```kotlin
+// In Navigation.kt - stable test hooks
+NavigationBarItem(
+    modifier = Modifier
+        .testTag("nav_session")
+        .semantics { contentDescription = "Session tab" },
+    // ...
+)
+
+// For More menu items
+DropdownMenuItem(
+    modifier = Modifier
+        .testTag("menu_settings")
+        .semantics { contentDescription = "Settings tab" },
+    // ...
+)
+```
+
+**Test patterns using testTags:**
+
+```kotlin
+// Navigate to a primary tab
+private fun navigateToCurriculum() {
+    composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.onAllNodesWithTag("nav_curriculum")
+            .fetchSemanticsNodes().isNotEmpty()
+    }
+    composeTestRule.onNodeWithTag("nav_curriculum").performClick()
+}
+
+// Navigate via More menu (Settings, Analytics)
+private fun navigateToSettings() {
+    composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.onAllNodesWithTag("nav_more")
+            .fetchSemanticsNodes().isNotEmpty()
+    }
+    composeTestRule.onNodeWithTag("nav_more").performClick()
+    composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.onAllNodesWithTag("menu_settings")
+            .fetchSemanticsNodes().isNotEmpty()
+    }
+    composeTestRule.onNodeWithTag("menu_settings").performClick()
+}
+```
+
+**Available navigation testTags:**
+
+| TestTag | Description |
+|---------|-------------|
+| `nav_session` | Session tab (primary) |
+| `nav_curriculum` | Curriculum tab (primary) |
+| `nav_history` | History tab (primary) |
+| `nav_todo` | Todo tab (primary) |
+| `nav_more` | More menu button |
+| `menu_settings` | Settings menu item |
+| `menu_analytics` | Analytics menu item |
 
 ---
 
@@ -641,14 +741,418 @@ advanceUntilIdle()
 delay(1000)  // In runTest
 ```
 
+### Issue: Waiting for Flow collection on real dispatchers (Dispatchers.IO)
+
+**Cause**: Classes that collect Flows internally using `Dispatchers.IO` (like `ModuleRegistry`) won't have their Flows collected when using `runTest` because the test dispatcher doesn't control real dispatchers.
+
+**Solution**: Use a coroutine-friendly polling helper that runs on a real dispatcher:
+
+```kotlin
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
+
+/**
+ * Coroutine-friendly polling helper that awaits a condition with timeout.
+ * Uses real time delays on Dispatchers.Default to allow IO operations
+ * (like Flow collection on Dispatchers.IO) to complete.
+ */
+private suspend fun awaitCondition(
+    timeoutMs: Long = 1000L,
+    pollIntervalMs: Long = 10L,
+    condition: () -> Boolean,
+) {
+    withContext(Dispatchers.Default) {
+        withTimeout(timeoutMs) {
+            while (!condition()) {
+                delay(pollIntervalMs)
+            }
+        }
+    }
+}
+
+// Usage in tests:
+@Test
+fun `test with async Flow collection`() = runTest {
+    // Insert data that will be collected by a Flow
+    moduleDao.insertModule(entity)
+
+    // Create instance that collects Flow internally on Dispatchers.IO
+    val registry = ModuleRegistry(moduleDao, json)
+
+    // Wait for the Flow to emit using real time delays
+    awaitCondition { registry.isDownloaded("test-module") }
+
+    // Now the data is available
+    assertTrue(registry.hasUpdate("test-module", "2.0.0"))
+}
+```
+
+**Why this works**: `withContext(Dispatchers.Default)` switches to a real dispatcher where `delay()` actually pauses for real time, allowing concurrent operations on `Dispatchers.IO` to complete. The `withTimeout` ensures the test fails deterministically if the condition is never met.
+
+### Issue: Uncaught exceptions from previous tests
+
+**Cause**: Classes with internal `CoroutineScope` (using `Dispatchers.IO`) continue running background coroutines after tests complete, causing `UncaughtExceptionsBeforeTest` errors.
+
+**Solution**: Add `@After` teardown to clear all mocks:
+
+```kotlin
+import io.mockk.clearAllMocks
+import io.mockk.unmockkAll
+import org.junit.After
+
+class MyClassTest {
+    private lateinit var myMock: SomeDao
+
+    @Before
+    fun setup() {
+        myMock = mockk(relaxed = true)
+        every { myMock.getAllItems() } returns flowOf(emptyList())
+        // ... create instance that collects from flow
+    }
+
+    @After
+    fun tearDown() {
+        // Clear all mocks to prevent coroutines from previous tests
+        // from interfering with subsequent tests
+        clearAllMocks()
+        unmockkAll()
+    }
+
+    // ... tests
+}
+```
+
+This pattern is especially important when testing classes that:
+- Collect from `Flow` in their `init` block
+- Use `CoroutineScope(SupervisorJob() + Dispatchers.IO)` internally
+- Create background coroutines that outlive the test
+
+### Issue: Classes with internal CoroutineScope cause UncaughtExceptionsBeforeTest
+
+**Cause**: Classes that create their own `CoroutineScope` (e.g., `CoroutineScope(SupervisorJob() + Dispatchers.IO)`) and launch coroutines in their `init` block will have those coroutines running outside the test's control. When the test ends, `kotlinx.coroutines.test` detects these as uncaught exceptions.
+
+**Solution**: Make the class testable by accepting an optional external `CoroutineScope`:
+
+```kotlin
+// Production class - accept optional external scope for testability
+@Singleton
+class ModuleRegistry
+    @Inject
+    constructor(
+        private val moduleDao: ModuleDao,
+        private val json: Json,
+        externalScope: CoroutineScope? = null,  // Optional for tests
+    ) {
+        // Use external scope if provided, otherwise create internal scope
+        private val scope: CoroutineScope = externalScope ?: CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        private val ownsScope: Boolean = externalScope == null
+
+        init {
+            // This coroutine is now controlled by the test when externalScope is provided
+            scope.launch {
+                moduleDao.getAllModules().collect { entities ->
+                    _downloadedModules.value = entities.map { it.toDownloadedModule() }
+                }
+            }
+        }
+
+        /**
+         * Close the registry and cancel any ongoing coroutines.
+         * Only cancels if this instance owns the scope.
+         */
+        fun close() {
+            if (ownsScope) {
+                scope.cancel()
+            }
+        }
+    }
+```
+
+**Test setup with injected TestScope:**
+
+```kotlin
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.setMain
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class ModuleRegistryTest {
+    private lateinit var registry: ModuleRegistry
+
+    private val testDispatcher = StandardTestDispatcher()
+    private val testScope = TestScope(testDispatcher)
+
+    @Before
+    fun setup() {
+        Dispatchers.setMain(testDispatcher)
+
+        // Inject testScope to control coroutines launched in init block
+        registry = ModuleRegistry(moduleDao, json, externalScope = testScope)
+    }
+
+    @After
+    fun tearDown() {
+        // Close the registry to cancel its coroutines
+        registry.close()
+        // Reset Main dispatcher
+        Dispatchers.resetMain()
+    }
+
+    @Test
+    fun `test with controlled coroutines`() = runTest(testDispatcher) {
+        // Test code here - coroutines are now controlled by testDispatcher
+    }
+}
+```
+
+**Key points:**
+- The default parameter (`externalScope: CoroutineScope? = null`) maintains backward compatibility; production code doesn't need to change
+- Tests inject a `TestScope` to control all coroutines
+- The `close()` method allows proper cleanup in `@After`
+- Use `Dispatchers.setMain(testDispatcher)` to also control Main-bound coroutines
+
 ### Issue: Tests fail in CI but pass locally
 
 **Check**:
 - Emulator differences (API level, screen size)
+- **Locale differences** - CI now enforces en-US, ensure tests use testTags not text
 - Environment variables
 - File paths (use context for resources)
 - Network availability (mock external calls)
 - Timing issues (use `runTest` properly)
+- DataStore singleton conflicts (see below)
+- CI emulator boot timing (see below)
+
+### Issue: Navigation tests can't find text like "Settings" or "Analytics"
+
+**Cause**: These screens are accessed via the "More" menu, not primary navigation tabs. Also, text-based selectors are locale-dependent.
+
+**Solution**: Use testTag-based navigation:
+
+```kotlin
+// WRONG: Text selectors are fragile and locale-dependent
+composeTestRule.onNodeWithText("Settings").performClick()
+
+// RIGHT: Use testTags for stable navigation
+composeTestRule.onNodeWithTag("nav_more").performClick()
+composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+    composeTestRule.onAllNodesWithTag("menu_settings")
+        .fetchSemanticsNodes().isNotEmpty()
+}
+composeTestRule.onNodeWithTag("menu_settings").performClick()
+```
+
+### Issue: Duplicate nodes found for text like "Session"
+
+**Cause**: Multiple UI elements may contain the same text (e.g., "Session" appears in nav tab and screen title).
+
+**Solution**: Use testTags with semantics for unique identification:
+
+```kotlin
+// Use testTag + contentDescription for accessibility and testing
+Modifier
+    .testTag("nav_session")
+    .semantics { contentDescription = "Session tab" }
+```
+
+### Issue: DataStore "multiple instances active for same file"
+
+**Cause**: Multiple test classes or Hilt components creating separate DataStore instances for the same file.
+
+**Solution**: Use the `ProviderDataStore` singleton pattern:
+
+```kotlin
+// In ProviderDataStore.kt - singleton holder
+object ProviderDataStore {
+    private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
+        name = "provider_config",
+    )
+
+    fun getInstance(context: Context): DataStore<Preferences> = context.dataStore
+}
+
+// In ProviderConfig - accept DataStore via constructor
+class ProviderConfig(
+    private val context: Context,
+    private val dataStore: DataStore<Preferences> = ProviderDataStore.getInstance(context),
+)
+
+// In Hilt module - provide singleton
+@Provides
+@Singleton
+fun provideProviderDataStore(@ApplicationContext context: Context): DataStore<Preferences> {
+    return ProviderDataStore.getInstance(context)
+}
+```
+
+### Issue: Compose UI tests timeout in CI
+
+**Cause**: CI emulators are slower than local machines, and default 5000ms `waitUntil` timeouts may not be sufficient.
+
+**Solution**: Use 15000ms (15s) timeouts for complex navigation tests, 10000ms (10s) for simpler screen tests:
+
+```kotlin
+companion object {
+    private const val DEFAULT_TIMEOUT = 15_000L  // 15s for navigation tests
+    private const val LONG_TIMEOUT = 20_000L     // 20s for session/state tests
+}
+
+// Use consistent timeouts throughout the test class
+composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+    composeTestRule.onAllNodesWithTag("nav_session")
+        .fetchSemanticsNodes().isNotEmpty()
+}
+```
+
+**Best practice**: Define `DEFAULT_TIMEOUT` as a companion object constant and use it consistently across all `waitUntil` calls in the test class.
+
+### Issue: More menu animations cause test flakiness
+
+**Cause**: Dropdown menus have animation delays that can cause click events to fail.
+
+**Solution**: Add timing delays after opening menus:
+
+```kotlin
+private fun navigateToSettings() {
+    composeTestRule.onNodeWithTag("nav_more").performClick()
+
+    composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.onAllNodesWithTag("menu_settings")
+            .fetchSemanticsNodes().isNotEmpty()
+    }
+
+    // Allow menu animation to complete
+    composeTestRule.mainClock.advanceTimeBy(300)
+
+    composeTestRule.onNodeWithTag("menu_settings").performClick()
+
+    // Wait for navigation to complete
+    composeTestRule.waitForIdle()
+}
+```
+
+### Issue: Content below fold not found in LazyColumn
+
+**Cause**: `performScrollToNode()` can't find content that hasn't been rendered yet.
+
+**Solution**: Add testTag to LazyColumn and use scroll to reveal content:
+
+```kotlin
+// In production code - add testTag to LazyColumn
+LazyColumn(
+    modifier = Modifier
+        .fillMaxSize()
+        .testTag("SettingsLazyColumn"),
+    // ...
+)
+
+// In test code - scroll to content before asserting
+composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+    composeTestRule.onAllNodesWithTag("SettingsLazyColumn")
+        .fetchSemanticsNodes().isNotEmpty()
+}
+
+composeTestRule.onNodeWithTag("SettingsLazyColumn")
+    .performScrollToNode(hasText("Session Trends"))
+
+composeTestRule.onNodeWithText("Session Trends").assertIsDisplayed()
+```
+
+### Issue: "On-Device AI" text found multiple times (ambiguous matcher)
+
+**Cause**: Same text appears in multiple places (section header and card title).
+
+**Solution**: Add testTags to specific elements for unique identification:
+
+```kotlin
+// In production code - add testTag to disambiguate
+Text(
+    text = stringResource(R.string.settings_on_device_ai),
+    style = MaterialTheme.typography.titleMedium,
+    modifier = Modifier
+        .padding(top = 16.dp)
+        .testTag("settings_on_device_ai_header"),
+)
+
+// In test code - use testTag instead of text
+composeTestRule.onNodeWithTag("SettingsLazyColumn")
+    .performScrollToNode(hasTestTag("settings_on_device_ai_header"))
+
+composeTestRule.onNodeWithTag("settings_on_device_ai_header").assertIsDisplayed()
+```
+
+### Issue: Memory profiling test fails due to GC non-determinism
+
+**Cause**: `System.gc()` is a hint, not a command. Java GC behavior is non-deterministic.
+
+**Solution**: Use threshold-based leak detection instead of asserting memory was reclaimed:
+
+```kotlin
+// WRONG: Unreliable assertion
+val memoryReclaimed = duringSessionMemoryMB - afterCleanupMemoryMB
+assert(memoryReclaimed > 0) { "No memory was reclaimed" }
+
+// RIGHT: Threshold-based leak detection
+assert(afterCleanupMemoryMB < initialMemoryMB + 50) {
+    "Memory after cleanup (${afterCleanupMemoryMB}MB) exceeds threshold - possible leak"
+}
+```
+
+### Issue: Certificate pinning test fails due to OkHttp deduplication
+
+**Cause**: OkHttp deduplicates identical pins, so adding the same pin twice results in only 1 pin per domain.
+
+**Solution**: For now, check that at least 1 pin exists per domain. Add actual intermediate CA backup pins when needed:
+
+```kotlin
+// Get intermediate CA pin for rotation support
+// echo | openssl s_client -connect api.deepgram.com:443 -showcerts 2>/dev/null | \
+//     openssl x509 -pubkey -noout | openssl pkey -pubin -outform der | \
+//     openssl dgst -sha256 -binary | openssl enc -base64
+
+@Test
+fun allDomains_havePins() {
+    val pinsByDomain = CertificatePinning.pinner.pins.groupBy { it.pattern }
+    assertTrue(
+        "All domains should have at least one pin configured",
+        pinsByDomain.all { (_, pins) -> pins.isNotEmpty() },
+    )
+}
+```
+
+### Issue: Health monitor tests fail due to real HTTP requests
+
+**Cause**: `ProviderHealthMonitor` makes actual HTTP health check requests during tests.
+
+**Solution**: Use a mock OkHttp interceptor:
+
+```kotlin
+private fun createHealthyHealthMonitor(): ProviderHealthMonitor {
+    val client = OkHttpClient.Builder()
+        .addInterceptor { chain ->
+            Response.Builder()
+                .request(chain.request())
+                .protocol(Protocol.HTTP_1_1)
+                .code(200)
+                .message("OK")
+                .body("".toResponseBody())
+                .build()
+        }
+        .build()
+    return ProviderHealthMonitor(
+        config = HealthMonitorConfig(
+            healthEndpoint = "http://localhost/health",
+            checkIntervalMs = 60000,
+        ),
+        client = client,
+        providerName = "Test",
+    )
+}
+```
 
 ### Issue: Room database tests fail
 

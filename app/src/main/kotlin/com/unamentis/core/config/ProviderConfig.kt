@@ -5,7 +5,6 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import kotlinx.coroutines.flow.Flow
@@ -24,11 +23,12 @@ import kotlinx.coroutines.flow.map
  * - Provider preferences in DataStore (non-sensitive)
  *
  * @property context Application context
+ * @property dataStore DataStore instance for preferences (must be singleton to avoid conflicts)
  */
-class ProviderConfig(private val context: Context) {
-    // DataStore for non-sensitive preferences
-    private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "provider_config")
-
+class ProviderConfig(
+    private val context: Context,
+    private val dataStore: DataStore<Preferences> = ProviderDataStore.getInstance(context),
+) {
     // Regular SharedPreferences for synchronous access (same underlying file as DataStore)
     private val syncPrefs by lazy {
         context.getSharedPreferences("provider_config_sync", Context.MODE_PRIVATE)
@@ -98,7 +98,7 @@ class ProviderConfig(private val context: Context) {
      * Defaults to "Android" for free on-device recognition.
      */
     val selectedSTTProvider: Flow<String> =
-        context.dataStore.data.map { prefs ->
+        dataStore.data.map { prefs ->
             prefs[PreferenceKeys.SELECTED_STT_PROVIDER] ?: "Android"
         }
 
@@ -107,7 +107,7 @@ class ProviderConfig(private val context: Context) {
      * Defaults to "Android" for free on-device speech synthesis.
      */
     val selectedTTSProvider: Flow<String> =
-        context.dataStore.data.map { prefs ->
+        dataStore.data.map { prefs ->
             prefs[PreferenceKeys.SELECTED_TTS_PROVIDER] ?: "Android"
         }
 
@@ -115,7 +115,7 @@ class ProviderConfig(private val context: Context) {
      * Get selected LLM provider name (as Flow for reactive updates).
      */
     val selectedLLMProvider: Flow<String> =
-        context.dataStore.data.map { prefs ->
+        dataStore.data.map { prefs ->
             prefs[PreferenceKeys.SELECTED_LLM_PROVIDER] ?: "PatchPanel"
         }
 
@@ -149,7 +149,7 @@ class ProviderConfig(private val context: Context) {
      * Get cost preference.
      */
     val costPreference: Flow<String> =
-        context.dataStore.data.map { prefs ->
+        dataStore.data.map { prefs ->
             prefs[PreferenceKeys.COST_PREFERENCE] ?: "BALANCED"
         }
 
@@ -157,7 +157,7 @@ class ProviderConfig(private val context: Context) {
      * Get configuration preset.
      */
     val configurationPreset: Flow<ConfigurationPreset> =
-        context.dataStore.data.map { prefs ->
+        dataStore.data.map { prefs ->
             val presetName = prefs[PreferenceKeys.CONFIGURATION_PRESET] ?: "FREE"
             try {
                 ConfigurationPreset.valueOf(presetName)
@@ -172,7 +172,7 @@ class ProviderConfig(private val context: Context) {
      * Defaults to VAD for automatic voice detection.
      */
     val recordingMode: Flow<RecordingMode> =
-        context.dataStore.data.map { prefs ->
+        dataStore.data.map { prefs ->
             val modeName = prefs[PreferenceKeys.RECORDING_MODE] ?: "VAD"
             try {
                 RecordingMode.valueOf(modeName)
@@ -199,7 +199,7 @@ class ProviderConfig(private val context: Context) {
      * Sample rate for audio recording (16000, 24000, or 48000 Hz).
      */
     val sampleRate: Flow<Int> =
-        context.dataStore.data.map { prefs ->
+        dataStore.data.map { prefs ->
             prefs[PreferenceKeys.SAMPLE_RATE]?.toIntOrNull() ?: 48000
         }
 
@@ -207,7 +207,7 @@ class ProviderConfig(private val context: Context) {
      * Enable voice processing (enhances voice clarity).
      */
     val enableVoiceProcessing: Flow<Boolean> =
-        context.dataStore.data.map { prefs ->
+        dataStore.data.map { prefs ->
             prefs[PreferenceKeys.ENABLE_VOICE_PROCESSING]?.toBoolean() ?: true
         }
 
@@ -215,7 +215,7 @@ class ProviderConfig(private val context: Context) {
      * Enable echo cancellation.
      */
     val enableEchoCancellation: Flow<Boolean> =
-        context.dataStore.data.map { prefs ->
+        dataStore.data.map { prefs ->
             prefs[PreferenceKeys.ENABLE_ECHO_CANCELLATION]?.toBoolean() ?: true
         }
 
@@ -223,7 +223,7 @@ class ProviderConfig(private val context: Context) {
      * Enable noise suppression.
      */
     val enableNoiseSuppression: Flow<Boolean> =
-        context.dataStore.data.map { prefs ->
+        dataStore.data.map { prefs ->
             prefs[PreferenceKeys.ENABLE_NOISE_SUPPRESSION]?.toBoolean() ?: true
         }
 
@@ -233,7 +233,7 @@ class ProviderConfig(private val context: Context) {
      * VAD detection threshold (0.3 - 0.9).
      */
     val vadThreshold: Flow<Float> =
-        context.dataStore.data.map { prefs ->
+        dataStore.data.map { prefs ->
             prefs[PreferenceKeys.VAD_THRESHOLD]?.toFloatOrNull() ?: 0.5f
         }
 
@@ -241,7 +241,7 @@ class ProviderConfig(private val context: Context) {
      * Barge-in (interruption) threshold (0.5 - 0.95).
      */
     val bargeInThreshold: Flow<Float> =
-        context.dataStore.data.map { prefs ->
+        dataStore.data.map { prefs ->
             prefs[PreferenceKeys.BARGE_IN_THRESHOLD]?.toFloatOrNull() ?: 0.7f
         }
 
@@ -249,7 +249,7 @@ class ProviderConfig(private val context: Context) {
      * Enable barge-in (speaking interrupts AI).
      */
     val enableBargeIn: Flow<Boolean> =
-        context.dataStore.data.map { prefs ->
+        dataStore.data.map { prefs ->
             prefs[PreferenceKeys.ENABLE_BARGE_IN]?.toBoolean() ?: true
         }
 
@@ -257,7 +257,7 @@ class ProviderConfig(private val context: Context) {
      * Silence threshold in milliseconds (how long silence before end of turn).
      */
     val silenceThresholdMs: Flow<Int> =
-        context.dataStore.data.map { prefs ->
+        dataStore.data.map { prefs ->
             prefs[PreferenceKeys.SILENCE_THRESHOLD_MS]?.toIntOrNull() ?: 1000
         }
 
@@ -267,7 +267,7 @@ class ProviderConfig(private val context: Context) {
      * LLM temperature (0.0 - 1.0).
      */
     val llmTemperature: Flow<Float> =
-        context.dataStore.data.map { prefs ->
+        dataStore.data.map { prefs ->
             prefs[PreferenceKeys.LLM_TEMPERATURE]?.toFloatOrNull() ?: 0.7f
         }
 
@@ -275,7 +275,7 @@ class ProviderConfig(private val context: Context) {
      * LLM max tokens (256 - 4096).
      */
     val llmMaxTokens: Flow<Int> =
-        context.dataStore.data.map { prefs ->
+        dataStore.data.map { prefs ->
             prefs[PreferenceKeys.LLM_MAX_TOKENS]?.toIntOrNull() ?: 1024
         }
 
@@ -285,7 +285,7 @@ class ProviderConfig(private val context: Context) {
      * TTS speaking rate (0.5 - 2.0).
      */
     val ttsSpeakingRate: Flow<Float> =
-        context.dataStore.data.map { prefs ->
+        dataStore.data.map { prefs ->
             prefs[PreferenceKeys.TTS_SPEAKING_RATE]?.toFloatOrNull() ?: 1.0f
         }
 
@@ -293,7 +293,7 @@ class ProviderConfig(private val context: Context) {
      * TTS playback speed multiplier (0.5 - 2.0).
      */
     val ttsPlaybackSpeed: Flow<Float> =
-        context.dataStore.data.map { prefs ->
+        dataStore.data.map { prefs ->
             prefs[PreferenceKeys.TTS_PLAYBACK_SPEED]?.toFloatOrNull() ?: 1.0f
         }
 
@@ -303,7 +303,7 @@ class ProviderConfig(private val context: Context) {
      * Auto-continue to next topic when current one finishes.
      */
     val autoContinueTopics: Flow<Boolean> =
-        context.dataStore.data.map { prefs ->
+        dataStore.data.map { prefs ->
             prefs[PreferenceKeys.AUTO_CONTINUE_TOPICS]?.toBoolean() ?: true
         }
 
@@ -314,7 +314,7 @@ class ProviderConfig(private val context: Context) {
         // Write to sync prefs for immediate availability
         syncPrefs.edit().putString(PreferenceKeys.SELECTED_STT_PROVIDER.name, providerName).apply()
         // Also write to DataStore for reactive updates
-        context.dataStore.edit { prefs ->
+        dataStore.edit { prefs ->
             prefs[PreferenceKeys.SELECTED_STT_PROVIDER] = providerName
         }
     }
@@ -326,7 +326,7 @@ class ProviderConfig(private val context: Context) {
         // Write to sync prefs for immediate availability
         syncPrefs.edit().putString(PreferenceKeys.SELECTED_TTS_PROVIDER.name, providerName).apply()
         // Also write to DataStore for reactive updates
-        context.dataStore.edit { prefs ->
+        dataStore.edit { prefs ->
             prefs[PreferenceKeys.SELECTED_TTS_PROVIDER] = providerName
         }
     }
@@ -338,7 +338,7 @@ class ProviderConfig(private val context: Context) {
         // Write to sync prefs for immediate availability
         syncPrefs.edit().putString(PreferenceKeys.SELECTED_LLM_PROVIDER.name, providerName).apply()
         // Also write to DataStore for reactive updates
-        context.dataStore.edit { prefs ->
+        dataStore.edit { prefs ->
             prefs[PreferenceKeys.SELECTED_LLM_PROVIDER] = providerName
         }
     }
@@ -347,7 +347,7 @@ class ProviderConfig(private val context: Context) {
      * Set cost preference.
      */
     suspend fun setCostPreference(preference: String) {
-        context.dataStore.edit { prefs ->
+        dataStore.edit { prefs ->
             prefs[PreferenceKeys.COST_PREFERENCE] = preference
         }
     }
@@ -359,7 +359,7 @@ class ProviderConfig(private val context: Context) {
         // Write to sync prefs for immediate availability
         syncPrefs.edit().putString(PreferenceKeys.RECORDING_MODE.name, mode.name).apply()
         // Also write to DataStore for reactive updates
-        context.dataStore.edit { prefs ->
+        dataStore.edit { prefs ->
             prefs[PreferenceKeys.RECORDING_MODE] = mode.name
         }
     }
@@ -370,7 +370,7 @@ class ProviderConfig(private val context: Context) {
      * Set sample rate.
      */
     suspend fun setSampleRate(sampleRate: Int) {
-        context.dataStore.edit { prefs ->
+        dataStore.edit { prefs ->
             prefs[PreferenceKeys.SAMPLE_RATE] = sampleRate.toString()
         }
     }
@@ -379,7 +379,7 @@ class ProviderConfig(private val context: Context) {
      * Set voice processing enabled.
      */
     suspend fun setEnableVoiceProcessing(enabled: Boolean) {
-        context.dataStore.edit { prefs ->
+        dataStore.edit { prefs ->
             prefs[PreferenceKeys.ENABLE_VOICE_PROCESSING] = enabled.toString()
         }
     }
@@ -388,7 +388,7 @@ class ProviderConfig(private val context: Context) {
      * Set echo cancellation enabled.
      */
     suspend fun setEnableEchoCancellation(enabled: Boolean) {
-        context.dataStore.edit { prefs ->
+        dataStore.edit { prefs ->
             prefs[PreferenceKeys.ENABLE_ECHO_CANCELLATION] = enabled.toString()
         }
     }
@@ -397,7 +397,7 @@ class ProviderConfig(private val context: Context) {
      * Set noise suppression enabled.
      */
     suspend fun setEnableNoiseSuppression(enabled: Boolean) {
-        context.dataStore.edit { prefs ->
+        dataStore.edit { prefs ->
             prefs[PreferenceKeys.ENABLE_NOISE_SUPPRESSION] = enabled.toString()
         }
     }
@@ -408,7 +408,7 @@ class ProviderConfig(private val context: Context) {
      * Set VAD detection threshold.
      */
     suspend fun setVadThreshold(threshold: Float) {
-        context.dataStore.edit { prefs ->
+        dataStore.edit { prefs ->
             prefs[PreferenceKeys.VAD_THRESHOLD] = threshold.toString()
         }
     }
@@ -417,7 +417,7 @@ class ProviderConfig(private val context: Context) {
      * Set barge-in threshold.
      */
     suspend fun setBargeInThreshold(threshold: Float) {
-        context.dataStore.edit { prefs ->
+        dataStore.edit { prefs ->
             prefs[PreferenceKeys.BARGE_IN_THRESHOLD] = threshold.toString()
         }
     }
@@ -426,7 +426,7 @@ class ProviderConfig(private val context: Context) {
      * Set barge-in enabled.
      */
     suspend fun setEnableBargeIn(enabled: Boolean) {
-        context.dataStore.edit { prefs ->
+        dataStore.edit { prefs ->
             prefs[PreferenceKeys.ENABLE_BARGE_IN] = enabled.toString()
         }
     }
@@ -435,7 +435,7 @@ class ProviderConfig(private val context: Context) {
      * Set silence threshold in milliseconds.
      */
     suspend fun setSilenceThresholdMs(thresholdMs: Int) {
-        context.dataStore.edit { prefs ->
+        dataStore.edit { prefs ->
             prefs[PreferenceKeys.SILENCE_THRESHOLD_MS] = thresholdMs.toString()
         }
     }
@@ -446,7 +446,7 @@ class ProviderConfig(private val context: Context) {
      * Set LLM temperature.
      */
     suspend fun setLlmTemperature(temperature: Float) {
-        context.dataStore.edit { prefs ->
+        dataStore.edit { prefs ->
             prefs[PreferenceKeys.LLM_TEMPERATURE] = temperature.toString()
         }
     }
@@ -455,7 +455,7 @@ class ProviderConfig(private val context: Context) {
      * Set LLM max tokens.
      */
     suspend fun setLlmMaxTokens(maxTokens: Int) {
-        context.dataStore.edit { prefs ->
+        dataStore.edit { prefs ->
             prefs[PreferenceKeys.LLM_MAX_TOKENS] = maxTokens.toString()
         }
     }
@@ -466,7 +466,7 @@ class ProviderConfig(private val context: Context) {
      * Set TTS speaking rate.
      */
     suspend fun setTtsSpeakingRate(rate: Float) {
-        context.dataStore.edit { prefs ->
+        dataStore.edit { prefs ->
             prefs[PreferenceKeys.TTS_SPEAKING_RATE] = rate.toString()
         }
     }
@@ -475,7 +475,7 @@ class ProviderConfig(private val context: Context) {
      * Set TTS playback speed.
      */
     suspend fun setTtsPlaybackSpeed(speed: Float) {
-        context.dataStore.edit { prefs ->
+        dataStore.edit { prefs ->
             prefs[PreferenceKeys.TTS_PLAYBACK_SPEED] = speed.toString()
         }
     }
@@ -486,7 +486,7 @@ class ProviderConfig(private val context: Context) {
      * Set auto-continue topics enabled.
      */
     suspend fun setAutoContinueTopics(enabled: Boolean) {
-        context.dataStore.edit { prefs ->
+        dataStore.edit { prefs ->
             prefs[PreferenceKeys.AUTO_CONTINUE_TOPICS] = enabled.toString()
         }
     }
@@ -502,7 +502,7 @@ class ProviderConfig(private val context: Context) {
             .putString(PreferenceKeys.SELECTED_LLM_PROVIDER.name, preset.llmProvider)
             .apply()
         // Also write to DataStore for reactive updates
-        context.dataStore.edit { prefs ->
+        dataStore.edit { prefs ->
             prefs[PreferenceKeys.CONFIGURATION_PRESET] = preset.name
             prefs[PreferenceKeys.SELECTED_STT_PROVIDER] = preset.sttProvider
             prefs[PreferenceKeys.SELECTED_TTS_PROVIDER] = preset.ttsProvider

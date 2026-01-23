@@ -770,6 +770,36 @@ target_link_libraries(audio_engine
 
 ## Dependency Injection
 
+### DataStore Singleton Pattern
+
+To prevent "multiple DataStores active for same file" errors (especially in instrumented tests), DataStore instances are provided as singletons through Hilt:
+
+```kotlin
+// ProviderDataStore.kt - Singleton holder
+object ProviderDataStore {
+    private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
+        name = "provider_config",
+    )
+
+    fun getInstance(context: Context): DataStore<Preferences> = context.dataStore
+}
+
+// ProviderModule.kt - Hilt provider
+@Provides
+@Singleton
+fun provideProviderDataStore(@ApplicationContext context: Context): DataStore<Preferences> {
+    return ProviderDataStore.getInstance(context)
+}
+
+// ProviderConfig.kt - Constructor injection
+class ProviderConfig(
+    private val context: Context,
+    private val dataStore: DataStore<Preferences> = ProviderDataStore.getInstance(context),
+)
+```
+
+This pattern ensures only one DataStore instance exists per file, even when multiple components request it.
+
 ### Hilt Modules
 
 ```kotlin

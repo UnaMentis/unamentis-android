@@ -2,11 +2,15 @@ package com.unamentis.ui.curriculum
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.unamentis.MainActivity
+import com.unamentis.R
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import org.junit.Before
@@ -29,50 +33,76 @@ class CurriculumScreenTest {
     @get:Rule(order = 1)
     val composeTestRule = createAndroidComposeRule<MainActivity>()
 
+    companion object {
+        private const val DEFAULT_TIMEOUT = 10_000L
+    }
+
     @Before
     fun setup() {
         hiltRule.inject()
     }
 
-    @Test
-    fun curriculumScreen_navigateToCurriculumTab_displaysScreen() {
-        // Navigate to Curriculum tab
-        composeTestRule.onNodeWithText("Curriculum").performClick()
-
-        // Verify the screen title is displayed
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
-            composeTestRule.onAllNodesWithText("Curriculum")
+    /**
+     * Navigate to Curriculum tab using testTag.
+     */
+    private fun navigateToCurriculum() {
+        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+            composeTestRule.onAllNodesWithTag("nav_curriculum")
                 .fetchSemanticsNodes().isNotEmpty()
         }
+        composeTestRule.onNodeWithTag("nav_curriculum").performClick()
+    }
+
+    @Test
+    fun curriculumScreen_navigateToCurriculumTab_displaysScreen() {
+        navigateToCurriculum()
+
+        val serverCurriculumText =
+            composeTestRule.activity.getString(R.string.curriculum_server)
+
+        // Verify the screen is displayed
+        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+            composeTestRule.onAllNodesWithText(serverCurriculumText)
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+
+        // Assert the node is actually visible
+        composeTestRule.onAllNodesWithText(serverCurriculumText)
+            .onFirst()
+            .assertIsDisplayed()
     }
 
     @Test
     fun curriculumScreen_displaysServerSection() {
-        // Navigate to Curriculum tab
-        composeTestRule.onNodeWithText("Curriculum").performClick()
+        navigateToCurriculum()
+
+        val serverCurriculumText =
+            composeTestRule.activity.getString(R.string.curriculum_server)
 
         // Wait for screen to load
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
-            composeTestRule.onAllNodesWithText("Server Curriculum")
+        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+            composeTestRule.onAllNodesWithText(serverCurriculumText)
                 .fetchSemanticsNodes().isNotEmpty()
         }
 
         // Verify server section is displayed
-        composeTestRule.onNodeWithText("Server Curriculum").assertIsDisplayed()
+        composeTestRule.onNodeWithText(serverCurriculumText).assertIsDisplayed()
     }
 
     @Test
     fun curriculumScreen_displaysDownloadedSection() {
-        // Navigate to Curriculum tab
-        composeTestRule.onNodeWithText("Curriculum").performClick()
+        navigateToCurriculum()
+
+        val downloadedText =
+            composeTestRule.activity.getString(R.string.curriculum_downloaded)
 
         // Wait for screen to load
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
-            composeTestRule.onAllNodesWithText("Downloaded")
+        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+            composeTestRule.onAllNodesWithText(downloadedText)
                 .fetchSemanticsNodes().isNotEmpty()
         }
 
         // Verify downloaded section is displayed
-        composeTestRule.onNodeWithText("Downloaded").assertIsDisplayed()
+        composeTestRule.onNodeWithText(downloadedText).assertIsDisplayed()
     }
 }

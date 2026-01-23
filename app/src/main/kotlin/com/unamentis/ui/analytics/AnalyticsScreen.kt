@@ -15,13 +15,20 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.unamentis.R
 import com.unamentis.ui.components.IOSCard
 import com.unamentis.ui.theme.Dimensions
+import com.unamentis.ui.util.safeProgress
+import com.unamentis.ui.util.safeProgressRatio
+import java.text.NumberFormat
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 /**
  * Analytics screen - Telemetry dashboard.
@@ -48,10 +55,13 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Analytics") },
+                title = { Text(stringResource(R.string.analytics_title)) },
                 actions = {
                     IconButton(onClick = { showExportDialog = true }) {
-                        Icon(Icons.Default.Download, contentDescription = "Export metrics")
+                        Icon(
+                            Icons.Default.Download,
+                            contentDescription = stringResource(R.string.analytics_export_metrics),
+                        )
                     }
                 },
             )
@@ -61,7 +71,8 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(paddingValues),
+                    .padding(paddingValues)
+                    .testTag("AnalyticsLazyColumn"),
             contentPadding =
                 PaddingValues(
                     horizontal = Dimensions.ScreenHorizontalPadding,
@@ -123,7 +134,7 @@ private fun TimeRangeSelector(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall)) {
         Text(
-            text = "Time Range",
+            text = stringResource(R.string.analytics_time_range),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
         )
@@ -140,10 +151,10 @@ private fun TimeRangeSelector(
                         Text(
                             text =
                                 when (range) {
-                                    TimeRange.LAST_7_DAYS -> "7 Days"
-                                    TimeRange.LAST_30_DAYS -> "30 Days"
-                                    TimeRange.LAST_90_DAYS -> "90 Days"
-                                    TimeRange.ALL_TIME -> "All Time"
+                                    TimeRange.LAST_7_DAYS -> stringResource(R.string.analytics_7_days)
+                                    TimeRange.LAST_30_DAYS -> stringResource(R.string.analytics_30_days)
+                                    TimeRange.LAST_90_DAYS -> stringResource(R.string.analytics_90_days)
+                                    TimeRange.ALL_TIME -> stringResource(R.string.analytics_all_time)
                                 },
                         )
                     },
@@ -160,7 +171,7 @@ private fun TimeRangeSelector(
 private fun QuickStatsSection(stats: QuickStats) {
     Column(verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall)) {
         Text(
-            text = "Overview",
+            text = stringResource(R.string.analytics_overview),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
         )
@@ -170,13 +181,13 @@ private fun QuickStatsSection(stats: QuickStats) {
             horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
         ) {
             StatCard(
-                title = "Sessions",
+                title = stringResource(R.string.analytics_sessions),
                 value = stats.totalSessions.toString(),
                 icon = Icons.Default.PlayArrow,
                 modifier = Modifier.weight(1f),
             )
             StatCard(
-                title = "Turns",
+                title = stringResource(R.string.analytics_turns),
                 value = stats.totalTurns.toString(),
                 icon = Icons.Default.Chat,
                 modifier = Modifier.weight(1f),
@@ -188,14 +199,14 @@ private fun QuickStatsSection(stats: QuickStats) {
             horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
         ) {
             StatCard(
-                title = "Avg Latency",
-                value = "${stats.avgE2ELatency}ms",
+                title = stringResource(R.string.analytics_avg_latency),
+                value = stringResource(R.string.analytics_latency_ms, stats.avgE2ELatency),
                 icon = Icons.Default.Timer,
                 modifier = Modifier.weight(1f),
             )
             StatCard(
-                title = "Total Cost",
-                value = "${'$'}${String.format("%.2f", stats.totalCost)}",
+                title = stringResource(R.string.analytics_total_cost),
+                value = NumberFormat.getCurrencyInstance(Locale.getDefault()).format(stats.totalCost),
                 icon = Icons.Default.AttachMoney,
                 modifier = Modifier.weight(1f),
             )
@@ -254,7 +265,7 @@ private fun LatencyBreakdownCard(breakdown: LatencyBreakdown) {
             verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
         ) {
             Text(
-                text = "Latency Breakdown",
+                text = stringResource(R.string.analytics_latency_breakdown),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
             )
@@ -263,10 +274,10 @@ private fun LatencyBreakdownCard(breakdown: LatencyBreakdown) {
             BarChart(
                 data =
                     listOf(
-                        "STT" to breakdown.avgSTT,
-                        "LLM TTFT" to breakdown.avgLLM_TTFT,
-                        "TTS TTFB" to breakdown.avgTTS_TTFB,
-                        "E2E" to breakdown.avgE2E,
+                        stringResource(R.string.analytics_label_stt) to breakdown.avgSTT,
+                        stringResource(R.string.analytics_label_llm_ttft) to breakdown.avgLLM_TTFT,
+                        stringResource(R.string.analytics_label_tts_ttfb) to breakdown.avgTTS_TTFB,
+                        stringResource(R.string.analytics_label_e2e) to breakdown.avgE2E,
                     ),
                 modifier =
                     Modifier
@@ -288,7 +299,7 @@ private fun CostBreakdownCard(breakdown: CostBreakdown) {
             verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
         ) {
             Text(
-                text = "Cost Breakdown",
+                text = stringResource(R.string.analytics_cost_breakdown),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
             )
@@ -302,18 +313,30 @@ private fun CostBreakdownCard(breakdown: CostBreakdown) {
                 PieChart(
                     data =
                         listOf(
-                            "STT" to breakdown.sttCost,
-                            "TTS" to breakdown.ttsCost,
-                            "LLM" to breakdown.llmCost,
+                            stringResource(R.string.analytics_label_stt) to breakdown.sttCost,
+                            stringResource(R.string.analytics_label_tts) to breakdown.ttsCost,
+                            stringResource(R.string.analytics_label_llm) to breakdown.llmCost,
                         ),
                     modifier = Modifier.size(120.dp),
                 )
 
                 // Legend
                 Column(verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall)) {
-                    CostLegendItem("STT", breakdown.sttCost, MaterialTheme.colorScheme.primary)
-                    CostLegendItem("TTS", breakdown.ttsCost, MaterialTheme.colorScheme.secondary)
-                    CostLegendItem("LLM", breakdown.llmCost, MaterialTheme.colorScheme.tertiary)
+                    CostLegendItem(
+                        stringResource(R.string.analytics_label_stt),
+                        breakdown.sttCost,
+                        MaterialTheme.colorScheme.primary,
+                    )
+                    CostLegendItem(
+                        stringResource(R.string.analytics_label_tts),
+                        breakdown.ttsCost,
+                        MaterialTheme.colorScheme.secondary,
+                    )
+                    CostLegendItem(
+                        stringResource(R.string.analytics_label_llm),
+                        breakdown.llmCost,
+                        MaterialTheme.colorScheme.tertiary,
+                    )
                 }
             }
 
@@ -324,12 +347,12 @@ private fun CostBreakdownCard(breakdown: CostBreakdown) {
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text(
-                    text = "Total Cost",
+                    text = stringResource(R.string.analytics_total_cost),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                 )
                 Text(
-                    text = "${'$'}${String.format("%.2f", breakdown.totalCost)}",
+                    text = NumberFormat.getCurrencyInstance(Locale.getDefault()).format(breakdown.totalCost),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
@@ -358,8 +381,9 @@ private fun CostLegendItem(
                     .size(12.dp)
                     .background(color, RoundedCornerShape(2.dp)),
         )
+        val formattedCost = NumberFormat.getCurrencyInstance(Locale.getDefault()).format(cost)
         Text(
-            text = "$label: ${'$'}${String.format("%.2f", cost)}",
+            text = stringResource(R.string.analytics_cost_legend_format, label, formattedCost),
             style = MaterialTheme.typography.bodySmall,
         )
     }
@@ -376,14 +400,14 @@ private fun ProviderBreakdownCard(providers: List<ProviderCostItem>) {
             verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
         ) {
             Text(
-                text = "Provider Details",
+                text = stringResource(R.string.analytics_provider_details),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
             )
 
             if (providers.isEmpty()) {
                 Text(
-                    text = "No provider data available",
+                    text = stringResource(R.string.analytics_no_provider_data),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = Dimensions.CardPadding),
@@ -434,15 +458,20 @@ private fun ProviderCostRow(provider: ProviderCostItem) {
                     fontWeight = FontWeight.Medium,
                 )
                 Text(
-                    text = "${provider.requestCount} requests",
+                    text = stringResource(R.string.analytics_requests_count, provider.requestCount),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
 
+        val formattedCost =
+            NumberFormat.getCurrencyInstance(Locale.getDefault()).apply {
+                minimumFractionDigits = 4
+                maximumFractionDigits = 4
+            }.format(provider.totalCost)
         Text(
-            text = "${'$'}${String.format("%.4f", provider.totalCost)}",
+            text = formattedCost,
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary,
@@ -474,14 +503,14 @@ private fun SessionTrendsCard(trends: List<DailyStats>) {
             verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
         ) {
             Text(
-                text = "Session Trends",
+                text = stringResource(R.string.analytics_session_trends),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
             )
 
             if (trends.isEmpty()) {
                 Text(
-                    text = "No data available",
+                    text = stringResource(R.string.analytics_no_data),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = Dimensions.SpacingXXLarge),
@@ -530,12 +559,12 @@ private fun BarChart(
                 )
 
                 LinearProgressIndicator(
-                    progress = { (value / maxValue).coerceIn(0f, 1f) },
+                    progress = { safeProgressRatio(value, maxValue) },
                     modifier = Modifier.weight(1f),
                 )
 
                 Text(
-                    text = "${value}ms",
+                    text = stringResource(R.string.analytics_latency_ms, value),
                     style = MaterialTheme.typography.labelSmall,
                     modifier = Modifier.width(50.dp),
                 )
@@ -565,8 +594,13 @@ private fun PieChart(
         val center = Offset(size.width / 2, size.height / 2)
         var startAngle = -90f
 
+        // Skip drawing if total is zero or invalid to avoid NaN
+        if (total <= 0f || total.isNaN() || total.isInfinite()) {
+            return@Canvas
+        }
+
         data.forEachIndexed { index, (_, value) ->
-            val sweepAngle = (value.toFloat() / total) * 360f
+            val sweepAngle = safeProgress(value.toFloat() / total) * 360f
             drawArc(
                 color = colors[index % colors.size],
                 startAngle = startAngle,
@@ -596,7 +630,8 @@ private fun LineChart(
     @Suppress("unused") labels: List<String>,
     modifier: Modifier = Modifier,
 ) {
-    val maxValue = data.maxOrNull() ?: 1f
+    // Use a safe max value to prevent division by zero
+    val maxValue = (data.maxOrNull() ?: 1f).let { if (it <= 0f) 1f else it }
 
     Canvas(modifier = modifier) {
         if (data.isEmpty()) return@Canvas
@@ -608,9 +643,9 @@ private fun LineChart(
         // Draw line
         for (i in 0 until data.size - 1) {
             val x1 = i * spacing
-            val y1 = height - (data[i] / maxValue) * height
+            val y1 = height - safeProgressRatio(data[i], maxValue) * height
             val x2 = (i + 1) * spacing
-            val y2 = height - (data[i + 1] / maxValue) * height
+            val y2 = height - safeProgressRatio(data[i + 1], maxValue) * height
 
             drawLine(
                 color = androidx.compose.ui.graphics.Color.Blue,
@@ -624,7 +659,7 @@ private fun LineChart(
         // Draw points
         data.forEachIndexed { index, value ->
             val x = index * spacing
-            val y = height - (value / maxValue) * height
+            val y = height - safeProgressRatio(value, maxValue) * height
             drawCircle(
                 color = androidx.compose.ui.graphics.Color.Blue,
                 radius = 6f,
@@ -644,11 +679,11 @@ private fun ExportDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Export Metrics") },
+        title = { Text(stringResource(R.string.analytics_export_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall)) {
                 Text(
-                    text = "Metrics in JSON format:",
+                    text = stringResource(R.string.analytics_json_format),
                     style = MaterialTheme.typography.bodySmall,
                 )
                 Surface(
@@ -666,7 +701,7 @@ private fun ExportDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Close")
+                Text(stringResource(R.string.analytics_close))
             }
         },
     )

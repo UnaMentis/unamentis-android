@@ -2,7 +2,11 @@ package com.unamentis.ui.session
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -29,27 +33,58 @@ class SessionScreenTest {
     @get:Rule(order = 1)
     val composeTestRule = createAndroidComposeRule<MainActivity>()
 
+    companion object {
+        private const val DEFAULT_TIMEOUT = 10_000L
+    }
+
     @Before
     fun setup() {
         hiltRule.inject()
     }
 
+    /**
+     * Navigate to Settings via the More menu.
+     */
+    private fun navigateToSettings() {
+        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+            composeTestRule.onAllNodesWithTag("nav_more")
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+        composeTestRule.onNodeWithTag("nav_more").performClick()
+        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+            composeTestRule.onAllNodesWithTag("menu_settings")
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+        composeTestRule.onNodeWithTag("menu_settings").performClick()
+    }
+
+    /**
+     * Navigate to Session tab.
+     */
+    private fun navigateToSession() {
+        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+            composeTestRule.onAllNodesWithTag("nav_session")
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+        composeTestRule.onNodeWithTag("nav_session").performClick()
+    }
+
     @Test
     fun sessionScreen_initialState_displaysScreen() {
         // Session tab should be the default tab
-        // Verify the screen title is displayed
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
-            composeTestRule.onAllNodesWithText("Session")
+        // Verify the session tab is displayed using content description
+        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+            composeTestRule.onAllNodesWithContentDescription("Session tab")
                 .fetchSemanticsNodes().isNotEmpty()
         }
 
-        composeTestRule.onNodeWithText("Session").assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("Session tab").assertIsDisplayed()
     }
 
     @Test
     fun sessionScreen_displaysStartButton() {
         // Wait for screen to load
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithText("Start Session")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -61,7 +96,7 @@ class SessionScreenTest {
     @Test
     fun sessionScreen_displaysEmptyState() {
         // Wait for screen to load
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithText("Start a session to begin")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -72,32 +107,32 @@ class SessionScreenTest {
 
     @Test
     fun sessionScreen_displaysStateIndicator() {
-        // Wait for screen to load
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
-            composeTestRule.onAllNodesWithText("IDLE")
+        // Wait for screen to load - production shows "Ready" for IDLE state
+        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+            composeTestRule.onAllNodesWithText("Ready")
                 .fetchSemanticsNodes().isNotEmpty()
         }
 
         // Verify state indicator is displayed
-        composeTestRule.onNodeWithText("IDLE").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Ready").assertIsDisplayed()
     }
 
     @Test
     fun sessionScreen_navigateToOtherTabAndBack_preservesState() {
-        // Navigate to Settings tab
-        composeTestRule.onNodeWithText("Settings").performClick()
+        // Navigate to Settings tab via More menu
+        navigateToSettings()
 
-        // Wait for Settings screen to load
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
-            composeTestRule.onAllNodesWithText("Settings")
-                .fetchSemanticsNodes().size > 1
+        // Wait for Settings screen to load using testTag (more reliable)
+        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+            composeTestRule.onAllNodesWithTag("settings_providers_header")
+                .fetchSemanticsNodes().isNotEmpty()
         }
 
         // Navigate back to Session tab
-        composeTestRule.onNodeWithText("Session").performClick()
+        navigateToSession()
 
         // Verify Session screen is displayed
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithText("Start Session")
                 .fetchSemanticsNodes().isNotEmpty()
         }

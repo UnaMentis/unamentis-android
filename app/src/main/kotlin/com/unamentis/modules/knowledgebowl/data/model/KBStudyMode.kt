@@ -4,6 +4,26 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
+ * Feature flags that may restrict certain study modes.
+ *
+ * Modules can declare which features they support, and study modes
+ * that require unavailable features will be filtered from the UI.
+ */
+enum class KBRequiredFeature {
+    /** Always available - no special feature required. */
+    NONE,
+
+    /** Requires the module to support team mode. */
+    TEAM_MODE,
+
+    /** Requires the module to support speed training. */
+    SPEED_TRAINING,
+
+    /** Requires the module to support competition simulation. */
+    COMPETITION_SIM,
+}
+
+/**
  * Study modes for Knowledge Bowl practice sessions.
  *
  * Each mode has different question counts and focuses.
@@ -103,5 +123,34 @@ enum class KBStudyMode {
             when (this) {
                 SPEED -> 300 // 5 minutes
                 else -> null
+            }
+
+    /**
+     * Feature flag required for this mode to be available.
+     *
+     * Modes with [KBRequiredFeature.NONE] are always available.
+     * Other modes may be restricted based on module capabilities.
+     */
+    val requiredFeature: KBRequiredFeature
+        get() =
+            when (this) {
+                DIAGNOSTIC, TARGETED, BREADTH -> KBRequiredFeature.NONE
+                SPEED -> KBRequiredFeature.SPEED_TRAINING
+                COMPETITION -> KBRequiredFeature.COMPETITION_SIM
+                TEAM -> KBRequiredFeature.TEAM_MODE
+            }
+
+    /**
+     * SF Symbol / Material icon name for this mode.
+     */
+    val iconName: String
+        get() =
+            when (this) {
+                DIAGNOSTIC -> "chart_pie"
+                TARGETED -> "scope"
+                BREADTH -> "grid_3x3"
+                SPEED -> "bolt"
+                COMPETITION -> "trophy"
+                TEAM -> "groups"
             }
 }
