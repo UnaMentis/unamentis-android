@@ -1,13 +1,15 @@
 package com.unamentis.ui.history
 
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.unamentis.MainActivity
+import com.unamentis.R
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import org.junit.Before
@@ -55,10 +57,31 @@ class HistoryScreenTest {
     fun historyScreen_navigateToHistoryTab_displaysScreen() {
         navigateToHistory()
 
-        // Verify the history tab is displayed
+        val historyTitle = composeTestRule.activity.getString(R.string.tab_history)
+        val noSessionsText = composeTestRule.activity.getString(R.string.history_no_sessions)
+
+        // Wait for the History screen to load - check for either the title or empty state
+        // These are History screen-specific elements, not just the navigation tab
         composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
-            composeTestRule.onAllNodesWithContentDescription("History tab")
-                .fetchSemanticsNodes().isNotEmpty()
+            val hasHistoryTitle =
+                composeTestRule.onAllNodesWithText(historyTitle)
+                    .fetchSemanticsNodes().isNotEmpty()
+            val hasEmptyState =
+                composeTestRule.onAllNodesWithText(noSessionsText)
+                    .fetchSemanticsNodes().isNotEmpty()
+            hasHistoryTitle || hasEmptyState
+        }
+
+        // Assert one of the History screen elements is visible
+        try {
+            composeTestRule.onAllNodesWithText(noSessionsText)
+                .onFirst()
+                .assertIsDisplayed()
+        } catch (_: AssertionError) {
+            // If empty state not found, check for the History title instead
+            composeTestRule.onAllNodesWithText(historyTitle)
+                .onFirst()
+                .assertIsDisplayed()
         }
     }
 
@@ -66,15 +89,18 @@ class HistoryScreenTest {
     fun historyScreen_displaysEmptyStateOrSessions() {
         navigateToHistory()
 
+        val noSessionsText = composeTestRule.activity.getString(R.string.history_no_sessions)
+
         // Wait for screen to load - should either show sessions or empty state
         composeTestRule.waitUntil(LONG_TIMEOUT) {
-            val hasHistory =
-                composeTestRule.onAllNodesWithContentDescription("History tab")
-                    .fetchSemanticsNodes().isNotEmpty()
             val hasEmptyState =
-                composeTestRule.onAllNodesWithText("No sessions yet")
+                composeTestRule.onAllNodesWithText(noSessionsText)
                     .fetchSemanticsNodes().isNotEmpty()
-            hasHistory || hasEmptyState
+            // Check for session cards (they would have content like "Free Session" or turns count)
+            val hasSessionContent =
+                composeTestRule.onAllNodesWithText("turns")
+                    .fetchSemanticsNodes().isNotEmpty()
+            hasEmptyState || hasSessionContent
         }
     }
 }

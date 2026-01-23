@@ -72,6 +72,7 @@ import com.unamentis.core.device.DeviceCapabilityDetector
 import com.unamentis.services.llm.ModelDownloadManager
 import com.unamentis.ui.components.IOSCard
 import com.unamentis.ui.theme.Dimensions
+import com.unamentis.ui.util.safeProgress
 
 /**
  * Settings sections that can be navigated to via deep link.
@@ -189,7 +190,10 @@ fun SettingsScreen(
                 Text(
                     text = "Providers",
                     style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(top = 8.dp),
+                    modifier =
+                        Modifier
+                            .padding(top = 8.dp)
+                            .testTag("settings_providers_header"),
                 )
             }
 
@@ -269,7 +273,10 @@ fun SettingsScreen(
                 Text(
                     text = "Voice Detection",
                     style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(top = 16.dp),
+                    modifier =
+                        Modifier
+                            .padding(top = 16.dp)
+                            .testTag("settings_voice_detection_header"),
                 )
             }
 
@@ -309,7 +316,10 @@ fun SettingsScreen(
                 Text(
                     text = stringResource(R.string.settings_on_device_ai),
                     style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(top = 16.dp),
+                    modifier =
+                        Modifier
+                            .padding(top = 16.dp)
+                            .testTag("settings_on_device_ai_header"),
                 )
             }
 
@@ -1486,7 +1496,7 @@ private fun DownloadStateIndicator(
                     }
                     val progressPercent = (downloadState.progress * 100).toInt()
                     LinearProgressIndicator(
-                        progress = { downloadState.progress },
+                        progress = { safeProgress(downloadState.progress) },
                         modifier =
                             Modifier
                                 .fillMaxWidth()

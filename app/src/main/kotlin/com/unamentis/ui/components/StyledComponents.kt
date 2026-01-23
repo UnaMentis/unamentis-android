@@ -27,6 +27,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.unamentis.ui.theme.Dimensions
+import com.unamentis.ui.util.safeProgress
 
 /**
  * iOS-styled card component.
@@ -205,7 +206,7 @@ fun IOSProgressBar(
     trackColor: Color = MaterialTheme.colorScheme.surfaceVariant,
 ) {
     LinearProgressIndicator(
-        progress = { progress.coerceIn(0f, 1f) },
+        progress = { safeProgress(progress) },
         modifier =
             modifier
                 .height(Dimensions.ProgressBarHeight)

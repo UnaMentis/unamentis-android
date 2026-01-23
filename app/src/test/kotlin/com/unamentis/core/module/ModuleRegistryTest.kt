@@ -3,14 +3,17 @@ package com.unamentis.core.module
 import androidx.compose.runtime.Composable
 import com.unamentis.data.local.dao.ModuleDao
 import com.unamentis.data.local.entity.DownloadedModuleEntity
+import io.mockk.clearAllMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
+import io.mockk.unmockkAll
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -38,6 +41,14 @@ class ModuleRegistryTest {
         every { moduleDao.getAllModules() } returns flowOf(emptyList())
 
         registry = ModuleRegistry(moduleDao, json)
+    }
+
+    @After
+    fun tearDown() {
+        // Clear all mocks to prevent coroutines from previous tests
+        // from interfering with subsequent tests
+        clearAllMocks()
+        unmockkAll()
     }
 
     @Test

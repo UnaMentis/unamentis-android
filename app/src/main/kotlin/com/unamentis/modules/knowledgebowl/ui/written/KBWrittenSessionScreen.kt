@@ -62,6 +62,7 @@ import com.unamentis.modules.knowledgebowl.ui.theme.KBColors
 import com.unamentis.modules.knowledgebowl.ui.theme.KBTheme
 import com.unamentis.modules.knowledgebowl.ui.theme.KBTimerState
 import com.unamentis.modules.knowledgebowl.ui.theme.color
+import com.unamentis.ui.util.safeProgress
 import java.util.Locale
 
 /**
@@ -194,7 +195,7 @@ private fun SessionHeader(
 
         // Progress bar
         LinearProgressIndicator(
-            progress = { progress },
+            progress = { safeProgress(progress) },
             modifier =
                 Modifier
                     .fillMaxWidth()

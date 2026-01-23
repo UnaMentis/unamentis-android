@@ -1,5 +1,6 @@
 package com.unamentis.ui
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -29,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -41,6 +43,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
+import com.unamentis.R
 import com.unamentis.core.network.ConnectivityMonitor
 import com.unamentis.navigation.DeepLinkDestination
 import com.unamentis.navigation.DeepLinkRoutes
@@ -57,19 +60,27 @@ import kotlinx.coroutines.flow.asSharedFlow
 
 /**
  * Navigation destinations for the main bottom navigation.
+ *
+ * @property route The navigation route string
+ * @property titleResId String resource ID for the tab title
+ * @property icon The icon to display in the navigation bar
  */
-sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
-    data object Session : Screen("session", "Session", Icons.Default.Mic)
+sealed class Screen(
+    val route: String,
+    @StringRes val titleResId: Int,
+    val icon: ImageVector,
+) {
+    data object Session : Screen("session", R.string.tab_session, Icons.Default.Mic)
 
-    data object Curriculum : Screen("curriculum", "Curriculum", Icons.Default.Book)
+    data object Curriculum : Screen("curriculum", R.string.tab_curriculum, Icons.Default.Book)
 
-    data object Todo : Screen("todo", "To-Do", Icons.Default.Checklist)
+    data object Todo : Screen("todo", R.string.tab_todo, Icons.Default.Checklist)
 
-    data object History : Screen("history", "History", Icons.Default.History)
+    data object History : Screen("history", R.string.tab_history, Icons.Default.History)
 
-    data object Analytics : Screen("analytics", "Analytics", Icons.Default.Analytics)
+    data object Analytics : Screen("analytics", R.string.tab_analytics, Icons.Default.Analytics)
 
-    data object Settings : Screen("settings", "Settings", Icons.Default.Settings)
+    data object Settings : Screen("settings", R.string.tab_settings, Icons.Default.Settings)
 }
 
 /**
@@ -365,14 +376,16 @@ private fun UnaMentisBottomBar(
                 currentDestination?.hierarchy?.any {
                     it.route?.startsWith(screen.route) == true
                 } == true
+            val title = stringResource(screen.titleResId)
+            val tabContentDescription = stringResource(R.string.nav_tab_content_description, title)
 
             NavigationBarItem(
                 modifier =
                     Modifier
                         .testTag("nav_${screen.route}")
-                        .semantics { contentDescription = "${screen.title} tab" },
+                        .semantics { contentDescription = tabContentDescription },
                 icon = { Icon(screen.icon, contentDescription = null) },
-                label = { Text(screen.title) },
+                label = { Text(title) },
                 selected = isSelected,
                 onClick = {
                     if (isSelected) {
@@ -393,18 +406,20 @@ private fun UnaMentisBottomBar(
         }
 
         // More menu item
+        val moreLabel = stringResource(R.string.nav_more_label)
+        val moreContentDescription = stringResource(R.string.nav_tab_content_description, moreLabel)
         NavigationBarItem(
             modifier =
                 Modifier
                     .testTag("nav_more")
-                    .semantics { contentDescription = "More tab" },
+                    .semantics { contentDescription = moreContentDescription },
             icon = {
                 Icon(
                     Icons.Default.MoreHoriz,
                     contentDescription = null,
                 )
             },
-            label = { Text("More") },
+            label = { Text(moreLabel) },
             selected = isMoreItemSelected,
             onClick = { showMoreMenu = true },
         )
@@ -415,12 +430,15 @@ private fun UnaMentisBottomBar(
             onDismissRequest = { showMoreMenu = false },
         ) {
             moreItems.forEach { screen ->
+                val menuTitle = stringResource(screen.titleResId)
+                val menuContentDescription =
+                    stringResource(R.string.nav_tab_content_description, menuTitle)
                 DropdownMenuItem(
                     modifier =
                         Modifier
                             .testTag("menu_${screen.route}")
-                            .semantics { contentDescription = "${screen.title} tab" },
-                    text = { Text(screen.title) },
+                            .semantics { contentDescription = menuContentDescription },
+                    text = { Text(menuTitle) },
                     onClick = {
                         showMoreMenu = false
                         navController.navigate(screen.route) {

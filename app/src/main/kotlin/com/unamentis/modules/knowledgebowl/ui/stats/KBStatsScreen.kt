@@ -55,6 +55,7 @@ import com.unamentis.modules.knowledgebowl.core.stats.KBStatsManager
 import com.unamentis.modules.knowledgebowl.data.model.KBDomain
 import com.unamentis.modules.knowledgebowl.ui.theme.KBTheme
 import com.unamentis.modules.knowledgebowl.ui.theme.color
+import com.unamentis.ui.util.safeProgress
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -267,6 +268,7 @@ private fun StatItem(
 @Suppress("MagicNumber")
 @Composable
 private fun CompetitionReadinessCard(readiness: Float) {
+    val safeReadiness = safeProgress(readiness)
     Card(
         colors =
             CardDefaults.cardColors(
@@ -298,12 +300,12 @@ private fun CompetitionReadinessCard(readiness: Float) {
                 )
 
                 CircularProgressIndicator(
-                    progress = { readiness },
+                    progress = { safeReadiness },
                     modifier = Modifier.size(100.dp),
                     color =
                         when {
-                            readiness >= 0.8f -> KBTheme.mastered()
-                            readiness >= 0.5f -> KBTheme.intermediate()
+                            safeReadiness >= 0.8f -> KBTheme.mastered()
+                            safeReadiness >= 0.5f -> KBTheme.intermediate()
                             else -> KBTheme.beginner()
                         },
                     strokeWidth = 10.dp,
@@ -311,7 +313,7 @@ private fun CompetitionReadinessCard(readiness: Float) {
                 )
 
                 Text(
-                    text = String.format("%.0f%%", readiness * 100),
+                    text = String.format("%.0f%%", safeReadiness * 100),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     color = KBTheme.textPrimary(),
@@ -323,9 +325,9 @@ private fun CompetitionReadinessCard(readiness: Float) {
             Text(
                 text =
                     when {
-                        readiness >= 0.8f -> stringResource(R.string.kb_readiness_excellent)
-                        readiness >= 0.6f -> stringResource(R.string.kb_readiness_good)
-                        readiness >= 0.4f -> stringResource(R.string.kb_readiness_developing)
+                        safeReadiness >= 0.8f -> stringResource(R.string.kb_readiness_excellent)
+                        safeReadiness >= 0.6f -> stringResource(R.string.kb_readiness_good)
+                        safeReadiness >= 0.4f -> stringResource(R.string.kb_readiness_developing)
                         else -> stringResource(R.string.kb_readiness_keep_practicing)
                     },
                 style = MaterialTheme.typography.bodyMedium,
@@ -373,6 +375,7 @@ private fun DomainMasteryRow(
     mastery: Float,
     questionsAnswered: Int,
 ) {
+    val safeMastery = safeProgress(mastery)
     Column {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -403,7 +406,7 @@ private fun DomainMasteryRow(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = String.format("%.0f%%", mastery * 100),
+                    text = String.format("%.0f%%", safeMastery * 100),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
                     color = KBTheme.textPrimary(),
@@ -414,7 +417,7 @@ private fun DomainMasteryRow(
         Spacer(modifier = Modifier.height(4.dp))
 
         LinearProgressIndicator(
-            progress = { mastery },
+            progress = { safeMastery },
             modifier =
                 Modifier
                     .fillMaxWidth()

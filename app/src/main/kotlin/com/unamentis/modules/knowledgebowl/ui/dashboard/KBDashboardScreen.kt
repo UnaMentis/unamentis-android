@@ -58,6 +58,7 @@ import com.unamentis.modules.knowledgebowl.data.model.KBRegion
 import com.unamentis.modules.knowledgebowl.data.model.KBStudyMode
 import com.unamentis.modules.knowledgebowl.ui.theme.KBTheme
 import com.unamentis.modules.knowledgebowl.ui.theme.color
+import com.unamentis.ui.util.safeProgress
 
 /**
  * Knowledge Bowl Dashboard - Entry point for the KB module.
@@ -86,12 +87,12 @@ fun KBDashboardScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Knowledge Bowl") },
+                title = { Text(stringResource(R.string.kb_knowledge_bowl)) },
                 actions = {
                     IconButton(onClick = onNavigateToSettings) {
                         Icon(
                             imageVector = Icons.Default.Settings,
-                            contentDescription = "Settings",
+                            contentDescription = stringResource(R.string.kb_settings),
                         )
                     }
                 },
@@ -184,6 +185,7 @@ private fun HeroSection(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             // Circular progress indicator
+            val safeReadiness = safeProgress(readiness)
             Box(contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(
                     progress = { 1f },
@@ -192,14 +194,14 @@ private fun HeroSection(
                     color = KBTheme.mathematics().copy(alpha = 0.2f),
                 )
                 CircularProgressIndicator(
-                    progress = { readiness },
+                    progress = { safeReadiness },
                     modifier = Modifier.size(100.dp),
                     strokeWidth = 12.dp,
                     color = KBTheme.mathematics(),
                 )
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = "${(readiness * 100).toInt()}%",
+                        text = "${(safeReadiness * 100).toInt()}%",
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         color = KBTheme.textPrimary(),
@@ -332,7 +334,7 @@ private fun StatsSection(
             ) {
                 StatBadge(
                     value = "$totalQuestionsAnswered",
-                    label = "Questions",
+                    label = stringResource(R.string.kb_questions),
                 )
                 StatBadge(
                     value =
@@ -341,7 +343,7 @@ private fun StatsSection(
                         } else {
                             "--"
                         },
-                    label = "Avg Speed",
+                    label = stringResource(R.string.kb_avg_speed),
                 )
                 StatBadge(
                     value =
@@ -350,7 +352,7 @@ private fun StatsSection(
                         } else {
                             "--%"
                         },
-                    label = "Accuracy",
+                    label = stringResource(R.string.kb_accuracy),
                 )
             }
         }
@@ -476,8 +478,8 @@ private fun QuickStartSection(
             QuickStartButton(
                 modifier = Modifier.weight(1f),
                 icon = Icons.Default.Edit,
-                title = "Written",
-                subtitle = "MCQ Practice",
+                title = stringResource(R.string.kb_written_practice),
+                subtitle = stringResource(R.string.kb_mcq_practice),
                 accentColor = KBTheme.intermediate(),
                 enabled = enabled,
                 onClick = onWrittenClick,
@@ -486,8 +488,8 @@ private fun QuickStartSection(
             QuickStartButton(
                 modifier = Modifier.weight(1f),
                 icon = Icons.Default.Mic,
-                title = "Oral",
-                subtitle = "Voice Q&A",
+                title = stringResource(R.string.kb_oral_practice),
+                subtitle = stringResource(R.string.kb_voice_qa),
                 accentColor = KBTheme.mastered(),
                 enabled = enabled,
                 onClick = onOralClick,
@@ -510,6 +512,7 @@ private fun QuickStartButton(
         modifier =
             modifier
                 .clip(RoundedCornerShape(12.dp))
+                .semantics { contentDescription = "$title, $subtitle" }
                 .clickable(enabled = enabled, onClick = onClick)
                 .border(
                     width = 2.dp,

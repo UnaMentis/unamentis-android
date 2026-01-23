@@ -107,14 +107,14 @@ class SessionScreenTest {
 
     @Test
     fun sessionScreen_displaysStateIndicator() {
-        // Wait for screen to load
+        // Wait for screen to load - production shows "Ready" for IDLE state
         composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
-            composeTestRule.onAllNodesWithText("IDLE")
+            composeTestRule.onAllNodesWithText("Ready")
                 .fetchSemanticsNodes().isNotEmpty()
         }
 
         // Verify state indicator is displayed
-        composeTestRule.onNodeWithText("IDLE").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Ready").assertIsDisplayed()
     }
 
     @Test
@@ -122,9 +122,9 @@ class SessionScreenTest {
         // Navigate to Settings tab via More menu
         navigateToSettings()
 
-        // Wait for Settings screen to load
+        // Wait for Settings screen to load using testTag (more reliable)
         composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
-            composeTestRule.onAllNodesWithText("API Providers")
+            composeTestRule.onAllNodesWithTag("settings_providers_header")
                 .fetchSemanticsNodes().isNotEmpty()
         }
 

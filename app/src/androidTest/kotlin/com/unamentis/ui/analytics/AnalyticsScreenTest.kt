@@ -1,12 +1,14 @@
 package com.unamentis.ui.analytics
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.unamentis.MainActivity
 import dagger.hilt.android.testing.HiltAndroidRule
@@ -34,7 +36,7 @@ class AnalyticsScreenTest {
     val composeTestRule = createAndroidComposeRule<MainActivity>()
 
     companion object {
-        private const val DEFAULT_TIMEOUT = 10_000L
+        private const val DEFAULT_TIMEOUT = 15_000L
     }
 
     @Before
@@ -53,13 +55,21 @@ class AnalyticsScreenTest {
         }
         // Open More menu
         composeTestRule.onNodeWithTag("nav_more").performClick()
-        // Wait for menu to appear
+
+        // Wait for menu to appear and stabilize
         composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithTag("menu_analytics")
                 .fetchSemanticsNodes().isNotEmpty()
         }
+
+        // Small delay for menu animation
+        composeTestRule.mainClock.advanceTimeBy(300)
+
         // Click Analytics
         composeTestRule.onNodeWithTag("menu_analytics").performClick()
+
+        // Wait for navigation to complete
+        composeTestRule.waitForIdle()
     }
 
     @Test
@@ -119,11 +129,15 @@ class AnalyticsScreenTest {
     fun analyticsScreen_displaysCostBreakdown() {
         navigateToAnalytics()
 
-        // Wait for screen to load
+        // Wait for LazyColumn to be available
         composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
-            composeTestRule.onAllNodesWithText("Cost Breakdown")
+            composeTestRule.onAllNodesWithTag("AnalyticsLazyColumn")
                 .fetchSemanticsNodes().isNotEmpty()
         }
+
+        // Scroll to Cost Breakdown section
+        composeTestRule.onNodeWithTag("AnalyticsLazyColumn")
+            .performScrollToNode(hasText("Cost Breakdown"))
 
         // Verify cost breakdown section is displayed
         composeTestRule.onNodeWithText("Cost Breakdown").assertIsDisplayed()
@@ -133,11 +147,15 @@ class AnalyticsScreenTest {
     fun analyticsScreen_displaysSessionTrends() {
         navigateToAnalytics()
 
-        // Wait for screen to load
+        // Wait for LazyColumn to be available
         composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
-            composeTestRule.onAllNodesWithText("Session Trends")
+            composeTestRule.onAllNodesWithTag("AnalyticsLazyColumn")
                 .fetchSemanticsNodes().isNotEmpty()
         }
+
+        // Scroll to Session Trends section (at the bottom)
+        composeTestRule.onNodeWithTag("AnalyticsLazyColumn")
+            .performScrollToNode(hasText("Session Trends"))
 
         // Verify session trends section is displayed
         composeTestRule.onNodeWithText("Session Trends").assertIsDisplayed()

@@ -485,6 +485,52 @@ NavHost(navController = navController, startDestination = SessionRoute) {
 }
 ```
 
+### 4.5 Safe Progress Values
+
+Compose progress indicators (`LinearProgressIndicator`, `CircularProgressIndicator`) throw `IllegalArgumentException` when passed `NaN` or `Infinity` values. **Always use the `safeProgress` utilities** from `com.unamentis.ui.util.ProgressUtils`:
+
+```kotlin
+import com.unamentis.ui.util.safeProgress
+import com.unamentis.ui.util.safeProgressRatio
+
+// REQUIRED: Wrap all progress values
+LinearProgressIndicator(
+    progress = { safeProgress(downloadProgress) },  // Handles NaN, Infinity, null
+    modifier = Modifier.fillMaxWidth(),
+)
+
+CircularProgressIndicator(
+    progress = { safeProgress(completionRatio) },
+    modifier = Modifier.size(100.dp),
+)
+
+// For ratios (division that could produce NaN/Infinity):
+val barProgress = safeProgressRatio(currentValue, maxValue)  // Safe division
+
+// INCORRECT: Raw progress values can crash
+LinearProgressIndicator(
+    progress = { currentValue / total },  // BAD: Could be NaN if total is 0
+)
+```
+
+#### Available Utilities
+
+| Function | Use Case |
+|----------|----------|
+| `safeProgress(Float?)` | Sanitize any float progress value |
+| `safeProgress(Double?)` | Sanitize double progress values |
+| `safeProgressRatio(current, total)` | Safe division for progress ratios |
+| `safeProgressInRange(value, min, max)` | Custom range validation |
+
+#### What `safeProgress` Handles
+
+- **null** → returns `0f`
+- **NaN** → returns `0f`
+- **Negative Infinity** → returns `0f`
+- **Positive Infinity** → returns `1f`
+- **Values < 0** → clamped to `0f`
+- **Values > 1** → clamped to `1f`
+
 ---
 
 ## 5. Performance Standards

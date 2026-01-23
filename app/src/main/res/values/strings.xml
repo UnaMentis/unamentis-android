@@ -9,6 +9,8 @@
     <string name="tab_history">History</string>
     <string name="tab_analytics">Analytics</string>
     <string name="tab_settings">Settings</string>
+    <string name="nav_more_label">More</string>
+    <string name="nav_tab_content_description">%s tab</string>
 
     <!-- Session Screen -->
     <string name="session_start">Tap to start session</string>
@@ -24,6 +26,24 @@
     <string name="cd_mute_button">Mute microphone</string>
     <string name="cd_pause_button">Pause session</string>
     <string name="cd_stop_button">Stop session</string>
+    <string name="cd_start_session">Start session</string>
+    <string name="cd_add_todo">Add todo</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_api_providers">API Providers</string>
+    <string name="settings_speech_to_text">Speech-to-Text</string>
+    <string name="settings_text_to_speech">Text-to-Speech</string>
+
+    <!-- Curriculum Screen -->
+    <string name="curriculum_server">Server Curriculum</string>
+    <string name="curriculum_downloaded">Downloaded</string>
+
+    <!-- History Screen -->
+    <string name="history_no_sessions">No sessions yet</string>
+
+    <!-- Todo Dialog -->
+    <string name="todo_title_label">Title</string>
+    <string name="todo_save">Save</string>
 
     <!-- Onboarding Screen -->
     <string name="onboarding_skip">Skip</string>
@@ -108,6 +128,8 @@
     <!-- KB Dashboard -->
     <string name="kb_written_practice">Written Practice</string>
     <string name="kb_oral_practice">Oral Practice</string>
+    <string name="kb_mcq_practice">MCQ Practice</string>
+    <string name="kb_voice_qa">Voice Q&amp;A</string>
     <string name="kb_quick_start">Quick Start</string>
     <string name="kb_select_region">Select Region</string>
     <string name="kb_question_bank">Question Bank</string>
@@ -152,6 +174,7 @@
     <string name="kb_overview">Overview</string>
     <string name="kb_questions_answered">Answered</string>
     <string name="kb_avg_time">Avg Time</string>
+    <string name="kb_avg_speed">Avg Speed</string>
     <string name="kb_competition_readiness">Competition Readiness</string>
     <string name="kb_readiness_excellent">Excellent! Ready for competition.</string>
     <string name="kb_readiness_good">Good progress. Keep practicing!</string>

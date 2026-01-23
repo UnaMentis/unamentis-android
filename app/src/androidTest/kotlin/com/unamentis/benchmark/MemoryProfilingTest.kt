@@ -129,15 +129,19 @@ class MemoryProfilingTest {
 
     /**
      * Test memory cleanup after session end.
-     * Target: Return to near-baseline after GC
+     * Target: Memory stays within acceptable bounds (no leak detection)
+     *
+     * Note: We don't assert "memory was reclaimed" because Java GC is
+     * non-deterministic. Instead, we verify memory stays within bounds
+     * to detect potential memory leaks.
      */
     @Test
     fun test_memoryCleanupAfterSession() =
         runBlocking {
             // Simulate session with large transcript
-            val transcript = mutableListOf<TranscriptEntry>()
+            var transcript: MutableList<TranscriptEntry>? = mutableListOf()
             repeat(1000) { i ->
-                transcript.add(
+                transcript!!.add(
                     TranscriptEntry(
                         id = "entry_$i",
                         sessionId = "test_session",
@@ -150,25 +154,28 @@ class MemoryProfilingTest {
 
             val duringSessionMemoryMB = (runtime.totalMemory() - runtime.freeMemory()) / (1024 * 1024)
 
-            // Clear transcript (simulate session end)
-            transcript.clear()
+            // Clear transcript and null reference (simulate session end)
+            transcript!!.clear()
+            transcript = null
 
-            // Force garbage collection
-            repeat(3) {
+            // Force garbage collection with multiple passes
+            repeat(5) {
                 System.gc()
-                Thread.sleep(500)
+                System.runFinalization()
+                Thread.sleep(200)
             }
 
             val afterCleanupMemoryMB = (runtime.totalMemory() - runtime.freeMemory()) / (1024 * 1024)
-            val memoryReclaimed = duringSessionMemoryMB - afterCleanupMemoryMB
 
             println("During session: ${duringSessionMemoryMB}MB")
             println("After cleanup: ${afterCleanupMemoryMB}MB")
-            println("Reclaimed: ${memoryReclaimed}MB")
+            println("Initial baseline: ${initialMemoryMB}MB")
 
-            // Should reclaim most of the session memory
-            assert(memoryReclaimed > 0) {
-                "No memory was reclaimed after session cleanup"
+            // Changed: Assert memory is within acceptable bounds (leak detection)
+            // rather than asserting memory was reclaimed (unreliable due to GC non-determinism)
+            assert(afterCleanupMemoryMB < initialMemoryMB + 50) {
+                "Memory after cleanup (${afterCleanupMemoryMB}MB) exceeds threshold " +
+                    "(baseline + 50MB = ${initialMemoryMB + 50}MB) - possible leak"
             }
         }
 

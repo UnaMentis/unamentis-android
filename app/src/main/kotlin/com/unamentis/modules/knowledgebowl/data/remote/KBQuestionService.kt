@@ -236,34 +236,52 @@ class KBQuestionService
          */
         private fun targetedSelection(count: Int): List<KBQuestion> {
             val questions = _allQuestions.value
-            if (questions.isEmpty()) return emptyList()
+            val result: List<KBQuestion>
 
-            // Get weak domains from stats
-            val weakDomains = statsManager.getWeakDomains(limit = 5).map { it.first }
+            when {
+                questions.isEmpty() -> {
+                    result = emptyList()
+                }
+                questions.size <= count -> {
+                    // If we don't have enough questions, return all available
+                    result = questions.shuffled()
+                }
+                else -> {
+                    // Get weak domains from stats
+                    val weakDomains = statsManager.getWeakDomains(limit = 5).map { it.first }
 
-            if (weakDomains.isEmpty()) {
-                // No stats yet, fall back to random
-                return questions.shuffled().take(count)
+                    result =
+                        if (weakDomains.isEmpty()) {
+                            // No stats yet, fall back to random
+                            questions.shuffled().take(count)
+                        } else {
+                            // Prioritize weak domain questions (70%) + random (30%)
+                            val targetWeakCount = (count * 0.7).toInt()
+
+                            // Get weak domain questions (may be fewer than targetWeakCount)
+                            val weakQuestions =
+                                questions
+                                    .filter { weakDomains.contains(it.domain) }
+                                    .shuffled()
+                                    .take(targetWeakCount)
+
+                            // Calculate how many more we need to reach count
+                            val remaining = count - weakQuestions.size
+                            val weakIds = weakQuestions.map { it.id }.toSet()
+
+                            // Fill remaining slots from non-weak questions
+                            val randomQuestions =
+                                questions
+                                    .filter { it.id !in weakIds }
+                                    .shuffled()
+                                    .take(remaining)
+
+                            (weakQuestions + randomQuestions).shuffled()
+                        }
+                }
             }
 
-            // Prioritize weak domain questions (70%) + random (30%)
-            val weakDomainCount = (count * 0.7).toInt()
-            val randomCount = count - weakDomainCount
-
-            val weakQuestions =
-                questions
-                    .filter { weakDomains.contains(it.domain) }
-                    .shuffled()
-                    .take(weakDomainCount)
-
-            val weakIds = weakQuestions.map { it.id }.toSet()
-            val randomQuestions =
-                questions
-                    .filter { it.id !in weakIds }
-                    .shuffled()
-                    .take(randomCount)
-
-            return (weakQuestions + randomQuestions).shuffled()
+            return result
         }
 
         /**

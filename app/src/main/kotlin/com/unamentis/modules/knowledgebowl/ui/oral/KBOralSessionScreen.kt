@@ -68,6 +68,7 @@ import com.unamentis.modules.knowledgebowl.data.model.KBQuestion
 import com.unamentis.modules.knowledgebowl.data.model.KBSessionConfig
 import com.unamentis.modules.knowledgebowl.ui.theme.KBTheme
 import com.unamentis.modules.knowledgebowl.ui.theme.color
+import com.unamentis.ui.util.safeProgress
 
 /**
  * Knowledge Bowl oral practice session screen.
@@ -152,7 +153,7 @@ private fun SessionHeader(
     ) {
         // Progress bar
         LinearProgressIndicator(
-            progress = { progress },
+            progress = { safeProgress(progress) },
             modifier =
                 Modifier
                     .fillMaxWidth()
@@ -433,7 +434,7 @@ private fun QuestionReadingScreen(viewModel: KBOralSessionViewModel) {
 
         // TTS progress
         LinearProgressIndicator(
-            progress = { ttsProgress },
+            progress = { safeProgress(ttsProgress) },
             modifier =
                 Modifier
                     .fillMaxWidth()
@@ -485,7 +486,7 @@ private fun ConferenceScreen(viewModel: KBOralSessionViewModel) {
 
             // Progress circle
             CircularProgressIndicator(
-                progress = { conferenceProgress.toFloat() },
+                progress = { safeProgress(conferenceProgress.toFloat()) },
                 modifier = Modifier.size(150.dp),
                 color = timerColor,
                 strokeWidth = 8.dp,
@@ -1046,7 +1047,7 @@ private fun AccuracyMeter(accuracy: Float) {
             )
 
             CircularProgressIndicator(
-                progress = { accuracy },
+                progress = { safeProgress(accuracy) },
                 modifier = Modifier.size(120.dp),
                 color = if (accuracy >= 0.7f) KBTheme.mastered() else KBTheme.beginner(),
                 strokeWidth = 12.dp,

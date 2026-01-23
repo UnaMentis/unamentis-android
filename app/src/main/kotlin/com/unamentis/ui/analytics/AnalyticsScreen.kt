@@ -15,12 +15,15 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.unamentis.ui.components.IOSCard
 import com.unamentis.ui.theme.Dimensions
+import com.unamentis.ui.util.safeProgress
+import com.unamentis.ui.util.safeProgressRatio
 import java.time.format.DateTimeFormatter
 
 /**
@@ -61,7 +64,8 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(paddingValues),
+                    .padding(paddingValues)
+                    .testTag("AnalyticsLazyColumn"),
             contentPadding =
                 PaddingValues(
                     horizontal = Dimensions.ScreenHorizontalPadding,
@@ -530,7 +534,7 @@ private fun BarChart(
                 )
 
                 LinearProgressIndicator(
-                    progress = { (value / maxValue).coerceIn(0f, 1f) },
+                    progress = { safeProgressRatio(value, maxValue) },
                     modifier = Modifier.weight(1f),
                 )
 
@@ -565,8 +569,13 @@ private fun PieChart(
         val center = Offset(size.width / 2, size.height / 2)
         var startAngle = -90f
 
+        // Skip drawing if total is zero or invalid to avoid NaN
+        if (total <= 0f || total.isNaN() || total.isInfinite()) {
+            return@Canvas
+        }
+
         data.forEachIndexed { index, (_, value) ->
-            val sweepAngle = (value.toFloat() / total) * 360f
+            val sweepAngle = safeProgress(value.toFloat() / total) * 360f
             drawArc(
                 color = colors[index % colors.size],
                 startAngle = startAngle,
@@ -596,7 +605,8 @@ private fun LineChart(
     @Suppress("unused") labels: List<String>,
     modifier: Modifier = Modifier,
 ) {
-    val maxValue = data.maxOrNull() ?: 1f
+    // Use a safe max value to prevent division by zero
+    val maxValue = (data.maxOrNull() ?: 1f).let { if (it <= 0f) 1f else it }
 
     Canvas(modifier = modifier) {
         if (data.isEmpty()) return@Canvas
@@ -608,9 +618,9 @@ private fun LineChart(
         // Draw line
         for (i in 0 until data.size - 1) {
             val x1 = i * spacing
-            val y1 = height - (data[i] / maxValue) * height
+            val y1 = height - safeProgressRatio(data[i], maxValue) * height
             val x2 = (i + 1) * spacing
-            val y2 = height - (data[i + 1] / maxValue) * height
+            val y2 = height - safeProgressRatio(data[i + 1], maxValue) * height
 
             drawLine(
                 color = androidx.compose.ui.graphics.Color.Blue,
@@ -624,7 +634,7 @@ private fun LineChart(
         // Draw points
         data.forEachIndexed { index, value ->
             val x = index * spacing
-            val y = height - (value / maxValue) * height
+            val y = height - safeProgressRatio(value, maxValue) * height
             drawCircle(
                 color = androidx.compose.ui.graphics.Color.Blue,
                 radius = 6f,
