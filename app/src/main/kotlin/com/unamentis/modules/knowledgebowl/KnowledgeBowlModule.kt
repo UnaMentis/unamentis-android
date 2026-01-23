@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import com.unamentis.core.module.ModuleProtocol
 import com.unamentis.modules.knowledgebowl.core.engine.KBQuestionEngine
+import com.unamentis.modules.knowledgebowl.ui.KBNavigationHost
 import com.unamentis.modules.knowledgebowl.ui.theme.KBColors
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -80,10 +81,7 @@ class KnowledgeBowlModule
 
         @Composable
         override fun getUIEntryPoint() {
-            // Note: Navigation callbacks will be provided by the NavHost when
-            // this module is displayed. The module entry point is registered
-            // in the app's navigation graph with proper callbacks.
-            // This composable serves as a marker for module registration.
+            KBNavigationHost()
         }
 
         @Composable

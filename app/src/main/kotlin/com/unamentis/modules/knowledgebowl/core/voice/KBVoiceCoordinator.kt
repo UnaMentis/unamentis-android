@@ -1,6 +1,9 @@
 package com.unamentis.modules.knowledgebowl.core.voice
 
 import android.content.Context
+import android.media.AudioAttributes
+import android.media.AudioFormat
+import android.media.AudioTrack
 import android.util.Log
 import com.unamentis.data.model.STTService
 import com.unamentis.data.model.TTSService
@@ -284,12 +287,12 @@ class KBVoiceCoordinator
 
         // Server Audio Cache
 
+        @Suppress("MagicNumber")
         private suspend fun playCachedAudio(cached: KBCachedAudio) {
             _isSpeaking.value = true
             Log.d(TAG, "Playing cached audio (${cached.data.size} bytes)")
 
             // Skip WAV header (44 bytes) to get raw PCM data
-            @Suppress("MagicNumber")
             val pcmData =
                 if (cached.data.size > 44) {
                     cached.data.copyOfRange(44, cached.data.size)
@@ -297,15 +300,76 @@ class KBVoiceCoordinator
                     cached.data
                 }
 
+            // Use sample rate from cached audio, default to 22050 Hz (common TTS rate)
+            val sampleRate = cached.sampleRate.takeIf { it > 0 } ?: 22050
+
             try {
-                // Play using TTS service's raw audio playback if available
-                // For now, log the PCM data size (audio playback not yet wired)
-                Log.d(TAG, "Cached audio playback not yet implemented, PCM size: ${pcmData.size}")
+                kotlinx.coroutines.withContext(Dispatchers.IO) {
+                    playPcmAudio(pcmData, sampleRate)
+                }
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to play cached audio: ${e.message}")
             }
 
             _isSpeaking.value = false
+        }
+
+        /**
+         * Play raw PCM audio data using AudioTrack.
+         *
+         * @param pcmData Raw 16-bit PCM audio data
+         * @param sampleRate Sample rate in Hz (default 22050 for TTS)
+         */
+        @Suppress("MagicNumber")
+        private fun playPcmAudio(
+            pcmData: ByteArray,
+            sampleRate: Int,
+        ) {
+            val audioAttributes =
+                AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_MEDIA)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .build()
+
+            val audioFormat =
+                AudioFormat.Builder()
+                    .setSampleRate(sampleRate)
+                    .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                    .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
+                    .build()
+
+            val minBufferSize =
+                AudioTrack.getMinBufferSize(
+                    sampleRate,
+                    AudioFormat.CHANNEL_OUT_MONO,
+                    AudioFormat.ENCODING_PCM_16BIT,
+                )
+
+            val bufferSize = maxOf(minBufferSize, pcmData.size)
+
+            val audioTrack =
+                AudioTrack.Builder()
+                    .setAudioAttributes(audioAttributes)
+                    .setAudioFormat(audioFormat)
+                    .setBufferSizeInBytes(bufferSize)
+                    .setTransferMode(AudioTrack.MODE_STATIC)
+                    .build()
+
+            try {
+                audioTrack.write(pcmData, 0, pcmData.size)
+                audioTrack.play()
+
+                // Wait for playback to complete
+                // Calculate duration: (samples / sampleRate) seconds
+                // For 16-bit mono audio: samples = bytes / 2
+                val durationMs = (pcmData.size / 2 * 1000L) / sampleRate
+                Thread.sleep(durationMs + 100) // Add small buffer for completion
+
+                audioTrack.stop()
+                Log.d(TAG, "PCM audio playback complete (${durationMs}ms)")
+            } finally {
+                audioTrack.release()
+            }
         }
 
         /**
