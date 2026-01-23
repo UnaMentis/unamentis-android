@@ -125,7 +125,7 @@ jobs:
   instrumented-tests:
     name: Instrumented Tests
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.event.inputs.run_instrumented == 'true'
+    if: github.ref == 'refs/heads/main' || (github.event_name == 'pull_request' && github.base_ref == 'main') || github.event.inputs.run_instrumented == 'true'
 
     steps:
     - uses: actions/checkout@v4
