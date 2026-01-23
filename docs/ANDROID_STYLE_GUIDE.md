@@ -212,7 +212,48 @@ Text(text = currencyFormat.format(cost))
 Text(text = "${hours}h ${minutes}m")  // BAD: Doesn't localize
 ```
 
-### 2.3 Right-to-Left (RTL) Support
+### 2.3 Currency Formatting
+
+**Never hardcode currency symbols.** Always use `NumberFormat.getCurrencyInstance()`:
+
+```kotlin
+// CORRECT: Locale-aware currency
+import java.text.NumberFormat
+import java.util.Locale
+
+// Standard currency (2 decimal places)
+val cost = NumberFormat.getCurrencyInstance(Locale.getDefault()).format(stats.totalCost)
+Text(text = cost)  // "$12.50" in en-US, "€12,50" in de-DE
+
+// High-precision currency (4 decimal places for micro-costs)
+val formattedCost = NumberFormat.getCurrencyInstance(Locale.getDefault()).apply {
+    minimumFractionDigits = 4
+    maximumFractionDigits = 4
+}.format(provider.totalCost)
+
+// INCORRECT: Hardcoded dollar sign
+Text(text = "$${String.format("%.2f", cost)}")  // BAD: Only works for USD
+Text(text = "\$12.50")  // BAD: Hardcoded symbol
+```
+
+### 2.4 Units and Suffixes
+
+Use string resources with placeholders for units:
+
+```kotlin
+// In strings.xml:
+// <string name="latency_ms">%1$d ms</string>
+// <string name="storage_gb">%1$.1f GB</string>
+
+// CORRECT: Localized unit string
+Text(text = stringResource(R.string.latency_ms, stats.avgLatency))
+
+// INCORRECT: Hardcoded unit
+Text(text = "${stats.avgLatency}ms")  // BAD: Not localizable
+Text(text = "${value} ms")  // BAD: Hardcoded
+```
+
+### 2.5 Right-to-Left (RTL) Support
 
 Use start/end instead of left/right:
 
@@ -225,7 +266,7 @@ Row(horizontalArrangement = Arrangement.Start) { /* ... */ }
 Modifier.padding(left = 16.dp, right = 8.dp)  // BAD
 ```
 
-### 2.4 Plurals
+### 2.6 Plurals
 
 Use quantity strings for proper pluralization:
 

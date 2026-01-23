@@ -161,9 +161,50 @@ Before any code is considered "done", it must pass these gates:
 **Code Style Requirements:**
 - Follow `docs/ANDROID_STYLE_GUIDE.md` (MANDATORY)
 - Accessibility content descriptions on all interactive elements
-- Strings in `strings.xml` for all user-facing text
+- Strings in `strings.xml` for all user-facing text (see below)
 - Tablet adaptive layouts using window size classes
 - Kotlin coroutine compliance (proper scope, cancellation)
+
+## MANDATORY: String Resources for All User-Facing Text
+
+**Never hardcode user-facing strings in Kotlin files.** All text shown to users must be defined in `strings.xml` and referenced via `stringResource()` in Compose code.
+
+### What Must Be in strings.xml
+- Labels and titles (button text, section headers, chart labels)
+- Messages (error messages, empty states, confirmations, tooltips)
+- Format strings with placeholders (e.g., `%1$d ms`, `%d requests`)
+- Units and suffixes (ms, GB, %, etc.)
+- Accessibility content descriptions
+
+### Violations (DO NOT DO THIS)
+```kotlin
+// ❌ WRONG - hardcoded strings
+Text("Loading...")
+Text("${value}ms")
+Text("$${String.format("%.2f", cost)}")
+BarChart(data = listOf("STT" to value, "LLM" to value))
+```
+
+### Correct Approach
+```kotlin
+// ✅ CORRECT - string resources
+Text(stringResource(R.string.loading))
+Text(stringResource(R.string.latency_ms, value))
+Text(NumberFormat.getCurrencyInstance(Locale.getDefault()).format(cost))
+BarChart(data = listOf(stringResource(R.string.label_stt) to value))
+```
+
+### Currency and Number Formatting
+Use locale-aware formatters instead of hardcoded symbols:
+```kotlin
+// ❌ WRONG
+"$${String.format("%.2f", amount)}"
+
+// ✅ CORRECT
+NumberFormat.getCurrencyInstance(Locale.getDefault()).format(amount)
+```
+
+This ensures proper internationalization (i18n) and makes the app translatable.
 
 **Performance Targets:**
 - E2E turn latency: <500ms (median), <1000ms (P99)

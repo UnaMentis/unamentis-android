@@ -26,7 +26,9 @@ import com.unamentis.ui.components.IOSCard
 import com.unamentis.ui.theme.Dimensions
 import com.unamentis.ui.util.safeProgress
 import com.unamentis.ui.util.safeProgressRatio
+import java.text.NumberFormat
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 /**
  * Analytics screen - Telemetry dashboard.
@@ -198,13 +200,13 @@ private fun QuickStatsSection(stats: QuickStats) {
         ) {
             StatCard(
                 title = stringResource(R.string.analytics_avg_latency),
-                value = "${stats.avgE2ELatency}ms",
+                value = stringResource(R.string.analytics_latency_ms, stats.avgE2ELatency),
                 icon = Icons.Default.Timer,
                 modifier = Modifier.weight(1f),
             )
             StatCard(
                 title = stringResource(R.string.analytics_total_cost),
-                value = "${'$'}${String.format("%.2f", stats.totalCost)}",
+                value = NumberFormat.getCurrencyInstance(Locale.getDefault()).format(stats.totalCost),
                 icon = Icons.Default.AttachMoney,
                 modifier = Modifier.weight(1f),
             )
@@ -272,10 +274,10 @@ private fun LatencyBreakdownCard(breakdown: LatencyBreakdown) {
             BarChart(
                 data =
                     listOf(
-                        "STT" to breakdown.avgSTT,
-                        "LLM TTFT" to breakdown.avgLLM_TTFT,
-                        "TTS TTFB" to breakdown.avgTTS_TTFB,
-                        "E2E" to breakdown.avgE2E,
+                        stringResource(R.string.analytics_label_stt) to breakdown.avgSTT,
+                        stringResource(R.string.analytics_label_llm_ttft) to breakdown.avgLLM_TTFT,
+                        stringResource(R.string.analytics_label_tts_ttfb) to breakdown.avgTTS_TTFB,
+                        stringResource(R.string.analytics_label_e2e) to breakdown.avgE2E,
                     ),
                 modifier =
                     Modifier
@@ -311,18 +313,30 @@ private fun CostBreakdownCard(breakdown: CostBreakdown) {
                 PieChart(
                     data =
                         listOf(
-                            "STT" to breakdown.sttCost,
-                            "TTS" to breakdown.ttsCost,
-                            "LLM" to breakdown.llmCost,
+                            stringResource(R.string.analytics_label_stt) to breakdown.sttCost,
+                            stringResource(R.string.analytics_label_tts) to breakdown.ttsCost,
+                            stringResource(R.string.analytics_label_llm) to breakdown.llmCost,
                         ),
                     modifier = Modifier.size(120.dp),
                 )
 
                 // Legend
                 Column(verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall)) {
-                    CostLegendItem("STT", breakdown.sttCost, MaterialTheme.colorScheme.primary)
-                    CostLegendItem("TTS", breakdown.ttsCost, MaterialTheme.colorScheme.secondary)
-                    CostLegendItem("LLM", breakdown.llmCost, MaterialTheme.colorScheme.tertiary)
+                    CostLegendItem(
+                        stringResource(R.string.analytics_label_stt),
+                        breakdown.sttCost,
+                        MaterialTheme.colorScheme.primary,
+                    )
+                    CostLegendItem(
+                        stringResource(R.string.analytics_label_tts),
+                        breakdown.ttsCost,
+                        MaterialTheme.colorScheme.secondary,
+                    )
+                    CostLegendItem(
+                        stringResource(R.string.analytics_label_llm),
+                        breakdown.llmCost,
+                        MaterialTheme.colorScheme.tertiary,
+                    )
                 }
             }
 
@@ -338,7 +352,7 @@ private fun CostBreakdownCard(breakdown: CostBreakdown) {
                     fontWeight = FontWeight.Bold,
                 )
                 Text(
-                    text = "${'$'}${String.format("%.2f", breakdown.totalCost)}",
+                    text = NumberFormat.getCurrencyInstance(Locale.getDefault()).format(breakdown.totalCost),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
@@ -368,7 +382,7 @@ private fun CostLegendItem(
                     .background(color, RoundedCornerShape(2.dp)),
         )
         Text(
-            text = "$label: ${'$'}${String.format("%.2f", cost)}",
+            text = "$label: ${NumberFormat.getCurrencyInstance(Locale.getDefault()).format(cost)}",
             style = MaterialTheme.typography.bodySmall,
         )
     }
@@ -450,8 +464,13 @@ private fun ProviderCostRow(provider: ProviderCostItem) {
             }
         }
 
+        val formattedCost =
+            NumberFormat.getCurrencyInstance(Locale.getDefault()).apply {
+                minimumFractionDigits = 4
+                maximumFractionDigits = 4
+            }.format(provider.totalCost)
         Text(
-            text = "${'$'}${String.format("%.4f", provider.totalCost)}",
+            text = formattedCost,
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary,
@@ -544,7 +563,7 @@ private fun BarChart(
                 )
 
                 Text(
-                    text = "${value}ms",
+                    text = stringResource(R.string.analytics_latency_ms, value),
                     style = MaterialTheme.typography.labelSmall,
                     modifier = Modifier.width(50.dp),
                 )

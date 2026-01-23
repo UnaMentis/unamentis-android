@@ -741,6 +741,56 @@ advanceUntilIdle()
 delay(1000)  // In runTest
 ```
 
+### Issue: Waiting for Flow collection on real dispatchers (Dispatchers.IO)
+
+**Cause**: Classes that collect Flows internally using `Dispatchers.IO` (like `ModuleRegistry`) won't have their Flows collected when using `runTest` because the test dispatcher doesn't control real dispatchers.
+
+**Solution**: Use a coroutine-friendly polling helper that runs on a real dispatcher:
+
+```kotlin
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
+
+/**
+ * Coroutine-friendly polling helper that awaits a condition with timeout.
+ * Uses real time delays on Dispatchers.Default to allow IO operations
+ * (like Flow collection on Dispatchers.IO) to complete.
+ */
+private suspend fun awaitCondition(
+    timeoutMs: Long = 1000L,
+    pollIntervalMs: Long = 10L,
+    condition: () -> Boolean,
+) {
+    withContext(Dispatchers.Default) {
+        withTimeout(timeoutMs) {
+            while (!condition()) {
+                delay(pollIntervalMs)
+            }
+        }
+    }
+}
+
+// Usage in tests:
+@Test
+fun `test with async Flow collection`() = runTest {
+    // Insert data that will be collected by a Flow
+    moduleDao.insertModule(entity)
+
+    // Create instance that collects Flow internally on Dispatchers.IO
+    val registry = ModuleRegistry(moduleDao, json)
+
+    // Wait for the Flow to emit using real time delays
+    awaitCondition { registry.isDownloaded("test-module") }
+
+    // Now the data is available
+    assertTrue(registry.hasUpdate("test-module", "2.0.0"))
+}
+```
+
+**Why this works**: `withContext(Dispatchers.Default)` switches to a real dispatcher where `delay()` actually pauses for real time, allowing concurrent operations on `Dispatchers.IO` to complete. The `withTimeout` ensures the test fails deterministically if the condition is never met.
+
 ### Issue: Uncaught exceptions from previous tests
 
 **Cause**: Classes with internal `CoroutineScope` (using `Dispatchers.IO`) continue running background coroutines after tests complete, causing `UncaughtExceptionsBeforeTest` errors.

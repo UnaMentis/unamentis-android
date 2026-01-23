@@ -6,7 +6,11 @@ import com.unamentis.data.local.AppDatabase
 import com.unamentis.data.local.dao.ModuleDao
 import com.unamentis.data.local.entity.DownloadedModuleEntity
 import io.mockk.clearAllMocks
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -121,8 +125,8 @@ class ModuleRegistryTest {
             // Create new registry to pick up the inserted module
             val newRegistry = ModuleRegistry(moduleDao, json)
 
-            // Give real time for IO dispatcher to collect flow
-            Thread.sleep(200)
+            // Await for IO dispatcher to collect flow
+            awaitCondition { newRegistry.isDownloaded("test-module") }
 
             assertTrue(newRegistry.hasUpdate("test-module", "2.0.0"))
             assertTrue(newRegistry.hasUpdate("test-module", "1.0.1"))
@@ -139,8 +143,8 @@ class ModuleRegistryTest {
             // Create new registry to pick up the inserted module
             val newRegistry = ModuleRegistry(moduleDao, json)
 
-            // Give real time for IO dispatcher to collect flow
-            Thread.sleep(200)
+            // Await for IO dispatcher to collect flow
+            awaitCondition { newRegistry.isDownloaded("test-module") }
 
             assertFalse(newRegistry.hasUpdate("test-module", "2.0.0"))
             assertFalse(newRegistry.hasUpdate("test-module", "1.9.9"))
@@ -246,8 +250,8 @@ class ModuleRegistryTest {
 
             val newRegistry = ModuleRegistry(moduleDao, json)
 
-            // Give real time for IO dispatcher to collect flow
-            Thread.sleep(200)
+            // Await for IO dispatcher to collect flow
+            awaitCondition { newRegistry.isDownloaded("test-module") }
 
             assertTrue(newRegistry.hasUpdate("test-module", "2.0.0"))
             assertFalse(newRegistry.hasUpdate("test-module", "0.9.0"))
@@ -261,8 +265,8 @@ class ModuleRegistryTest {
 
             val newRegistry = ModuleRegistry(moduleDao, json)
 
-            // Give real time for IO dispatcher to collect flow
-            Thread.sleep(200)
+            // Await for IO dispatcher to collect flow
+            awaitCondition { newRegistry.isDownloaded("test-module") }
 
             assertTrue(newRegistry.hasUpdate("test-module", "1.6.0"))
             assertFalse(newRegistry.hasUpdate("test-module", "1.4.0"))
@@ -276,8 +280,8 @@ class ModuleRegistryTest {
 
             val newRegistry = ModuleRegistry(moduleDao, json)
 
-            // Give real time for IO dispatcher to collect flow
-            Thread.sleep(200)
+            // Await for IO dispatcher to collect flow
+            awaitCondition { newRegistry.isDownloaded("test-module") }
 
             assertTrue(newRegistry.hasUpdate("test-module", "1.0.6"))
             assertFalse(newRegistry.hasUpdate("test-module", "1.0.4"))
@@ -329,5 +333,28 @@ class ModuleRegistryTest {
             configJson = null,
             sizeBytes = sizeBytes,
         )
+    }
+
+    /**
+     * Coroutine-friendly polling helper that awaits a condition with timeout.
+     * Uses real time delays on Dispatchers.Default to allow IO operations
+     * (like Flow collection on Dispatchers.IO) to complete.
+     *
+     * @param timeoutMs Maximum time to wait for the condition in milliseconds
+     * @param pollIntervalMs Time between condition checks in milliseconds
+     * @param condition The condition to check, returns true when satisfied
+     */
+    private suspend fun awaitCondition(
+        timeoutMs: Long = 1000L,
+        pollIntervalMs: Long = 10L,
+        condition: () -> Boolean,
+    ) {
+        withContext(Dispatchers.Default) {
+            withTimeout(timeoutMs) {
+                while (!condition()) {
+                    delay(pollIntervalMs)
+                }
+            }
+        }
     }
 }

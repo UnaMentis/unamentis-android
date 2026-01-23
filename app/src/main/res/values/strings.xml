@@ -285,6 +285,13 @@
     <string name="analytics_export_title">Export Metrics</string>
     <string name="analytics_json_format">Metrics in JSON format:</string>
     <string name="analytics_close">Close</string>
+    <string name="analytics_latency_ms">%1$d ms</string>
+    <string name="analytics_label_stt">STT</string>
+    <string name="analytics_label_tts">TTS</string>
+    <string name="analytics_label_llm">LLM</string>
+    <string name="analytics_label_llm_ttft">LLM TTFT</string>
+    <string name="analytics_label_tts_ttfb">TTS TTFB</string>
+    <string name="analytics_label_e2e">E2E</string>
 
     <!-- On-Device LLM Settings -->
     <string name="settings_on_device_ai">On-Device AI</string>
