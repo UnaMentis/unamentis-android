@@ -19,6 +19,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -139,25 +140,25 @@ class KBQuestionService
                 val request =
                     Request.Builder()
                         .url(url)
-                        .post(okhttp3.RequestBody.create(null, ByteArray(0)))
+                        .post(ByteArray(0).toRequestBody())
                         .build()
 
-                val response = httpClient.newCall(request).execute()
+                httpClient.newCall(request).execute().use { response ->
+                    if (!response.isSuccessful) {
+                        throw IOException("Server returned ${response.code}")
+                    }
 
-                if (!response.isSuccessful) {
-                    throw IOException("Server returned ${response.code}")
+                    val body = response.body?.string() ?: throw IOException("Empty response body")
+                    val moduleContent = json.decodeFromString<ModuleContent>(body)
+
+                    // Extract module features
+                    moduleContent.features?.let {
+                        _moduleFeatures.value = it
+                    }
+
+                    // Extract all questions from all domains
+                    moduleContent.domains.flatMap { it.questions }
                 }
-
-                val body = response.body?.string() ?: throw IOException("Empty response body")
-                val moduleContent = json.decodeFromString<ModuleContent>(body)
-
-                // Extract module features
-                moduleContent.features?.let {
-                    _moduleFeatures.value = it
-                }
-
-                // Extract all questions from all domains
-                moduleContent.domains.flatMap { it.questions }
             }
 
         // MARK: - Study Mode Selection

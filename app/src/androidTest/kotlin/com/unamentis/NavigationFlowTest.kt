@@ -85,7 +85,7 @@ class NavigationFlowTest {
         composeTestRule.onNodeWithText("Curriculum").performClick()
 
         // Wait for curriculum list to load
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(timeoutMillis = 15000) {
             composeTestRule.onAllNodesWithText("Introduction to Physics")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -140,7 +140,7 @@ class NavigationFlowTest {
         composeTestRule.onNodeWithText("History").performClick()
 
         // Wait for history list to load
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(timeoutMillis = 15000) {
             composeTestRule.onAllNodesWithText("Introduction to Physics")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -175,7 +175,7 @@ class NavigationFlowTest {
         composeTestRule.onNodeWithText("To-Do").performClick()
 
         // Wait for todo list to load
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(timeoutMillis = 15000) {
             composeTestRule.onAllNodesWithText("Review Newton's Laws")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -244,7 +244,7 @@ class NavigationFlowTest {
         }
 
         // Verify Session tab is still selected after recreation
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(timeoutMillis = 15000) {
             composeTestRule.onAllNodesWithContentDescription("Session tab")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -320,7 +320,7 @@ class NavigationFlowTest {
             .performClick()
 
         // Wait for session to start
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(timeoutMillis = 15000) {
             composeTestRule.onAllNodesWithText("Listening...")
                 .fetchSemanticsNodes().isNotEmpty()
         }

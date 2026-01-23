@@ -76,11 +76,21 @@ class KBDashboardViewModel
         val competitionReadiness: StateFlow<Float> =
             MutableStateFlow(statsManager.competitionReadiness).asStateFlow()
 
-        // Module features (controls which study modes are available)
+        /**
+         * Module features controlling which study modes are available.
+         *
+         * Updated when loading questions from the server, where the server can
+         * specify feature flags. Defaults to [KBModuleFeatures.DEFAULT_ENABLED].
+         */
         private val _moduleFeatures = MutableStateFlow(KBModuleFeatures.DEFAULT_ENABLED)
         val moduleFeatures: StateFlow<KBModuleFeatures> = _moduleFeatures.asStateFlow()
 
-        // Available study modes based on module features
+        /**
+         * List of available study modes based on current module features.
+         *
+         * Automatically updates when [moduleFeatures] changes. Consumers should
+         * use this to display available modes in the UI.
+         */
         val availableStudyModes: StateFlow<List<KBStudyMode>> =
             _moduleFeatures.map { features ->
                 features.availableStudyModes()
@@ -90,18 +100,38 @@ class KBDashboardViewModel
                 initialValue = KBModuleFeatures.DEFAULT_ENABLED.availableStudyModes(),
             )
 
-        // Currently selected study mode (triggers launcher sheet)
+        /**
+         * Currently selected study mode that triggers the practice launcher sheet.
+         *
+         * Set via [selectStudyMode] and cleared via [clearStudyMode].
+         * When non-null, the launcher sheet should be displayed.
+         */
         private val _selectedStudyMode = MutableStateFlow<KBStudyMode?>(null)
         val selectedStudyMode: StateFlow<KBStudyMode?> = _selectedStudyMode.asStateFlow()
 
-        // Domain being viewed in detail
+        /**
+         * Domain currently being viewed in detail, if any.
+         *
+         * Set via [showDomainDetail] and cleared via [hideDomainDetail].
+         * When non-null, the domain detail view should be displayed.
+         */
         private val _showingDomainDetail = MutableStateFlow<KBDomain?>(null)
         val showingDomainDetail: StateFlow<KBDomain?> = _showingDomainDetail.asStateFlow()
 
-        // Total questions answered from stats
+        /**
+         * Total number of questions answered across all sessions.
+         *
+         * Sourced directly from [KBStatsManager]. Used to display
+         * overall progress and determine readiness calculations.
+         */
         val totalQuestionsAnswered: StateFlow<Int> = statsManager.totalQuestionsAnswered
 
-        // Average response time
+        /**
+         * Average response time in seconds across all answered questions.
+         *
+         * Sourced directly from [KBStatsManager]. Displays as "--" in UI
+         * when no questions have been answered yet.
+         */
         val averageResponseTime: StateFlow<Double> = statsManager.averageResponseTime
 
         // Questions ready for session

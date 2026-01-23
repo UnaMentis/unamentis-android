@@ -44,26 +44,68 @@ class KBPracticeSessionViewModel
         // Session configuration
         private var questions: List<KBQuestion> = emptyList()
         private var mode: KBStudyMode = KBStudyMode.DIAGNOSTIC
+        private var sessionEnded: Boolean = false
 
-        // State
+        /**
+         * Current state of the practice session.
+         *
+         * Transitions: NotStarted -> InProgress -> ShowingAnswer -> InProgress (loop) -> Completed.
+         * UI should render different content based on this state.
+         */
         private val _sessionState = MutableStateFlow<KBSessionState>(KBSessionState.NotStarted)
         val sessionState: StateFlow<KBSessionState> = _sessionState.asStateFlow()
 
+        /**
+         * The current question being displayed, or null if no session is active.
+         *
+         * Updated when [presentNextQuestion] is called. Returns null before
+         * session starts or after session completes.
+         */
         private val _currentQuestion = MutableStateFlow<KBQuestion?>(null)
         val currentQuestion: StateFlow<KBQuestion?> = _currentQuestion.asStateFlow()
 
+        /**
+         * Zero-based index of the current question in the session.
+         *
+         * Ranges from 0 to [totalQuestions] - 1. Incremented after each
+         * question is answered via [nextQuestion].
+         */
         private val _questionIndex = MutableStateFlow(0)
         val questionIndex: StateFlow<Int> = _questionIndex.asStateFlow()
 
+        /**
+         * Total number of questions in the current session.
+         *
+         * Set at session start based on the study mode's default question count,
+         * capped by the available questions.
+         */
         private val _totalQuestions = MutableStateFlow(0)
         val totalQuestions: StateFlow<Int> = _totalQuestions.asStateFlow()
 
+        /**
+         * List of results for all answered/skipped questions in this session.
+         *
+         * Grows as the user progresses through questions. Used to calculate
+         * accuracy, timing stats, and domain breakdowns for the summary.
+         */
         private val _results = MutableStateFlow<List<KBQuestionResult>>(emptyList())
         val results: StateFlow<List<KBQuestionResult>> = _results.asStateFlow()
 
+        /**
+         * Time remaining in seconds for speed mode, or null for untimed modes.
+         *
+         * Decrements every second when a timer is active. When it reaches 0,
+         * the session ends automatically.
+         */
         private val _timeRemaining = MutableStateFlow<Int?>(null)
         val timeRemaining: StateFlow<Int?> = _timeRemaining.asStateFlow()
 
+        /**
+         * The user's current answer text input.
+         *
+         * Updated via [updateUserAnswer] as the user types. Cleared when
+         * moving to the next question or starting a new session.
+         */
         private val _userAnswer = MutableStateFlow("")
         val userAnswer: StateFlow<String> = _userAnswer.asStateFlow()
 
@@ -71,13 +113,29 @@ class KBPracticeSessionViewModel
         private var sessionStartTime: Long = 0L
         private var timerJob: Job? = null
 
-        // Computed properties
+        /**
+         * Number of correct answers in the current session.
+         *
+         * Computed from [results]. Returns 0 if no questions answered yet.
+         */
         val correctCount: Int
             get() = _results.value.count { it.isCorrect }
 
+        /**
+         * The study mode for the current session.
+         *
+         * Set via [startSession]. Used to determine timing, scoring, and
+         * question selection behavior.
+         */
         val selectedMode: KBStudyMode
             get() = mode
 
+        /**
+         * Whether the current question is the last in the session.
+         *
+         * Returns true when [questionIndex] equals [totalQuestions] - 1.
+         * Used to show "See Results" instead of "Next Question" in the UI.
+         */
         val isLastQuestion: Boolean
             get() = _questionIndex.value >= _totalQuestions.value - 1
 
@@ -93,6 +151,9 @@ class KBPracticeSessionViewModel
         ) {
             // Stop any existing timer
             stopTimer()
+
+            // Reset session ended flag for new session
+            sessionEnded = false
 
             // Configure session
             questions =
@@ -261,6 +322,13 @@ class KBPracticeSessionViewModel
         }
 
         private fun endSession() {
+            // Guard against duplicate calls to prevent recording stats multiple times
+            if (sessionEnded) {
+                Log.d(TAG, "endSession called but session already ended, ignoring")
+                return
+            }
+            sessionEnded = true
+
             stopTimer()
             _sessionState.value = KBSessionState.Completed
 
@@ -272,10 +340,18 @@ class KBPracticeSessionViewModel
         }
 
         private fun recordSessionStats(summary: KBPracticeSessionSummary) {
+            // Derive round type from study mode - speed drills are more like oral rounds
+            val roundType =
+                when (mode) {
+                    KBStudyMode.SPEED -> KBRoundType.ORAL
+                    else -> KBRoundType.WRITTEN
+                }
+
+            // Default region; could be passed via session config in a future update
             val sessionSummary =
                 KBSessionSummary(
                     sessionId = "session-${System.currentTimeMillis()}",
-                    roundType = KBRoundType.WRITTEN,
+                    roundType = roundType,
                     region = KBRegion.COLORADO,
                     totalQuestions = summary.totalQuestions,
                     totalCorrect = summary.correctAnswers,

@@ -50,6 +50,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -179,8 +180,8 @@ fun KBPracticeSessionScreen(
     if (showExitDialog) {
         AlertDialog(
             onDismissRequest = { showExitDialog = false },
-            title = { Text("Exit Practice?") },
-            text = { Text("Your progress will be saved, but the session will end.") },
+            title = { Text(stringResource(R.string.kb_exit_practice_title)) },
+            text = { Text(stringResource(R.string.kb_exit_practice_message)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -191,12 +192,12 @@ fun KBPracticeSessionScreen(
                         onBack()
                     },
                 ) {
-                    Text("Exit")
+                    Text(stringResource(R.string.kb_exit_button))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showExitDialog = false }) {
-                    Text("Continue Practicing")
+                    Text(stringResource(R.string.kb_continue_practicing_button))
                 }
             },
         )
@@ -221,7 +222,7 @@ private fun ProgressHeader(
     ) {
         // Question counter
         Text(
-            text = "${questionIndex + 1} of $totalQuestions",
+            text = stringResource(R.string.kb_question_of, questionIndex + 1, totalQuestions),
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -239,7 +240,7 @@ private fun ProgressHeader(
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(
-                text = "$correctCount correct",
+                text = pluralStringResource(R.plurals.kb_correct_count, correctCount, correctCount),
                 style = MaterialTheme.typography.labelMedium,
                 color = KBTheme.mastered(),
             )
@@ -459,7 +460,7 @@ private fun AnswerFeedbackContent(
                     if (result.wasWithinSpeedTarget) {
                         Icon(
                             imageVector = Icons.Default.Timer,
-                            contentDescription = "Within speed target",
+                            contentDescription = stringResource(R.string.cd_within_speed_target),
                             modifier = Modifier.size(16.dp),
                             tint = KBTheme.currentEvents(),
                         )
@@ -656,13 +657,15 @@ private fun DifficultyIndicator(difficulty: KBDifficulty) {
 
 @Composable
 private fun StatsGrid(summary: KBPracticeSessionSummary) {
-    // Get colors in composable context
+    // Get colors and labels in composable context
     val accuracyColor = if (summary.accuracy >= 0.7) KBTheme.mastered() else KBTheme.currentEvents()
     val correctColor = KBTheme.intermediate()
     val timeColor = KBTheme.mathematics()
     val speedColor = KBTheme.currentEvents()
     val accuracyLabel = stringResource(R.string.kb_accuracy)
     val avgTimeLabel = stringResource(R.string.kb_avg_time)
+    val correctLabel = stringResource(R.string.kb_stat_correct)
+    val speedTargetLabel = stringResource(R.string.kb_speed_target)
 
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -698,7 +701,7 @@ private fun StatsGrid(summary: KBPracticeSessionSummary) {
             StatCard(
                 stat =
                     StatItem(
-                        title = "Correct",
+                        title = correctLabel,
                         value = "${summary.correctAnswers}/${summary.totalQuestions}",
                         icon = Icons.Default.Check,
                         color = correctColor,
@@ -707,7 +710,7 @@ private fun StatsGrid(summary: KBPracticeSessionSummary) {
             StatCard(
                 stat =
                     StatItem(
-                        title = "Speed Target",
+                        title = speedTargetLabel,
                         value = String.format("%.0f%%", summary.speedTargetRate * 100),
                         icon = Icons.Default.Timer,
                         color = speedColor,

@@ -72,7 +72,7 @@ Each region has different:
 
 ### Package Structure
 
-```
+```text
 com.unamentis.modules.knowledgebowl/
 ├── KnowledgeBowlModule.kt          # Module entry point (ModuleProtocol)
 ├── core/
@@ -130,7 +130,7 @@ com.unamentis.modules.knowledgebowl/
 
 ### Navigation Flow
 
-```
+```text
 KBNavigationHost
     │
     ├─► KBDashboardScreen (entry point)
@@ -150,7 +150,7 @@ KBNavigationHost
 
 ### Data Flow
 
-```
+```text
 ┌──────────────────┐     ┌───────────────────┐     ┌──────────────────┐
 │  KBQuestionService│────►│  KBQuestionEngine │────►│  KBPracticeEngine │
 │  (server fetch)   │     │  (selection algo) │     │  (session logic)  │
@@ -306,3 +306,49 @@ registry.getImplementation("knowledge-bowl")?.let { module ->
 - `ui/dashboard/KBDashboardViewModel.kt` - Added study mode state management
 - `core/voice/KBVoiceCoordinator.kt` - Implemented PCM audio playback
 - `KnowledgeBowlModule.kt` - Updated entry point to use KBNavigationHost
+
+## Code Quality Improvements (2026-01-22)
+
+### KBVoiceCoordinator AudioTrack Error Handling
+
+The voice coordinator now properly handles `AudioTrack.getMinBufferSize()` error codes:
+
+```kotlin
+val minBufferSize = AudioTrack.getMinBufferSize(sampleRate, channelConfig, audioFormat)
+if (minBufferSize == AudioTrack.ERROR || minBufferSize == AudioTrack.ERROR_BAD_VALUE) {
+    Log.e(TAG, "AudioTrack.getMinBufferSize returned error: $minBufferSize")
+    throw VoiceCoordinatorError.AudioFormatUnavailable
+}
+```
+
+This prevents crashes when audio configuration is unavailable on certain devices.
+
+### KBQuestionService OkHttp 4+ Patterns
+
+Updated to use modern OkHttp 4+ extension functions:
+- `ByteArray(0).toRequestBody()` instead of deprecated `RequestBody.create()`
+- `response.use { }` block for automatic resource cleanup
+
+### Dashboard UI Improvements
+
+- **Domain Grid**: Now displays all 12 academic domains (previously truncated to 6)
+- **Accessibility**: Added `contentDescription` semantics to StudyModeCard and DomainMasteryCard
+- **Localization**: Moved all hardcoded strings to `strings.xml` resources
+- **KDoc**: Added comprehensive documentation to all public StateFlows in ViewModels
+
+### Practice Session Robustness
+
+- **Idempotent endSession()**: Session completion is now guarded against duplicate calls
+- **String Resources**: All dialog and UI strings externalized for i18n support
+- **Speed Mode Stats**: Proper handling of questions within speed target
+
+### String Resources Added
+
+New entries in `res/values/strings.xml`:
+- `kb_ready_label`, `kb_diagnostic_prompt`
+- `kb_study_sessions`, `kb_your_stats`
+- `kb_exit_practice_title`, `kb_exit_practice_message`
+- `kb_exit_button`, `kb_continue_practicing_button`
+- `kb_stat_correct`, `kb_speed_target`
+- `cd_within_speed_target` (accessibility)
+- Plurals: `kb_questions_answered_count`, `kb_correct_count`

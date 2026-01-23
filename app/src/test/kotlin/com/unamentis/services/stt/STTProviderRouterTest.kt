@@ -14,6 +14,9 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import okhttp3.OkHttpClient
+import okhttp3.Protocol
+import okhttp3.Response
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
@@ -429,7 +432,19 @@ class STTProviderRouterTest {
 
     // Helper methods to create health monitors in different states
     private fun createHealthyHealthMonitor(): ProviderHealthMonitor {
-        val client = OkHttpClient.Builder().build()
+        // Use a mock interceptor that returns 200 OK so health checks succeed
+        val client =
+            OkHttpClient.Builder()
+                .addInterceptor { chain ->
+                    Response.Builder()
+                        .request(chain.request())
+                        .protocol(Protocol.HTTP_1_1)
+                        .code(200)
+                        .message("OK")
+                        .body("".toResponseBody())
+                        .build()
+                }
+                .build()
         return ProviderHealthMonitor(
             config =
                 HealthMonitorConfig(
@@ -439,7 +454,7 @@ class STTProviderRouterTest {
             client = client,
             providerName = "Test",
         )
-        // Default state is HEALTHY
+        // Default state is HEALTHY, and mock interceptor keeps it healthy
     }
 
     private fun createDegradedHealthMonitor(): ProviderHealthMonitor {

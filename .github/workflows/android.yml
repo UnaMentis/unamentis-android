@@ -156,8 +156,15 @@ jobs:
         profile: pixel_6
         target: google_apis
         emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+        emulator-boot-timeout: 600
         disable-animations: true
-        script: ./gradlew connectedAndroidTest --console=plain
+        script: |
+          # Wait for emulator to be fully booted
+          adb wait-for-device
+          adb shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done'
+          adb shell input keyevent 82
+          # Run instrumented tests
+          ./gradlew connectedAndroidTest --console=plain
 
     - name: Upload Instrumented Test Results
       uses: actions/upload-artifact@v4

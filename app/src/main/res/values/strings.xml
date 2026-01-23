@@ -182,6 +182,31 @@
     <string name="kb_reset_stats_message">This will permanently delete all your practice history and statistics. This action cannot be undone.</string>
     <string name="kb_reset">Reset</string>
 
+    <!-- Knowledge Bowl Dashboard -->
+    <string name="kb_ready_label">Ready</string>
+    <string name="kb_diagnostic_prompt">Complete a diagnostic session to see your readiness score</string>
+    <string name="kb_study_sessions">Study Sessions</string>
+    <string name="kb_your_stats">Your Stats</string>
+
+    <!-- Knowledge Bowl Practice Session -->
+    <string name="kb_exit_practice_title">Exit Practice?</string>
+    <string name="kb_exit_practice_message">Your progress will be saved, but the session will end.</string>
+    <string name="kb_exit_button">Exit</string>
+    <string name="kb_continue_practicing_button">Continue Practicing</string>
+    <string name="kb_stat_correct">Correct</string>
+    <string name="kb_speed_target">Speed Target</string>
+    <string name="cd_within_speed_target">Within speed target</string>
+
+    <!-- Knowledge Bowl Plurals -->
+    <plurals name="kb_questions_answered_count">
+        <item quantity="one">Based on %d question answered</item>
+        <item quantity="other">Based on %d questions answered</item>
+    </plurals>
+    <plurals name="kb_correct_count">
+        <item quantity="one">%d correct</item>
+        <item quantity="other">%d correct</item>
+    </plurals>
+
     <!-- Knowledge Bowl Launcher -->
     <string name="kb_preparing_questions">Preparing questions…</string>
     <string name="kb_try_again">Try Again</string>

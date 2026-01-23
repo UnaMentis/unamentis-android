@@ -42,10 +42,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.unamentis.R
 import com.unamentis.modules.knowledgebowl.data.model.KBDomain
 import com.unamentis.modules.knowledgebowl.data.model.KBQuestion
 import com.unamentis.modules.knowledgebowl.data.model.KBRegion
@@ -199,7 +204,7 @@ private fun HeroSection(
                         color = KBTheme.textPrimary(),
                     )
                     Text(
-                        text = "Ready",
+                        text = stringResource(R.string.kb_ready_label),
                         style = MaterialTheme.typography.labelSmall,
                         color = KBTheme.textSecondary(),
                     )
@@ -207,7 +212,7 @@ private fun HeroSection(
             }
 
             Text(
-                text = "Competition Readiness",
+                text = stringResource(R.string.kb_competition_readiness),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = KBTheme.textPrimary(),
@@ -216,9 +221,13 @@ private fun HeroSection(
             Text(
                 text =
                     if (totalQuestionsAnswered == 0) {
-                        "Complete a diagnostic session to see your readiness score"
+                        stringResource(R.string.kb_diagnostic_prompt)
                     } else {
-                        "Based on $totalQuestionsAnswered questions answered"
+                        pluralStringResource(
+                            R.plurals.kb_questions_answered_count,
+                            totalQuestionsAnswered,
+                            totalQuestionsAnswered,
+                        )
                     },
                 style = MaterialTheme.typography.bodySmall,
                 color = KBTheme.textSecondary(),
@@ -235,7 +244,7 @@ private fun StudyModesSection(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
-            text = "Study Sessions",
+            text = stringResource(R.string.kb_study_sessions),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = KBTheme.textPrimary(),
@@ -266,6 +275,7 @@ private fun StudyModeCard(
         modifier =
             Modifier
                 .fillMaxWidth()
+                .semantics { contentDescription = mode.displayName }
                 .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(containerColor = KBTheme.bgSecondary()),
         shape = RoundedCornerShape(12.dp),
@@ -305,7 +315,7 @@ private fun StatsSection(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
-                text = "Your Stats",
+                text = stringResource(R.string.kb_your_stats),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = KBTheme.textPrimary(),
@@ -349,18 +359,20 @@ private fun DomainMasterySection(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
-            text = "Domain Mastery",
+            text = stringResource(R.string.kb_domain_mastery),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = KBTheme.textPrimary(),
         )
 
-        val domains = KBDomain.entries.take(6)
+        // Display all 12 domains in a 3-column grid with sufficient height
+        val domains = KBDomain.entries
         LazyVerticalGrid(
             columns = GridCells.Fixed(3),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.height(200.dp),
+            // Height accommodates 4 rows of domains (12 domains / 3 columns = 4 rows)
+            modifier = Modifier.height(400.dp),
         ) {
             items(domains) { domain ->
                 DomainMasteryCard(
@@ -383,6 +395,7 @@ private fun DomainMasteryCard(
         modifier =
             Modifier
                 .fillMaxWidth()
+                .semantics { contentDescription = domain.displayName }
                 .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(containerColor = domain.color().copy(alpha = 0.1f)),
         shape = RoundedCornerShape(8.dp),
@@ -446,7 +459,7 @@ private fun QuickStartSection(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(
-            text = "Quick Start",
+            text = stringResource(R.string.kb_quick_start),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = KBTheme.textPrimary(),
@@ -541,7 +554,7 @@ private fun RegionSelector(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(
-            text = "Competition Region",
+            text = stringResource(R.string.kb_competition_region),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = KBTheme.textPrimary(),

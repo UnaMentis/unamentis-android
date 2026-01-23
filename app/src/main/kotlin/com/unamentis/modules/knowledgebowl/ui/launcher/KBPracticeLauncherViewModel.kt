@@ -29,16 +29,40 @@ class KBPracticeLauncherViewModel
             private const val TAG = "KBPracticeLauncherVM"
         }
 
-        // State
+        /**
+         * Indicates whether questions are currently being loaded.
+         *
+         * Starts as `true` and transitions to `false` once loading completes
+         * (either successfully or with error). Consumers should show a loading
+         * indicator when this is `true`.
+         */
         private val _isLoading = MutableStateFlow(true)
         val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
+        /**
+         * Questions loaded for the current study mode.
+         *
+         * Empty initially and populated via [loadQuestions]. When non-empty,
+         * the session is ready to start. Cleared when [clear] is called.
+         */
         private val _loadedQuestions = MutableStateFlow<List<KBQuestion>>(emptyList())
         val loadedQuestions: StateFlow<List<KBQuestion>> = _loadedQuestions.asStateFlow()
 
+        /**
+         * Error message if question loading failed, or null if no error.
+         *
+         * Set when [loadQuestions] encounters an error. Consumers should
+         * display this message and offer a retry option via [retry].
+         */
         private val _errorMessage = MutableStateFlow<String?>(null)
         val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
+        /**
+         * Currently selected study mode for practice.
+         *
+         * Defaults to [KBStudyMode.DIAGNOSTIC] and updated via [setMode].
+         * Determines which questions are loaded and how the session behaves.
+         */
         private val _selectedMode = MutableStateFlow(KBStudyMode.DIAGNOSTIC)
         val selectedMode: StateFlow<KBStudyMode> = _selectedMode.asStateFlow()
 

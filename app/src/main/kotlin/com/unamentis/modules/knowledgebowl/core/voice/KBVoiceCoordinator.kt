@@ -345,6 +345,12 @@ class KBVoiceCoordinator
                     AudioFormat.ENCODING_PCM_16BIT,
                 )
 
+            // Handle error codes from getMinBufferSize
+            if (minBufferSize == AudioTrack.ERROR || minBufferSize == AudioTrack.ERROR_BAD_VALUE) {
+                Log.e(TAG, "AudioTrack.getMinBufferSize returned error: $minBufferSize")
+                throw VoiceCoordinatorError.AudioFormatUnavailable
+            }
+
             val bufferSize = maxOf(minBufferSize, pcmData.size)
 
             val audioTrack =

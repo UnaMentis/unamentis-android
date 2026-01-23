@@ -649,6 +649,82 @@ delay(1000)  // In runTest
 - File paths (use context for resources)
 - Network availability (mock external calls)
 - Timing issues (use `runTest` properly)
+- DataStore singleton conflicts (see below)
+- CI emulator boot timing (see below)
+
+### Issue: DataStore "multiple instances active for same file"
+
+**Cause**: Multiple test classes or Hilt components creating separate DataStore instances for the same file.
+
+**Solution**: Use the `ProviderDataStore` singleton pattern:
+
+```kotlin
+// In ProviderDataStore.kt - singleton holder
+object ProviderDataStore {
+    private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
+        name = "provider_config",
+    )
+
+    fun getInstance(context: Context): DataStore<Preferences> = context.dataStore
+}
+
+// In ProviderConfig - accept DataStore via constructor
+class ProviderConfig(
+    private val context: Context,
+    private val dataStore: DataStore<Preferences> = ProviderDataStore.getInstance(context),
+)
+
+// In Hilt module - provide singleton
+@Provides
+@Singleton
+fun provideProviderDataStore(@ApplicationContext context: Context): DataStore<Preferences> {
+    return ProviderDataStore.getInstance(context)
+}
+```
+
+### Issue: Compose UI tests timeout in CI
+
+**Cause**: CI emulators are slower than local machines, and default 5000ms `waitUntil` timeouts may not be sufficient.
+
+**Solution**: Increase timeouts for CI environments:
+
+```kotlin
+// Use 15000ms instead of 5000ms for CI stability
+composeTestRule.waitUntil(timeoutMillis = 15000) {
+    composeTestRule.onAllNodesWithText("Expected Text")
+        .fetchSemanticsNodes().isNotEmpty()
+}
+```
+
+### Issue: Health monitor tests fail due to real HTTP requests
+
+**Cause**: `ProviderHealthMonitor` makes actual HTTP health check requests during tests.
+
+**Solution**: Use a mock OkHttp interceptor:
+
+```kotlin
+private fun createHealthyHealthMonitor(): ProviderHealthMonitor {
+    val client = OkHttpClient.Builder()
+        .addInterceptor { chain ->
+            Response.Builder()
+                .request(chain.request())
+                .protocol(Protocol.HTTP_1_1)
+                .code(200)
+                .message("OK")
+                .body("".toResponseBody())
+                .build()
+        }
+        .build()
+    return ProviderHealthMonitor(
+        config = HealthMonitorConfig(
+            healthEndpoint = "http://localhost/health",
+            checkIntervalMs = 60000,
+        ),
+        client = client,
+        providerName = "Test",
+    )
+}
+```
 
 ### Issue: Room database tests fail
 
