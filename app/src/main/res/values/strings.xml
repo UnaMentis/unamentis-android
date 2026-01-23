@@ -245,6 +245,47 @@
     <string name="kb_tips_title">Tips</string>
     <string name="kb_cancel">Cancel</string>
 
+    <!-- Knowledge Bowl Stats -->
+    <string name="kb_answered_count">%d answered</string>
+    <string name="kb_correct_count_label">%d correct</string>
+
+    <!-- Knowledge Bowl Written Session -->
+    <string name="kb_written_round_practice">Written Round Practice</string>
+    <string name="kb_per_correct">per correct</string>
+    <string name="kb_submit_answer">Submit Answer</string>
+    <string name="kb_times_up">Time\'s Up!</string>
+
+    <!-- Knowledge Bowl Accessibility -->
+    <string name="cd_kb_correct_answer">Correct</string>
+    <string name="cd_kb_incorrect_answer">Incorrect</string>
+    <string name="cd_kb_speaking">Speaking</string>
+    <string name="cd_kb_listening">Listening</string>
+    <string name="cd_kb_tap_to_speak">Tap to speak</string>
+
+    <!-- Analytics Screen -->
+    <string name="analytics_title">Analytics</string>
+    <string name="analytics_export_metrics">Export metrics</string>
+    <string name="analytics_time_range">Time Range</string>
+    <string name="analytics_7_days">7 Days</string>
+    <string name="analytics_30_days">30 Days</string>
+    <string name="analytics_90_days">90 Days</string>
+    <string name="analytics_all_time">All Time</string>
+    <string name="analytics_overview">Overview</string>
+    <string name="analytics_sessions">Sessions</string>
+    <string name="analytics_turns">Turns</string>
+    <string name="analytics_avg_latency">Avg Latency</string>
+    <string name="analytics_total_cost">Total Cost</string>
+    <string name="analytics_latency_breakdown">Latency Breakdown</string>
+    <string name="analytics_cost_breakdown">Cost Breakdown</string>
+    <string name="analytics_provider_details">Provider Details</string>
+    <string name="analytics_no_provider_data">No provider data available</string>
+    <string name="analytics_requests_count">%d requests</string>
+    <string name="analytics_session_trends">Session Trends</string>
+    <string name="analytics_no_data">No data available</string>
+    <string name="analytics_export_title">Export Metrics</string>
+    <string name="analytics_json_format">Metrics in JSON format:</string>
+    <string name="analytics_close">Close</string>
+
     <!-- On-Device LLM Settings -->
     <string name="settings_on_device_ai">On-Device AI</string>
     <string name="settings_on_device_models">On-Device AI Models</string>

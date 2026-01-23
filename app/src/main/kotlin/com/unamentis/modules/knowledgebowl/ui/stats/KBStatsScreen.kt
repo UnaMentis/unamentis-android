@@ -400,7 +400,7 @@ private fun DomainMasteryRow(
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = "$questionsAnswered answered",
+                    text = stringResource(R.string.kb_answered_count, questionsAnswered),
                     style = MaterialTheme.typography.labelSmall,
                     color = KBTheme.textSecondary(),
                 )

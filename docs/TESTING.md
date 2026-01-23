@@ -211,7 +211,10 @@ class SessionScreenTest {
     val composeTestRule = createAndroidComposeRule<MainActivity>()
 
     companion object {
-        private const val DEFAULT_TIMEOUT = 10_000L
+        // 15s for navigation tests (CI emulators are slower)
+        private const val DEFAULT_TIMEOUT = 15_000L
+        // 20s for session/state tests with complex setup
+        private const val LONG_TIMEOUT = 20_000L
     }
 
     @Before

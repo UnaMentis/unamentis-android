@@ -16,10 +16,12 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.unamentis.R
 import com.unamentis.ui.components.IOSCard
 import com.unamentis.ui.theme.Dimensions
 import com.unamentis.ui.util.safeProgress
@@ -51,10 +53,13 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Analytics") },
+                title = { Text(stringResource(R.string.analytics_title)) },
                 actions = {
                     IconButton(onClick = { showExportDialog = true }) {
-                        Icon(Icons.Default.Download, contentDescription = "Export metrics")
+                        Icon(
+                            Icons.Default.Download,
+                            contentDescription = stringResource(R.string.analytics_export_metrics),
+                        )
                     }
                 },
             )
@@ -127,7 +132,7 @@ private fun TimeRangeSelector(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall)) {
         Text(
-            text = "Time Range",
+            text = stringResource(R.string.analytics_time_range),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
         )
@@ -144,10 +149,10 @@ private fun TimeRangeSelector(
                         Text(
                             text =
                                 when (range) {
-                                    TimeRange.LAST_7_DAYS -> "7 Days"
-                                    TimeRange.LAST_30_DAYS -> "30 Days"
-                                    TimeRange.LAST_90_DAYS -> "90 Days"
-                                    TimeRange.ALL_TIME -> "All Time"
+                                    TimeRange.LAST_7_DAYS -> stringResource(R.string.analytics_7_days)
+                                    TimeRange.LAST_30_DAYS -> stringResource(R.string.analytics_30_days)
+                                    TimeRange.LAST_90_DAYS -> stringResource(R.string.analytics_90_days)
+                                    TimeRange.ALL_TIME -> stringResource(R.string.analytics_all_time)
                                 },
                         )
                     },
@@ -164,7 +169,7 @@ private fun TimeRangeSelector(
 private fun QuickStatsSection(stats: QuickStats) {
     Column(verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall)) {
         Text(
-            text = "Overview",
+            text = stringResource(R.string.analytics_overview),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
         )
@@ -174,13 +179,13 @@ private fun QuickStatsSection(stats: QuickStats) {
             horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
         ) {
             StatCard(
-                title = "Sessions",
+                title = stringResource(R.string.analytics_sessions),
                 value = stats.totalSessions.toString(),
                 icon = Icons.Default.PlayArrow,
                 modifier = Modifier.weight(1f),
             )
             StatCard(
-                title = "Turns",
+                title = stringResource(R.string.analytics_turns),
                 value = stats.totalTurns.toString(),
                 icon = Icons.Default.Chat,
                 modifier = Modifier.weight(1f),
@@ -192,13 +197,13 @@ private fun QuickStatsSection(stats: QuickStats) {
             horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
         ) {
             StatCard(
-                title = "Avg Latency",
+                title = stringResource(R.string.analytics_avg_latency),
                 value = "${stats.avgE2ELatency}ms",
                 icon = Icons.Default.Timer,
                 modifier = Modifier.weight(1f),
             )
             StatCard(
-                title = "Total Cost",
+                title = stringResource(R.string.analytics_total_cost),
                 value = "${'$'}${String.format("%.2f", stats.totalCost)}",
                 icon = Icons.Default.AttachMoney,
                 modifier = Modifier.weight(1f),
@@ -258,7 +263,7 @@ private fun LatencyBreakdownCard(breakdown: LatencyBreakdown) {
             verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
         ) {
             Text(
-                text = "Latency Breakdown",
+                text = stringResource(R.string.analytics_latency_breakdown),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
             )
@@ -292,7 +297,7 @@ private fun CostBreakdownCard(breakdown: CostBreakdown) {
             verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
         ) {
             Text(
-                text = "Cost Breakdown",
+                text = stringResource(R.string.analytics_cost_breakdown),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
             )
@@ -328,7 +333,7 @@ private fun CostBreakdownCard(breakdown: CostBreakdown) {
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text(
-                    text = "Total Cost",
+                    text = stringResource(R.string.analytics_total_cost),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                 )
@@ -380,14 +385,14 @@ private fun ProviderBreakdownCard(providers: List<ProviderCostItem>) {
             verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
         ) {
             Text(
-                text = "Provider Details",
+                text = stringResource(R.string.analytics_provider_details),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
             )
 
             if (providers.isEmpty()) {
                 Text(
-                    text = "No provider data available",
+                    text = stringResource(R.string.analytics_no_provider_data),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = Dimensions.CardPadding),
@@ -438,7 +443,7 @@ private fun ProviderCostRow(provider: ProviderCostItem) {
                     fontWeight = FontWeight.Medium,
                 )
                 Text(
-                    text = "${provider.requestCount} requests",
+                    text = stringResource(R.string.analytics_requests_count, provider.requestCount),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -478,14 +483,14 @@ private fun SessionTrendsCard(trends: List<DailyStats>) {
             verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
         ) {
             Text(
-                text = "Session Trends",
+                text = stringResource(R.string.analytics_session_trends),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
             )
 
             if (trends.isEmpty()) {
                 Text(
-                    text = "No data available",
+                    text = stringResource(R.string.analytics_no_data),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = Dimensions.SpacingXXLarge),
@@ -654,11 +659,11 @@ private fun ExportDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Export Metrics") },
+        title = { Text(stringResource(R.string.analytics_export_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall)) {
                 Text(
-                    text = "Metrics in JSON format:",
+                    text = stringResource(R.string.analytics_json_format),
                     style = MaterialTheme.typography.bodySmall,
                 )
                 Surface(
@@ -676,7 +681,7 @@ private fun ExportDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Close")
+                Text(stringResource(R.string.analytics_close))
             }
         },
     )

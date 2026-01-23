@@ -175,14 +175,14 @@ private fun SessionHeader(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "Question ${currentIndex + 1} of $totalQuestions",
+                text = stringResource(R.string.kb_question_of, currentIndex + 1, totalQuestions),
                 style = MaterialTheme.typography.bodyMedium,
                 color = KBTheme.textSecondary(),
             )
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = "$correctCount correct",
+                    text = stringResource(R.string.kb_correct_count_label, correctCount),
                     style = MaterialTheme.typography.bodyMedium,
                     color = KBTheme.mastered(),
                 )
@@ -276,10 +276,11 @@ private fun StartScreen(viewModel: KBOralSessionViewModel) {
                     value = viewModel.regionalConfig.region.displayName,
                 )
                 Spacer(modifier = Modifier.height(8.dp))
+                val perCorrectText = stringResource(R.string.kb_per_correct)
                 ConfigRow(
                     icon = Icons.Default.Star,
                     label = stringResource(R.string.kb_points),
-                    value = "${viewModel.regionalConfig.oralPointsPerCorrect} per correct",
+                    value = "${viewModel.regionalConfig.oralPointsPerCorrect} $perCorrectText",
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 ConfigRow(
@@ -406,7 +407,7 @@ private fun QuestionReadingScreen(viewModel: KBOralSessionViewModel) {
         // Speaking indicator
         Icon(
             imageVector = Icons.Default.VolumeUp,
-            contentDescription = "Speaking",
+            contentDescription = stringResource(R.string.cd_kb_speaking),
             modifier =
                 Modifier
                     .size(80.dp)
@@ -625,9 +626,9 @@ private fun ListeningScreen(viewModel: KBOralSessionViewModel) {
                     },
                 contentDescription =
                     if (isListening) {
-                        "Listening"
+                        stringResource(R.string.cd_kb_listening)
                     } else {
-                        "Tap to speak"
+                        stringResource(R.string.cd_kb_tap_to_speak)
                     },
                 modifier = Modifier.size(60.dp),
                 tint = if (isListening) KBTheme.mastered() else KBTheme.intermediate(),

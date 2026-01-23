@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **String Resources (i18n)**: Moved hardcoded user-facing strings to `strings.xml` for internationalization support:
+  - KBStatsScreen: `kb_answered_count` ("%d answered")
+  - KBOralSessionScreen: `kb_correct_count_label` ("%d correct"), `kb_per_correct` ("per correct"), `cd_kb_speaking`, `cd_kb_listening`, `cd_kb_tap_to_speak` (accessibility)
+  - KBWrittenSessionScreen: `kb_written_round_practice`, `kb_per_correct`, `kb_submit_answer`, `kb_times_up`, `cd_kb_correct_answer`, `cd_kb_incorrect_answer` (accessibility)
+  - AnalyticsScreen: `analytics_title`, `analytics_export_metrics`, `analytics_time_range`, `analytics_7_days`, `analytics_30_days`, `analytics_90_days`, `analytics_all_time`, `analytics_overview`, `analytics_sessions`, `analytics_turns`, `analytics_avg_latency`, `analytics_total_cost`, `analytics_latency_breakdown`, `analytics_cost_breakdown`, `analytics_provider_details`, `analytics_no_provider_data`, `analytics_requests_count`, `analytics_session_trends`, `analytics_no_data`, `analytics_export_title`, `analytics_json_format`, `analytics_close`
 - **ProgressUtils**: New utility module (`com.unamentis.ui.util.ProgressUtils`) for sanitizing progress values
   - `safeProgress(Float?)` - Handles NaN, Infinity, null, and out-of-range values
   - `safeProgress(Double?)` - Double overload
@@ -50,7 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - TodoScreen (suggestion confidence)
   - StyledComponents (IOSProgressBar)
 - **Knowledge Bowl**: `targetedSelection()` in KBQuestionService now correctly fills remaining slots when weak-domain pool is smaller than requested count
-- **ModuleRegistryTest**: Fixed flaky test by adding `@After` teardown with `clearAllMocks()` and `unmockkAll()` to prevent coroutine interference between tests
+- **ModuleRegistryTest**: Replaced mocked `ModuleDao` with real in-memory Room database using Robolectric, following project testing philosophy of "real over mocks"
 - **Knowledge Bowl**: CancellationException handling in KBQuestionService - now properly re-throws to preserve cooperative cancellation
 - **Knowledge Bowl**: LazyVerticalGrid in KBDashboardScreen now uses flexible height (`heightIn(max = 400.dp)`) instead of fixed `height(260.dp)`
 - **Knowledge Bowl**: `isLastQuestion` getter in KBPracticeSessionViewModel now requires `totalQuestions > 0` to prevent false positives
@@ -78,7 +83,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - TodoScreenTest.kt
 
 ### Documentation
-- Updated docs/TESTING.md with CI locale enforcement, testTag testing patterns, and mock cleanup best practices
+- Updated docs/TESTING.md with CI locale enforcement, testTag testing patterns, mock cleanup best practices, and aligned `DEFAULT_TIMEOUT` example (10s → 15s) with troubleshooting guidance
 - Updated docs/ANDROID_STYLE_GUIDE.md with safe progress value patterns for Compose
 - Updated docs/KNOWLEDGE_BOWL.md with code quality improvements section
 

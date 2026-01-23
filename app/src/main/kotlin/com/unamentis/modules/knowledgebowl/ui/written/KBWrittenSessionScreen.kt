@@ -54,9 +54,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.unamentis.R
 import com.unamentis.modules.knowledgebowl.data.model.KBQuestion
 import com.unamentis.modules.knowledgebowl.ui.theme.KBColors
 import com.unamentis.modules.knowledgebowl.ui.theme.KBTheme
@@ -88,12 +90,12 @@ fun KBWrittenSessionScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Written Practice") },
+                title = { Text(stringResource(R.string.kb_written_practice)) },
                 actions = {
                     if (uiState.state == WrittenSessionState.IN_PROGRESS) {
                         TextButton(onClick = { viewModel.endSession() }) {
                             Text(
-                                "End",
+                                stringResource(R.string.end),
                                 color = KBTheme.focusArea(),
                             )
                         }
@@ -214,13 +216,13 @@ private fun SessionHeader(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
-                text = "Question $questionNumber of $totalQuestions",
+                text = stringResource(R.string.kb_question_of, questionNumber, totalQuestions),
                 style = MaterialTheme.typography.bodySmall,
                 color = KBTheme.textSecondary(),
             )
 
             Text(
-                text = "$correctCount correct",
+                text = stringResource(R.string.kb_correct_count_label, correctCount),
                 style = MaterialTheme.typography.bodySmall,
                 color = KBTheme.mastered(),
             )
@@ -301,7 +303,7 @@ private fun StartScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "Written Round Practice",
+            text = stringResource(R.string.kb_written_round_practice),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = KBTheme.textPrimary(),
@@ -319,25 +321,26 @@ private fun StartScreen(
             ) {
                 ConfigRow(
                     icon = Icons.Default.Edit,
-                    label = "Questions",
+                    label = stringResource(R.string.kb_questions_label),
                     value = "${questions.size}",
                 )
                 config.timeLimitSeconds?.let { seconds ->
                     ConfigRow(
                         icon = Icons.Default.Schedule,
-                        label = "Time Limit",
+                        label = stringResource(R.string.kb_time_limit_label),
                         value = formatTime(seconds.toDouble()),
                     )
                 }
                 ConfigRow(
                     icon = Icons.Default.Star,
-                    label = "Region",
+                    label = stringResource(R.string.kb_region),
                     value = config.region.displayName,
                 )
+                val perCorrectText = stringResource(R.string.kb_per_correct)
                 ConfigRow(
                     icon = Icons.Default.Star,
-                    label = "Points",
-                    value = "${config.region.config.writtenPointsPerCorrect} per correct",
+                    label = stringResource(R.string.kb_points),
+                    value = "${config.region.config.writtenPointsPerCorrect} $perCorrectText",
                 )
             }
         }
@@ -357,7 +360,7 @@ private fun StartScreen(
             shape = RoundedCornerShape(12.dp),
         ) {
             Text(
-                text = "Start Practice",
+                text = stringResource(R.string.kb_start_practice),
                 modifier = Modifier.padding(vertical = 8.dp),
                 fontWeight = FontWeight.Bold,
             )
@@ -618,13 +621,13 @@ private fun MCQOptionButton(
             if (isCorrect) {
                 Icon(
                     imageVector = Icons.Default.Check,
-                    contentDescription = "Correct",
+                    contentDescription = stringResource(R.string.cd_kb_correct_answer),
                     tint = KBTheme.mastered(),
                 )
             } else if (isSelected) {
                 Icon(
                     imageVector = Icons.Default.Close,
-                    contentDescription = "Incorrect",
+                    contentDescription = stringResource(R.string.cd_kb_incorrect_answer),
                     tint = KBTheme.focusArea(),
                 )
             }
@@ -659,7 +662,12 @@ private fun SubmitButtonArea(
                     shape = RoundedCornerShape(12.dp),
                 ) {
                     Text(
-                        text = if (isLastQuestion) "See Results" else "Next Question",
+                        text =
+                            if (isLastQuestion) {
+                                stringResource(R.string.kb_see_results)
+                            } else {
+                                stringResource(R.string.kb_next_question)
+                            },
                         modifier = Modifier.padding(vertical = 8.dp),
                         fontWeight = FontWeight.Bold,
                     )
@@ -682,7 +690,7 @@ private fun SubmitButtonArea(
                     shape = RoundedCornerShape(12.dp),
                 ) {
                     Text(
-                        text = "Submit Answer",
+                        text = stringResource(R.string.kb_submit_answer),
                         modifier = Modifier.padding(vertical = 8.dp),
                         fontWeight = FontWeight.Bold,
                     )
@@ -722,7 +730,12 @@ private fun SummaryScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = if (isExpired) "Time's Up!" else "Session Complete!",
+            text =
+                if (isExpired) {
+                    stringResource(R.string.kb_times_up)
+                } else {
+                    stringResource(R.string.kb_session_complete)
+                },
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = KBTheme.textPrimary(),
@@ -740,10 +753,10 @@ private fun SummaryScreen(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                SummaryRow(label = "Score", value = "$correctCount/$totalQuestions")
-                SummaryRow(label = "Accuracy", value = "${(accuracy * 100).toInt()}%")
-                SummaryRow(label = "Points", value = "$totalPoints")
-                SummaryRow(label = "Time", value = formatTime(duration))
+                SummaryRow(label = stringResource(R.string.kb_score), value = "$correctCount/$totalQuestions")
+                SummaryRow(label = stringResource(R.string.kb_accuracy), value = "${(accuracy * 100).toInt()}%")
+                SummaryRow(label = stringResource(R.string.kb_points), value = "$totalPoints")
+                SummaryRow(label = stringResource(R.string.kb_time), value = formatTime(duration))
             }
         }
 
@@ -761,7 +774,7 @@ private fun SummaryScreen(
             shape = RoundedCornerShape(12.dp),
         ) {
             Text(
-                text = "Done",
+                text = stringResource(R.string.done),
                 modifier = Modifier.padding(vertical = 8.dp),
                 fontWeight = FontWeight.Bold,
             )
@@ -796,7 +809,7 @@ private fun AccuracyMeter(accuracy: Float) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            text = "Accuracy",
+            text = stringResource(R.string.kb_accuracy),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = KBTheme.textPrimary(),
