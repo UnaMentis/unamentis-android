@@ -40,6 +40,41 @@ Button(
 ) {
     Text("Start")
 }
+```
+
+#### Using stringResource() Inside Semantics Blocks
+
+**Important:** `stringResource()` is a `@Composable` function and **cannot be called inside non-composable lambda blocks** like `semantics {}`. You must extract the string to a variable first:
+
+```kotlin
+// CORRECT: Extract stringResource() before semantics block
+val buttonDescription = stringResource(R.string.cd_start_session)
+Button(
+    onClick = { /* ... */ },
+    modifier = Modifier.semantics {
+        contentDescription = buttonDescription
+    }
+) {
+    Text(stringResource(R.string.start_session))
+}
+
+// CORRECT: With conditional descriptions
+val selectedDescription = stringResource(R.string.cd_region_selected, region.displayName)
+val unselectedDescription = stringResource(R.string.cd_region_button, region.displayName)
+val accessibilityDescription = if (isSelected) selectedDescription else unselectedDescription
+
+Box(
+    modifier = Modifier.semantics {
+        contentDescription = accessibilityDescription
+    }
+) { /* ... */ }
+
+// INCORRECT: stringResource() inside semantics block - WILL NOT COMPILE
+Button(
+    modifier = Modifier.semantics {
+        contentDescription = stringResource(R.string.cd_start)  // BAD: Compilation error
+    }
+) { /* ... */ }
 
 // REQUIRED for icons
 Icon(
@@ -236,7 +271,29 @@ Text(text = "$${String.format("%.2f", cost)}")  // BAD: Only works for USD
 Text(text = "\$12.50")  // BAD: Hardcoded symbol
 ```
 
-### 2.4 Units and Suffixes
+### 2.4 Percentage Formatting
+
+**Never use `String.format()` for percentages.** Always use `NumberFormat.getPercentInstance()`:
+
+```kotlin
+import java.text.NumberFormat
+import java.util.Locale
+
+// CORRECT: Locale-aware percentage
+val percentFormatter = NumberFormat.getPercentInstance(Locale.getDefault())
+val accuracy = 0.85f
+Text(text = percentFormatter.format(accuracy.toDouble()))  // "85%" in en-US, "85 %" in fr-FR
+
+// For display without the % symbol, use string resources:
+// <string name="kb_percent_format">%1$d%%</string>
+Text(text = stringResource(R.string.kb_percent_format, (accuracy * 100).toInt()))
+
+// INCORRECT: String.format() - doesn't respect locale
+Text(text = String.format("%.0f%%", accuracy * 100))  // BAD: Not locale-aware
+Text(text = "${(accuracy * 100).toInt()}%")  // BAD: Hardcoded format
+```
+
+### 2.5 Units and Suffixes
 
 Use string resources with placeholders for units:
 
@@ -253,7 +310,7 @@ Text(text = "${stats.avgLatency}ms")  // BAD: Not localizable
 Text(text = "${value} ms")  // BAD: Hardcoded
 ```
 
-### 2.5 Right-to-Left (RTL) Support
+### 2.6 Right-to-Left (RTL) Support
 
 Use start/end instead of left/right:
 
@@ -266,7 +323,7 @@ Row(horizontalArrangement = Arrangement.Start) { /* ... */ }
 Modifier.padding(left = 16.dp, right = 8.dp)  // BAD
 ```
 
-### 2.6 Plurals
+### 2.7 Plurals
 
 Use quantity strings for proper pluralization:
 

@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Comprehensive Localization (i18n)**: Added 80+ new string resources for complete internationalization:
+  - Accessibility content descriptions: `cd_region_button`, `cd_region_selected`, `cd_skip_onboarding`, `cd_go_back`, `cd_complete_onboarding`, `cd_next_page`, `cd_clear_search`, `cd_dismiss`, `cd_downloaded`, `cd_download`, `cd_delete`, `cd_back`, `cd_segments_in_topic`, `cd_selected`
+  - Viewer strings: `viewer_failed_to_load_image`, `viewer_video_not_implemented`, `viewer_close`, `viewer_share`, `viewer_download`
+  - Settings strings: `settings_speech_to_text_title`, `settings_text_to_speech_title`, `settings_language_model_title`
+  - Knowledge Bowl formatting: `kb_percent_format`, `kb_time_seconds_format`, `kb_score_format`, `kb_points_format`, `kb_domain_mastery_format`, `kb_time_limit_minutes`
+  - Unit strings: `kb_written_questions_value`, `kb_written_time_value`, `kb_written_points_value`, `kb_oral_points_value`, `kb_conference_time_value`
+  - Plurals: `topic_segments` for proper pluralization of segment counts
 - **String Resources (i18n)**: Moved hardcoded user-facing strings to `strings.xml` for internationalization support:
   - KBStatsScreen: `kb_answered_count` ("%d answered")
   - KBOralSessionScreen: `kb_correct_count_label` ("%d correct"), `kb_per_correct` ("per correct"), `cd_kb_speaking`, `cd_kb_listening`, `cd_kb_tap_to_speak` (accessibility)
@@ -63,6 +70,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Navigation**: Tests now use testTag selectors instead of fragile text-based selectors
 
 ### Changed
+- **Locale-Aware Formatting**: Replaced `String.format()` with proper locale-aware formatters:
+  - KBStatsScreen: Uses `NumberFormat.getPercentInstance()` for accuracy percentages
+  - KBSettingsScreen: Uses `stringResource()` for unit strings (questions, minutes, points, seconds)
+  - KBPracticeLauncherSheet: Uses localized time limit string
+  - ExportBottomSheet: Uses localized share intent strings
+- **Accessibility Content Descriptions**: Added `Modifier.semantics { contentDescription }` to interactive elements:
+  - KBDashboardScreen: RegionButton with selected/unselected state descriptions
+  - OnboardingScreen: Skip button, back button, next/complete button with proper descriptions
+  - CurriculumScreen: Segment count with accessibility descriptions, clear search button
+  - FullscreenAssetViewer: Close, share, download buttons with descriptions
+- **Settings Provider Cards**: Localized provider section titles (Speech-to-Text, Text-to-Speech, Language Model)
 - **Navigation**: `Screen` sealed class now uses `@StringRes titleResId: Int` instead of hardcoded `title: String` for proper localization
 - **KBDashboardScreen**: Stat labels now use string resources (`R.string.kb_questions`, `R.string.kb_avg_speed`, `R.string.kb_accuracy`)
 - **UI Tests**: Updated to wait for destination-specific UI elements rather than just navigation tags:
@@ -85,6 +103,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Documentation
 - Updated docs/TESTING.md with CI locale enforcement, testTag testing patterns, mock cleanup best practices, and aligned `DEFAULT_TIMEOUT` example (10s → 15s) with troubleshooting guidance
 - Updated docs/ANDROID_STYLE_GUIDE.md with safe progress value patterns for Compose
+- Updated docs/ANDROID_STYLE_GUIDE.md with stringResource() inside semantics blocks pattern and percentage formatting guidance
 - Updated docs/KNOWLEDGE_BOWL.md with code quality improvements section
 
 ---
