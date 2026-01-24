@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **SettingsScreen Localization**: Complete internationalization of SettingsScreen.kt (11+ sections):
+  - Recording mode strings: `settings_recording_mode_vad`, `settings_recording_mode_vad_desc`, `settings_recording_mode_push_to_talk`, `settings_recording_mode_push_to_talk_desc`, `settings_recording_mode_toggle`, `settings_recording_mode_toggle_desc`
+  - Configuration preset names: `settings_preset_free`, `settings_preset_premium`, `settings_preset_low_latency`, `settings_preset_cost_optimized`, `settings_preset_offline`
+  - API provider names: `provider_deepgram`, `provider_elevenlabs`, `provider_openai`, `provider_anthropic`, `provider_android`, `provider_patchpanel`
+  - Sample rate format: `settings_sample_rate_khz` ("%1$d kHz")
+  - Locale-aware number formatting for VAD threshold, temperature, speaking rate, and playback speed sliders
 - **Comprehensive Localization (i18n)**: Added 80+ new string resources for complete internationalization:
   - Accessibility content descriptions: `cd_region_button`, `cd_region_selected`, `cd_skip_onboarding`, `cd_go_back`, `cd_complete_onboarding`, `cd_next_page`, `cd_clear_search`, `cd_dismiss`, `cd_downloaded`, `cd_download`, `cd_delete`, `cd_back`, `cd_segments_in_topic`, `cd_selected`
   - Viewer strings: `viewer_failed_to_load_image`, `viewer_video_not_implemented`, `viewer_close`, `viewer_share`, `viewer_download`
@@ -39,8 +45,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ARCHITECTURE.md with in-depth technical documentation
 - QUICK_START.md for rapid developer onboarding
 - CHANGELOG.md for tracking project changes
+- **IOSTypography System**: Complete iOS-matching typography in `Type.kt`:
+  - `largeTitle` (34sp Bold), `title2` (22sp SemiBold), `headline` (17sp SemiBold)
+  - `body` (17sp Normal), `subheadline` (15sp Normal), `caption` (12sp Normal), `caption2` (11sp Normal)
+- **Dimensions Constants**: iOS-matching spacing in `Dimensions.kt`:
+  - Screen padding (20dp), spacing (8/12/16dp), corner radii (12/14/20dp)
+  - Session button sizes (80dp idle, 50dp active), progress bar height (4dp)
+- **AnimationSpecs**: iOS-matching animations in `AnimationSpecs.kt`:
+  - Spring animations (dampingRatio 0.5-0.8, various stiffness)
+  - Tween animations (100-500ms for different use cases)
+- **KBColors Tip Colors**: Added `tipBackground`, `tipText`, `tipIcon` with dark mode support for Knowledge Bowl practice launcher
 
 ### Fixed
+- **SessionManager**: Fixed broken reference to removed `RecordingMode.displayName` property (now uses `mode.name` for log messages)
 - **Instrumented Tests**: Fixed 22 failing instrumented tests (reduced to 0 failures, 1 skipped):
   - CurriculumScreen: Changed hardcoded tab text ("Server"/"Local") to use string resources (`R.string.curriculum_server`, `R.string.curriculum_downloaded`)
   - SettingsScreen: Added testTags to section headers (`settings_providers_header`, `settings_on_device_ai_header`, `settings_voice_detection_header`)
@@ -68,8 +85,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Knowledge Bowl**: `isLastQuestion` getter in KBPracticeSessionViewModel now requires `totalQuestions > 0` to prevent false positives
 - **CI**: Instrumented tests now stable with en-US locale enforcement and 10s timeouts
 - **Navigation**: Tests now use testTag selectors instead of fragile text-based selectors
+- **Navigation Tests** (27 tests fixed): Updated from obsolete "More menu" pattern to direct 6-tab navigation:
+  - NavigationFlowTest.kt: Removed `nav_more` and `menu_*` references, simplified `navigateToTab()` helper
+  - SettingsScreenTest.kt: Direct `nav_settings` click instead of More menu
+  - AnalyticsScreenTest.kt: Direct `nav_analytics` click instead of More menu
+  - SessionScreenTest.kt: Fixed `navigateToSettings()` helper
+- **Benchmark Tests** (2 tests fixed): Relaxed thresholds for emulator overhead:
+  - `benchmark_databaseOperations`: 50ms → 100ms threshold
+  - `benchmark_concurrentProcessing`: 500ms → 2000ms threshold
+- **UI Test Text Matching** (4 tests fixed):
+  - SettingsScreenTest.kt: Added `ignoreCase = true` for "Recording"/"RECORDING" mismatch
+  - SessionScreenTest.kt: Changed from text to content description matching for start button
+  - HistoryScreenTest.kt: Fixed "No Sessions Yet" text matching
 
 ### Changed
+- **RecordingMode Enum**: Migrated from hardcoded `displayName`/`description` properties to `@StringRes displayNameResId`/`descriptionResId` for proper localization
+- **SettingsScreen Locale-Aware Formatting**: Added `NumberFormat.getNumberInstance()` and `NumberFormat.getPercentInstance()` for slider value displays (VAD threshold, temperature, speaking rate, playback speed)
 - **Locale-Aware Formatting**: Replaced `String.format()` with proper locale-aware formatters:
   - KBStatsScreen: Uses `NumberFormat.getPercentInstance()` for accuracy percentages
   - KBSettingsScreen: Uses `stringResource()` for unit strings (questions, minutes, points, seconds)
@@ -99,30 +130,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - CurriculumScreenTest.kt
   - HistoryScreenTest.kt
   - TodoScreenTest.kt
-
-### Documentation
-- Updated docs/TESTING.md with CI locale enforcement, testTag testing patterns, mock cleanup best practices, and aligned `DEFAULT_TIMEOUT` example (10s → 15s) with troubleshooting guidance
-- Updated docs/ANDROID_STYLE_GUIDE.md with safe progress value patterns for Compose
-- Updated docs/ANDROID_STYLE_GUIDE.md with stringResource() inside semantics blocks pattern and percentage formatting guidance
-- Updated docs/KNOWLEDGE_BOWL.md with code quality improvements section
-
----
-
-## [iOS Parity UI Update] - 2026-01-24
-
-### Added
-- **IOSTypography System**: Complete iOS-matching typography in `Type.kt`:
-  - `largeTitle` (34sp Bold), `title2` (22sp SemiBold), `headline` (17sp SemiBold)
-  - `body` (17sp Normal), `subheadline` (15sp Normal), `caption` (12sp Normal), `caption2` (11sp Normal)
-- **Dimensions Constants**: iOS-matching spacing in `Dimensions.kt`:
-  - Screen padding (20dp), spacing (8/12/16dp), corner radii (12/14/20dp)
-  - Session button sizes (80dp idle, 50dp active), progress bar height (4dp)
-- **AnimationSpecs**: iOS-matching animations in `AnimationSpecs.kt`:
-  - Spring animations (dampingRatio 0.5-0.8, various stiffness)
-  - Tween animations (100-500ms for different use cases)
-- **KBColors Tip Colors**: Added `tipBackground`, `tipText`, `tipIcon` with dark mode support for Knowledge Bowl practice launcher
-
-### Changed
 - **Typography Migration**: Converted 70+ `MaterialTheme.typography` usages to `IOSTypography`:
   - SettingsScreen.kt (~50 usages)
   - ExportBottomSheet.kt, FullscreenAssetViewer.kt, StatusIndicators.kt
@@ -137,24 +144,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - SessionControlComponents.kt: Control bar padding
   - CurriculumScreen.kt, SettingsScreen.kt, OnboardingScreen.kt: All spacing values
 
-### Fixed
-- **Navigation Tests** (27 tests fixed): Updated from obsolete "More menu" pattern to direct 6-tab navigation:
-  - NavigationFlowTest.kt: Removed `nav_more` and `menu_*` references, simplified `navigateToTab()` helper
-  - SettingsScreenTest.kt: Direct `nav_settings` click instead of More menu
-  - AnalyticsScreenTest.kt: Direct `nav_analytics` click instead of More menu
-  - SessionScreenTest.kt: Fixed `navigateToSettings()` helper
-- **Benchmark Tests** (2 tests fixed): Relaxed thresholds for emulator overhead:
-  - `benchmark_databaseOperations`: 50ms → 100ms threshold
-  - `benchmark_concurrentProcessing`: 500ms → 2000ms threshold
-- **UI Test Text Matching** (4 tests fixed):
-  - SettingsScreenTest.kt: Added `ignoreCase = true` for "Recording"/"RECORDING" mismatch
-  - SessionScreenTest.kt: Changed from text to content description matching for start button
-  - HistoryScreenTest.kt: Fixed "No Sessions Yet" text matching
-
-### Test Results
-- **76 instrumented tests**: 75 passed, 1 skipped, 0 failed
-- **All unit tests**: Passing
-- **All lint checks**: Passing
+### Documentation
+- Updated docs/TESTING.md with CI locale enforcement, testTag testing patterns, mock cleanup best practices, and aligned `DEFAULT_TIMEOUT` example (10s → 15s) with troubleshooting guidance
+- Updated docs/ANDROID_STYLE_GUIDE.md with safe progress value patterns for Compose
+- Updated docs/ANDROID_STYLE_GUIDE.md with stringResource() inside semantics blocks pattern and percentage formatting guidance
+- Updated docs/ANDROID_STYLE_GUIDE.md with enum localization pattern using `@StringRes` properties (Section 2.5)
+- Updated docs/KNOWLEDGE_BOWL.md with code quality improvements section
 
 ---
 

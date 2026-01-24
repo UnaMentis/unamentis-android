@@ -116,7 +116,7 @@ class SessionManager(
      */
     fun setRecordingMode(mode: RecordingMode) {
         _recordingMode.value = mode
-        Log.i("SessionManager", "Recording mode set to: ${mode.displayName}")
+        Log.i("SessionManager", "Recording mode set to: ${mode.name}")
     }
 
     /**

@@ -279,21 +279,68 @@ Text(text = "\$12.50")  // BAD: Hardcoded symbol
 import java.text.NumberFormat
 import java.util.Locale
 
-// CORRECT: Locale-aware percentage
+// CORRECT: Locale-aware percentage (preferred approach)
 val percentFormatter = NumberFormat.getPercentInstance(Locale.getDefault())
 val accuracy = 0.85f
 Text(text = percentFormatter.format(accuracy.toDouble()))  // "85%" in en-US, "85 %" in fr-FR
 
-// For display without the % symbol, use string resources:
+// ALTERNATIVE: For integer percentages with localized text, use string resources:
+// Note: %% escapes to a literal % character, and %1$d is the integer placeholder
 // <string name="kb_percent_format">%1$d%%</string>
-Text(text = stringResource(R.string.kb_percent_format, (accuracy * 100).toInt()))
+val intPercent = (accuracy * 100).toInt()
+Text(text = stringResource(R.string.kb_percent_format, intPercent))  // "85%"
 
 // INCORRECT: String.format() - doesn't respect locale
 Text(text = String.format("%.0f%%", accuracy * 100))  // BAD: Not locale-aware
 Text(text = "${(accuracy * 100).toInt()}%")  // BAD: Hardcoded format
 ```
 
-### 2.5 Units and Suffixes
+### 2.5 Enum Localization
+
+When enums have user-facing display names or descriptions, **use `@StringRes` properties** instead of hardcoded strings:
+
+```kotlin
+import androidx.annotation.StringRes
+import com.unamentis.R
+
+// CORRECT: Uses @StringRes properties
+enum class RecordingMode {
+    VAD,
+    PUSH_TO_TALK,
+    TOGGLE,
+    ;
+
+    @get:StringRes
+    val displayNameResId: Int
+        get() = when (this) {
+            VAD -> R.string.settings_recording_mode_vad
+            PUSH_TO_TALK -> R.string.settings_recording_mode_push_to_talk
+            TOGGLE -> R.string.settings_recording_mode_toggle
+        }
+
+    @get:StringRes
+    val descriptionResId: Int
+        get() = when (this) {
+            VAD -> R.string.settings_recording_mode_vad_desc
+            PUSH_TO_TALK -> R.string.settings_recording_mode_push_to_talk_desc
+            TOGGLE -> R.string.settings_recording_mode_toggle_desc
+        }
+}
+
+// Usage in Composable:
+Text(text = stringResource(mode.displayNameResId))
+Text(text = stringResource(mode.descriptionResId))
+
+// INCORRECT: Hardcoded strings in enum
+enum class RecordingMode(
+    val displayName: String,  // BAD: Not localizable
+    val description: String   // BAD: Not localizable
+) {
+    VAD("Auto (VAD)", "Automatically detects when you speak")
+}
+```
+
+### 2.6 Units and Suffixes
 
 Use string resources with placeholders for units:
 
@@ -310,7 +357,7 @@ Text(text = "${stats.avgLatency}ms")  // BAD: Not localizable
 Text(text = "${value} ms")  // BAD: Hardcoded
 ```
 
-### 2.6 Right-to-Left (RTL) Support
+### 2.7 Right-to-Left (RTL) Support
 
 Use start/end instead of left/right:
 
@@ -323,7 +370,7 @@ Row(horizontalArrangement = Arrangement.Start) { /* ... */ }
 Modifier.padding(left = 16.dp, right = 8.dp)  // BAD
 ```
 
-### 2.7 Plurals
+### 2.8 Plurals
 
 Use quantity strings for proper pluralization:
 

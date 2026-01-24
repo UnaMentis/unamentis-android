@@ -32,6 +32,7 @@ import com.unamentis.ui.theme.Dimensions
 import com.unamentis.ui.theme.IOSTypography
 import com.unamentis.ui.util.safeProgress
 import kotlinx.coroutines.launch
+import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -517,11 +518,12 @@ private fun TodoCard(
                         color = MaterialTheme.colorScheme.primary,
                     )
                     if (todo.suggestionConfidence != null) {
+                        val percentFormatter = NumberFormat.getPercentInstance(Locale.getDefault())
                         Text(
                             text =
                                 stringResource(
                                     R.string.confidence_percent,
-                                    (todo.suggestionConfidence * 100).toInt(),
+                                    percentFormatter.format(todo.suggestionConfidence.toDouble()),
                                 ),
                             style = IOSTypography.caption2,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -969,6 +971,7 @@ private fun SuggestionInfoDialog(
                 }
 
                 if (todo.suggestionConfidence != null) {
+                    val percentFormatter = NumberFormat.getPercentInstance(Locale.getDefault())
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -983,7 +986,7 @@ private fun SuggestionInfoDialog(
                             modifier = Modifier.weight(1f),
                         )
                         Text(
-                            text = "${(todo.suggestionConfidence * 100).toInt()}%",
+                            text = percentFormatter.format(todo.suggestionConfidence.toDouble()),
                             style = IOSTypography.subheadline,
                         )
                     }

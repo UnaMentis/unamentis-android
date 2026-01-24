@@ -476,12 +476,20 @@ private fun PresetChip(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val presetLabel =
+        when (preset) {
+            ConfigurationPreset.FREE -> stringResource(R.string.settings_preset_free)
+            ConfigurationPreset.PREMIUM -> stringResource(R.string.settings_preset_premium)
+            ConfigurationPreset.LOW_LATENCY -> stringResource(R.string.settings_preset_low_latency)
+            ConfigurationPreset.COST_OPTIMIZED -> stringResource(R.string.settings_preset_cost_optimized)
+            ConfigurationPreset.OFFLINE -> stringResource(R.string.settings_preset_offline)
+        }
     FilterChip(
         selected = isSelected,
         onClick = onClick,
         label = {
             Text(
-                text = preset.name.replace("_", " "),
+                text = presetLabel,
                 style = IOSTypography.caption2,
             )
         },
@@ -545,27 +553,32 @@ private fun ApiKeySection(
     var showOpenAIDialog by remember { mutableStateOf(false) }
     var showAnthropicDialog by remember { mutableStateOf(false) }
 
+    val deepgramName = stringResource(R.string.provider_deepgram)
+    val elevenLabsName = stringResource(R.string.provider_elevenlabs)
+    val openAiName = stringResource(R.string.provider_openai)
+    val anthropicName = stringResource(R.string.provider_anthropic)
+
     IOSCard(modifier = Modifier.fillMaxWidth()) {
         Column(
             verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
         ) {
             ApiKeyItem(
-                name = "Deepgram",
+                name = deepgramName,
                 hasKey = uiState.hasDeepgramKey,
                 onEdit = { showDeepgramDialog = true },
             )
             ApiKeyItem(
-                name = "ElevenLabs",
+                name = elevenLabsName,
                 hasKey = uiState.hasElevenLabsKey,
                 onEdit = { showElevenLabsDialog = true },
             )
             ApiKeyItem(
-                name = "OpenAI",
+                name = openAiName,
                 hasKey = uiState.hasOpenAIKey,
                 onEdit = { showOpenAIDialog = true },
             )
             ApiKeyItem(
-                name = "Anthropic",
+                name = anthropicName,
                 hasKey = uiState.hasAnthropicKey,
                 onEdit = { showAnthropicDialog = true },
             )
@@ -575,7 +588,7 @@ private fun ApiKeySection(
     // API Key dialogs
     if (showDeepgramDialog) {
         ApiKeyDialog(
-            title = "Deepgram API Key",
+            title = stringResource(R.string.settings_api_key_dialog_title, deepgramName),
             currentKey = viewModel.getDeepgramApiKey(),
             onDismiss = { showDeepgramDialog = false },
             onSave = { viewModel.updateDeepgramApiKey(it) },
@@ -583,7 +596,7 @@ private fun ApiKeySection(
     }
     if (showElevenLabsDialog) {
         ApiKeyDialog(
-            title = "ElevenLabs API Key",
+            title = stringResource(R.string.settings_api_key_dialog_title, elevenLabsName),
             currentKey = viewModel.getElevenLabsApiKey(),
             onDismiss = { showElevenLabsDialog = false },
             onSave = { viewModel.updateElevenLabsApiKey(it) },
@@ -591,7 +604,7 @@ private fun ApiKeySection(
     }
     if (showOpenAIDialog) {
         ApiKeyDialog(
-            title = "OpenAI API Key",
+            title = stringResource(R.string.settings_api_key_dialog_title, openAiName),
             currentKey = viewModel.getOpenAIApiKey(),
             onDismiss = { showOpenAIDialog = false },
             onSave = { viewModel.updateOpenAIApiKey(it) },
@@ -599,7 +612,7 @@ private fun ApiKeySection(
     }
     if (showAnthropicDialog) {
         ApiKeyDialog(
-            title = "Anthropic API Key",
+            title = stringResource(R.string.settings_api_key_dialog_title, anthropicName),
             currentKey = viewModel.getAnthropicApiKey(),
             onDismiss = { showAnthropicDialog = false },
             onSave = { viewModel.updateAnthropicApiKey(it) },
@@ -676,7 +689,7 @@ private fun ApiKeyDialog(
             Column(verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall)) {
                 if (currentKey != null) {
                     Text(
-                        text = "Current: $currentKey",
+                        text = stringResource(R.string.settings_api_key_current, currentKey),
                         style = IOSTypography.caption,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -685,13 +698,18 @@ private fun ApiKeyDialog(
                 OutlinedTextField(
                     value = keyInput,
                     onValueChange = { keyInput = it },
-                    label = { Text("API Key") },
+                    label = { Text(stringResource(R.string.settings_api_key_label)) },
                     visualTransformation = if (showKey) VisualTransformation.None else PasswordVisualTransformation(),
                     trailingIcon = {
                         IconButton(onClick = { showKey = !showKey }) {
                             Icon(
                                 imageVector = if (showKey) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                                contentDescription = if (showKey) "Hide" else "Show",
+                                contentDescription =
+                                    if (showKey) {
+                                        stringResource(R.string.cd_hide_api_key)
+                                    } else {
+                                        stringResource(R.string.cd_show_api_key)
+                                    },
                             )
                         }
                     },
@@ -710,12 +728,12 @@ private fun ApiKeyDialog(
                 },
                 enabled = keyInput.isNotBlank(),
             ) {
-                Text("Save")
+                Text(stringResource(R.string.settings_save))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.cancel))
             }
         },
     )
@@ -744,7 +762,7 @@ private fun RecordingModeSection(
                     tint = MaterialTheme.colorScheme.primary,
                 )
                 Text(
-                    text = "Recording Mode",
+                    text = stringResource(R.string.settings_recording_mode_title),
                     style = IOSTypography.subheadline,
                 )
             }
@@ -780,11 +798,11 @@ private fun RecordingModeOption(
         )
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = mode.displayName,
+                text = stringResource(mode.displayNameResId),
                 style = IOSTypography.body,
             )
             Text(
-                text = mode.description,
+                text = stringResource(mode.descriptionResId),
                 style = IOSTypography.caption,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -821,14 +839,14 @@ private fun AudioSettingsSection(
                     tint = MaterialTheme.colorScheme.primary,
                 )
                 Text(
-                    text = "Audio Quality",
+                    text = stringResource(R.string.settings_audio_quality),
                     style = IOSTypography.subheadline,
                 )
             }
 
             // Sample rate picker
             Text(
-                text = "Sample Rate",
+                text = stringResource(R.string.settings_sample_rate),
                 style = IOSTypography.body,
             )
             Row(
@@ -839,12 +857,12 @@ private fun AudioSettingsSection(
                     FilterChip(
                         selected = sampleRate == rate,
                         onClick = { onSampleRateChange(rate) },
-                        label = { Text("${rate / 1000} kHz") },
+                        label = { Text(stringResource(R.string.settings_sample_rate_khz, rate / 1000)) },
                     )
                 }
             }
             Text(
-                text = "Higher rates sound better but use more data",
+                text = stringResource(R.string.settings_sample_rate_hint),
                 style = IOSTypography.caption,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -853,22 +871,22 @@ private fun AudioSettingsSection(
 
             // Toggle options
             SettingsToggle(
-                title = "Voice Processing",
-                description = "Enhances voice clarity",
+                title = stringResource(R.string.settings_voice_processing),
+                description = stringResource(R.string.settings_voice_processing_desc),
                 checked = enableVoiceProcessing,
                 onCheckedChange = onVoiceProcessingChange,
             )
 
             SettingsToggle(
-                title = "Echo Cancellation",
-                description = "Prevents microphone from picking up AI's voice",
+                title = stringResource(R.string.settings_echo_cancellation),
+                description = stringResource(R.string.settings_echo_cancellation_desc),
                 checked = enableEchoCancellation,
                 onCheckedChange = onEchoCancellationChange,
             )
 
             SettingsToggle(
-                title = "Noise Suppression",
-                description = "Filters background noise",
+                title = stringResource(R.string.settings_noise_suppression),
+                description = stringResource(R.string.settings_noise_suppression_desc),
                 checked = enableNoiseSuppression,
                 onCheckedChange = onNoiseSuppressionChange,
             )
@@ -890,6 +908,14 @@ private fun VadSettingsSection(
     silenceThresholdMs: Int,
     onSilenceThresholdChange: (Int) -> Unit,
 ) {
+    val numberFormatter =
+        remember {
+            java.text.NumberFormat.getNumberInstance(java.util.Locale.getDefault()).apply {
+                minimumFractionDigits = 2
+                maximumFractionDigits = 2
+            }
+        }
+
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -905,7 +931,7 @@ private fun VadSettingsSection(
                     tint = MaterialTheme.colorScheme.primary,
                 )
                 Text(
-                    text = "Voice Detection Tuning",
+                    text = stringResource(R.string.settings_voice_detection_tuning),
                     style = IOSTypography.subheadline,
                 )
             }
@@ -917,11 +943,11 @@ private fun VadSettingsSection(
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(
-                        text = "Detection Threshold",
+                        text = stringResource(R.string.settings_detection_threshold),
                         style = IOSTypography.body,
                     )
                     Text(
-                        text = "%.2f".format(vadThreshold),
+                        text = numberFormatter.format(vadThreshold),
                         style = IOSTypography.body,
                         color = MaterialTheme.colorScheme.primary,
                     )
@@ -932,7 +958,7 @@ private fun VadSettingsSection(
                     valueRange = 0.3f..0.9f,
                 )
                 Text(
-                    text = "Lower values detect quieter speech but may pick up noise",
+                    text = stringResource(R.string.settings_detection_threshold_hint),
                     style = IOSTypography.caption,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -942,8 +968,8 @@ private fun VadSettingsSection(
 
             // Barge-in settings
             SettingsToggle(
-                title = "Enable Interruptions",
-                description = "Speaking while AI talks will pause it to listen",
+                title = stringResource(R.string.settings_enable_interruptions),
+                description = stringResource(R.string.settings_enable_interruptions_desc),
                 checked = enableBargeIn,
                 onCheckedChange = onEnableBargeInChange,
             )
@@ -955,11 +981,11 @@ private fun VadSettingsSection(
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Text(
-                            text = "Interruption Threshold",
+                            text = stringResource(R.string.settings_interruption_threshold),
                             style = IOSTypography.body,
                         )
                         Text(
-                            text = "%.2f".format(bargeInThreshold),
+                            text = numberFormatter.format(bargeInThreshold),
                             style = IOSTypography.body,
                             color = MaterialTheme.colorScheme.primary,
                         )
@@ -970,7 +996,7 @@ private fun VadSettingsSection(
                         valueRange = 0.5f..0.95f,
                     )
                     Text(
-                        text = "How loud you need to speak to interrupt the AI",
+                        text = stringResource(R.string.settings_interruption_threshold_hint),
                         style = IOSTypography.caption,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -986,11 +1012,11 @@ private fun VadSettingsSection(
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(
-                        text = "Silence Timeout",
+                        text = stringResource(R.string.settings_silence_timeout),
                         style = IOSTypography.body,
                     )
                     Text(
-                        text = "${silenceThresholdMs}ms",
+                        text = stringResource(R.string.settings_silence_timeout_ms, silenceThresholdMs),
                         style = IOSTypography.body,
                         color = MaterialTheme.colorScheme.primary,
                     )
@@ -1002,7 +1028,7 @@ private fun VadSettingsSection(
                     steps = 4,
                 )
                 Text(
-                    text = "How long to wait in silence before ending your turn",
+                    text = stringResource(R.string.settings_silence_timeout_hint),
                     style = IOSTypography.caption,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -1021,6 +1047,14 @@ private fun LlmSettingsSection(
     maxTokens: Int,
     onMaxTokensChange: (Int) -> Unit,
 ) {
+    val numberFormatter =
+        remember {
+            java.text.NumberFormat.getNumberInstance(java.util.Locale.getDefault()).apply {
+                minimumFractionDigits = 1
+                maximumFractionDigits = 1
+            }
+        }
+
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -1036,7 +1070,7 @@ private fun LlmSettingsSection(
                     tint = MaterialTheme.colorScheme.primary,
                 )
                 Text(
-                    text = "Response Tuning",
+                    text = stringResource(R.string.settings_response_tuning),
                     style = IOSTypography.subheadline,
                 )
             }
@@ -1048,11 +1082,11 @@ private fun LlmSettingsSection(
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(
-                        text = "Temperature",
+                        text = stringResource(R.string.settings_temperature),
                         style = IOSTypography.body,
                     )
                     Text(
-                        text = "%.1f".format(temperature),
+                        text = numberFormatter.format(temperature),
                         style = IOSTypography.body,
                         color = MaterialTheme.colorScheme.primary,
                     )
@@ -1063,7 +1097,7 @@ private fun LlmSettingsSection(
                     valueRange = 0f..1f,
                 )
                 Text(
-                    text = "Controls creativity. Lower for factual, higher for creative.",
+                    text = stringResource(R.string.settings_temperature_hint),
                     style = IOSTypography.caption,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -1078,11 +1112,11 @@ private fun LlmSettingsSection(
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(
-                        text = "Max Response Length",
+                        text = stringResource(R.string.settings_max_response_length),
                         style = IOSTypography.body,
                     )
                     Text(
-                        text = "$maxTokens tokens",
+                        text = stringResource(R.string.settings_max_tokens_value, maxTokens),
                         style = IOSTypography.body,
                         color = MaterialTheme.colorScheme.primary,
                     )
@@ -1094,7 +1128,7 @@ private fun LlmSettingsSection(
                     steps = 14,
                 )
                 Text(
-                    text = "Maximum response length. One token is roughly 4 characters.",
+                    text = stringResource(R.string.settings_max_response_hint),
                     style = IOSTypography.caption,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -1128,7 +1162,7 @@ private fun TtsSettingsSection(
                     tint = MaterialTheme.colorScheme.primary,
                 )
                 Text(
-                    text = "Voice Output Tuning",
+                    text = stringResource(R.string.settings_voice_output_tuning),
                     style = IOSTypography.subheadline,
                 )
             }
@@ -1140,11 +1174,11 @@ private fun TtsSettingsSection(
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(
-                        text = "Speaking Rate",
+                        text = stringResource(R.string.settings_speaking_rate),
                         style = IOSTypography.body,
                     )
                     Text(
-                        text = "%.1fx".format(speakingRate),
+                        text = stringResource(R.string.settings_rate_format, speakingRate),
                         style = IOSTypography.body,
                         color = MaterialTheme.colorScheme.primary,
                     )
@@ -1155,7 +1189,7 @@ private fun TtsSettingsSection(
                     valueRange = 0.5f..2.0f,
                 )
                 Text(
-                    text = "Adjust how fast the AI speaks",
+                    text = stringResource(R.string.settings_speaking_rate_hint),
                     style = IOSTypography.caption,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -1170,11 +1204,11 @@ private fun TtsSettingsSection(
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(
-                        text = "Playback Speed",
+                        text = stringResource(R.string.settings_playback_speed),
                         style = IOSTypography.body,
                     )
                     Text(
-                        text = "%.1fx".format(playbackSpeed),
+                        text = stringResource(R.string.settings_rate_format, playbackSpeed),
                         style = IOSTypography.body,
                         color = MaterialTheme.colorScheme.primary,
                     )
@@ -1185,7 +1219,7 @@ private fun TtsSettingsSection(
                     valueRange = 0.5f..2.0f,
                 )
                 Text(
-                    text = "Speed up or slow down audio playback",
+                    text = stringResource(R.string.settings_playback_speed_hint),
                     style = IOSTypography.caption,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -1217,22 +1251,20 @@ private fun CurriculumSettingsSection(
                     tint = MaterialTheme.colorScheme.primary,
                 )
                 Text(
-                    text = "Session Behavior",
+                    text = stringResource(R.string.settings_session_behavior),
                     style = IOSTypography.subheadline,
                 )
             }
 
             SettingsToggle(
-                title = "Auto-continue to next topic",
-                description = "Automatically start the next topic when current one finishes",
+                title = stringResource(R.string.settings_auto_continue),
+                description = stringResource(R.string.settings_auto_continue_desc),
                 checked = autoContinueTopics,
                 onCheckedChange = onAutoContinueChange,
             )
 
             Text(
-                text =
-                    "When a topic completes, seamlessly continue to the next topic " +
-                        "in the curriculum with an audio announcement.",
+                text = stringResource(R.string.settings_auto_continue_hint),
                 style = IOSTypography.caption,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -1329,9 +1361,7 @@ private fun OnDeviceLlmSection(
 
             if (!supportsOnDeviceLLM) {
                 Text(
-                    text =
-                        "Your device doesn't meet the minimum requirements for on-device AI. " +
-                            "Cloud-based AI will be used instead.",
+                    text = stringResource(R.string.settings_not_supported_message),
                     style = IOSTypography.caption,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -1378,7 +1408,7 @@ private fun OnDeviceLlmSection(
 
             // Storage info
             Text(
-                text = "Models are stored locally and can be deleted anytime to free space.",
+                text = stringResource(R.string.settings_models_storage_hint),
                 style = IOSTypography.caption,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -1389,11 +1419,14 @@ private fun OnDeviceLlmSection(
     showDeleteDialog?.let { spec ->
         AlertDialog(
             onDismissRequest = { showDeleteDialog = null },
-            title = { Text("Delete Model?") },
+            title = { Text(stringResource(R.string.settings_delete_model_title)) },
             text = {
                 Text(
-                    "Delete ${spec.displayName}? You can re-download it later. " +
-                        "This will free up ${Formatter.formatFileSize(context, spec.sizeBytes)}.",
+                    stringResource(
+                        R.string.settings_delete_model_body,
+                        spec.displayName,
+                        Formatter.formatFileSize(context, spec.sizeBytes),
+                    ),
                 )
             },
             confirmButton = {
@@ -1403,12 +1436,12 @@ private fun OnDeviceLlmSection(
                         showDeleteDialog = null
                     },
                 ) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.settings_delete), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = null }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             },
         )
@@ -1424,18 +1457,21 @@ private fun DeviceCapabilityInfo(
     deviceRamMB: Int,
     recommendedModel: DeviceCapabilityDetector.OnDeviceModelSpec?,
 ) {
+    val supportedText = stringResource(R.string.settings_on_device_supported)
+    val notSupportedText = stringResource(R.string.settings_on_device_not_supported)
+
     Column(verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingXSmall)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
-                text = "Device RAM",
+                text = stringResource(R.string.settings_device_ram_label),
                 style = IOSTypography.caption,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-                text = "${deviceRamMB / 1024} GB",
+                text = stringResource(R.string.settings_device_ram_value, deviceRamMB / 1024),
                 style = IOSTypography.caption,
             )
         }
@@ -1445,7 +1481,7 @@ private fun DeviceCapabilityInfo(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
-                text = "On-Device AI",
+                text = stringResource(R.string.settings_on_device_ai_label),
                 style = IOSTypography.caption,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -1455,7 +1491,7 @@ private fun DeviceCapabilityInfo(
             ) {
                 Icon(
                     if (supportsOnDeviceLLM) Icons.Default.Check else Icons.Default.Close,
-                    contentDescription = if (supportsOnDeviceLLM) "Supported" else "Not supported",
+                    contentDescription = if (supportsOnDeviceLLM) supportedText else notSupportedText,
                     tint =
                         if (supportsOnDeviceLLM) {
                             MaterialTheme.colorScheme.primary
@@ -1465,7 +1501,7 @@ private fun DeviceCapabilityInfo(
                     modifier = Modifier.height(16.dp),
                 )
                 Text(
-                    text = if (supportsOnDeviceLLM) "Supported" else "Not Supported",
+                    text = if (supportsOnDeviceLLM) supportedText else notSupportedText,
                     style = IOSTypography.caption,
                     color =
                         if (supportsOnDeviceLLM) {
@@ -1483,7 +1519,7 @@ private fun DeviceCapabilityInfo(
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text(
-                    text = "Recommended Model",
+                    text = stringResource(R.string.settings_recommended_model_label),
                     style = IOSTypography.caption,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -1513,6 +1549,8 @@ private fun DownloadStateIndicator(
         ) {
             when (downloadState) {
                 is ModelDownloadManager.DownloadState.Downloading -> {
+                    val progressPercent = (downloadState.progress * 100).toInt()
+                    val progressDescription = stringResource(R.string.cd_download_progress, progressPercent)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -1520,7 +1558,7 @@ private fun DownloadStateIndicator(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Downloading...",
+                                text = stringResource(R.string.settings_downloading_label),
                                 style = IOSTypography.body,
                             )
                             Text(
@@ -1532,21 +1570,21 @@ private fun DownloadStateIndicator(
                             )
                         }
                         TextButton(onClick = onCancel) {
-                            Text("Cancel")
+                            Text(stringResource(R.string.cancel))
                         }
                     }
-                    val progressPercent = (downloadState.progress * 100).toInt()
                     LinearProgressIndicator(
                         progress = { safeProgress(downloadState.progress) },
                         modifier =
                             Modifier
                                 .fillMaxWidth()
                                 .semantics {
-                                    contentDescription = "Download progress: $progressPercent percent"
+                                    contentDescription = progressDescription
                                 },
                     )
                 }
                 is ModelDownloadManager.DownloadState.Verifying -> {
+                    val verifyingDescription = stringResource(R.string.cd_verifying_download)
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
@@ -1555,10 +1593,10 @@ private fun DownloadStateIndicator(
                             modifier =
                                 Modifier
                                     .weight(1f)
-                                    .semantics { contentDescription = "Verifying download" },
+                                    .semantics { contentDescription = verifyingDescription },
                         )
                         Text(
-                            text = "Verifying...",
+                            text = stringResource(R.string.settings_verifying_label),
                             style = IOSTypography.caption,
                         )
                     }
@@ -1570,11 +1608,11 @@ private fun DownloadStateIndicator(
                     ) {
                         Icon(
                             Icons.Default.Check,
-                            contentDescription = "Success",
+                            contentDescription = stringResource(R.string.cd_success),
                             tint = MaterialTheme.colorScheme.primary,
                         )
                         Text(
-                            text = "Download complete!",
+                            text = stringResource(R.string.settings_download_complete_label),
                             style = IOSTypography.body,
                             color = MaterialTheme.colorScheme.primary,
                         )
@@ -1587,11 +1625,11 @@ private fun DownloadStateIndicator(
                     ) {
                         Icon(
                             Icons.Default.Close,
-                            contentDescription = "Error",
+                            contentDescription = stringResource(R.string.cd_error),
                             tint = MaterialTheme.colorScheme.error,
                         )
                         Text(
-                            text = "Error: ${downloadState.message}",
+                            text = stringResource(R.string.settings_error_label, downloadState.message),
                             style = IOSTypography.caption,
                             color = MaterialTheme.colorScheme.error,
                         )
@@ -1599,7 +1637,7 @@ private fun DownloadStateIndicator(
                 }
                 is ModelDownloadManager.DownloadState.Cancelled -> {
                     Text(
-                        text = "Download cancelled",
+                        text = stringResource(R.string.settings_download_cancelled_label),
                         style = IOSTypography.caption,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -1653,7 +1691,7 @@ private fun ModelCard(
                             onClick = {},
                             label = {
                                 Text(
-                                    "Recommended",
+                                    stringResource(R.string.settings_recommended),
                                     style = IOSTypography.caption2,
                                 )
                             },
@@ -1666,7 +1704,12 @@ private fun ModelCard(
                         buildString {
                             append(Formatter.formatFileSize(context, modelInfo.spec.sizeBytes))
                             append(" • ")
-                            append("Requires ${modelInfo.spec.minRamMB / 1024}GB+ RAM")
+                            append(
+                                context.getString(
+                                    R.string.settings_model_requires_ram,
+                                    modelInfo.spec.minRamMB / 1024,
+                                ),
+                            )
                         },
                     style = IOSTypography.caption,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -1674,7 +1717,7 @@ private fun ModelCard(
 
                 if (modelInfo.isDownloaded) {
                     Text(
-                        text = "Downloaded",
+                        text = stringResource(R.string.settings_downloaded),
                         style = IOSTypography.caption,
                         color = MaterialTheme.colorScheme.primary,
                     )
@@ -1685,7 +1728,7 @@ private fun ModelCard(
                 IconButton(onClick = onDelete) {
                     Icon(
                         Icons.Default.Delete,
-                        contentDescription = "Delete model",
+                        contentDescription = stringResource(R.string.cd_delete_model),
                         tint = MaterialTheme.colorScheme.error,
                     )
                 }
@@ -1696,7 +1739,7 @@ private fun ModelCard(
                 ) {
                     Icon(
                         Icons.Default.Download,
-                        contentDescription = "Download model",
+                        contentDescription = stringResource(R.string.cd_download_model),
                         tint =
                             if (isDownloading) {
                                 MaterialTheme.colorScheme.onSurfaceVariant

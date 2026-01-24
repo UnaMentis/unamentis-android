@@ -393,7 +393,7 @@ private fun DomainMasteryRow(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = domain.displayName,
+                    text = stringResource(domain.stringResId),
                     style = IOSTypography.body,
                     color = KBTheme.textPrimary(),
                 )
@@ -481,11 +481,12 @@ private fun WeakStrongDomainsSection(statsManager: KBStatsManager) {
                     )
                 } else {
                     weakDomains.forEach { (domain, mastery) ->
+                        val domainName = stringResource(domain.stringResId)
                         Text(
                             text =
                                 stringResource(
                                     R.string.kb_domain_mastery_format,
-                                    domain.displayName,
+                                    domainName,
                                     percentFormatter.format(mastery.toDouble()),
                                 ),
                             style = IOSTypography.caption,
@@ -530,11 +531,12 @@ private fun WeakStrongDomainsSection(statsManager: KBStatsManager) {
                     )
                 } else {
                     strongDomains.forEach { (domain, mastery) ->
+                        val domainName = stringResource(domain.stringResId)
                         Text(
                             text =
                                 stringResource(
                                     R.string.kb_domain_mastery_format,
-                                    domain.displayName,
+                                    domainName,
                                     percentFormatter.format(mastery.toDouble()),
                                 ),
                             style = IOSTypography.caption,

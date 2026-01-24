@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Star
@@ -261,7 +262,7 @@ fun archiveSwipeAction(
     label: String,
     onClick: () -> Unit,
 ) = SwipeAction(
-    icon = Icons.Default.Delete,
+    icon = Icons.Default.Archive,
     label = label,
     backgroundColor = iOSGreen,
     onClick = onClick,

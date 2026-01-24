@@ -21,6 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -91,18 +92,37 @@ fun SessionRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val title = session.curriculumId?.let { "Curriculum Session" } ?: "Free Session"
+    val context = LocalContext.current
+    val title =
+        if (session.curriculumId != null) {
+            stringResource(R.string.session_title_curriculum)
+        } else {
+            stringResource(R.string.session_title_free)
+        }
     val durationMinutes =
         session.endTime?.let {
             ((it - session.startTime) / 1000 / 60).toInt()
         } ?: 0
+    val starredLabel = stringResource(R.string.session_starred)
+    val turnsLabel =
+        context.resources.getQuantityString(
+            R.plurals.session_turns,
+            session.turnCount,
+            session.turnCount,
+        )
+    val minutesLabel =
+        context.resources.getQuantityString(
+            R.plurals.session_minutes,
+            durationMinutes,
+            durationMinutes,
+        )
 
     val accessibilityLabel =
         buildString {
             append(title)
-            if (session.isStarred) append(", starred")
-            append(", ${session.turnCount} turns")
-            if (durationMinutes > 0) append(", $durationMinutes minutes")
+            if (session.isStarred) append(", $starredLabel")
+            append(", $turnsLabel")
+            if (durationMinutes > 0) append(", $minutesLabel")
         }
 
     Surface(
@@ -142,7 +162,7 @@ fun SessionRow(
                     if (session.isStarred) {
                         Icon(
                             imageVector = Icons.Filled.Star,
-                            contentDescription = "Starred",
+                            contentDescription = starredLabel,
                             modifier = Modifier.size(16.dp),
                             tint = MaterialTheme.colorScheme.primary,
                         )
@@ -157,14 +177,14 @@ fun SessionRow(
                     if (durationMinutes > 0) {
                         SessionMetadataLabel(
                             icon = Icons.Default.Timer,
-                            text = "${durationMinutes}min",
+                            text = stringResource(R.string.session_duration_min, durationMinutes),
                         )
                     }
 
                     // Turn count
                     SessionMetadataLabel(
                         icon = Icons.AutoMirrored.Filled.Chat,
-                        text = "${session.turnCount} turns",
+                        text = turnsLabel,
                     )
                 }
 
@@ -292,6 +312,7 @@ fun SessionInfoCard(
     session: Session,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(Dimensions.CardCornerRadius),
@@ -302,30 +323,45 @@ fun SessionInfoCard(
             verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
         ) {
             Text(
-                text = "Session Information",
+                text = stringResource(R.string.session_info_title),
                 style = IOSTypography.headline,
             )
 
-            InfoRow(label = "Session ID", value = session.id.take(8) + "...")
+            InfoRow(
+                label = stringResource(R.string.session_id_label),
+                value = session.id.take(8) + "...",
+            )
             session.curriculumId?.let {
-                InfoRow(label = "Curriculum", value = it)
+                InfoRow(label = stringResource(R.string.curriculum_label), value = it)
             }
             session.topicId?.let {
-                InfoRow(label = "Topic", value = it)
+                InfoRow(label = stringResource(R.string.topic_label), value = it)
             }
             InfoRow(
-                label = "Started",
+                label = stringResource(R.string.started_label),
                 value = formatDateTime(session.startTime),
             )
             session.endTime?.let { endTime ->
                 InfoRow(
-                    label = "Ended",
+                    label = stringResource(R.string.ended_label),
                     value = formatDateTime(endTime),
                 )
                 val durationMinutes = ((endTime - session.startTime) / 1000 / 60).toInt()
-                InfoRow(label = "Duration", value = "$durationMinutes minutes")
+                val durationText =
+                    context.resources.getQuantityString(
+                        R.plurals.session_minutes,
+                        durationMinutes,
+                        durationMinutes,
+                    )
+                InfoRow(label = stringResource(R.string.duration_label), value = durationText)
             }
-            InfoRow(label = "Total Turns", value = session.turnCount.toString())
+            val turnsText =
+                context.resources.getQuantityString(
+                    R.plurals.session_turns,
+                    session.turnCount,
+                    session.turnCount,
+                )
+            InfoRow(label = stringResource(R.string.total_turns_label), value = turnsText)
         }
     }
 }

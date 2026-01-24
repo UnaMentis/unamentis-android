@@ -136,11 +136,13 @@ fun FullscreenAssetViewer(
                             },
                 ) { page ->
                     val asset = assets[page]
+                    val imageDescription =
+                        asset.title ?: stringResource(R.string.viewer_image_number, page + 1)
                     when (asset.type) {
                         AssetType.IMAGE -> {
                             ZoomableImageWithState(
                                 imageUrl = asset.url,
-                                contentDescription = asset.title ?: "Image ${page + 1}",
+                                contentDescription = imageDescription,
                                 modifier = Modifier.fillMaxSize(),
                                 placeholder = {
                                     CircularProgressIndicator(
@@ -203,7 +205,12 @@ fun FullscreenAssetViewer(
                             // Page indicator
                             if (assets.size > 1) {
                                 Text(
-                                    text = "${pagerState.currentPage + 1} / ${assets.size}",
+                                    text =
+                                        stringResource(
+                                            R.string.viewer_page_indicator,
+                                            pagerState.currentPage + 1,
+                                            assets.size,
+                                        ),
                                     color = Color.White,
                                     style = IOSTypography.headline,
                                 )

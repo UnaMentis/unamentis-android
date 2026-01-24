@@ -184,8 +184,9 @@ fun ExportBottomSheet(
             // Preview area (if export result available)
             if (exportResult is ExportResult.Success) {
                 Spacer(modifier = Modifier.height(16.dp))
+                val previewFormatName = stringResource(exportResult.format.labelResId)
                 Text(
-                    text = stringResource(R.string.export_preview_format, exportResult.format.displayName),
+                    text = stringResource(R.string.export_preview_format, previewFormatName),
                     style = IOSTypography.subheadline,
                     modifier = Modifier.padding(bottom = 8.dp),
                 )
@@ -230,6 +231,7 @@ private fun FormatCard(
             ),
         modifier = modifier,
     ) {
+        val formatLabel = stringResource(format.labelResId)
         Column(
             modifier =
                 Modifier
@@ -239,7 +241,7 @@ private fun FormatCard(
         ) {
             Icon(
                 imageVector = icon,
-                contentDescription = format.displayName,
+                contentDescription = formatLabel,
                 tint =
                     if (isSelected) {
                         MaterialTheme.colorScheme.primary
@@ -250,7 +252,7 @@ private fun FormatCard(
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = format.displayName,
+                text = formatLabel,
                 style = IOSTypography.caption2,
                 textAlign = TextAlign.Center,
                 color =

@@ -3,7 +3,6 @@ package com.unamentis.core.export
 import com.unamentis.data.model.Session
 import com.unamentis.data.model.TranscriptEntry
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -229,10 +228,11 @@ class SessionExporterTest {
     }
 
     @Test
-    fun `all export formats have display names`() {
-        assertNotNull(ExportFormat.JSON.displayName)
-        assertNotNull(ExportFormat.TEXT.displayName)
-        assertNotNull(ExportFormat.MARKDOWN.displayName)
-        assertNotNull(ExportFormat.CSV.displayName)
+    fun `all export formats have label resource IDs`() {
+        // Verify all formats have valid string resource IDs (non-zero)
+        assertTrue(ExportFormat.JSON.labelResId != 0)
+        assertTrue(ExportFormat.TEXT.labelResId != 0)
+        assertTrue(ExportFormat.MARKDOWN.labelResId != 0)
+        assertTrue(ExportFormat.CSV.labelResId != 0)
     }
 }

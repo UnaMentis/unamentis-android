@@ -64,6 +64,8 @@ import com.unamentis.modules.knowledgebowl.data.model.KBStudyMode
 import com.unamentis.modules.knowledgebowl.ui.theme.KBTheme
 import com.unamentis.modules.knowledgebowl.ui.theme.color
 import com.unamentis.ui.theme.IOSTypography
+import java.text.NumberFormat
+import java.util.Locale
 
 /**
  * Unified practice session screen for all study modes.
@@ -438,18 +440,30 @@ private fun AnswerFeedbackContent(
         // Response time
         lastResult?.let { result ->
             item {
+                val timeFormatter =
+                    remember {
+                        NumberFormat.getNumberInstance(Locale.getDefault()).apply {
+                            maximumFractionDigits = 1
+                            minimumFractionDigits = 1
+                        }
+                    }
+                val responseTimeDescription = stringResource(R.string.cd_response_time)
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Icon(
                         imageVector = Icons.Default.AccessTime,
-                        contentDescription = null,
+                        contentDescription = responseTimeDescription,
                         modifier = Modifier.size(16.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
-                        text = String.format("%.1fs", result.responseTimeSeconds),
+                        text =
+                            stringResource(
+                                R.string.kb_seconds_format,
+                                timeFormatter.format(result.responseTimeSeconds),
+                            ),
                         style = IOSTypography.caption2,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -543,6 +557,14 @@ private fun CompletedContent(
                     )
                     Spacer(modifier = Modifier.height(12.dp))
 
+                    val intFormatter =
+                        remember { NumberFormat.getIntegerInstance(Locale.getDefault()) }
+                    val percentFormatter =
+                        remember {
+                            NumberFormat.getPercentInstance(Locale.getDefault()).apply {
+                                maximumFractionDigits = 0
+                            }
+                        }
                     summary.domainBreakdown.forEach { (domainId, score) ->
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -554,12 +576,17 @@ private fun CompletedContent(
                             )
                             Row {
                                 Text(
-                                    text = "${score.correct}/${score.total}",
+                                    text =
+                                        stringResource(
+                                            R.string.kb_correct_total_format,
+                                            intFormatter.format(score.correct),
+                                            intFormatter.format(score.total),
+                                        ),
                                     style = IOSTypography.body,
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = String.format("%.0f%%", score.accuracy * 100),
+                                    text = percentFormatter.format(score.accuracy),
                                     style = IOSTypography.caption2,
                                     color =
                                         if (score.accuracy >= 0.7) {
@@ -608,13 +635,13 @@ private fun DomainBadge(
         horizontalArrangement = Arrangement.Center,
     ) {
         Text(
-            text = domain.displayName,
+            text = stringResource(domain.stringResId),
             style = IOSTypography.caption2,
             color = domain.color(),
         )
         if (!subdomain.isNullOrBlank()) {
             Text(
-                text = " \u2022 ",
+                text = stringResource(R.string.kb_domain_separator),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
@@ -649,6 +676,22 @@ private fun DifficultyIndicator(difficulty: KBDifficulty) {
 
 @Composable
 private fun StatsGrid(summary: KBPracticeSessionSummary) {
+    // Locale-aware formatters
+    val intFormatter = remember { NumberFormat.getIntegerInstance(Locale.getDefault()) }
+    val percentFormatter =
+        remember {
+            NumberFormat.getPercentInstance(Locale.getDefault()).apply {
+                maximumFractionDigits = 0
+            }
+        }
+    val timeFormatter =
+        remember {
+            NumberFormat.getNumberInstance(Locale.getDefault()).apply {
+                maximumFractionDigits = 1
+                minimumFractionDigits = 1
+            }
+        }
+
     // Get colors and labels in composable context
     val accuracyColor = if (summary.accuracy >= 0.7) KBTheme.mastered() else KBTheme.currentEvents()
     val correctColor = KBTheme.intermediate()
@@ -671,7 +714,7 @@ private fun StatsGrid(summary: KBPracticeSessionSummary) {
                 stat =
                     StatItem(
                         title = accuracyLabel,
-                        value = String.format("%.0f%%", summary.accuracy * 100),
+                        value = percentFormatter.format(summary.accuracy),
                         icon = Icons.Default.CheckCircle,
                         color = accuracyColor,
                     ),
@@ -680,7 +723,11 @@ private fun StatsGrid(summary: KBPracticeSessionSummary) {
                 stat =
                     StatItem(
                         title = avgTimeLabel,
-                        value = String.format("%.1fs", summary.averageResponseTime),
+                        value =
+                            stringResource(
+                                R.string.kb_seconds_format,
+                                timeFormatter.format(summary.averageResponseTime),
+                            ),
                         icon = Icons.Default.AccessTime,
                         color = timeColor,
                     ),
@@ -694,7 +741,12 @@ private fun StatsGrid(summary: KBPracticeSessionSummary) {
                 stat =
                     StatItem(
                         title = correctLabel,
-                        value = "${summary.correctAnswers}/${summary.totalQuestions}",
+                        value =
+                            stringResource(
+                                R.string.kb_correct_total_format,
+                                intFormatter.format(summary.correctAnswers),
+                                intFormatter.format(summary.totalQuestions),
+                            ),
                         icon = Icons.Default.Check,
                         color = correctColor,
                     ),
@@ -703,7 +755,7 @@ private fun StatsGrid(summary: KBPracticeSessionSummary) {
                 stat =
                     StatItem(
                         title = speedTargetLabel,
-                        value = String.format("%.0f%%", summary.speedTargetRate * 100),
+                        value = percentFormatter.format(summary.speedTargetRate),
                         icon = Icons.Default.Timer,
                         color = speedColor,
                     ),

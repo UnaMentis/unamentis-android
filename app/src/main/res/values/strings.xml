@@ -405,6 +405,10 @@
     <string name="export_preview">Preview</string>
     <string name="export_share">Share</string>
     <string name="export_preview_format">Preview (%1$s)</string>
+    <string name="export_format_json">JSON</string>
+    <string name="export_format_text">Plain Text</string>
+    <string name="export_format_markdown">Markdown</string>
+    <string name="export_format_csv">CSV</string>
 
     <!-- Offline Banner -->
     <string name="connection_no_internet">No internet connection</string>
@@ -449,6 +453,18 @@
     <string name="session_details_title">Session Details</string>
     <string name="history_title">History</string>
     <string name="no_sessions_yet">No Sessions Yet</string>
+    <string name="session_title_free">Free Session</string>
+    <string name="session_title_curriculum">Curriculum Session</string>
+    <string name="session_starred">Starred</string>
+    <string name="session_duration_min">%1$dmin</string>
+    <plurals name="session_turns">
+        <item quantity="one">%1$d turn</item>
+        <item quantity="other">%1$d turns</item>
+    </plurals>
+    <plurals name="session_minutes">
+        <item quantity="one">%1$d minute</item>
+        <item quantity="other">%1$d minutes</item>
+    </plurals>
     <string name="start_session_hint">Start a session to see it here</string>
     <string name="transcript_label">Transcript</string>
     <string name="no_transcript">No transcript available</string>
@@ -526,7 +542,7 @@
     <string name="ai_will_suggest">AI will suggest tasks based on your learning sessions</string>
     <string name="add_learning_goals">Add learning goals or tasks to track your progress</string>
     <string name="ai_suggested">AI Suggested</string>
-    <string name="confidence_percent">(%1$d%% confidence)</string>
+    <string name="confidence_percent">(%1$s confidence)</string>
     <string name="view_suggestion_reason">View suggestion reason</string>
     <string name="more_options">More options</string>
     <string name="change_due_date">Change due date</string>
@@ -556,16 +572,35 @@
     <string name="close">Close</string>
     <string name="starred">Starred</string>
 
+    <!-- KBDomain names for localization -->
+    <string name="kb_domain_science">Science</string>
+    <string name="kb_domain_mathematics">Mathematics</string>
+    <string name="kb_domain_literature">Literature</string>
+    <string name="kb_domain_history">History</string>
+    <string name="kb_domain_social_studies">Social Studies</string>
+    <string name="kb_domain_arts">Arts</string>
+    <string name="kb_domain_current_events">Current Events</string>
+    <string name="kb_domain_language">Language</string>
+    <string name="kb_domain_technology">Technology</string>
+    <string name="kb_domain_pop_culture">Pop Culture</string>
+    <string name="kb_domain_religion_philosophy">Religion/Philosophy</string>
+    <string name="kb_domain_miscellaneous">Miscellaneous</string>
+
     <!-- KBStatsScreen percentages and times -->
     <string name="kb_percent_format">%1$s</string>
     <string name="kb_time_seconds_format">%1$ss</string>
     <string name="kb_score_format">%1$d/%2$d</string>
     <string name="kb_points_format">+%1$d</string>
     <string name="kb_domain_mastery_format">%1$s: %2$s</string>
+    <string name="kb_correct_total_format">%1$s/%2$s</string>
+    <string name="kb_seconds_format">%1$ss</string>
+    <string name="kb_domain_separator"> • </string>
+    <string name="cd_response_time">Response time</string>
 
     <!-- KBDashboardScreen -->
     <string name="cd_region_button">Select %1$s region</string>
     <string name="cd_region_selected">%1$s region, selected</string>
+    <string name="cd_quick_start_button">%1$s, %2$s</string>
 
     <!-- FullscreenAssetViewer -->
     <string name="viewer_failed_to_load_image">Failed to load image</string>
@@ -573,6 +608,8 @@
     <string name="viewer_close">Close</string>
     <string name="viewer_share">Share</string>
     <string name="viewer_download">Download</string>
+    <string name="viewer_image_number">Image %1$d</string>
+    <string name="viewer_page_indicator">%1$d / %2$d</string>
 
     <!-- KBSettingsScreen unit strings -->
     <string name="kb_questions_count">%1$d questions</string>
@@ -649,6 +686,32 @@
     <string name="cd_error">Error</string>
     <string name="cd_delete_model">Delete model</string>
     <string name="cd_download_model">Download model</string>
+
+    <!-- Recording Mode options -->
+    <string name="settings_recording_mode_vad">Auto (VAD)</string>
+    <string name="settings_recording_mode_vad_desc">Automatically detects when you speak</string>
+    <string name="settings_recording_mode_push_to_talk">Push to Talk</string>
+    <string name="settings_recording_mode_push_to_talk_desc">Hold the mic button to record</string>
+    <string name="settings_recording_mode_toggle">Toggle</string>
+    <string name="settings_recording_mode_toggle_desc">Tap to start/stop recording</string>
+
+    <!-- Configuration Preset names -->
+    <string name="settings_preset_free">Free</string>
+    <string name="settings_preset_premium">Premium</string>
+    <string name="settings_preset_low_latency">Low Latency</string>
+    <string name="settings_preset_cost_optimized">Cost Optimized</string>
+    <string name="settings_preset_offline">Offline</string>
+
+    <!-- Sample rate format -->
+    <string name="settings_sample_rate_khz">%1$d kHz</string>
+
+    <!-- API Provider names -->
+    <string name="provider_deepgram">Deepgram</string>
+    <string name="provider_elevenlabs">ElevenLabs</string>
+    <string name="provider_openai">OpenAI</string>
+    <string name="provider_anthropic">Anthropic</string>
+    <string name="provider_android">Android</string>
+    <string name="provider_patchpanel">PatchPanel</string>
 
     <!-- Onboarding accessibility -->
     <string name="cd_skip_onboarding">Skip onboarding</string>

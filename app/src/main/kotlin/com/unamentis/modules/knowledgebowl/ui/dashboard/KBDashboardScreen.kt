@@ -513,11 +513,12 @@ private fun QuickStartButton(
     enabled: Boolean,
     onClick: () -> Unit,
 ) {
+    val buttonDescription = stringResource(R.string.cd_quick_start_button, title, subtitle)
     Card(
         modifier =
             modifier
                 .clip(RoundedCornerShape(12.dp))
-                .semantics { contentDescription = "$title, $subtitle" }
+                .semantics { contentDescription = buttonDescription }
                 .clickable(enabled = enabled, onClick = onClick)
                 .border(
                     width = 2.dp,

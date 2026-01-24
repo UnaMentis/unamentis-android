@@ -282,7 +282,9 @@ fun VisualAssetSidePanel(
     val activeAssets =
         remember(currentSegment, assets) {
             assets.filter { asset ->
-                currentSegment >= asset.startSegment && currentSegment <= asset.endSegment
+                currentSegment >= asset.startSegment &&
+                    currentSegment <= asset.endSegment &&
+                    asset.displayMode != VisualDisplayMode.INLINE
             }
         }
 
