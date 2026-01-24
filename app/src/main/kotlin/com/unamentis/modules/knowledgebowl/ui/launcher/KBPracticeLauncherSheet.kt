@@ -227,7 +227,10 @@ private fun ReadyContent(
 
                 if (mode == KBStudyMode.SPEED) {
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                    InfoRow(label = stringResource(R.string.kb_time_limit_label), value = "5 minutes")
+                    InfoRow(
+                        label = stringResource(R.string.kb_time_limit_label),
+                        value = stringResource(R.string.kb_time_limit_minutes, 5),
+                    )
                 }
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))

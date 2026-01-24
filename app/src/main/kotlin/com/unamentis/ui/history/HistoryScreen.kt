@@ -65,9 +65,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.unamentis.R
 import com.unamentis.core.export.ExportResult
 import com.unamentis.data.model.Session
 import com.unamentis.data.model.TranscriptEntry
@@ -145,10 +147,18 @@ fun HistoryScreen(
             if (uiState.selectedSession != null) {
                 // Detail view top bar
                 TopAppBar(
-                    title = { Text("Session Details", style = IOSTypography.headline) },
+                    title = {
+                        Text(
+                            stringResource(R.string.session_details_title),
+                            style = IOSTypography.headline,
+                        )
+                    },
                     navigationIcon = {
                         IconButton(onClick = { viewModel.clearSelection() }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.back),
+                            )
                         }
                     },
                     actions = {
@@ -167,9 +177,9 @@ fun HistoryScreen(
                                     },
                                 contentDescription =
                                     if (uiState.selectedSession!!.isStarred) {
-                                        "Unstar session"
+                                        stringResource(R.string.unstar_session)
                                     } else {
-                                        "Star session"
+                                        stringResource(R.string.star_session)
                                     },
                                 tint =
                                     if (uiState.selectedSession!!.isStarred) {
@@ -180,10 +190,10 @@ fun HistoryScreen(
                             )
                         }
                         IconButton(onClick = { showExportSheet = true }) {
-                            Icon(Icons.Default.IosShare, contentDescription = "Export")
+                            Icon(Icons.Default.IosShare, contentDescription = stringResource(R.string.export))
                         }
                         IconButton(onClick = { showDeleteDialog = true }) {
-                            Icon(Icons.Default.Delete, contentDescription = "Delete")
+                            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.delete))
                         }
                     },
                 )
@@ -194,13 +204,13 @@ fun HistoryScreen(
                         OutlinedTextField(
                             value = uiState.searchQuery,
                             onValueChange = { viewModel.setSearchQuery(it) },
-                            placeholder = { Text("Search sessions...") },
+                            placeholder = { Text(stringResource(R.string.search_sessions_hint)) },
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
                             trailingIcon = {
                                 if (uiState.searchQuery.isNotEmpty()) {
                                     IconButton(onClick = { viewModel.setSearchQuery("") }) {
-                                        Icon(Icons.Default.Clear, contentDescription = "Clear")
+                                        Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.clear))
                                     }
                                 }
                             },
@@ -211,7 +221,10 @@ fun HistoryScreen(
                             showSearchBar = false
                             viewModel.setSearchQuery("")
                         }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Close search")
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.close_search),
+                            )
                         }
                     },
                 )
@@ -224,16 +237,16 @@ fun HistoryScreen(
                             modifier = Modifier.padding(start = Dimensions.SpacingLarge),
                         )
                     },
-                    title = { Text("History", style = IOSTypography.headline) },
+                    title = { Text(stringResource(R.string.history_title), style = IOSTypography.headline) },
                     actions = {
                         // Search button
                         IconButton(onClick = { showSearchBar = true }) {
-                            Icon(Icons.Default.Search, contentDescription = "Search")
+                            Icon(Icons.Default.Search, contentDescription = stringResource(R.string.search))
                         }
                         // Sort button with dropdown
                         Box {
                             IconButton(onClick = { showSortMenu = true }) {
-                                Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = "Sort")
+                                Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = stringResource(R.string.sort))
                             }
                             DropdownMenu(
                                 expanded = showSortMenu,
@@ -262,7 +275,7 @@ fun HistoryScreen(
                         // Filter button with badge if filters active
                         Box {
                             IconButton(onClick = { showFilterSheet = true }) {
-                                Icon(Icons.Default.FilterList, contentDescription = "Filter")
+                                Icon(Icons.Default.FilterList, contentDescription = stringResource(R.string.filter))
                             }
                             if (uiState.isFiltering) {
                                 Badge(
@@ -312,12 +325,9 @@ fun HistoryScreen(
     if (showDeleteDialog && uiState.selectedSession != null) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Delete Session?") },
+            title = { Text(stringResource(R.string.delete_session_title)) },
             text = {
-                Text(
-                    "This will permanently delete the session and its transcript. " +
-                        "This action cannot be undone.",
-                )
+                Text(stringResource(R.string.delete_session_message))
             },
             confirmButton = {
                 TextButton(
@@ -326,12 +336,12 @@ fun HistoryScreen(
                         showDeleteDialog = false
                     },
                 ) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             },
         )
@@ -371,8 +381,8 @@ private fun SessionListView(
         ) {
             HistoryEmptyState(
                 icon = Icons.Default.History,
-                title = "No Sessions Yet",
-                description = "Start a session to see it here",
+                title = stringResource(R.string.no_sessions_yet),
+                description = stringResource(R.string.start_session_hint),
             )
         }
     } else {
@@ -388,9 +398,15 @@ private fun SessionListView(
                 ),
             verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
         ) {
-            groupedSessions.forEach { (dateLabel, dateSessions) ->
-                // Date section header
-                item(key = "header_$dateLabel") {
+            groupedSessions.forEach { (dateKey, dateSessions) ->
+                // Date section header - convert key to localized string
+                item(key = "header_$dateKey") {
+                    val dateLabel =
+                        when (dateKey) {
+                            "today" -> stringResource(R.string.history_today)
+                            "yesterday" -> stringResource(R.string.history_yesterday)
+                            else -> dateKey
+                        }
                     DateSectionHeader(
                         title = dateLabel,
                         modifier = Modifier.padding(top = Dimensions.SpacingMedium),
@@ -446,7 +462,7 @@ private fun SessionDetailView(
         // Transcript header
         item {
             Text(
-                text = "Transcript",
+                text = stringResource(R.string.transcript_label),
                 style = IOSTypography.headline,
             )
         }
@@ -455,7 +471,7 @@ private fun SessionDetailView(
         if (transcript.isEmpty()) {
             item {
                 Text(
-                    text = "No transcript available",
+                    text = stringResource(R.string.no_transcript),
                     style = IOSTypography.body,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = Dimensions.SpacingXXLarge),
@@ -488,7 +504,7 @@ private fun TranscriptEntryCard(entry: TranscriptEntry) {
     ) {
         // Role label
         Text(
-            text = if (isUser) "You" else "AI Tutor",
+            text = if (isUser) stringResource(R.string.user_label) else stringResource(R.string.ai_tutor_label),
             style = IOSTypography.caption2,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = Dimensions.SpacingMedium, vertical = Dimensions.SpacingXSmall),
@@ -581,12 +597,12 @@ private fun HistoryFilterSheet(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "Filter Sessions",
+                    text = stringResource(R.string.filter_sessions_title),
                     style = IOSTypography.title2,
                 )
                 if (filterState.hasActiveFilters()) {
                     TextButton(onClick = onClearFilters) {
-                        Text("Clear All")
+                        Text(stringResource(R.string.clear_all))
                     }
                 }
             }
@@ -612,7 +628,7 @@ private fun HistoryFilterSheet(
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
                     )
-                    Text("Starred only")
+                    Text(stringResource(R.string.starred_only_label))
                 }
                 Checkbox(
                     checked = filterState.starredOnly,
@@ -624,7 +640,7 @@ private fun HistoryFilterSheet(
 
             // Date range filters
             Text(
-                text = "Date Range",
+                text = stringResource(R.string.date_range_label),
                 style = IOSTypography.subheadline,
             )
 
@@ -638,7 +654,7 @@ private fun HistoryFilterSheet(
                     onClick = { showStartDatePicker = true },
                     label = {
                         Text(
-                            filterState.startDate?.let { formatDate(it) } ?: "Start Date",
+                            filterState.startDate?.let { formatDate(it) } ?: stringResource(R.string.start_date_label),
                         )
                     },
                     modifier = Modifier.weight(1f),
@@ -651,7 +667,7 @@ private fun HistoryFilterSheet(
                                 ) {
                                     Icon(
                                         Icons.Default.Close,
-                                        contentDescription = "Clear start date",
+                                        contentDescription = stringResource(R.string.clear_start_date),
                                         modifier = Modifier.size(14.dp),
                                     )
                                 }
@@ -667,7 +683,7 @@ private fun HistoryFilterSheet(
                     onClick = { showEndDatePicker = true },
                     label = {
                         Text(
-                            filterState.endDate?.let { formatDate(it) } ?: "End Date",
+                            filterState.endDate?.let { formatDate(it) } ?: stringResource(R.string.end_date_label),
                         )
                     },
                     modifier = Modifier.weight(1f),
@@ -680,7 +696,7 @@ private fun HistoryFilterSheet(
                                 ) {
                                     Icon(
                                         Icons.Default.Close,
-                                        contentDescription = "Clear end date",
+                                        contentDescription = stringResource(R.string.clear_end_date),
                                         modifier = Modifier.size(14.dp),
                                     )
                                 }
@@ -700,11 +716,19 @@ private fun HistoryFilterSheet(
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(
-                        text = "Minimum Duration",
+                        text = stringResource(R.string.min_duration_label),
                         style = IOSTypography.subheadline,
                     )
                     Text(
-                        text = if (durationSliderValue > 0) "${durationSliderValue.toInt()} min" else "Any",
+                        text =
+                            if (durationSliderValue > 0) {
+                                stringResource(
+                                    R.string.min_duration_value,
+                                    durationSliderValue.toInt(),
+                                )
+                            } else {
+                                stringResource(R.string.min_duration_any)
+                            },
                         style = IOSTypography.body,
                         color = MaterialTheme.colorScheme.primary,
                     )
@@ -730,11 +754,19 @@ private fun HistoryFilterSheet(
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(
-                        text = "Minimum Turns",
+                        text = stringResource(R.string.min_turns_label),
                         style = IOSTypography.subheadline,
                     )
                     Text(
-                        text = if (turnsSliderValue > 0) "${turnsSliderValue.toInt()} turns" else "Any",
+                        text =
+                            if (turnsSliderValue > 0) {
+                                stringResource(
+                                    R.string.min_turns_value,
+                                    turnsSliderValue.toInt(),
+                                )
+                            } else {
+                                stringResource(R.string.min_turns_any)
+                            },
                         style = IOSTypography.body,
                         color = MaterialTheme.colorScheme.primary,
                     )
@@ -770,12 +802,12 @@ private fun HistoryFilterSheet(
                         showStartDatePicker = false
                     },
                 ) {
-                    Text("OK")
+                    Text(stringResource(R.string.done))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showStartDatePicker = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             },
         ) {
@@ -800,12 +832,12 @@ private fun HistoryFilterSheet(
                         showEndDatePicker = false
                     },
                 ) {
-                    Text("OK")
+                    Text(stringResource(R.string.done))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showEndDatePicker = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             },
         ) {

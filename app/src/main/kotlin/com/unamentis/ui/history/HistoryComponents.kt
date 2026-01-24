@@ -21,15 +21,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.unamentis.R
 import com.unamentis.data.model.Session
 import com.unamentis.ui.theme.Dimensions
 import com.unamentis.ui.theme.IOSTypography
 import java.text.SimpleDateFormat
-import java.util.Calendar
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 import java.util.Date
 import java.util.Locale
 
@@ -359,25 +364,35 @@ private fun InfoRow(
  *
  * Returns "Today", "Yesterday", or formatted date.
  * Matches iOS date grouping behavior.
+ * Uses LocalDate to properly handle year boundaries.
  */
+@Composable
 fun formatRelativeDate(timestamp: Long): String {
-    val date = Date(timestamp)
-    val calendar = Calendar.getInstance()
-    val today = Calendar.getInstance()
+    val dateKey = formatRelativeDateKey(timestamp)
+    return when (dateKey) {
+        "today" -> stringResource(R.string.history_today)
+        "yesterday" -> stringResource(R.string.history_yesterday)
+        else -> dateKey
+    }
+}
 
-    calendar.time = date
-    val dateDay = calendar.get(Calendar.DAY_OF_YEAR)
-    val dateYear = calendar.get(Calendar.YEAR)
+/**
+ * Get a key for relative date grouping.
+ *
+ * Returns "today", "yesterday", or the formatted date string.
+ * This non-composable version is used for grouping sessions.
+ */
+fun formatRelativeDateKey(timestamp: Long): String {
+    val dateLocal = Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault()).toLocalDate()
+    val todayLocal = LocalDate.now()
+    val daysBetween = ChronoUnit.DAYS.between(dateLocal, todayLocal)
 
-    val todayDay = today.get(Calendar.DAY_OF_YEAR)
-    val todayYear = today.get(Calendar.YEAR)
-
-    return when {
-        dateYear == todayYear && dateDay == todayDay -> "Today"
-        dateYear == todayYear && dateDay == todayDay - 1 -> "Yesterday"
+    return when (daysBetween.toInt()) {
+        0 -> "today"
+        1 -> "yesterday"
         else -> {
             val formatter = SimpleDateFormat("MMMM d, yyyy", Locale.getDefault())
-            formatter.format(date)
+            formatter.format(Date(timestamp))
         }
     }
 }
@@ -401,10 +416,11 @@ private fun formatDateTime(timestamp: Long): String {
 /**
  * Group sessions by date.
  *
- * Returns a map of date label to sessions, ordered by most recent first.
+ * Returns a map of date key to sessions, ordered by most recent first.
+ * Keys are "today", "yesterday", or formatted date strings.
  */
 fun groupSessionsByDate(sessions: List<Session>): Map<String, List<Session>> {
     return sessions
         .sortedByDescending { it.startTime }
-        .groupBy { formatRelativeDate(it.startTime) }
+        .groupBy { formatRelativeDateKey(it.startTime) }
 }

@@ -22,8 +22,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.unamentis.R
 import com.unamentis.core.network.ConnectionQuality
 import com.unamentis.core.network.ConnectionState
 import com.unamentis.core.network.ConnectivityMonitor
@@ -104,21 +106,21 @@ private fun getBannerContent(connectionState: ConnectionState): Triple<ImageVect
         !connectionState.isConnected -> {
             Triple(
                 Icons.Default.WifiOff,
-                "No internet connection",
+                stringResource(R.string.connection_no_internet),
                 MaterialTheme.colorScheme.error,
             )
         }
         connectionState.connectionQuality == ConnectionQuality.POOR -> {
             Triple(
                 Icons.Default.SignalWifiOff,
-                "Weak connection - some features may be limited",
+                stringResource(R.string.connection_weak),
                 MaterialTheme.colorScheme.errorContainer,
             )
         }
         else -> {
             Triple(
                 Icons.Default.SignalWifi4Bar,
-                "Connected",
+                stringResource(R.string.connection_connected),
                 MaterialTheme.colorScheme.primaryContainer,
             )
         }
@@ -133,6 +135,7 @@ fun OfflineIndicator(
     isOnline: Boolean,
     modifier: Modifier = Modifier,
 ) {
+    val offlineLabel = stringResource(R.string.connection_offline)
     AnimatedVisibility(
         visible = !isOnline,
         enter = expandVertically(),
@@ -145,12 +148,12 @@ fun OfflineIndicator(
         ) {
             Icon(
                 imageVector = Icons.Default.CloudOff,
-                contentDescription = "Offline",
+                contentDescription = offlineLabel,
                 modifier = Modifier.size(16.dp),
                 tint = MaterialTheme.colorScheme.error,
             )
             Text(
-                text = "Offline",
+                text = offlineLabel,
                 style = IOSTypography.caption2,
                 color = MaterialTheme.colorScheme.error,
             )
@@ -172,37 +175,37 @@ fun ConnectionQualityIndicator(
                 Triple(
                     Icons.Default.SignalWifi4Bar,
                     MaterialTheme.colorScheme.primary,
-                    "Excellent connection",
+                    stringResource(R.string.connection_quality_excellent),
                 )
             ConnectionQuality.GOOD ->
                 Triple(
                     Icons.Default.SignalWifi4Bar,
                     MaterialTheme.colorScheme.primary,
-                    "Good connection",
+                    stringResource(R.string.connection_quality_good),
                 )
             ConnectionQuality.MODERATE ->
                 Triple(
                     Icons.Default.SignalWifi4Bar,
                     MaterialTheme.colorScheme.tertiary,
-                    "Moderate connection",
+                    stringResource(R.string.connection_quality_moderate),
                 )
             ConnectionQuality.POOR ->
                 Triple(
                     Icons.Default.SignalWifiOff,
                     MaterialTheme.colorScheme.error,
-                    "Poor connection",
+                    stringResource(R.string.connection_quality_poor),
                 )
             ConnectionQuality.UNKNOWN ->
                 Triple(
                     Icons.Default.SignalWifi4Bar,
                     MaterialTheme.colorScheme.outline,
-                    "Unknown connection quality",
+                    stringResource(R.string.connection_quality_unknown),
                 )
             ConnectionQuality.NONE ->
                 Triple(
                     Icons.Default.WifiOff,
                     MaterialTheme.colorScheme.error,
-                    "No connection",
+                    stringResource(R.string.connection_quality_none),
                 )
         }
 

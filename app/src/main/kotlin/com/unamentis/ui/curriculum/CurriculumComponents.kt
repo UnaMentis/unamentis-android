@@ -66,22 +66,22 @@ enum class TopicStatus {
     REVIEWING,
     ;
 
-    val displayName: String
+    val displayNameResId: Int
         get() =
             when (this) {
-                NOT_STARTED -> "Not Started"
-                IN_PROGRESS -> "In Progress"
-                COMPLETED -> "Completed"
-                REVIEWING -> "Reviewing"
+                NOT_STARTED -> R.string.status_not_started
+                IN_PROGRESS -> R.string.status_in_progress
+                COMPLETED -> R.string.status_completed
+                REVIEWING -> R.string.status_reviewing
             }
 
-    val accessibilityDescription: String
+    val accessibilityDescriptionResId: Int
         get() =
             when (this) {
-                NOT_STARTED -> "not started"
-                IN_PROGRESS -> "in progress"
-                COMPLETED -> "completed"
-                REVIEWING -> "needs review"
+                NOT_STARTED -> R.string.status_a11y_not_started
+                IN_PROGRESS -> R.string.status_a11y_in_progress
+                COMPLETED -> R.string.status_a11y_completed
+                REVIEWING -> R.string.status_a11y_reviewing
             }
 }
 
@@ -128,6 +128,7 @@ fun StatusIcon(
             TopicStatus.REVIEWING -> Icons.Default.Refresh
         }
 
+    val statusDescription = stringResource(R.string.status_label, stringResource(status.accessibilityDescriptionResId))
     Box(
         modifier =
             modifier
@@ -135,7 +136,7 @@ fun StatusIcon(
                 .clip(CircleShape)
                 .background(iOSGray.copy(alpha = 0.1f))
                 .semantics {
-                    contentDescription = "Status: ${status.accessibilityDescription}"
+                    contentDescription = statusDescription
                 },
         contentAlignment = Alignment.Center,
     ) {
@@ -171,7 +172,7 @@ fun CurriculumRow(
     modifier: Modifier = Modifier,
 ) {
     val topicCount = curriculum.topics.size
-    val accessibilityLabel = "${curriculum.title}, $topicCount topics"
+    val accessibilityLabel = stringResource(R.string.curriculum_row_a11y, curriculum.title, topicCount)
 
     Row(
         modifier =
@@ -268,10 +269,12 @@ fun TopicRow(
     modifier: Modifier = Modifier,
 ) {
     val masteryPercent = (mastery * 100).toInt()
+    val statusA11yDescription = stringResource(status.accessibilityDescriptionResId)
+    val statusLabel = stringResource(R.string.status_label, statusA11yDescription)
     val accessibilityLabel =
         buildString {
             append(topic.title)
-            append(", Status: ${status.accessibilityDescription}")
+            append(", $statusLabel")
             append(", $masteryPercent percent mastery")
         }
 
@@ -335,15 +338,16 @@ fun TopicRow(
  * Format time spent as human-readable string.
  * Matches iOS formatTime implementation.
  */
+@Composable
 private fun formatTimeSpent(seconds: Double): String {
     val totalMinutes = (seconds / 60).toInt()
     val hours = totalMinutes / 60
     val minutes = totalMinutes % 60
 
     return if (hours > 0) {
-        "${hours}h ${minutes}m spent"
+        stringResource(R.string.time_spent_hours_minutes, hours, minutes)
     } else {
-        "${minutes}m spent"
+        stringResource(R.string.time_spent_minutes, minutes)
     }
 }
 
@@ -427,7 +431,7 @@ fun ProgressCard(
 
                 Column {
                     Text(
-                        text = status.displayName,
+                        text = stringResource(status.displayNameResId),
                         style = IOSTypography.headline,
                     )
                     if (timeSpentSeconds > 0) {

@@ -58,6 +58,8 @@ import com.unamentis.modules.knowledgebowl.ui.theme.KBTheme
 import com.unamentis.modules.knowledgebowl.ui.theme.color
 import com.unamentis.ui.theme.IOSTypography
 import com.unamentis.ui.util.safeProgress
+import java.text.NumberFormat
+import java.util.Locale
 
 /**
  * Knowledge Bowl Dashboard - Entry point for the KB module.
@@ -199,8 +201,9 @@ private fun HeroSection(
                     color = KBTheme.mathematics(),
                 )
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    val percentFormatter = NumberFormat.getPercentInstance(Locale.getDefault())
                     Text(
-                        text = "${(safeReadiness * 100).toInt()}%",
+                        text = percentFormatter.format(safeReadiness.toDouble()),
                         style = IOSTypography.title2,
                         color = KBTheme.textPrimary(),
                     )
@@ -322,29 +325,40 @@ private fun StatsSection(
                 color = KBTheme.textPrimary(),
             )
 
+            val numberFormatter = NumberFormat.getNumberInstance(Locale.getDefault())
+            val percentFormatter = NumberFormat.getPercentInstance(Locale.getDefault())
+            val noDataPlaceholder = stringResource(R.string.kb_no_data_placeholder)
+            val noAccuracyPlaceholder = stringResource(R.string.kb_no_accuracy_placeholder)
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly,
             ) {
                 StatBadge(
-                    value = "$totalQuestionsAnswered",
+                    value = numberFormatter.format(totalQuestionsAnswered),
                     label = stringResource(R.string.kb_questions),
                 )
                 StatBadge(
                     value =
                         if (averageResponseTime > 0) {
-                            String.format("%.1fs", averageResponseTime)
+                            val formattedTime =
+                                String.format(
+                                    Locale.getDefault(),
+                                    "%.1f",
+                                    averageResponseTime,
+                                )
+                            stringResource(R.string.kb_avg_speed_seconds, formattedTime)
                         } else {
-                            "--"
+                            noDataPlaceholder
                         },
                     label = stringResource(R.string.kb_avg_speed),
                 )
                 StatBadge(
                     value =
                         if (totalQuestionsAnswered > 0) {
-                            String.format("%.0f%%", accuracy * 100)
+                            percentFormatter.format(accuracy.toDouble())
                         } else {
-                            "--%"
+                            noAccuracyPlaceholder
                         },
                     label = stringResource(R.string.kb_accuracy),
                 )
@@ -391,6 +405,7 @@ private fun DomainMasteryCard(
     mastery: Float,
     onClick: () -> Unit,
 ) {
+    val percentFormatter = NumberFormat.getPercentInstance(Locale.getDefault())
     Card(
         modifier =
             Modifier
@@ -418,7 +433,7 @@ private fun DomainMasteryCard(
                 maxLines = 1,
             )
             Text(
-                text = "${(mastery * 100).toInt()}%",
+                text = percentFormatter.format(mastery.toDouble()),
                 style = IOSTypography.caption2,
                 color = KBTheme.textSecondary(),
             )
@@ -582,10 +597,18 @@ private fun RegionButton(
     isSelected: Boolean,
     onClick: () -> Unit,
 ) {
+    val accessibilityDescription =
+        if (isSelected) {
+            stringResource(R.string.cd_region_selected, region.displayName)
+        } else {
+            stringResource(R.string.cd_region_button, region.displayName)
+        }
+
     Box(
         modifier =
             Modifier
                 .clip(RoundedCornerShape(8.dp))
+                .semantics { contentDescription = accessibilityDescription }
                 .background(if (isSelected) KBTheme.mastered() else KBTheme.bgSecondary())
                 .border(
                     width = 1.dp,

@@ -38,10 +38,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.unamentis.R
 import com.unamentis.ui.components.GlassCapsule
 import com.unamentis.ui.theme.Dimensions
 import com.unamentis.ui.theme.IOSTypography
@@ -155,6 +158,11 @@ private fun VisualOverlayToggle(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
+    val collapseLabel = stringResource(R.string.collapse_visual_assets)
+    val expandLabel = context.resources.getQuantityString(R.plurals.visual_assets, assetCount, assetCount)
+    val visualCountText = context.resources.getQuantityString(R.plurals.visual_count, assetCount, assetCount)
+
     GlassCapsule(
         modifier =
             modifier
@@ -162,9 +170,9 @@ private fun VisualOverlayToggle(
                 .semantics {
                     contentDescription =
                         if (isExpanded) {
-                            "Collapse visual assets"
+                            collapseLabel
                         } else {
-                            "Expand $assetCount visual assets"
+                            expandLabel
                         }
                 },
     ) {
@@ -185,7 +193,7 @@ private fun VisualOverlayToggle(
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-                text = "$assetCount visual${if (assetCount == 1) "" else "s"}",
+                text = visualCountText,
                 style = IOSTypography.caption,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -303,7 +311,7 @@ fun VisualAssetSidePanel(
                         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
                     )
                     Text(
-                        text = "No visuals",
+                        text = stringResource(R.string.no_visuals),
                         style = IOSTypography.subheadline,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

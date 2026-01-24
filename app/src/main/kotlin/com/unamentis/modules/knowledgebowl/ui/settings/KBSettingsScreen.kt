@@ -213,7 +213,7 @@ private fun RegionCard(
             if (isSelected) {
                 Icon(
                     imageVector = Icons.Default.Check,
-                    contentDescription = "Selected",
+                    contentDescription = stringResource(R.string.cd_selected),
                     tint = KBTheme.mastered(),
                 )
             }
@@ -251,23 +251,23 @@ private fun RegionInfoCard(region: KBRegion) {
 
             InfoRow(
                 label = stringResource(R.string.kb_written_questions),
-                value = "${config.writtenQuestionCount} questions",
+                value = stringResource(R.string.kb_questions_count, config.writtenQuestionCount),
             )
             InfoRow(
                 label = stringResource(R.string.kb_written_time),
-                value = "${config.writtenTimeLimitMinutes} minutes",
+                value = stringResource(R.string.kb_minutes_count, config.writtenTimeLimitMinutes),
             )
             InfoRow(
                 label = stringResource(R.string.kb_written_points),
-                value = "${config.writtenPointsPerCorrect} per correct",
+                value = stringResource(R.string.kb_points_per_correct, config.writtenPointsPerCorrect),
             )
             InfoRow(
                 label = stringResource(R.string.kb_oral_points),
-                value = "${config.oralPointsPerCorrect} per correct",
+                value = stringResource(R.string.kb_points_per_correct, config.oralPointsPerCorrect),
             )
             InfoRow(
                 label = stringResource(R.string.kb_conference_time),
-                value = "${config.conferenceTime} seconds",
+                value = stringResource(R.string.kb_seconds_count, config.conferenceTime),
             )
             InfoRow(
                 label = stringResource(R.string.kb_verbal_conferring),

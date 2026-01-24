@@ -165,11 +165,12 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                     tint = MaterialTheme.colorScheme.primary,
                 )
 
+                val skipContentDescription = stringResource(R.string.cd_skip_onboarding)
                 TextButton(
                     onClick = onComplete,
                     modifier =
                         Modifier.semantics {
-                            contentDescription = "Skip onboarding"
+                            contentDescription = skipContentDescription
                         },
                 ) {
                     Text(stringResource(R.string.onboarding_skip))
@@ -226,6 +227,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
             }
 
             // Navigation buttons
+            val backContentDescription = stringResource(R.string.cd_go_back)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -235,7 +237,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                         onClick = { currentPage-- },
                         modifier =
                             Modifier.semantics {
-                                contentDescription = "Go back"
+                                contentDescription = backContentDescription
                             },
                     ) {
                         Icon(
@@ -250,6 +252,13 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                     Spacer(modifier = Modifier.width(1.dp))
                 }
 
+                val nextButtonContentDescription =
+                    if (isLastPage) {
+                        stringResource(R.string.cd_complete_onboarding)
+                    } else {
+                        stringResource(R.string.cd_next_page)
+                    }
+
                 Button(
                     onClick = {
                         if (isLastPage) {
@@ -260,12 +269,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                     },
                     modifier =
                         Modifier.semantics {
-                            contentDescription =
-                                if (isLastPage) {
-                                    "Complete onboarding and get started"
-                                } else {
-                                    "Next page"
-                                }
+                            contentDescription = nextButtonContentDescription
                         },
                 ) {
                     Text(

@@ -34,9 +34,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.unamentis.R
 import com.unamentis.ui.theme.IOSTypography
 
 /**
@@ -148,7 +150,7 @@ fun FullscreenAssetViewer(
                                 },
                                 error = {
                                     Text(
-                                        text = "Failed to load image",
+                                        text = stringResource(R.string.viewer_failed_to_load_image),
                                         color = Color.White,
                                         style = IOSTypography.body,
                                     )
@@ -162,7 +164,7 @@ fun FullscreenAssetViewer(
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Text(
-                                    text = "Video playback not yet implemented",
+                                    text = stringResource(R.string.viewer_video_not_implemented),
                                     color = Color.White,
                                     style = IOSTypography.body,
                                 )
@@ -193,7 +195,7 @@ fun FullscreenAssetViewer(
                             IconButton(onClick = onDismiss) {
                                 Icon(
                                     imageVector = Icons.Default.Close,
-                                    contentDescription = "Close",
+                                    contentDescription = stringResource(R.string.viewer_close),
                                     tint = Color.White,
                                 )
                             }
@@ -215,7 +217,7 @@ fun FullscreenAssetViewer(
                                     IconButton(onClick = { onShare(currentAsset) }) {
                                         Icon(
                                             imageVector = Icons.Default.Share,
-                                            contentDescription = "Share",
+                                            contentDescription = stringResource(R.string.viewer_share),
                                             tint = Color.White,
                                         )
                                     }
@@ -224,7 +226,7 @@ fun FullscreenAssetViewer(
                                     IconButton(onClick = { onDownload(currentAsset) }) {
                                         Icon(
                                             imageVector = Icons.Default.Download,
-                                            contentDescription = "Download",
+                                            contentDescription = stringResource(R.string.viewer_download),
                                             tint = Color.White,
                                         )
                                     }

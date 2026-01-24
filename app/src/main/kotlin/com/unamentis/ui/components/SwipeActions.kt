@@ -34,9 +34,11 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntOffset
+import com.unamentis.R
 import com.unamentis.ui.theme.Dimensions
 import com.unamentis.ui.theme.iOSBlue
 import com.unamentis.ui.theme.iOSGreen
@@ -200,28 +202,35 @@ private fun SwipeActionButton(
 /**
  * Pre-built delete swipe action.
  *
+ * @param label Localized label for the action
  * @param onClick Callback when delete is triggered
  */
-fun deleteSwipeAction(onClick: () -> Unit) =
-    SwipeAction(
-        icon = Icons.Default.Delete,
-        label = "Delete",
-        backgroundColor = iOSRed,
-        onClick = onClick,
-    )
+fun deleteSwipeAction(
+    label: String,
+    onClick: () -> Unit,
+) = SwipeAction(
+    icon = Icons.Default.Delete,
+    label = label,
+    backgroundColor = iOSRed,
+    onClick = onClick,
+)
 
 /**
  * Pre-built star/favorite swipe action.
  *
+ * @param starLabel Localized label for star action
+ * @param unstarLabel Localized label for unstar action
  * @param isStarred Current starred state
  * @param onClick Callback when star is triggered
  */
 fun starSwipeAction(
+    starLabel: String,
+    unstarLabel: String,
     isStarred: Boolean,
     onClick: () -> Unit,
 ) = SwipeAction(
     icon = Icons.Default.Star,
-    label = if (isStarred) "Unstar" else "Star",
+    label = if (isStarred) unstarLabel else starLabel,
     backgroundColor = iOSOrange,
     onClick = onClick,
 )
@@ -229,28 +238,34 @@ fun starSwipeAction(
 /**
  * Pre-built edit swipe action.
  *
+ * @param label Localized label for the action
  * @param onClick Callback when edit is triggered
  */
-fun editSwipeAction(onClick: () -> Unit) =
-    SwipeAction(
-        icon = Icons.Default.Edit,
-        label = "Edit",
-        backgroundColor = iOSBlue,
-        onClick = onClick,
-    )
+fun editSwipeAction(
+    label: String,
+    onClick: () -> Unit,
+) = SwipeAction(
+    icon = Icons.Default.Edit,
+    label = label,
+    backgroundColor = iOSBlue,
+    onClick = onClick,
+)
 
 /**
  * Pre-built archive swipe action.
  *
+ * @param label Localized label for the action
  * @param onClick Callback when archive is triggered
  */
-fun archiveSwipeAction(onClick: () -> Unit) =
-    SwipeAction(
-        icon = Icons.Default.Delete,
-        label = "Archive",
-        backgroundColor = iOSGreen,
-        onClick = onClick,
-    )
+fun archiveSwipeAction(
+    label: String,
+    onClick: () -> Unit,
+) = SwipeAction(
+    icon = Icons.Default.Delete,
+    label = label,
+    backgroundColor = iOSGreen,
+    onClick = onClick,
+)
 
 /**
  * Simple swipeable row for common delete use case.
@@ -265,9 +280,10 @@ fun SwipeToDeleteRow(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
+    val deleteLabel = stringResource(R.string.delete)
     SwipeableListItem(
         modifier = modifier,
-        trailingActions = listOf(deleteSwipeAction(onDelete)),
+        trailingActions = listOf(deleteSwipeAction(label = deleteLabel, onClick = onDelete)),
         content = content,
     )
 }

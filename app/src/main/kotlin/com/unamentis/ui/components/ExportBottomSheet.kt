@@ -35,9 +35,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
+import com.unamentis.R
 import com.unamentis.core.export.ExportFormat
 import com.unamentis.core.export.ExportResult
 import com.unamentis.ui.theme.IOSTypography
@@ -78,14 +80,14 @@ fun ExportBottomSheet(
                     .padding(bottom = 32.dp),
         ) {
             Text(
-                text = "Export Session",
+                text = stringResource(R.string.export_session_title),
                 style = IOSTypography.title2,
                 modifier = Modifier.padding(bottom = 16.dp),
             )
 
             // Format selection
             Text(
-                text = "Select Format",
+                text = stringResource(R.string.export_select_format),
                 style = IOSTypography.subheadline,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 8.dp),
@@ -156,7 +158,7 @@ fun ExportBottomSheet(
                     },
                     modifier = Modifier.weight(1f),
                 ) {
-                    Text("Preview")
+                    Text(stringResource(R.string.export_preview))
                 }
 
                 Button(
@@ -175,7 +177,7 @@ fun ExportBottomSheet(
                         modifier = Modifier.size(18.dp),
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Share")
+                    Text(stringResource(R.string.export_share))
                 }
             }
 
@@ -183,7 +185,7 @@ fun ExportBottomSheet(
             if (exportResult is ExportResult.Success) {
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = "Preview (${exportResult.format.displayName})",
+                    text = stringResource(R.string.export_preview_format, exportResult.format.displayName),
                     style = IOSTypography.subheadline,
                     modifier = Modifier.padding(bottom = 8.dp),
                 )
@@ -269,6 +271,9 @@ private fun shareExportedContent(
     context: Context,
     result: ExportResult.Success,
 ) {
+    val shareSubject = context.getString(R.string.export_share_subject)
+    val shareChooserTitle = context.getString(R.string.export_share_chooser_title)
+
     try {
         // Write content to a temporary file
         val cacheDir = File(context.cacheDir, "exports")
@@ -289,13 +294,13 @@ private fun shareExportedContent(
             Intent(Intent.ACTION_SEND).apply {
                 type = result.format.mimeType
                 putExtra(Intent.EXTRA_STREAM, contentUri)
-                putExtra(Intent.EXTRA_SUBJECT, "UnaMentis Session Export")
+                putExtra(Intent.EXTRA_SUBJECT, shareSubject)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
 
         // Launch share chooser
         context.startActivity(
-            Intent.createChooser(shareIntent, "Share Session Export"),
+            Intent.createChooser(shareIntent, shareChooserTitle),
         )
     } catch (e: Exception) {
         // Fall back to plain text share when file sharing fails
@@ -304,10 +309,10 @@ private fun shareExportedContent(
             Intent(Intent.ACTION_SEND).apply {
                 type = "text/plain"
                 putExtra(Intent.EXTRA_TEXT, result.content)
-                putExtra(Intent.EXTRA_SUBJECT, "UnaMentis Session Export")
+                putExtra(Intent.EXTRA_SUBJECT, shareSubject)
             }
         context.startActivity(
-            Intent.createChooser(shareIntent, "Share Session Export"),
+            Intent.createChooser(shareIntent, shareChooserTitle),
         )
     }
 }

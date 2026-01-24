@@ -329,7 +329,7 @@ private fun QuestionContent(
         if (mode == KBStudyMode.SPEED) {
             item {
                 Text(
-                    text = "Target: 10s",
+                    text = stringResource(R.string.kb_target_seconds, 10),
                     style = IOSTypography.caption2,
                     color = KBTheme.currentEvents(),
                     textAlign = TextAlign.Center,
@@ -344,7 +344,7 @@ private fun QuestionContent(
             OutlinedTextField(
                 value = userAnswer,
                 onValueChange = onAnswerChange,
-                label = { Text("Your answer...") },
+                label = { Text(stringResource(R.string.kb_your_answer_hint)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
             )
@@ -357,7 +357,7 @@ private fun QuestionContent(
                 horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
             ) {
                 OutlinedButton(onClick = onSkip) {
-                    Text("Skip")
+                    Text(stringResource(R.string.kb_skip))
                 }
                 Button(
                     onClick = onSubmit,
@@ -538,7 +538,7 @@ private fun CompletedContent(
                             .padding(16.dp),
                 ) {
                     Text(
-                        text = "Domain Performance",
+                        text = stringResource(R.string.kb_domain_performance),
                         style = IOSTypography.subheadline,
                     )
                     Spacer(modifier = Modifier.height(12.dp))

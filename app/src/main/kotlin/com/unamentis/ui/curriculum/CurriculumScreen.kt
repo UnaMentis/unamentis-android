@@ -63,6 +63,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -237,7 +238,7 @@ private fun CurriculumTopBar(
                 trailingIcon = {
                     if (searchQuery.isNotEmpty()) {
                         IconButton(onClick = { onSearchQueryChange("") }) {
-                            Icon(Icons.Default.Clear, contentDescription = "Clear search")
+                            Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.cd_clear_search))
                         }
                     }
                 },
@@ -383,7 +384,7 @@ private fun ErrorBanner(
                 )
             }
             IconButton(onClick = onDismiss) {
-                Icon(Icons.Default.Close, contentDescription = "Dismiss")
+                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_dismiss))
             }
         }
     }
@@ -507,7 +508,7 @@ private fun ServerCurriculumRow(
                     style = IOSTypography.headline,
                 )
                 Text(
-                    text = "${summary.topicCount} topics • v${summary.version}",
+                    text = stringResource(R.string.curriculum_summary_format, summary.topicCount, summary.version),
                     style = IOSTypography.caption,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -533,7 +534,7 @@ private fun ServerCurriculumRow(
                 isDownloaded -> {
                     Icon(
                         Icons.Default.CheckCircle,
-                        contentDescription = "Downloaded",
+                        contentDescription = stringResource(R.string.cd_downloaded),
                         tint = iOSGreen,
                     )
                 }
@@ -541,7 +542,7 @@ private fun ServerCurriculumRow(
                     IconButton(onClick = onDownload) {
                         Icon(
                             Icons.Default.Download,
-                            contentDescription = "Download",
+                            contentDescription = stringResource(R.string.cd_download),
                             tint = iOSBlue,
                         )
                     }
@@ -640,7 +641,7 @@ private fun LocalCurriculaListView(
                     IconButton(onClick = { onDelete(curriculum) }) {
                         Icon(
                             Icons.Default.Delete,
-                            contentDescription = "Delete",
+                            contentDescription = stringResource(R.string.cd_delete),
                             tint = iOSRed,
                         )
                     }
@@ -724,7 +725,7 @@ private fun CurriculumDetailView(
             title = { Text(curriculum.title, style = IOSTypography.headline) },
             navigationIcon = {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
                 }
             },
         )
@@ -858,13 +859,15 @@ private fun TopicDetailSheet(
         LearningObjectivesList(objectives = topic.learningObjectives)
 
         // Segment count
+        val segmentCount = topic.transcript.size
+        val segmentAccessibilityDescription = stringResource(R.string.cd_segments_in_topic, segmentCount)
         Text(
-            text = "${topic.transcript.size} segments",
+            text = pluralStringResource(R.plurals.topic_segments, segmentCount, segmentCount),
             style = IOSTypography.caption,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier =
                 Modifier.semantics {
-                    contentDescription = "${topic.transcript.size} segments in this topic"
+                    contentDescription = segmentAccessibilityDescription
                 },
         )
     }

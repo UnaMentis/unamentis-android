@@ -15,10 +15,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.unamentis.R
 import com.unamentis.data.model.Todo
 import com.unamentis.data.model.TodoPriority
 import com.unamentis.data.model.TodoStatus
@@ -88,16 +90,16 @@ fun TodoScreen(viewModel: TodoViewModel = hiltViewModel()) {
             if (uiState.isSelectionMode) {
                 // Selection mode top bar
                 TopAppBar(
-                    title = { Text("${uiState.selectedTodoIds.size} selected") },
+                    title = { Text(stringResource(R.string.todo_selected_count, uiState.selectedTodoIds.size)) },
                     navigationIcon = {
                         IconButton(onClick = { viewModel.exitSelectionMode() }) {
-                            Icon(Icons.Default.Close, contentDescription = "Exit selection")
+                            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.exit_selection))
                         }
                     },
                     actions = {
                         // Select all
                         IconButton(onClick = { viewModel.selectAll() }) {
-                            Icon(Icons.Default.SelectAll, contentDescription = "Select all")
+                            Icon(Icons.Default.SelectAll, contentDescription = stringResource(R.string.select_all))
                         }
 
                         // Batch complete (only for Active tab)
@@ -106,7 +108,10 @@ fun TodoScreen(viewModel: TodoViewModel = hiltViewModel()) {
                                 onClick = { viewModel.batchComplete() },
                                 enabled = uiState.selectedTodoIds.isNotEmpty(),
                             ) {
-                                Icon(Icons.Default.CheckCircle, contentDescription = "Complete all")
+                                Icon(
+                                    Icons.Default.CheckCircle,
+                                    contentDescription = stringResource(R.string.complete_all),
+                                )
                             }
                         }
 
@@ -118,7 +123,10 @@ fun TodoScreen(viewModel: TodoViewModel = hiltViewModel()) {
                                 onClick = { viewModel.batchRestore() },
                                 enabled = uiState.selectedTodoIds.isNotEmpty(),
                             ) {
-                                Icon(Icons.Default.Restore, contentDescription = "Restore all")
+                                Icon(
+                                    Icons.Default.Restore,
+                                    contentDescription = stringResource(R.string.restore_all),
+                                )
                             }
                         }
 
@@ -128,7 +136,10 @@ fun TodoScreen(viewModel: TodoViewModel = hiltViewModel()) {
                                 onClick = { viewModel.batchArchive() },
                                 enabled = uiState.selectedTodoIds.isNotEmpty(),
                             ) {
-                                Icon(Icons.Default.Archive, contentDescription = "Archive all")
+                                Icon(
+                                    Icons.Default.Archive,
+                                    contentDescription = stringResource(R.string.archive_all),
+                                )
                             }
                         }
 
@@ -138,7 +149,10 @@ fun TodoScreen(viewModel: TodoViewModel = hiltViewModel()) {
                                 onClick = { showBatchPriorityMenu = true },
                                 enabled = uiState.selectedTodoIds.isNotEmpty(),
                             ) {
-                                Icon(Icons.Default.Flag, contentDescription = "Change priority")
+                                Icon(
+                                    Icons.Default.Flag,
+                                    contentDescription = stringResource(R.string.change_priority),
+                                )
                             }
                             DropdownMenu(
                                 expanded = showBatchPriorityMenu,
@@ -149,9 +163,9 @@ fun TodoScreen(viewModel: TodoViewModel = hiltViewModel()) {
                                         text = {
                                             Text(
                                                 when (priority) {
-                                                    TodoPriority.HIGH -> "High Priority"
-                                                    TodoPriority.MEDIUM -> "Medium Priority"
-                                                    TodoPriority.LOW -> "Low Priority"
+                                                    TodoPriority.HIGH -> stringResource(R.string.priority_high)
+                                                    TodoPriority.MEDIUM -> stringResource(R.string.priority_medium)
+                                                    TodoPriority.LOW -> stringResource(R.string.priority_low)
                                                 },
                                             )
                                         },
@@ -171,7 +185,7 @@ fun TodoScreen(viewModel: TodoViewModel = hiltViewModel()) {
                         ) {
                             Icon(
                                 Icons.Default.Delete,
-                                contentDescription = "Delete all",
+                                contentDescription = stringResource(R.string.delete_all),
                                 tint = MaterialTheme.colorScheme.error,
                             )
                         }
@@ -186,7 +200,7 @@ fun TodoScreen(viewModel: TodoViewModel = hiltViewModel()) {
                             modifier = Modifier.padding(start = Dimensions.SpacingLarge),
                         )
                     },
-                    title = { Text("To-Do", style = IOSTypography.headline) },
+                    title = { Text(stringResource(R.string.todo_title), style = IOSTypography.headline) },
                     actions = {
                         // Overdue indicator badge
                         if (uiState.overdueCount > 0) {
@@ -204,7 +218,7 @@ fun TodoScreen(viewModel: TodoViewModel = hiltViewModel()) {
         floatingActionButton = {
             if (uiState.selectedTab == TodoFilter.ACTIVE && !uiState.isSelectionMode) {
                 FloatingActionButton(onClick = { showCreateDialog = true }) {
-                    Icon(Icons.Default.Add, contentDescription = "Add todo")
+                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add_todo))
                 }
             }
         },
@@ -290,9 +304,9 @@ fun TodoScreen(viewModel: TodoViewModel = hiltViewModel()) {
     if (showBatchDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showBatchDeleteConfirm = false },
-            title = { Text("Delete ${uiState.selectedTodoIds.size} items?") },
+            title = { Text(stringResource(R.string.delete_items_title, uiState.selectedTodoIds.size)) },
             text = {
-                Text("This will permanently delete the selected to-do items. This action cannot be undone.")
+                Text(stringResource(R.string.delete_items_message))
             },
             confirmButton = {
                 TextButton(
@@ -301,12 +315,12 @@ fun TodoScreen(viewModel: TodoViewModel = hiltViewModel()) {
                         showBatchDeleteConfirm = false
                     },
                 ) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showBatchDeleteConfirm = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             },
         )
@@ -386,12 +400,17 @@ private fun TodoList(
                     } else {
                         Icons.Default.CheckCircle
                     },
-                title = if (isAISuggestedTab) "No AI Suggestions" else "No Tasks",
+                title =
+                    if (isAISuggestedTab) {
+                        stringResource(R.string.no_ai_suggestions)
+                    } else {
+                        stringResource(R.string.no_tasks)
+                    },
                 description =
                     if (isAISuggestedTab) {
-                        "AI will suggest tasks based on your learning sessions"
+                        stringResource(R.string.ai_will_suggest)
                     } else {
-                        "Add learning goals or tasks to track your progress"
+                        stringResource(R.string.add_learning_goals)
                     },
             )
         }
@@ -493,13 +512,17 @@ private fun TodoCard(
                         tint = MaterialTheme.colorScheme.primary,
                     )
                     Text(
-                        text = "AI Suggested",
+                        text = stringResource(R.string.ai_suggested),
                         style = IOSTypography.caption2,
                         color = MaterialTheme.colorScheme.primary,
                     )
                     if (todo.suggestionConfidence != null) {
                         Text(
-                            text = "(${(todo.suggestionConfidence * 100).toInt()}% confidence)",
+                            text =
+                                stringResource(
+                                    R.string.confidence_percent,
+                                    (todo.suggestionConfidence * 100).toInt(),
+                                ),
                             style = IOSTypography.caption2,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -511,7 +534,7 @@ private fun TodoCard(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Info,
-                            contentDescription = "View suggestion reason",
+                            contentDescription = stringResource(R.string.view_suggestion_reason),
                             modifier = Modifier.size(16.dp),
                         )
                     }
@@ -566,7 +589,7 @@ private fun TodoCard(
                 // More menu
                 Box {
                     IconButton(onClick = { showMenu = true }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "More options")
+                        Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.more_options))
                     }
 
                     DropdownMenu(
@@ -574,7 +597,17 @@ private fun TodoCard(
                         onDismissRequest = { showMenu = false },
                     ) {
                         DropdownMenuItem(
-                            text = { Text(if (todo.dueDate != null) "Change due date" else "Set due date") },
+                            text = {
+                                Text(
+                                    if (todo.dueDate != null) {
+                                        stringResource(
+                                            R.string.change_due_date,
+                                        )
+                                    } else {
+                                        stringResource(R.string.set_due_date)
+                                    },
+                                )
+                            },
                             onClick = {
                                 showDatePicker = true
                                 showMenu = false
@@ -583,7 +616,7 @@ private fun TodoCard(
                         )
                         if (todo.dueDate != null) {
                             DropdownMenuItem(
-                                text = { Text("Remove due date") },
+                                text = { Text(stringResource(R.string.remove_due_date)) },
                                 onClick = {
                                     onUpdateDueDate(null)
                                     showMenu = false
@@ -593,7 +626,7 @@ private fun TodoCard(
                         }
                         if (todo.status != TodoStatus.ARCHIVED) {
                             DropdownMenuItem(
-                                text = { Text("Archive") },
+                                text = { Text(stringResource(R.string.archive)) },
                                 onClick = {
                                     onArchive()
                                     showMenu = false
@@ -602,7 +635,7 @@ private fun TodoCard(
                             )
                         }
                         DropdownMenuItem(
-                            text = { Text("Delete") },
+                            text = { Text(stringResource(R.string.delete)) },
                             onClick = {
                                 onDelete()
                                 showMenu = false
@@ -640,23 +673,23 @@ private fun TodoCard(
                         icon = Icons.Default.CalendarMonth,
                         text =
                             if (isOverdue) {
-                                "Overdue: ${formatDate(todo.dueDate)}"
+                                stringResource(R.string.overdue_prefix, formatDate(todo.dueDate))
                             } else {
-                                "Due: ${formatDate(todo.dueDate)}"
+                                stringResource(R.string.due_prefix, formatDate(todo.dueDate))
                             },
                         isOverdue = isOverdue,
                     )
                 }
 
                 Text(
-                    text = "Created ${formatDate(todo.createdAt)}",
+                    text = stringResource(R.string.created_prefix, formatDate(todo.createdAt)),
                     style = IOSTypography.caption2,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
 
                 if (todo.completedAt != null) {
                     Text(
-                        text = "Completed ${formatDate(todo.completedAt)}",
+                        text = stringResource(R.string.completed_prefix, formatDate(todo.completedAt)),
                         style = IOSTypography.caption2,
                         color = MaterialTheme.colorScheme.primary,
                     )
@@ -679,7 +712,7 @@ private fun TodoCard(
                             modifier = Modifier.size(18.dp),
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Dismiss")
+                        Text(stringResource(R.string.dismiss))
                     }
                     Button(
                         onClick = onAcceptSuggestion,
@@ -691,7 +724,7 @@ private fun TodoCard(
                             modifier = Modifier.size(18.dp),
                         )
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Accept")
+                        Text(stringResource(R.string.accept))
                     }
                 }
             }
@@ -729,13 +762,21 @@ private fun TodoEditDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (todo == null) "Create Todo" else "Edit Todo") },
+        title = {
+            Text(
+                if (todo == null) {
+                    stringResource(R.string.create_todo_title)
+                } else {
+                    stringResource(R.string.edit_todo_title)
+                },
+            )
+        },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { Text("Title") },
+                    label = { Text(stringResource(R.string.title_label)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -743,7 +784,7 @@ private fun TodoEditDialog(
                 OutlinedTextField(
                     value = notes,
                     onValueChange = { notes = it },
-                    label = { Text("Notes (optional)") },
+                    label = { Text(stringResource(R.string.notes_label)) },
                     minLines = 3,
                     maxLines = 5,
                     modifier = Modifier.fillMaxWidth(),
@@ -752,7 +793,7 @@ private fun TodoEditDialog(
                 // Priority selector
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        text = "Priority",
+                        text = stringResource(R.string.priority_label),
                         style = IOSTypography.subheadline,
                     )
 
@@ -767,9 +808,9 @@ private fun TodoEditDialog(
                                 label = {
                                     Text(
                                         when (p) {
-                                            TodoPriority.LOW -> "Low"
-                                            TodoPriority.MEDIUM -> "Medium"
-                                            TodoPriority.HIGH -> "High"
+                                            TodoPriority.LOW -> stringResource(R.string.priority_low_short)
+                                            TodoPriority.MEDIUM -> stringResource(R.string.priority_medium_short)
+                                            TodoPriority.HIGH -> stringResource(R.string.priority_high_short)
                                         },
                                     )
                                 },
@@ -781,7 +822,7 @@ private fun TodoEditDialog(
                 // Due date selector
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        text = "Due Date (optional)",
+                        text = stringResource(R.string.due_date_label),
                         style = IOSTypography.subheadline,
                     )
 
@@ -799,7 +840,11 @@ private fun TodoEditDialog(
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                if (dueDate != null) formatDate(dueDate!!) else "Set due date",
+                                if (dueDate != null) {
+                                    formatDate(dueDate!!)
+                                } else {
+                                    stringResource(R.string.set_due_date_button)
+                                },
                             )
                         }
                         if (dueDate != null) {
@@ -808,7 +853,7 @@ private fun TodoEditDialog(
                             ) {
                                 Icon(
                                     Icons.Default.Close,
-                                    contentDescription = "Clear due date",
+                                    contentDescription = stringResource(R.string.clear_due_date),
                                 )
                             }
                         }
@@ -825,12 +870,12 @@ private fun TodoEditDialog(
                 },
                 enabled = title.isNotBlank(),
             ) {
-                Text("Save")
+                Text(stringResource(R.string.save))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.cancel))
             }
         },
     )
@@ -871,12 +916,12 @@ private fun DatePickerDialog(
                 },
                 enabled = datePickerState.selectedDateMillis != null,
             ) {
-                Text("OK")
+                Text(stringResource(R.string.done))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.cancel))
             }
         },
     ) {
@@ -901,7 +946,7 @@ private fun SuggestionInfoDialog(
                 tint = MaterialTheme.colorScheme.primary,
             )
         },
-        title = { Text("AI Suggestion") },
+        title = { Text(stringResource(R.string.ai_suggestion_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
@@ -912,7 +957,7 @@ private fun SuggestionInfoDialog(
                 if (todo.suggestionReason != null) {
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(
-                            text = "Why this was suggested:",
+                            text = stringResource(R.string.why_suggested),
                             style = IOSTypography.subheadline,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -929,7 +974,7 @@ private fun SuggestionInfoDialog(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         Text(
-                            text = "Confidence:",
+                            text = stringResource(R.string.confidence_label),
                             style = IOSTypography.subheadline,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -947,7 +992,7 @@ private fun SuggestionInfoDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Close")
+                Text(stringResource(R.string.close))
             }
         },
     )

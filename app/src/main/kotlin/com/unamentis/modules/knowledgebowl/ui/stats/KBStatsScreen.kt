@@ -55,6 +55,7 @@ import com.unamentis.modules.knowledgebowl.ui.theme.KBTheme
 import com.unamentis.modules.knowledgebowl.ui.theme.color
 import com.unamentis.ui.theme.IOSTypography
 import com.unamentis.ui.util.safeProgress
+import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -178,6 +179,9 @@ private fun OverviewSection(
     accuracy: Float,
     averageResponseTime: Double,
 ) {
+    val percentFormatter = NumberFormat.getPercentInstance(Locale.getDefault())
+    val timeFormatted = String.format(Locale.getDefault(), "%.1f", averageResponseTime)
+
     Card(
         colors =
             CardDefaults.cardColors(
@@ -212,13 +216,13 @@ private fun OverviewSection(
                 )
                 StatItem(
                     icon = Icons.Default.EmojiEvents,
-                    value = String.format("%.0f%%", accuracy * 100),
+                    value = percentFormatter.format(accuracy.toDouble()),
                     label = stringResource(R.string.kb_accuracy),
                     color = KBTheme.gold(),
                 )
                 StatItem(
                     icon = Icons.Default.Schedule,
-                    value = String.format("%.1fs", averageResponseTime),
+                    value = stringResource(R.string.kb_time_seconds_format, timeFormatted),
                     label = stringResource(R.string.kb_avg_time),
                     color = KBTheme.textSecondary(),
                 )
@@ -264,6 +268,8 @@ private fun StatItem(
 @Composable
 private fun CompetitionReadinessCard(readiness: Float) {
     val safeReadiness = safeProgress(readiness)
+    val percentFormatter = NumberFormat.getPercentInstance(Locale.getDefault())
+
     Card(
         colors =
             CardDefaults.cardColors(
@@ -307,7 +313,7 @@ private fun CompetitionReadinessCard(readiness: Float) {
                 )
 
                 Text(
-                    text = String.format("%.0f%%", safeReadiness * 100),
+                    text = percentFormatter.format(safeReadiness.toDouble()),
                     style = IOSTypography.title2,
                     color = KBTheme.textPrimary(),
                 )
@@ -369,6 +375,8 @@ private fun DomainMasteryRow(
     questionsAnswered: Int,
 ) {
     val safeMastery = safeProgress(mastery)
+    val percentFormatter = NumberFormat.getPercentInstance(Locale.getDefault())
+
     Column {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -399,7 +407,7 @@ private fun DomainMasteryRow(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = String.format("%.0f%%", safeMastery * 100),
+                    text = percentFormatter.format(safeMastery.toDouble()),
                     style = IOSTypography.body,
                     color = KBTheme.textPrimary(),
                 )
@@ -429,6 +437,7 @@ private fun DomainMasteryRow(
 private fun WeakStrongDomainsSection(statsManager: KBStatsManager) {
     val weakDomains = statsManager.getWeakDomains(3)
     val strongDomains = statsManager.getStrongDomains(3)
+    val percentFormatter = NumberFormat.getPercentInstance(Locale.getDefault())
 
     if (weakDomains.isEmpty() && strongDomains.isEmpty()) {
         return
@@ -473,7 +482,12 @@ private fun WeakStrongDomainsSection(statsManager: KBStatsManager) {
                 } else {
                     weakDomains.forEach { (domain, mastery) ->
                         Text(
-                            text = "${domain.displayName}: ${String.format("%.0f%%", mastery * 100)}",
+                            text =
+                                stringResource(
+                                    R.string.kb_domain_mastery_format,
+                                    domain.displayName,
+                                    percentFormatter.format(mastery.toDouble()),
+                                ),
                             style = IOSTypography.caption,
                             color = KBTheme.textPrimary(),
                         )
@@ -517,7 +531,12 @@ private fun WeakStrongDomainsSection(statsManager: KBStatsManager) {
                 } else {
                     strongDomains.forEach { (domain, mastery) ->
                         Text(
-                            text = "${domain.displayName}: ${String.format("%.0f%%", mastery * 100)}",
+                            text =
+                                stringResource(
+                                    R.string.kb_domain_mastery_format,
+                                    domain.displayName,
+                                    percentFormatter.format(mastery.toDouble()),
+                                ),
                             style = IOSTypography.caption,
                             color = KBTheme.textPrimary(),
                         )
@@ -541,6 +560,7 @@ private fun RecentSessionCard(session: KBSessionRecord) {
         } else {
             0f
         }
+    val percentFormatter = NumberFormat.getPercentInstance(Locale.getDefault())
 
     Card(
         colors =
@@ -573,12 +593,17 @@ private fun RecentSessionCard(session: KBSessionRecord) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
-                        text = "${session.correctAnswers}/${session.questionsAnswered}",
+                        text =
+                            stringResource(
+                                R.string.kb_score_format,
+                                session.correctAnswers,
+                                session.questionsAnswered,
+                            ),
                         style = IOSTypography.headline,
                         color = KBTheme.textPrimary(),
                     )
                     Text(
-                        text = String.format("%.0f%%", accuracy * 100),
+                        text = percentFormatter.format(accuracy.toDouble()),
                         style = IOSTypography.caption,
                         color =
                             when {
@@ -592,7 +617,7 @@ private fun RecentSessionCard(session: KBSessionRecord) {
                 Spacer(modifier = Modifier.width(8.dp))
 
                 Text(
-                    text = "+${session.totalPoints}",
+                    text = stringResource(R.string.kb_points_format, session.totalPoints),
                     style = IOSTypography.headline,
                     color = KBTheme.gold(),
                 )

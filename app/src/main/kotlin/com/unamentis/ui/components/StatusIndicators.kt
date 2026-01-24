@@ -20,8 +20,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import com.unamentis.R
 import com.unamentis.data.model.SessionState
 import com.unamentis.ui.theme.Dimensions
 import com.unamentis.ui.theme.IOSTypography
@@ -133,6 +135,7 @@ fun SessionStatusBadge(
     val color = getSessionStateColor(state)
     val label = getSessionStateLabel(state)
     val shouldPulse = shouldStatePulse(state)
+    val statusDescription = stringResource(R.string.session_status_description, label)
 
     GlassCapsule(modifier = modifier) {
         Row(
@@ -142,7 +145,7 @@ fun SessionStatusBadge(
                         horizontal = Dimensions.BadgePaddingHorizontal,
                         vertical = Dimensions.BadgePaddingVertical,
                     )
-                    .semantics { contentDescription = "Session status: $label" },
+                    .semantics { contentDescription = statusDescription },
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
         ) {
@@ -205,16 +208,17 @@ fun getSessionStateColor(state: SessionState): Color {
 /**
  * Get the display label for a session state.
  */
+@Composable
 fun getSessionStateLabel(state: SessionState): String {
     return when (state) {
-        SessionState.IDLE -> "Ready"
-        SessionState.USER_SPEAKING -> "Listening"
-        SessionState.PROCESSING_UTTERANCE -> "Processing"
-        SessionState.AI_THINKING -> "Thinking"
-        SessionState.AI_SPEAKING -> "Speaking"
-        SessionState.INTERRUPTED -> "Interrupted"
-        SessionState.PAUSED -> "Paused"
-        SessionState.ERROR -> "Error"
+        SessionState.IDLE -> stringResource(R.string.session_state_ready)
+        SessionState.USER_SPEAKING -> stringResource(R.string.session_state_listening)
+        SessionState.PROCESSING_UTTERANCE -> stringResource(R.string.session_state_processing)
+        SessionState.AI_THINKING -> stringResource(R.string.session_state_thinking)
+        SessionState.AI_SPEAKING -> stringResource(R.string.session_state_speaking)
+        SessionState.INTERRUPTED -> stringResource(R.string.session_state_interrupted)
+        SessionState.PAUSED -> stringResource(R.string.session_state_paused)
+        SessionState.ERROR -> stringResource(R.string.session_state_error)
     }
 }
 
@@ -253,7 +257,12 @@ fun ConnectionStatusDot(
         } else {
             MaterialTheme.colorScheme.error
         }
-    val label = if (isConnected) "Connected" else "Disconnected"
+    val label =
+        if (isConnected) {
+            stringResource(R.string.connection_status_connected)
+        } else {
+            stringResource(R.string.connection_status_disconnected)
+        }
 
     // Pulse when disconnected to draw attention
     StatusDot(

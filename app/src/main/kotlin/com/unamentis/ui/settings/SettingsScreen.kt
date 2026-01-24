@@ -215,7 +215,7 @@ fun SettingsScreen(
             // STT Provider
             item {
                 ProviderCard(
-                    title = "Speech-to-Text",
+                    title = stringResource(R.string.settings_speech_to_text_title),
                     providers = listOf("Deepgram", "Android"),
                     selectedProvider = uiState.selectedSTTProvider,
                     onProviderSelected = { viewModel.setSTTProvider(it) },
@@ -226,7 +226,7 @@ fun SettingsScreen(
             // TTS Provider
             item {
                 ProviderCard(
-                    title = "Text-to-Speech",
+                    title = stringResource(R.string.settings_text_to_speech_title),
                     providers = listOf("ElevenLabs", "Android"),
                     selectedProvider = uiState.selectedTTSProvider,
                     onProviderSelected = { viewModel.setTTSProvider(it) },
@@ -237,7 +237,7 @@ fun SettingsScreen(
             // LLM Provider
             item {
                 ProviderCard(
-                    title = "Language Model",
+                    title = stringResource(R.string.settings_language_model_title),
                     providers = listOf("PatchPanel", "OpenAI", "Anthropic"),
                     selectedProvider = uiState.selectedLLMProvider,
                     onProviderSelected = { viewModel.setLLMProvider(it) },
