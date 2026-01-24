@@ -37,6 +37,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.unamentis.ui.theme.IOSTypography
 
 /**
  * Data class representing an asset for display.
@@ -149,7 +150,7 @@ fun FullscreenAssetViewer(
                                     Text(
                                         text = "Failed to load image",
                                         color = Color.White,
-                                        style = MaterialTheme.typography.bodyLarge,
+                                        style = IOSTypography.body,
                                     )
                                 },
                             )
@@ -163,7 +164,7 @@ fun FullscreenAssetViewer(
                                 Text(
                                     text = "Video playback not yet implemented",
                                     color = Color.White,
-                                    style = MaterialTheme.typography.bodyLarge,
+                                    style = IOSTypography.body,
                                 )
                             }
                         }
@@ -202,7 +203,7 @@ fun FullscreenAssetViewer(
                                 Text(
                                     text = "${pagerState.currentPage + 1} / ${assets.size}",
                                     color = Color.White,
-                                    style = MaterialTheme.typography.titleMedium,
+                                    style = IOSTypography.headline,
                                 )
                             }
 
@@ -245,14 +246,14 @@ fun FullscreenAssetViewer(
                                     Text(
                                         text = it,
                                         color = Color.White,
-                                        style = MaterialTheme.typography.titleMedium,
+                                        style = IOSTypography.headline,
                                     )
                                 }
                                 currentAsset.description?.let {
                                     Text(
                                         text = it,
                                         color = Color.White.copy(alpha = 0.8f),
-                                        style = MaterialTheme.typography.bodyMedium,
+                                        style = IOSTypography.body,
                                     )
                                 }
                             }

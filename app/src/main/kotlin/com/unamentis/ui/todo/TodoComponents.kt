@@ -22,7 +22,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.unamentis.data.model.TodoPriority
@@ -33,6 +32,7 @@ import com.unamentis.ui.theme.iOSBlue
 import com.unamentis.ui.theme.iOSGray
 import com.unamentis.ui.theme.iOSGreen
 import com.unamentis.ui.theme.iOSOrange
+import com.unamentis.ui.theme.iOSPurple
 import com.unamentis.ui.theme.iOSRed
 
 // =============================================================================
@@ -60,7 +60,7 @@ fun TodoStatusIcon(
         when (status) {
             TodoStatus.ACTIVE -> Icons.Default.Circle to iOSGray
             TodoStatus.COMPLETED -> Icons.Default.CheckCircle to iOSGreen
-            TodoStatus.ARCHIVED -> Icons.Default.Archive to Color(0xFF9B59B6) // iOS purple
+            TodoStatus.ARCHIVED -> Icons.Default.Archive to iOSPurple
         }
 
     Icon(

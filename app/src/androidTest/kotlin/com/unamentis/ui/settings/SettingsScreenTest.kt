@@ -24,7 +24,7 @@ import org.junit.runner.RunWith
  * Tests configuration management, provider selection, and user interactions.
  * Uses Hilt for dependency injection to test with real ViewModels.
  *
- * Note: Settings is accessed via the "More" menu in the bottom navigation.
+ * Note: Settings is accessed directly via the Settings tab in the bottom navigation.
  */
 @HiltAndroidTest
 @RunWith(AndroidJUnit4::class)
@@ -45,28 +45,16 @@ class SettingsScreenTest {
     }
 
     /**
-     * Navigate to Settings via the More menu.
+     * Navigate to Settings via the Settings tab.
      */
     private fun navigateToSettings() {
-        // Wait for bottom nav to load
+        // Wait for Settings tab to be visible
         composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
-            composeTestRule.onAllNodesWithTag("nav_more")
+            composeTestRule.onAllNodesWithTag("nav_settings")
                 .fetchSemanticsNodes().isNotEmpty()
         }
-        // Open More menu
-        composeTestRule.onNodeWithTag("nav_more").performClick()
-
-        // Wait for menu to appear and stabilize
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
-            composeTestRule.onAllNodesWithTag("menu_settings")
-                .fetchSemanticsNodes().isNotEmpty()
-        }
-
-        // Small delay for menu animation
-        composeTestRule.mainClock.advanceTimeBy(300)
-
-        // Click Settings
-        composeTestRule.onNodeWithTag("menu_settings").performClick()
+        // Click Settings tab directly
+        composeTestRule.onNodeWithTag("nav_settings").performClick()
 
         // Wait for navigation to complete
         composeTestRule.waitForIdle()
@@ -111,10 +99,11 @@ class SettingsScreenTest {
 
         // Scroll to and verify Recording section (server-related config doesn't exist as a section)
         // Using Recording section as a representative configuration section
+        // Note: UI displays "RECORDING" (uppercase) due to .uppercase() styling
         composeTestRule.onNodeWithTag("SettingsLazyColumn")
-            .performScrollToNode(hasText("Recording"))
+            .performScrollToNode(hasText("Recording", ignoreCase = true))
 
-        composeTestRule.onNodeWithText("Recording").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Recording", ignoreCase = true).assertIsDisplayed()
     }
 
     @Test

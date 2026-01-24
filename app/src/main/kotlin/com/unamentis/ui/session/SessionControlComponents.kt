@@ -56,6 +56,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.unamentis.R
 import com.unamentis.ui.theme.Dimensions
+import com.unamentis.ui.theme.IOSTypography
 import com.unamentis.ui.theme.iOSBlue
 import com.unamentis.ui.theme.iOSGreen
 import com.unamentis.ui.theme.iOSOrange
@@ -144,7 +145,7 @@ fun SlideToStopButton(
         // Instruction text (fades as user slides)
         Text(
             text = stringResource(R.string.slide_to_stop),
-            style = MaterialTheme.typography.labelLarge,
+            style = IOSTypography.subheadline,
             fontWeight = FontWeight.Medium,
             color = iOSRed.copy(alpha = 1f - completionProgress),
             modifier =
@@ -481,8 +482,8 @@ fun FreeformSessionControlBar(
         Row(
             modifier =
                 Modifier
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    .padding(horizontal = Dimensions.ScreenHorizontalPadding, vertical = Dimensions.SpacingMedium),
+            horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingLarge),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             SessionMuteButton(
@@ -541,13 +542,18 @@ fun CurriculumSessionControlBar(
         tonalElevation = 2.dp,
     ) {
         androidx.compose.foundation.layout.Column(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier =
+                Modifier.padding(
+                    horizontal = Dimensions.ScreenHorizontalPadding,
+                    vertical = Dimensions.SpacingMedium,
+                ),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
         ) {
             // Navigation controls row
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(20.dp, Alignment.CenterHorizontally),
+                horizontalArrangement =
+                    Arrangement.spacedBy(Dimensions.ScreenHorizontalPadding, Alignment.CenterHorizontally),
             ) {
                 GoBackSegmentButton(
                     isEnabled = currentSegmentIndex > 0,
@@ -567,7 +573,7 @@ fun CurriculumSessionControlBar(
             // Standard session controls row
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingLarge),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 SessionMuteButton(

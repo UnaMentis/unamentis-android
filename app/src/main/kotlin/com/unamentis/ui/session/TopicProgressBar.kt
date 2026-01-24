@@ -70,7 +70,7 @@ fun TopicProgressBar(
         modifier =
             modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = Dimensions.ScreenHorizontalPadding)
                 .semantics { contentDescription = accessibilityDesc },
         verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingXSmall),
     ) {

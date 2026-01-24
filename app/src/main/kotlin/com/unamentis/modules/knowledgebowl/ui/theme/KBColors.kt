@@ -173,6 +173,20 @@ object KBColors {
     /** Border color */
     val borderLight = Color(0xFFE5E7EB)
     val borderDark = Color(0xFF374151)
+
+    // MARK: - Tip Box Colors (for practice launcher)
+
+    /** Tip box background - light cream/amber */
+    val tipBackgroundLight = Color(0xFFFFF8E1)
+    val tipBackgroundDark = Color(0xFF3D3224)
+
+    /** Tip text color - brown */
+    val tipTextLight = Color(0xFF5D4037)
+    val tipTextDark = Color(0xFFD7CCC8)
+
+    /** Tip icon color - amber */
+    val tipIconLight = Color(0xFFFFB300)
+    val tipIconDark = Color(0xFFFFCA28)
 }
 
 /**
@@ -262,6 +276,20 @@ object KBTheme {
     /** Silver color for achievements */
     @Composable
     fun silver(): Color = KBColors.silver
+
+    /** Tip box background color */
+    @Composable
+    fun tipBackground(): Color {
+        return if (isSystemInDarkTheme()) KBColors.tipBackgroundDark else KBColors.tipBackgroundLight
+    }
+
+    /** Tip text color */
+    @Composable
+    fun tipText(): Color = if (isSystemInDarkTheme()) KBColors.tipTextDark else KBColors.tipTextLight
+
+    /** Tip icon color */
+    @Composable
+    fun tipIcon(): Color = if (isSystemInDarkTheme()) KBColors.tipIconDark else KBColors.tipIconLight
 }
 
 /**

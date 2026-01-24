@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import com.unamentis.core.export.ExportFormat
 import com.unamentis.core.export.ExportResult
+import com.unamentis.ui.theme.IOSTypography
 import java.io.File
 
 /**
@@ -78,14 +79,14 @@ fun ExportBottomSheet(
         ) {
             Text(
                 text = "Export Session",
-                style = MaterialTheme.typography.titleLarge,
+                style = IOSTypography.title2,
                 modifier = Modifier.padding(bottom = 16.dp),
             )
 
             // Format selection
             Text(
                 text = "Select Format",
-                style = MaterialTheme.typography.titleSmall,
+                style = IOSTypography.subheadline,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 8.dp),
             )
@@ -138,7 +139,7 @@ fun ExportBottomSheet(
             if (exportResult is ExportResult.Error) {
                 Text(
                     text = exportResult.message,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = IOSTypography.body,
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(bottom = 16.dp),
                 )
@@ -183,7 +184,7 @@ fun ExportBottomSheet(
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     text = "Preview (${exportResult.format.displayName})",
-                    style = MaterialTheme.typography.titleSmall,
+                    style = IOSTypography.subheadline,
                     modifier = Modifier.padding(bottom = 8.dp),
                 )
                 Card(
@@ -197,7 +198,7 @@ fun ExportBottomSheet(
                         text =
                             exportResult.content.take(500) +
                                 if (exportResult.content.length > 500) "\n..." else "",
-                        style = MaterialTheme.typography.bodySmall,
+                        style = IOSTypography.caption,
                         modifier = Modifier.padding(12.dp),
                     )
                 }
@@ -248,7 +249,7 @@ private fun FormatCard(
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = format.displayName,
-                style = MaterialTheme.typography.labelMedium,
+                style = IOSTypography.caption2,
                 textAlign = TextAlign.Center,
                 color =
                     if (isSelected) {

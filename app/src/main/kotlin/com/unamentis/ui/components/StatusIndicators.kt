@@ -24,6 +24,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import com.unamentis.data.model.SessionState
 import com.unamentis.ui.theme.Dimensions
+import com.unamentis.ui.theme.IOSTypography
 import com.unamentis.ui.theme.SessionStateAISpeaking
 import com.unamentis.ui.theme.SessionStateAIThinking
 import com.unamentis.ui.theme.SessionStateError
@@ -151,7 +152,7 @@ fun SessionStatusBadge(
             )
             Text(
                 text = label,
-                style = MaterialTheme.typography.labelMedium,
+                style = IOSTypography.caption2,
                 color = MaterialTheme.colorScheme.onSurface,
             )
         }

@@ -27,6 +27,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.unamentis.core.network.ConnectionQuality
 import com.unamentis.core.network.ConnectionState
 import com.unamentis.core.network.ConnectivityMonitor
+import com.unamentis.ui.theme.IOSTypography
 
 /**
  * Banner that displays when the device is offline.
@@ -86,7 +87,7 @@ fun OfflineBannerContent(
             )
             Text(
                 text = message,
-                style = MaterialTheme.typography.labelMedium,
+                style = IOSTypography.caption2,
                 color = MaterialTheme.colorScheme.onError,
                 modifier = Modifier.padding(start = 8.dp),
             )
@@ -150,7 +151,7 @@ fun OfflineIndicator(
             )
             Text(
                 text = "Offline",
-                style = MaterialTheme.typography.labelSmall,
+                style = IOSTypography.caption2,
                 color = MaterialTheme.colorScheme.error,
             )
         }

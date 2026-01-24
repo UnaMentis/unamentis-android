@@ -26,6 +26,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.unamentis.ui.theme.Dimensions
+import com.unamentis.ui.theme.IOSTypography
 import com.unamentis.ui.util.safeProgress
 
 /**
@@ -121,7 +122,7 @@ fun StatusBadge(
             }
             Text(
                 text = text,
-                style = MaterialTheme.typography.labelMedium,
+                style = IOSTypography.caption2,
                 color = MaterialTheme.colorScheme.onSurface,
             )
         }
@@ -164,7 +165,7 @@ fun StatusBadgeWithDot(
             }
             Text(
                 text = text,
-                style = MaterialTheme.typography.labelMedium,
+                style = IOSTypography.caption2,
                 color = MaterialTheme.colorScheme.onSurface,
             )
         }

@@ -24,7 +24,7 @@ import org.junit.runner.RunWith
  * Tests metrics display, charts, filtering, and export functionality.
  * Uses Hilt for dependency injection to test with real ViewModels.
  *
- * Note: Analytics is accessed via the "More" menu in the bottom navigation.
+ * Note: Analytics is accessed directly via the Analytics tab in the bottom navigation.
  */
 @HiltAndroidTest
 @RunWith(AndroidJUnit4::class)
@@ -45,28 +45,16 @@ class AnalyticsScreenTest {
     }
 
     /**
-     * Navigate to Analytics via the More menu.
+     * Navigate to Analytics via the Analytics tab.
      */
     private fun navigateToAnalytics() {
-        // Wait for bottom nav to load
+        // Wait for Analytics tab to be visible
         composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
-            composeTestRule.onAllNodesWithTag("nav_more")
+            composeTestRule.onAllNodesWithTag("nav_analytics")
                 .fetchSemanticsNodes().isNotEmpty()
         }
-        // Open More menu
-        composeTestRule.onNodeWithTag("nav_more").performClick()
-
-        // Wait for menu to appear and stabilize
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
-            composeTestRule.onAllNodesWithTag("menu_analytics")
-                .fetchSemanticsNodes().isNotEmpty()
-        }
-
-        // Small delay for menu animation
-        composeTestRule.mainClock.advanceTimeBy(300)
-
-        // Click Analytics
-        composeTestRule.onNodeWithTag("menu_analytics").performClick()
+        // Click Analytics tab directly
+        composeTestRule.onNodeWithTag("nav_analytics").performClick()
 
         // Wait for navigation to complete
         composeTestRule.waitForIdle()

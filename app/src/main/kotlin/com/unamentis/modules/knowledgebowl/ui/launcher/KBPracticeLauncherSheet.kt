@@ -243,14 +243,14 @@ private fun ReadyContent(
                 Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xFFFFF8E1))
+                    .background(KBTheme.tipBackground())
                     .padding(16.dp),
         ) {
             Column {
                 Text(
                     text = stringResource(R.string.kb_tips_title),
                     style = IOSTypography.subheadline,
-                    color = Color(0xFF5D4037),
+                    color = KBTheme.tipText(),
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -294,7 +294,7 @@ private fun TipRow(tip: String) {
             imageVector = Icons.Default.Lightbulb,
             contentDescription = null,
             modifier = Modifier.size(16.dp),
-            tint = Color(0xFFFFB300),
+            tint = KBTheme.tipIcon(),
         )
 
         Spacer(modifier = Modifier.size(8.dp))
@@ -302,7 +302,7 @@ private fun TipRow(tip: String) {
         Text(
             text = tip,
             style = IOSTypography.caption,
-            color = Color(0xFF5D4037),
+            color = KBTheme.tipText(),
         )
     }
 }

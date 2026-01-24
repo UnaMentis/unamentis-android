@@ -268,8 +268,8 @@ private fun ConnectionStatusBanner(
                 color = MaterialTheme.colorScheme.surfaceVariant,
             ) {
                 Row(
-                    modifier = Modifier.padding(12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.padding(Dimensions.SpacingMedium),
+                    horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     CircularProgressIndicator(modifier = Modifier.size(16.dp))
@@ -286,8 +286,8 @@ private fun ConnectionStatusBanner(
                 color = MaterialTheme.colorScheme.primaryContainer,
             ) {
                 Row(
-                    modifier = Modifier.padding(12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.padding(Dimensions.SpacingMedium),
+                    horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Icon(
@@ -310,13 +310,13 @@ private fun ConnectionStatusBanner(
                 color = MaterialTheme.colorScheme.errorContainer,
             ) {
                 Row(
-                    modifier = Modifier.padding(12.dp),
+                    modifier = Modifier.padding(Dimensions.SpacingMedium),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Row(
                         modifier = Modifier.weight(1f),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Icon(
@@ -337,7 +337,7 @@ private fun ConnectionStatusBanner(
                             contentDescription = null,
                             modifier = Modifier.size(16.dp),
                         )
-                        Spacer(modifier = Modifier.width(4.dp))
+                        Spacer(modifier = Modifier.width(Dimensions.SpacingXSmall))
                         Text(stringResource(R.string.refresh))
                     }
                 }
@@ -362,14 +362,14 @@ private fun ErrorBanner(
         color = MaterialTheme.colorScheme.errorContainer,
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(Dimensions.CardPadding),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Row(
                 modifier = Modifier.weight(1f),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
             ) {
                 Icon(
                     Icons.Default.Error,
@@ -473,7 +473,7 @@ private fun ServerCurriculumRow(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp),
+                .padding(vertical = Dimensions.SpacingSmall),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -500,7 +500,7 @@ private fun ServerCurriculumRow(
             // Text content
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingXSmall),
             ) {
                 Text(
                     text = summary.title,
@@ -673,7 +673,7 @@ private fun EmptyStateView(
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
         ) {
             Icon(
                 imageVector = icon,
@@ -700,7 +700,7 @@ private fun EmptyStateView(
                         contentDescription = null,
                         modifier = Modifier.size(18.dp),
                     )
-                    Spacer(modifier = Modifier.width(4.dp))
+                    Spacer(modifier = Modifier.width(Dimensions.SpacingXSmall))
                     Text(stringResource(R.string.refresh))
                 }
             }

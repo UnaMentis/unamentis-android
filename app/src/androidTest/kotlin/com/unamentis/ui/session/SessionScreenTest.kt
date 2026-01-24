@@ -43,19 +43,15 @@ class SessionScreenTest {
     }
 
     /**
-     * Navigate to Settings via the More menu.
+     * Navigate to Settings via the Settings tab.
      */
     private fun navigateToSettings() {
         composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
-            composeTestRule.onAllNodesWithTag("nav_more")
+            composeTestRule.onAllNodesWithTag("nav_settings")
                 .fetchSemanticsNodes().isNotEmpty()
         }
-        composeTestRule.onNodeWithTag("nav_more").performClick()
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
-            composeTestRule.onAllNodesWithTag("menu_settings")
-                .fetchSemanticsNodes().isNotEmpty()
-        }
-        composeTestRule.onNodeWithTag("menu_settings").performClick()
+        composeTestRule.onNodeWithTag("nav_settings").performClick()
+        composeTestRule.waitForIdle()
     }
 
     /**
@@ -83,14 +79,14 @@ class SessionScreenTest {
 
     @Test
     fun sessionScreen_displaysStartButton() {
-        // Wait for screen to load
+        // Wait for screen to load - button has content description, not visible text
         composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
-            composeTestRule.onAllNodesWithText("Start Session")
+            composeTestRule.onAllNodesWithContentDescription("Start session")
                 .fetchSemanticsNodes().isNotEmpty()
         }
 
         // Verify start session button is displayed
-        composeTestRule.onNodeWithText("Start Session").assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("Start session").assertIsDisplayed()
     }
 
     @Test
@@ -119,11 +115,12 @@ class SessionScreenTest {
 
     @Test
     fun sessionScreen_navigateToOtherTabAndBack_preservesState() {
-        // Navigate to Settings tab via More menu
+        // Navigate to Settings tab
         navigateToSettings()
 
         // Wait for Settings screen to load using testTag (more reliable)
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        // Use longer timeout for initial screen load
+        composeTestRule.waitUntil(15_000L) {
             composeTestRule.onAllNodesWithTag("settings_providers_header")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -131,12 +128,12 @@ class SessionScreenTest {
         // Navigate back to Session tab
         navigateToSession()
 
-        // Verify Session screen is displayed
+        // Verify Session screen is displayed - use content description for button
         composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
-            composeTestRule.onAllNodesWithText("Start Session")
+            composeTestRule.onAllNodesWithContentDescription("Start session")
                 .fetchSemanticsNodes().isNotEmpty()
         }
 
-        composeTestRule.onNodeWithText("Start Session").assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("Start session").assertIsDisplayed()
     }
 }

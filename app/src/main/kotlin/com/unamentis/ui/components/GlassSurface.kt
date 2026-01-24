@@ -13,6 +13,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.unamentis.ui.theme.Dimensions
+import com.unamentis.ui.theme.iOSGray5Dark
+import com.unamentis.ui.theme.iOSGray6Dark
 
 /**
  * Glass morphism surface mimicking iOS ultraThinMaterial.
@@ -108,7 +110,7 @@ fun ThinMaterialSurface(
     // Slightly more opaque than GlassSurface for better contrast
     val backgroundColor =
         if (isDark) {
-            Color(0xFF1C1C1E).copy(alpha = 0.85f)
+            iOSGray6Dark.copy(alpha = 0.85f)
         } else {
             Color.White.copy(alpha = 0.9f)
         }
@@ -143,7 +145,7 @@ fun RegularMaterialSurface(
     // iOS regularMaterial approximation - more opaque than ultraThin
     val backgroundColor =
         if (isDark) {
-            Color(0xFF2C2C2E).copy(alpha = 0.9f)
+            iOSGray5Dark.copy(alpha = 0.9f)
         } else {
             Color.White.copy(alpha = 0.85f)
         }

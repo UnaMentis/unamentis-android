@@ -207,7 +207,7 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier =
                         Modifier
-                            .padding(top = 8.dp)
+                            .padding(top = Dimensions.SpacingSmall)
                             .testTag("settings_providers_header"),
                 )
             }
@@ -251,7 +251,7 @@ fun SettingsScreen(
                     text = stringResource(R.string.settings_recording).uppercase(),
                     style = IOSTypography.caption,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 16.dp),
+                    modifier = Modifier.padding(top = Dimensions.SpacingLarge),
                 )
             }
 
@@ -268,7 +268,7 @@ fun SettingsScreen(
                     text = stringResource(R.string.settings_audio).uppercase(),
                     style = IOSTypography.caption,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 16.dp),
+                    modifier = Modifier.padding(top = Dimensions.SpacingLarge),
                 )
             }
 
@@ -293,7 +293,7 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier =
                         Modifier
-                            .padding(top = 16.dp)
+                            .padding(top = Dimensions.SpacingLarge)
                             .testTag("settings_voice_detection_header"),
                 )
             }
@@ -317,7 +317,7 @@ fun SettingsScreen(
                     text = stringResource(R.string.settings_language_model).uppercase(),
                     style = IOSTypography.caption,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 16.dp),
+                    modifier = Modifier.padding(top = Dimensions.SpacingLarge),
                 )
             }
 
@@ -338,7 +338,7 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier =
                         Modifier
-                            .padding(top = 16.dp)
+                            .padding(top = Dimensions.SpacingLarge)
                             .testTag("settings_on_device_ai_header"),
                 )
             }
@@ -363,7 +363,7 @@ fun SettingsScreen(
                     text = stringResource(R.string.settings_voice_output).uppercase(),
                     style = IOSTypography.caption,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 16.dp),
+                    modifier = Modifier.padding(top = Dimensions.SpacingLarge),
                 )
             }
 
@@ -382,7 +382,7 @@ fun SettingsScreen(
                     text = stringResource(R.string.settings_curriculum_playback).uppercase(),
                     style = IOSTypography.caption,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 16.dp),
+                    modifier = Modifier.padding(top = Dimensions.SpacingLarge),
                 )
             }
 
@@ -399,7 +399,7 @@ fun SettingsScreen(
                     text = stringResource(R.string.settings_api_keys).uppercase(),
                     style = IOSTypography.caption,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 16.dp),
+                    modifier = Modifier.padding(top = Dimensions.SpacingLarge),
                 )
             }
 
@@ -421,7 +421,7 @@ private fun PresetSection(
     currentPreset: ConfigurationPreset,
     onPresetSelected: (ConfigurationPreset) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall)) {
         Text(
             text = stringResource(R.string.settings_presets).uppercase(),
             style = IOSTypography.caption,
@@ -430,7 +430,7 @@ private fun PresetSection(
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
         ) {
             PresetChip(
                 preset = ConfigurationPreset.FREE,
@@ -448,7 +448,7 @@ private fun PresetSection(
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
         ) {
             PresetChip(
                 preset = ConfigurationPreset.COST_OPTIMIZED,
@@ -482,7 +482,7 @@ private fun PresetChip(
         label = {
             Text(
                 text = preset.name.replace("_", " "),
-                style = MaterialTheme.typography.labelMedium,
+                style = IOSTypography.caption2,
             )
         },
         modifier = modifier,
@@ -507,18 +507,18 @@ private fun ProviderCard(
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
             ) {
                 Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.titleSmall,
+                    style = IOSTypography.subheadline,
                 )
             }
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
             ) {
                 providers.forEach { provider ->
                     FilterChip(
@@ -673,11 +673,11 @@ private fun ApiKeyDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall)) {
                 if (currentKey != null) {
                     Text(
                         text = "Current: $currentKey",
-                        style = MaterialTheme.typography.bodySmall,
+                        style = IOSTypography.caption,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -732,11 +732,11 @@ private fun RecordingModeSection(
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
             ) {
                 Icon(
                     Icons.Default.Mic,
@@ -745,7 +745,7 @@ private fun RecordingModeSection(
                 )
                 Text(
                     text = "Recording Mode",
-                    style = MaterialTheme.typography.titleSmall,
+                    style = IOSTypography.subheadline,
                 )
             }
 
@@ -772,7 +772,7 @@ private fun RecordingModeOption(
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
     ) {
         RadioButton(
             selected = isSelected,
@@ -781,11 +781,11 @@ private fun RecordingModeOption(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = mode.displayName,
-                style = MaterialTheme.typography.bodyMedium,
+                style = IOSTypography.body,
             )
             Text(
                 text = mode.description,
-                style = MaterialTheme.typography.bodySmall,
+                style = IOSTypography.caption,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
@@ -809,11 +809,11 @@ private fun AudioSettingsSection(
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
             ) {
                 Icon(
                     Icons.Default.Tune,
@@ -822,18 +822,18 @@ private fun AudioSettingsSection(
                 )
                 Text(
                     text = "Audio Quality",
-                    style = MaterialTheme.typography.titleSmall,
+                    style = IOSTypography.subheadline,
                 )
             }
 
             // Sample rate picker
             Text(
                 text = "Sample Rate",
-                style = MaterialTheme.typography.bodyMedium,
+                style = IOSTypography.body,
             )
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
             ) {
                 listOf(16000, 24000, 48000).forEach { rate ->
                     FilterChip(
@@ -845,7 +845,7 @@ private fun AudioSettingsSection(
             }
             Text(
                 text = "Higher rates sound better but use more data",
-                style = MaterialTheme.typography.bodySmall,
+                style = IOSTypography.caption,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
@@ -893,11 +893,11 @@ private fun VadSettingsSection(
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingLarge),
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
             ) {
                 Icon(
                     Icons.Default.GraphicEq,
@@ -906,7 +906,7 @@ private fun VadSettingsSection(
                 )
                 Text(
                     text = "Voice Detection Tuning",
-                    style = MaterialTheme.typography.titleSmall,
+                    style = IOSTypography.subheadline,
                 )
             }
 
@@ -918,11 +918,11 @@ private fun VadSettingsSection(
                 ) {
                     Text(
                         text = "Detection Threshold",
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = IOSTypography.body,
                     )
                     Text(
                         text = "%.2f".format(vadThreshold),
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = IOSTypography.body,
                         color = MaterialTheme.colorScheme.primary,
                     )
                 }
@@ -933,7 +933,7 @@ private fun VadSettingsSection(
                 )
                 Text(
                     text = "Lower values detect quieter speech but may pick up noise",
-                    style = MaterialTheme.typography.bodySmall,
+                    style = IOSTypography.caption,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -956,11 +956,11 @@ private fun VadSettingsSection(
                     ) {
                         Text(
                             text = "Interruption Threshold",
-                            style = MaterialTheme.typography.bodyMedium,
+                            style = IOSTypography.body,
                         )
                         Text(
                             text = "%.2f".format(bargeInThreshold),
-                            style = MaterialTheme.typography.bodyMedium,
+                            style = IOSTypography.body,
                             color = MaterialTheme.colorScheme.primary,
                         )
                     }
@@ -971,7 +971,7 @@ private fun VadSettingsSection(
                     )
                     Text(
                         text = "How loud you need to speak to interrupt the AI",
-                        style = MaterialTheme.typography.bodySmall,
+                        style = IOSTypography.caption,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -987,11 +987,11 @@ private fun VadSettingsSection(
                 ) {
                     Text(
                         text = "Silence Timeout",
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = IOSTypography.body,
                     )
                     Text(
                         text = "${silenceThresholdMs}ms",
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = IOSTypography.body,
                         color = MaterialTheme.colorScheme.primary,
                     )
                 }
@@ -1003,7 +1003,7 @@ private fun VadSettingsSection(
                 )
                 Text(
                     text = "How long to wait in silence before ending your turn",
-                    style = MaterialTheme.typography.bodySmall,
+                    style = IOSTypography.caption,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -1024,11 +1024,11 @@ private fun LlmSettingsSection(
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingLarge),
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
             ) {
                 Icon(
                     Icons.Default.Psychology,
@@ -1037,7 +1037,7 @@ private fun LlmSettingsSection(
                 )
                 Text(
                     text = "Response Tuning",
-                    style = MaterialTheme.typography.titleSmall,
+                    style = IOSTypography.subheadline,
                 )
             }
 
@@ -1049,11 +1049,11 @@ private fun LlmSettingsSection(
                 ) {
                     Text(
                         text = "Temperature",
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = IOSTypography.body,
                     )
                     Text(
                         text = "%.1f".format(temperature),
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = IOSTypography.body,
                         color = MaterialTheme.colorScheme.primary,
                     )
                 }
@@ -1064,7 +1064,7 @@ private fun LlmSettingsSection(
                 )
                 Text(
                     text = "Controls creativity. Lower for factual, higher for creative.",
-                    style = MaterialTheme.typography.bodySmall,
+                    style = IOSTypography.caption,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -1079,11 +1079,11 @@ private fun LlmSettingsSection(
                 ) {
                     Text(
                         text = "Max Response Length",
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = IOSTypography.body,
                     )
                     Text(
                         text = "$maxTokens tokens",
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = IOSTypography.body,
                         color = MaterialTheme.colorScheme.primary,
                     )
                 }
@@ -1095,7 +1095,7 @@ private fun LlmSettingsSection(
                 )
                 Text(
                     text = "Maximum response length. One token is roughly 4 characters.",
-                    style = MaterialTheme.typography.bodySmall,
+                    style = IOSTypography.caption,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -1116,11 +1116,11 @@ private fun TtsSettingsSection(
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingLarge),
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
             ) {
                 Icon(
                     Icons.Default.RecordVoiceOver,
@@ -1129,7 +1129,7 @@ private fun TtsSettingsSection(
                 )
                 Text(
                     text = "Voice Output Tuning",
-                    style = MaterialTheme.typography.titleSmall,
+                    style = IOSTypography.subheadline,
                 )
             }
 
@@ -1141,11 +1141,11 @@ private fun TtsSettingsSection(
                 ) {
                     Text(
                         text = "Speaking Rate",
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = IOSTypography.body,
                     )
                     Text(
                         text = "%.1fx".format(speakingRate),
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = IOSTypography.body,
                         color = MaterialTheme.colorScheme.primary,
                     )
                 }
@@ -1156,7 +1156,7 @@ private fun TtsSettingsSection(
                 )
                 Text(
                     text = "Adjust how fast the AI speaks",
-                    style = MaterialTheme.typography.bodySmall,
+                    style = IOSTypography.caption,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -1171,11 +1171,11 @@ private fun TtsSettingsSection(
                 ) {
                     Text(
                         text = "Playback Speed",
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = IOSTypography.body,
                     )
                     Text(
                         text = "%.1fx".format(playbackSpeed),
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = IOSTypography.body,
                         color = MaterialTheme.colorScheme.primary,
                     )
                 }
@@ -1186,7 +1186,7 @@ private fun TtsSettingsSection(
                 )
                 Text(
                     text = "Speed up or slow down audio playback",
-                    style = MaterialTheme.typography.bodySmall,
+                    style = IOSTypography.caption,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -1205,11 +1205,11 @@ private fun CurriculumSettingsSection(
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
             ) {
                 Icon(
                     Icons.Default.PlaylistPlay,
@@ -1218,7 +1218,7 @@ private fun CurriculumSettingsSection(
                 )
                 Text(
                     text = "Session Behavior",
-                    style = MaterialTheme.typography.titleSmall,
+                    style = IOSTypography.subheadline,
                 )
             }
 
@@ -1233,7 +1233,7 @@ private fun CurriculumSettingsSection(
                 text =
                     "When a topic completes, seamlessly continue to the next topic " +
                         "in the curriculum with an audio announcement.",
-                style = MaterialTheme.typography.bodySmall,
+                style = IOSTypography.caption,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
@@ -1302,12 +1302,12 @@ private fun OnDeviceLlmSection(
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingLarge),
         ) {
             // Header
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
             ) {
                 Icon(
                     Icons.Default.Memory,
@@ -1316,7 +1316,7 @@ private fun OnDeviceLlmSection(
                 )
                 Text(
                     text = stringResource(R.string.settings_on_device_models),
-                    style = MaterialTheme.typography.titleSmall,
+                    style = IOSTypography.subheadline,
                 )
             }
 
@@ -1332,7 +1332,7 @@ private fun OnDeviceLlmSection(
                     text =
                         "Your device doesn't meet the minimum requirements for on-device AI. " +
                             "Cloud-based AI will be used instead.",
-                    style = MaterialTheme.typography.bodySmall,
+                    style = IOSTypography.caption,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 return@Column
@@ -1349,7 +1349,7 @@ private fun OnDeviceLlmSection(
             // Available models
             Text(
                 text = stringResource(R.string.settings_available_models),
-                style = MaterialTheme.typography.bodyMedium,
+                style = IOSTypography.body,
             )
 
             availableModels.forEach { modelInfo ->
@@ -1371,7 +1371,7 @@ private fun OnDeviceLlmSection(
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Icon(Icons.Default.Download, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
+                    Spacer(Modifier.width(Dimensions.SpacingSmall))
                     Text(stringResource(R.string.settings_download_recommended))
                 }
             }
@@ -1379,7 +1379,7 @@ private fun OnDeviceLlmSection(
             // Storage info
             Text(
                 text = "Models are stored locally and can be deleted anytime to free space.",
-                style = MaterialTheme.typography.bodySmall,
+                style = IOSTypography.caption,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
@@ -1424,19 +1424,19 @@ private fun DeviceCapabilityInfo(
     deviceRamMB: Int,
     recommendedModel: DeviceCapabilityDetector.OnDeviceModelSpec?,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingXSmall)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
                 text = "Device RAM",
-                style = MaterialTheme.typography.bodySmall,
+                style = IOSTypography.caption,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
                 text = "${deviceRamMB / 1024} GB",
-                style = MaterialTheme.typography.bodySmall,
+                style = IOSTypography.caption,
             )
         }
 
@@ -1446,12 +1446,12 @@ private fun DeviceCapabilityInfo(
         ) {
             Text(
                 text = "On-Device AI",
-                style = MaterialTheme.typography.bodySmall,
+                style = IOSTypography.caption,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingXSmall),
             ) {
                 Icon(
                     if (supportsOnDeviceLLM) Icons.Default.Check else Icons.Default.Close,
@@ -1466,7 +1466,7 @@ private fun DeviceCapabilityInfo(
                 )
                 Text(
                     text = if (supportsOnDeviceLLM) "Supported" else "Not Supported",
-                    style = MaterialTheme.typography.bodySmall,
+                    style = IOSTypography.caption,
                     color =
                         if (supportsOnDeviceLLM) {
                             MaterialTheme.colorScheme.primary
@@ -1484,12 +1484,12 @@ private fun DeviceCapabilityInfo(
             ) {
                 Text(
                     text = "Recommended Model",
-                    style = MaterialTheme.typography.bodySmall,
+                    style = IOSTypography.caption,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
                     text = recommendedModel.displayName,
-                    style = MaterialTheme.typography.bodySmall,
+                    style = IOSTypography.caption,
                 )
             }
         }
@@ -1509,7 +1509,7 @@ private fun DownloadStateIndicator(
     AnimatedVisibility(visible = downloadState !is ModelDownloadManager.DownloadState.Idle) {
         Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
         ) {
             when (downloadState) {
                 is ModelDownloadManager.DownloadState.Downloading -> {
@@ -1521,13 +1521,13 @@ private fun DownloadStateIndicator(
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = "Downloading...",
-                                style = MaterialTheme.typography.bodyMedium,
+                                style = IOSTypography.body,
                             )
                             Text(
                                 text =
                                     "${Formatter.formatFileSize(context, downloadState.downloadedBytes)} / " +
                                         Formatter.formatFileSize(context, downloadState.totalBytes),
-                                style = MaterialTheme.typography.bodySmall,
+                                style = IOSTypography.caption,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
@@ -1549,7 +1549,7 @@ private fun DownloadStateIndicator(
                 is ModelDownloadManager.DownloadState.Verifying -> {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
                     ) {
                         LinearProgressIndicator(
                             modifier =
@@ -1559,14 +1559,14 @@ private fun DownloadStateIndicator(
                         )
                         Text(
                             text = "Verifying...",
-                            style = MaterialTheme.typography.bodySmall,
+                            style = IOSTypography.caption,
                         )
                     }
                 }
                 is ModelDownloadManager.DownloadState.Complete -> {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
                     ) {
                         Icon(
                             Icons.Default.Check,
@@ -1575,7 +1575,7 @@ private fun DownloadStateIndicator(
                         )
                         Text(
                             text = "Download complete!",
-                            style = MaterialTheme.typography.bodyMedium,
+                            style = IOSTypography.body,
                             color = MaterialTheme.colorScheme.primary,
                         )
                     }
@@ -1583,7 +1583,7 @@ private fun DownloadStateIndicator(
                 is ModelDownloadManager.DownloadState.Error -> {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
                     ) {
                         Icon(
                             Icons.Default.Close,
@@ -1592,7 +1592,7 @@ private fun DownloadStateIndicator(
                         )
                         Text(
                             text = "Error: ${downloadState.message}",
-                            style = MaterialTheme.typography.bodySmall,
+                            style = IOSTypography.caption,
                             color = MaterialTheme.colorScheme.error,
                         )
                     }
@@ -1600,7 +1600,7 @@ private fun DownloadStateIndicator(
                 is ModelDownloadManager.DownloadState.Cancelled -> {
                     Text(
                         text = "Download cancelled",
-                        style = MaterialTheme.typography.bodySmall,
+                        style = IOSTypography.caption,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -1641,11 +1641,11 @@ private fun ModelCard(
             Column(modifier = Modifier.weight(1f)) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
                 ) {
                     Text(
                         text = modelInfo.spec.displayName,
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = IOSTypography.body,
                     )
                     if (isRecommended) {
                         FilterChip(
@@ -1654,7 +1654,7 @@ private fun ModelCard(
                             label = {
                                 Text(
                                     "Recommended",
-                                    style = MaterialTheme.typography.labelSmall,
+                                    style = IOSTypography.caption2,
                                 )
                             },
                         )
@@ -1668,14 +1668,14 @@ private fun ModelCard(
                             append(" • ")
                             append("Requires ${modelInfo.spec.minRamMB / 1024}GB+ RAM")
                         },
-                    style = MaterialTheme.typography.bodySmall,
+                    style = IOSTypography.caption,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
 
                 if (modelInfo.isDownloaded) {
                     Text(
                         text = "Downloaded",
-                        style = MaterialTheme.typography.bodySmall,
+                        style = IOSTypography.caption,
                         color = MaterialTheme.colorScheme.primary,
                     )
                 }
