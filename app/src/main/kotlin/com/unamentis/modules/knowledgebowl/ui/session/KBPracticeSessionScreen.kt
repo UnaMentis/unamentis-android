@@ -52,7 +52,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -64,6 +63,7 @@ import com.unamentis.modules.knowledgebowl.data.model.KBQuestion
 import com.unamentis.modules.knowledgebowl.data.model.KBStudyMode
 import com.unamentis.modules.knowledgebowl.ui.theme.KBTheme
 import com.unamentis.modules.knowledgebowl.ui.theme.color
+import com.unamentis.ui.theme.IOSTypography
 
 /**
  * Unified practice session screen for all study modes.
@@ -223,8 +223,7 @@ private fun ProgressHeader(
         // Question counter
         Text(
             text = stringResource(R.string.kb_question_of, questionIndex + 1, totalQuestions),
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.Bold,
+            style = IOSTypography.subheadline,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
@@ -241,7 +240,7 @@ private fun ProgressHeader(
             Spacer(modifier = Modifier.width(4.dp))
             Text(
                 text = pluralStringResource(R.plurals.kb_correct_count, correctCount, correctCount),
-                style = MaterialTheme.typography.labelMedium,
+                style = IOSTypography.caption2,
                 color = KBTheme.mastered(),
             )
         }
@@ -259,8 +258,7 @@ private fun ProgressHeader(
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
                     text = formatTime(time),
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
+                    style = IOSTypography.caption2,
                     color = if (time < 30) MaterialTheme.colorScheme.error else KBTheme.currentEvents(),
                 )
             }
@@ -279,7 +277,7 @@ private fun StartingContent() {
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = stringResource(R.string.kb_preparing_questions),
-                style = MaterialTheme.typography.bodyMedium,
+                style = IOSTypography.body,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
@@ -314,7 +312,7 @@ private fun QuestionContent(
         item {
             Text(
                 text = question.text,
-                style = MaterialTheme.typography.titleMedium,
+                style = IOSTypography.headline,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -332,7 +330,7 @@ private fun QuestionContent(
             item {
                 Text(
                     text = "Target: 10s",
-                    style = MaterialTheme.typography.labelSmall,
+                    style = IOSTypography.caption2,
                     color = KBTheme.currentEvents(),
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth(),
@@ -408,8 +406,7 @@ private fun AnswerFeedbackContent(
                     } else {
                         stringResource(R.string.kb_incorrect)
                     },
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
+                style = IOSTypography.title2,
                 color = if (isCorrect) KBTheme.mastered() else MaterialTheme.colorScheme.error,
             )
         }
@@ -427,14 +424,13 @@ private fun AnswerFeedbackContent(
             ) {
                 Text(
                     text = stringResource(R.string.kb_correct_answer),
-                    style = MaterialTheme.typography.labelMedium,
+                    style = IOSTypography.caption2,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = question.answer.primary,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
+                    style = IOSTypography.headline,
                 )
             }
         }
@@ -454,7 +450,7 @@ private fun AnswerFeedbackContent(
                     )
                     Text(
                         text = String.format("%.1fs", result.responseTimeSeconds),
-                        style = MaterialTheme.typography.labelMedium,
+                        style = IOSTypography.caption2,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     if (result.wasWithinSpeedTarget) {
@@ -521,8 +517,7 @@ private fun CompletedContent(
         item {
             Text(
                 text = stringResource(R.string.kb_session_complete),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
+                style = IOSTypography.title2,
             )
         }
 
@@ -544,8 +539,7 @@ private fun CompletedContent(
                 ) {
                     Text(
                         text = "Domain Performance",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
+                        style = IOSTypography.subheadline,
                     )
                     Spacer(modifier = Modifier.height(12.dp))
 
@@ -556,18 +550,17 @@ private fun CompletedContent(
                         ) {
                             Text(
                                 text = domainId.replaceFirstChar { it.uppercase() },
-                                style = MaterialTheme.typography.bodyMedium,
+                                style = IOSTypography.body,
                             )
                             Row {
                                 Text(
                                     text = "${score.correct}/${score.total}",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Bold,
+                                    style = IOSTypography.body,
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
                                     text = String.format("%.0f%%", score.accuracy * 100),
-                                    style = MaterialTheme.typography.labelSmall,
+                                    style = IOSTypography.caption2,
                                     color =
                                         if (score.accuracy >= 0.7) {
                                             KBTheme.mastered()
@@ -616,8 +609,7 @@ private fun DomainBadge(
     ) {
         Text(
             text = domain.displayName,
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Bold,
+            style = IOSTypography.caption2,
             color = domain.color(),
         )
         if (!subdomain.isNullOrBlank()) {
@@ -627,7 +619,7 @@ private fun DomainBadge(
             )
             Text(
                 text = subdomain,
-                style = MaterialTheme.typography.labelSmall,
+                style = IOSTypography.caption2,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
@@ -739,12 +731,11 @@ private fun StatCard(stat: StatItem) {
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = stat.value,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
+            style = IOSTypography.headline,
         )
         Text(
             text = stat.title,
-            style = MaterialTheme.typography.labelSmall,
+            style = IOSTypography.caption2,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }

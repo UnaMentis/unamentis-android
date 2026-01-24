@@ -16,6 +16,7 @@ import com.unamentis.core.network.ConnectivityMonitor
 import com.unamentis.navigation.DeepLinkDestination
 import com.unamentis.navigation.DeepLinkHandler
 import com.unamentis.ui.UnaMentisNavHost
+import com.unamentis.ui.session.SessionActivityState
 import com.unamentis.ui.theme.UnaMentisTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -34,6 +35,9 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var connectivityMonitor: ConnectivityMonitor
 
+    @Inject
+    lateinit var sessionActivityState: SessionActivityState
+
     private var pendingDeepLink by mutableStateOf<DeepLinkDestination?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -51,6 +55,7 @@ class MainActivity : ComponentActivity() {
                 ) {
                     UnaMentisNavHost(
                         connectivityMonitor = connectivityMonitor,
+                        sessionActivityState = sessionActivityState,
                         initialDeepLink = pendingDeepLink,
                         onDeepLinkConsumed = { pendingDeepLink = null },
                     )

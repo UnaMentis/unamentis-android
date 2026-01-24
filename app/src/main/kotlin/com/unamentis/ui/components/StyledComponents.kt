@@ -1,7 +1,6 @@
 package com.unamentis.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -132,7 +131,7 @@ fun StatusBadge(
 /**
  * Status badge with a colored dot indicator instead of an icon.
  *
- * Matches iOS session status pattern with pulsing dot.
+ * Matches iOS session status pattern with colored status dot.
  *
  * @param text Badge text content
  * @param dotColor Color of the status dot
@@ -157,24 +156,9 @@ fun StatusBadgeWithDot(
                     vertical = Dimensions.BadgePaddingVertical,
                 ),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
         ) {
-            Box(
-                modifier =
-                    Modifier
-                        .size(Dimensions.StatusDotSize)
-                        .clip(RoundedCornerShape(50))
-                        .padding(2.dp),
-            ) {
-                Box(
-                    modifier =
-                        Modifier
-                            .matchParentSize()
-                            .clip(RoundedCornerShape(50))
-                            .padding(0.dp),
-                )
-            }
-            // Colored dot
+            // Colored status dot
             androidx.compose.foundation.Canvas(modifier = Modifier.size(Dimensions.StatusDotSize)) {
                 drawCircle(color = dotColor)
             }
@@ -184,6 +168,31 @@ fun StatusBadgeWithDot(
                 color = MaterialTheme.colorScheme.onSurface,
             )
         }
+    }
+}
+
+/**
+ * iOS-styled glass card for floating UI elements.
+ *
+ * Uses glass morphism styling for a frosted glass effect.
+ * Ideal for floating cards, overlays, and modal-like content.
+ *
+ * @param modifier Modifier to apply to the card
+ * @param content Content to display inside the card
+ */
+@Composable
+fun GlassCard(
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    GlassSurface(
+        modifier = modifier,
+        cornerRadius = Dimensions.CardCornerRadius,
+    ) {
+        Column(
+            modifier = Modifier.padding(Dimensions.CardPadding),
+            content = content,
+        )
     }
 }
 

@@ -10,7 +10,10 @@ import com.unamentis.data.model.Session
 import com.unamentis.data.model.SessionState
 import com.unamentis.data.model.TranscriptEntry
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -37,7 +40,25 @@ class SessionViewModel
     constructor(
         private val sessionManager: SessionManager,
         private val providerConfig: ProviderConfig,
+        private val sessionActivityState: SessionActivityState,
     ) : ViewModel() {
+        init {
+            // Update tab bar visibility based on session state
+            viewModelScope.launch {
+                combine(
+                    sessionManager.currentSession,
+                    sessionManager.sessionState,
+                ) { session, state ->
+                    val isActive = session != null
+                    val isPaused = state == SessionState.PAUSED
+                    Pair(isActive, isPaused)
+                }.collect { (isActive, isPaused) ->
+                    sessionActivityState.setSessionActive(isActive)
+                    sessionActivityState.setPaused(isPaused)
+                }
+            }
+        }
+
         /**
          * Session state from SessionManager.
          */
@@ -242,6 +263,37 @@ class SessionViewModel
             }
         }
 
+        // ==========================================================================
+        // CURRICULUM PLAYBACK CONTROLS
+        // ==========================================================================
+
+        /**
+         * Go back one segment in curriculum playback.
+         */
+        fun goBackSegment() {
+            viewModelScope.launch {
+                sessionManager.goBackSegment()
+            }
+        }
+
+        /**
+         * Replay the current topic from the beginning.
+         */
+        fun replayTopic() {
+            viewModelScope.launch {
+                sessionManager.replayTopic()
+            }
+        }
+
+        /**
+         * Skip to the next topic in the curriculum.
+         */
+        fun nextTopic() {
+            viewModelScope.launch {
+                sessionManager.nextTopic()
+            }
+        }
+
         /**
          * Get status message for current state.
          */
@@ -272,6 +324,8 @@ class SessionViewModel
 
         override fun onCleared() {
             super.onCleared()
+            // Reset tab bar visibility when leaving session screen
+            sessionActivityState.reset()
             // SessionManager cleanup handled by its own lifecycle
         }
     }
@@ -282,6 +336,7 @@ class SessionViewModel
 data class SessionUiState(
     val sessionState: SessionState = SessionState.IDLE,
     val isSessionActive: Boolean = false,
+    val isLoading: Boolean = false,
     val canStart: Boolean = true,
     val canPause: Boolean = false,
     val canResume: Boolean = false,
@@ -292,4 +347,11 @@ data class SessionUiState(
     val statusMessage: String = "Ready to start",
     val recordingMode: RecordingMode = RecordingMode.VAD,
     val isManuallyRecording: Boolean = false,
+    // Curriculum mode fields
+    val isCurriculumMode: Boolean = false,
+    val currentSegmentIndex: Int = 0,
+    val totalSegments: Int = 0,
+    val hasNextTopic: Boolean = false,
+    // Audio level for VU meter
+    val audioLevel: Float = -60f,
 )

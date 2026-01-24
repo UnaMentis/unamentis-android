@@ -51,10 +51,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.unamentis.R
+import com.unamentis.ui.theme.IOSTypography
 
 /**
  * Data class representing a single onboarding page.
@@ -324,8 +324,7 @@ private fun OnboardingPageContent(
         // Title
         Text(
             text = page.title,
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
+            style = IOSTypography.title2,
             textAlign = TextAlign.Center,
         )
 
@@ -334,7 +333,7 @@ private fun OnboardingPageContent(
         // Subtitle
         Text(
             text = page.subtitle,
-            style = MaterialTheme.typography.titleMedium,
+            style = IOSTypography.headline,
             color = page.iconColor,
             textAlign = TextAlign.Center,
         )
@@ -344,7 +343,7 @@ private fun OnboardingPageContent(
         // Description
         Text(
             text = page.description,
-            style = MaterialTheme.typography.bodyMedium,
+            style = IOSTypography.body,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(horizontal = 16.dp),
@@ -392,7 +391,7 @@ private fun TipItem(tip: String) {
         Spacer(modifier = Modifier.width(12.dp))
         Text(
             text = tip,
-            style = MaterialTheme.typography.bodyMedium,
+            style = IOSTypography.body,
             modifier = Modifier.weight(1f),
         )
     }

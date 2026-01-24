@@ -20,7 +20,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
@@ -30,7 +29,6 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.IosShare
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
@@ -67,7 +65,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -76,9 +73,11 @@ import com.unamentis.data.model.Session
 import com.unamentis.data.model.TranscriptEntry
 import com.unamentis.ui.LocalScrollToTopHandler
 import com.unamentis.ui.Routes
+import com.unamentis.ui.components.BrandLogo
 import com.unamentis.ui.components.ExportBottomSheet
-import com.unamentis.ui.components.IOSCard
+import com.unamentis.ui.components.Size
 import com.unamentis.ui.theme.Dimensions
+import com.unamentis.ui.theme.IOSTypography
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -146,7 +145,7 @@ fun HistoryScreen(
             if (uiState.selectedSession != null) {
                 // Detail view top bar
                 TopAppBar(
-                    title = { Text("Session Details") },
+                    title = { Text("Session Details", style = IOSTypography.headline) },
                     navigationIcon = {
                         IconButton(onClick = { viewModel.clearSelection() }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -219,7 +218,13 @@ fun HistoryScreen(
             } else {
                 // List view top bar
                 TopAppBar(
-                    title = { Text("History") },
+                    navigationIcon = {
+                        BrandLogo(
+                            size = Size.Compact,
+                            modifier = Modifier.padding(start = Dimensions.SpacingLarge),
+                        )
+                    },
+                    title = { Text("History", style = IOSTypography.headline) },
                     actions = {
                         // Search button
                         IconButton(onClick = { showSearchBar = true }) {
@@ -347,7 +352,9 @@ fun HistoryScreen(
 }
 
 /**
- * Session list view.
+ * Session list view with date grouping.
+ *
+ * Matches iOS grouped list style.
  */
 @Composable
 private fun SessionListView(
@@ -357,163 +364,62 @@ private fun SessionListView(
     modifier: Modifier = Modifier,
 ) {
     if (sessions.isEmpty()) {
-        // Empty state
+        // Empty state matching iOS ContentUnavailableView
         Box(
             modifier = modifier.fillMaxSize(),
             contentAlignment = Alignment.Center,
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
-            ) {
-                Icon(
-                    imageVector = Icons.Default.History,
-                    contentDescription = null,
-                    modifier = Modifier.size(64.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                )
-                Text(
-                    text = "No sessions yet",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(
-                    text = "Start a session to see it here",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            HistoryEmptyState(
+                icon = Icons.Default.History,
+                title = "No Sessions Yet",
+                description = "Start a session to see it here",
+            )
         }
     } else {
+        // Group sessions by date
+        val groupedSessions = groupSessionsByDate(sessions)
+
         LazyColumn(
             modifier = modifier.fillMaxSize(),
             state = listState,
             contentPadding =
                 PaddingValues(
-                    horizontal = Dimensions.ScreenHorizontalPadding,
                     vertical = Dimensions.ScreenVerticalPadding,
                 ),
-            verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
-        ) {
-            items(
-                items = sessions,
-                key = { it.id },
-            ) { session ->
-                SessionCard(
-                    session = session,
-                    onClick = { onSessionClick(session) },
-                )
-            }
-        }
-    }
-}
-
-/**
- * Individual session card in list.
- */
-@Composable
-private fun SessionCard(
-    session: Session,
-    onClick: () -> Unit,
-) {
-    IOSCard(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(
-            modifier = Modifier.padding(Dimensions.CardPadding),
             verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
         ) {
-            // Title, star, and date
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
-                ) {
-                    Text(
-                        text = session.curriculumId?.let { "Curriculum Session" } ?: "Free Session",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    if (session.isStarred) {
-                        Icon(
-                            imageVector = Icons.Filled.Star,
-                            contentDescription = "Starred",
-                            modifier = Modifier.size(18.dp),
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-                }
-
-                Text(
-                    text = formatDate(session.startTime),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
-            // Metadata
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingLarge),
-            ) {
-                MetadataChip(
-                    icon = Icons.AutoMirrored.Filled.Chat,
-                    text = "${session.turnCount} turns",
-                )
-
-                session.endTime?.let { endTime ->
-                    val durationMinutes = ((endTime - session.startTime) / 1000 / 60).toInt()
-                    MetadataChip(
-                        icon = Icons.Default.Timer,
-                        text = "${durationMinutes}min",
+            groupedSessions.forEach { (dateLabel, dateSessions) ->
+                // Date section header
+                item(key = "header_$dateLabel") {
+                    DateSectionHeader(
+                        title = dateLabel,
+                        modifier = Modifier.padding(top = Dimensions.SpacingMedium),
                     )
                 }
-            }
 
-            // Topic if present
-            session.topicId?.let {
-                Text(
-                    text = "Topic: $it",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
-                )
+                // Sessions for this date
+                items(
+                    items = dateSessions,
+                    key = { it.id },
+                ) { session ->
+                    SessionRow(
+                        session = session,
+                        onClick = { onSessionClick(session) },
+                        modifier =
+                            Modifier.padding(
+                                horizontal = Dimensions.ScreenHorizontalPadding,
+                            ),
+                    )
+                }
             }
         }
-    }
-}
-
-/**
- * Metadata chip component.
- */
-@Composable
-private fun MetadataChip(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    text: String,
-) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingXSmall),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            modifier = Modifier.size(Dimensions.IconSizeSmall),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 
 /**
  * Session detail view with transcript.
+ *
+ * Matches iOS SessionDetailView with cards and transcript.
  */
 @Composable
 private fun SessionDetailView(
@@ -541,8 +447,7 @@ private fun SessionDetailView(
         item {
             Text(
                 text = "Transcript",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
+                style = IOSTypography.headline,
             )
         }
 
@@ -551,7 +456,7 @@ private fun SessionDetailView(
             item {
                 Text(
                     text = "No transcript available",
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = IOSTypography.body,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = Dimensions.SpacingXXLarge),
                 )
@@ -568,72 +473,9 @@ private fun SessionDetailView(
 }
 
 /**
- * Session info summary card.
- */
-@Composable
-private fun SessionInfoCard(session: Session) {
-    IOSCard(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.padding(Dimensions.CardPadding),
-            verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
-        ) {
-            Text(
-                text = "Session Information",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-            )
-
-            InfoRow(label = "Session ID", value = session.id.take(8) + "...")
-            session.curriculumId?.let {
-                InfoRow(label = "Curriculum ID", value = it)
-            }
-            session.topicId?.let {
-                InfoRow(label = "Topic ID", value = it)
-            }
-            InfoRow(
-                label = "Start Time",
-                value = formatDateTime(session.startTime),
-            )
-            session.endTime?.let {
-                InfoRow(
-                    label = "End Time",
-                    value = formatDateTime(it),
-                )
-                val durationMinutes = ((it - session.startTime) / 1000 / 60).toInt()
-                InfoRow(label = "Duration", value = "$durationMinutes minutes")
-            }
-            InfoRow(label = "Total Turns", value = session.turnCount.toString())
-        }
-    }
-}
-
-/**
- * Info row component.
- */
-@Composable
-private fun InfoRow(
-    label: String,
-    value: String,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodySmall,
-            fontWeight = FontWeight.Medium,
-        )
-    }
-}
-
-/**
  * Transcript entry card.
+ *
+ * Matches iOS transcript bubble styling.
  */
 @Composable
 private fun TranscriptEntryCard(entry: TranscriptEntry) {
@@ -647,7 +489,7 @@ private fun TranscriptEntryCard(entry: TranscriptEntry) {
         // Role label
         Text(
             text = if (isUser) "You" else "AI Tutor",
-            style = MaterialTheme.typography.labelSmall,
+            style = IOSTypography.caption2,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = Dimensions.SpacingMedium, vertical = Dimensions.SpacingXSmall),
         )
@@ -672,11 +514,11 @@ private fun TranscriptEntryCard(entry: TranscriptEntry) {
             ) {
                 Text(
                     text = entry.text,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = IOSTypography.body,
                 )
                 Text(
                     text = formatTime(entry.timestamp),
-                    style = MaterialTheme.typography.labelSmall,
+                    style = IOSTypography.caption2,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -689,14 +531,6 @@ private fun TranscriptEntryCard(entry: TranscriptEntry) {
  */
 private fun formatDate(timestamp: Long): String {
     val formatter = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
-    return formatter.format(Date(timestamp))
-}
-
-/**
- * Format timestamp as date and time.
- */
-private fun formatDateTime(timestamp: Long): String {
-    val formatter = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
     return formatter.format(Date(timestamp))
 }
 
@@ -748,8 +582,7 @@ private fun HistoryFilterSheet(
             ) {
                 Text(
                     text = "Filter Sessions",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
+                    style = IOSTypography.title2,
                 )
                 if (filterState.hasActiveFilters()) {
                     TextButton(onClick = onClearFilters) {
@@ -792,8 +625,7 @@ private fun HistoryFilterSheet(
             // Date range filters
             Text(
                 text = "Date Range",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Medium,
+                style = IOSTypography.subheadline,
             )
 
             Row(
@@ -869,12 +701,11 @@ private fun HistoryFilterSheet(
                 ) {
                     Text(
                         text = "Minimum Duration",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Medium,
+                        style = IOSTypography.subheadline,
                     )
                     Text(
                         text = if (durationSliderValue > 0) "${durationSliderValue.toInt()} min" else "Any",
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = IOSTypography.body,
                         color = MaterialTheme.colorScheme.primary,
                     )
                 }
@@ -900,12 +731,11 @@ private fun HistoryFilterSheet(
                 ) {
                     Text(
                         text = "Minimum Turns",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Medium,
+                        style = IOSTypography.subheadline,
                     )
                     Text(
                         text = if (turnsSliderValue > 0) "${turnsSliderValue.toInt()} turns" else "Any",
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = IOSTypography.body,
                         color = MaterialTheme.colorScheme.primary,
                     )
                 }

@@ -39,7 +39,6 @@ import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -55,7 +54,6 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.unamentis.R
@@ -64,6 +62,7 @@ import com.unamentis.modules.knowledgebowl.ui.theme.KBColors
 import com.unamentis.modules.knowledgebowl.ui.theme.KBTheme
 import com.unamentis.modules.knowledgebowl.ui.theme.KBTimerState
 import com.unamentis.modules.knowledgebowl.ui.theme.color
+import com.unamentis.ui.theme.IOSTypography
 import com.unamentis.ui.util.safeProgress
 import java.util.Locale
 
@@ -217,13 +216,13 @@ private fun SessionHeader(
         ) {
             Text(
                 text = stringResource(R.string.kb_question_of, questionNumber, totalQuestions),
-                style = MaterialTheme.typography.bodySmall,
+                style = IOSTypography.caption,
                 color = KBTheme.textSecondary(),
             )
 
             Text(
                 text = stringResource(R.string.kb_correct_count_label, correctCount),
-                style = MaterialTheme.typography.bodySmall,
+                style = IOSTypography.caption,
                 color = KBTheme.mastered(),
             )
         }
@@ -271,8 +270,7 @@ private fun TimerDisplay(
 
         Text(
             text = formatTime(remainingTime),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
+            style = IOSTypography.headline,
             color = timerColor,
             modifier = Modifier.scale(scale),
         )
@@ -304,8 +302,7 @@ private fun StartScreen(
 
         Text(
             text = stringResource(R.string.kb_written_round_practice),
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
+            style = IOSTypography.title2,
             color = KBTheme.textPrimary(),
         )
 
@@ -361,8 +358,8 @@ private fun StartScreen(
         ) {
             Text(
                 text = stringResource(R.string.kb_start_practice),
+                style = IOSTypography.headline,
                 modifier = Modifier.padding(vertical = 8.dp),
-                fontWeight = FontWeight.Bold,
             )
         }
     }
@@ -387,12 +384,13 @@ private fun ConfigRow(
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = label,
+            style = IOSTypography.body,
             color = KBTheme.textSecondary(),
         )
         Spacer(modifier = Modifier.weight(1f))
         Text(
             text = value,
-            fontWeight = FontWeight.Medium,
+            style = IOSTypography.body,
             color = KBTheme.textPrimary(),
         )
     }
@@ -474,15 +472,14 @@ private fun QuestionCard(question: KBQuestion) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = question.domain.displayName,
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Medium,
+                        style = IOSTypography.caption2,
                         color = domainColor,
                     )
                 }
 
                 Text(
                     text = question.difficulty.displayName,
-                    style = MaterialTheme.typography.labelSmall,
+                    style = IOSTypography.caption2,
                     color = KBTheme.textSecondary(),
                     modifier =
                         Modifier
@@ -497,7 +494,7 @@ private fun QuestionCard(question: KBQuestion) {
             // Question text
             Text(
                 text = question.text,
-                style = MaterialTheme.typography.titleMedium,
+                style = IOSTypography.headline,
                 color = KBTheme.textPrimary(),
             )
         }
@@ -595,8 +592,7 @@ private fun MCQOptionButton(
         ) {
             Text(
                 text = letter,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
+                style = IOSTypography.subheadline,
                 color =
                     if (isSelected || (showingFeedback && isCorrect)) {
                         Color.White
@@ -611,7 +607,7 @@ private fun MCQOptionButton(
         // Option text
         Text(
             text = option,
-            style = MaterialTheme.typography.bodyLarge,
+            style = IOSTypography.body,
             color = KBTheme.textPrimary(),
             modifier = Modifier.weight(1f),
         )
@@ -668,8 +664,8 @@ private fun SubmitButtonArea(
                             } else {
                                 stringResource(R.string.kb_next_question)
                             },
+                        style = IOSTypography.headline,
                         modifier = Modifier.padding(vertical = 8.dp),
-                        fontWeight = FontWeight.Bold,
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Icon(
@@ -691,8 +687,8 @@ private fun SubmitButtonArea(
                 ) {
                     Text(
                         text = stringResource(R.string.kb_submit_answer),
+                        style = IOSTypography.headline,
                         modifier = Modifier.padding(vertical = 8.dp),
-                        fontWeight = FontWeight.Bold,
                     )
                 }
             }
@@ -736,8 +732,7 @@ private fun SummaryScreen(
                 } else {
                     stringResource(R.string.kb_session_complete)
                 },
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
+            style = IOSTypography.title2,
             color = KBTheme.textPrimary(),
         )
 
@@ -775,8 +770,8 @@ private fun SummaryScreen(
         ) {
             Text(
                 text = stringResource(R.string.done),
+                style = IOSTypography.headline,
                 modifier = Modifier.padding(vertical = 8.dp),
-                fontWeight = FontWeight.Bold,
             )
         }
     }
@@ -792,12 +787,13 @@ private fun SummaryRow(
     ) {
         Text(
             text = label,
+            style = IOSTypography.body,
             color = KBTheme.textSecondary(),
         )
         Spacer(modifier = Modifier.weight(1f))
         Text(
             text = value,
-            fontWeight = FontWeight.Bold,
+            style = IOSTypography.body,
             color = KBTheme.textPrimary(),
         )
     }
@@ -810,8 +806,7 @@ private fun AccuracyMeter(accuracy: Float) {
     ) {
         Text(
             text = stringResource(R.string.kb_accuracy),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
+            style = IOSTypography.headline,
             color = KBTheme.textPrimary(),
         )
 
@@ -847,8 +842,7 @@ private fun AccuracyMeter(accuracy: Float) {
             // Percentage text
             Text(
                 text = "${(accuracy * 100).toInt()}%",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
+                style = IOSTypography.title2,
                 color = KBTheme.textPrimary(),
             )
         }

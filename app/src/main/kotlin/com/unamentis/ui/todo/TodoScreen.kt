@@ -15,7 +15,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -25,6 +24,10 @@ import com.unamentis.data.model.TodoPriority
 import com.unamentis.data.model.TodoStatus
 import com.unamentis.ui.LocalScrollToTopHandler
 import com.unamentis.ui.Routes
+import com.unamentis.ui.components.BrandLogo
+import com.unamentis.ui.components.Size
+import com.unamentis.ui.theme.Dimensions
+import com.unamentis.ui.theme.IOSTypography
 import com.unamentis.ui.util.safeProgress
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -177,7 +180,13 @@ fun TodoScreen(viewModel: TodoViewModel = hiltViewModel()) {
             } else {
                 // Normal top bar
                 TopAppBar(
-                    title = { Text("To-Do") },
+                    navigationIcon = {
+                        BrandLogo(
+                            size = Size.Compact,
+                            modifier = Modifier.padding(start = Dimensions.SpacingLarge),
+                        )
+                    },
+                    title = { Text("To-Do", style = IOSTypography.headline) },
                     actions = {
                         // Overdue indicator badge
                         if (uiState.overdueCount > 0) {
@@ -365,39 +374,26 @@ private fun TodoList(
     onUpdateDueDate: (Todo, Long?) -> Unit,
 ) {
     if (todos.isEmpty()) {
-        // Empty state
+        // Empty state matching iOS ContentUnavailableView
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center,
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Icon(
-                    imageVector =
-                        if (isAISuggestedTab) {
-                            Icons.Outlined.AutoAwesome
-                        } else {
-                            Icons.Default.CheckCircle
-                        },
-                    contentDescription = null,
-                    modifier = Modifier.size(64.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                )
-                Text(
-                    text = if (isAISuggestedTab) "No AI suggestions" else "No tasks",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                if (isAISuggestedTab) {
-                    Text(
-                        text = "AI will suggest tasks based on your learning sessions",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
+            TodoEmptyState(
+                icon =
+                    if (isAISuggestedTab) {
+                        Icons.Outlined.AutoAwesome
+                    } else {
+                        Icons.Default.CheckCircle
+                    },
+                title = if (isAISuggestedTab) "No AI Suggestions" else "No Tasks",
+                description =
+                    if (isAISuggestedTab) {
+                        "AI will suggest tasks based on your learning sessions"
+                    } else {
+                        "Add learning goals or tasks to track your progress"
+                    },
+            )
         }
     } else {
         LazyColumn(
@@ -498,13 +494,13 @@ private fun TodoCard(
                     )
                     Text(
                         text = "AI Suggested",
-                        style = MaterialTheme.typography.labelSmall,
+                        style = IOSTypography.caption2,
                         color = MaterialTheme.colorScheme.primary,
                     )
                     if (todo.suggestionConfidence != null) {
                         Text(
                             text = "(${(todo.suggestionConfidence * 100).toInt()}% confidence)",
-                            style = MaterialTheme.typography.labelSmall,
+                            style = IOSTypography.caption2,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
@@ -546,13 +542,12 @@ private fun TodoCard(
                     }
 
                     // Priority indicator
-                    PriorityBadge(priority = todo.priority)
+                    TodoPriorityBadge(priority = todo.priority)
 
                     // Title
                     Text(
                         text = todo.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
+                        style = IOSTypography.headline,
                         textDecoration =
                             if (todo.status == TodoStatus.COMPLETED) {
                                 TextDecoration.LineThrough
@@ -628,7 +623,7 @@ private fun TodoCard(
             if (!todo.notes.isNullOrBlank()) {
                 Text(
                     text = todo.notes,
-                    style = MaterialTheme.typography.bodySmall,
+                    style = IOSTypography.caption,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -641,50 +636,28 @@ private fun TodoCard(
             ) {
                 // Due date
                 if (todo.dueDate != null) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.CalendarMonth,
-                            contentDescription = null,
-                            modifier = Modifier.size(14.dp),
-                            tint =
-                                if (isOverdue) {
-                                    MaterialTheme.colorScheme.error
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                },
-                        )
-                        Text(
-                            text =
-                                if (isOverdue) {
-                                    "Overdue: ${formatDate(todo.dueDate)}"
-                                } else {
-                                    "Due: ${formatDate(todo.dueDate)}"
-                                },
-                            style = MaterialTheme.typography.labelSmall,
-                            color =
-                                if (isOverdue) {
-                                    MaterialTheme.colorScheme.error
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                },
-                            fontWeight = if (isOverdue) FontWeight.Bold else FontWeight.Normal,
-                        )
-                    }
+                    TodoDateLabel(
+                        icon = Icons.Default.CalendarMonth,
+                        text =
+                            if (isOverdue) {
+                                "Overdue: ${formatDate(todo.dueDate)}"
+                            } else {
+                                "Due: ${formatDate(todo.dueDate)}"
+                            },
+                        isOverdue = isOverdue,
+                    )
                 }
 
                 Text(
                     text = "Created ${formatDate(todo.createdAt)}",
-                    style = MaterialTheme.typography.labelSmall,
+                    style = IOSTypography.caption2,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
 
                 if (todo.completedAt != null) {
                     Text(
                         text = "Completed ${formatDate(todo.completedAt)}",
-                        style = MaterialTheme.typography.labelSmall,
+                        style = IOSTypography.caption2,
                         color = MaterialTheme.colorScheme.primary,
                     )
                 }
@@ -739,31 +712,6 @@ private fun TodoCard(
 }
 
 /**
- * Priority badge indicator.
- */
-@Composable
-private fun PriorityBadge(priority: TodoPriority) {
-    val (color, text) =
-        when (priority) {
-            TodoPriority.HIGH -> MaterialTheme.colorScheme.error to "H"
-            TodoPriority.MEDIUM -> MaterialTheme.colorScheme.secondary to "M"
-            TodoPriority.LOW -> MaterialTheme.colorScheme.outline to "L"
-        }
-
-    Surface(
-        shape = MaterialTheme.shapes.small,
-        color = color,
-    ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onError,
-            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-        )
-    }
-}
-
-/**
  * Todo edit/create dialog.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -805,7 +753,7 @@ private fun TodoEditDialog(
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
                         text = "Priority",
-                        style = MaterialTheme.typography.labelMedium,
+                        style = IOSTypography.subheadline,
                     )
 
                     Row(
@@ -834,7 +782,7 @@ private fun TodoEditDialog(
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
                         text = "Due Date (optional)",
-                        style = MaterialTheme.typography.labelMedium,
+                        style = IOSTypography.subheadline,
                     )
 
                     Row(
@@ -958,20 +906,19 @@ private fun SuggestionInfoDialog(
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
                     text = todo.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
+                    style = IOSTypography.headline,
                 )
 
                 if (todo.suggestionReason != null) {
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(
                             text = "Why this was suggested:",
-                            style = MaterialTheme.typography.labelMedium,
+                            style = IOSTypography.subheadline,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Text(
                             text = todo.suggestionReason,
-                            style = MaterialTheme.typography.bodyMedium,
+                            style = IOSTypography.body,
                         )
                     }
                 }
@@ -983,7 +930,7 @@ private fun SuggestionInfoDialog(
                     ) {
                         Text(
                             text = "Confidence:",
-                            style = MaterialTheme.typography.labelMedium,
+                            style = IOSTypography.subheadline,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         LinearProgressIndicator(
@@ -992,7 +939,7 @@ private fun SuggestionInfoDialog(
                         )
                         Text(
                             text = "${(todo.suggestionConfidence * 100).toInt()}%",
-                            style = MaterialTheme.typography.labelMedium,
+                            style = IOSTypography.subheadline,
                         )
                     }
                 }

@@ -121,3 +121,50 @@ fun ThinMaterialSurface(
         content = content,
     )
 }
+
+/**
+ * Regular material surface for settings and forms.
+ *
+ * Matches iOS pattern: .background(.regularMaterial)
+ * More opaque than ultraThinMaterial for better readability.
+ *
+ * @param modifier Modifier to apply to the surface
+ * @param cornerRadius Corner radius for the surface shape
+ * @param content Content to display inside the surface
+ */
+@Composable
+fun RegularMaterialSurface(
+    modifier: Modifier = Modifier,
+    cornerRadius: Dp = Dimensions.CardCornerRadius,
+    content: @Composable BoxScope.() -> Unit,
+) {
+    val isDark = isSystemInDarkTheme()
+
+    // iOS regularMaterial approximation - more opaque than ultraThin
+    val backgroundColor =
+        if (isDark) {
+            Color(0xFF2C2C2E).copy(alpha = 0.9f)
+        } else {
+            Color.White.copy(alpha = 0.85f)
+        }
+
+    val borderColor =
+        if (isDark) {
+            Color.White.copy(alpha = 0.08f)
+        } else {
+            Color.Black.copy(alpha = 0.04f)
+        }
+
+    Box(
+        modifier =
+            modifier
+                .clip(RoundedCornerShape(cornerRadius))
+                .background(backgroundColor)
+                .border(
+                    width = 0.5.dp,
+                    color = borderColor,
+                    shape = RoundedCornerShape(cornerRadius),
+                ),
+        content = content,
+    )
+}

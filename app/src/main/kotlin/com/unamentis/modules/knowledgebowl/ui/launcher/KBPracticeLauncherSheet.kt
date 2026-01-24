@@ -41,7 +41,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -49,6 +48,7 @@ import com.unamentis.R
 import com.unamentis.modules.knowledgebowl.data.model.KBQuestion
 import com.unamentis.modules.knowledgebowl.data.model.KBStudyMode
 import com.unamentis.modules.knowledgebowl.ui.theme.KBTheme
+import com.unamentis.ui.theme.IOSTypography
 
 /**
  * Bottom sheet shown before starting a practice session.
@@ -140,15 +140,14 @@ private fun ModeHeader(mode: KBStudyMode) {
 
         Text(
             text = mode.displayName,
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
+            style = IOSTypography.title2,
         )
 
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
             text = mode.description,
-            style = MaterialTheme.typography.bodyMedium,
+            style = IOSTypography.body,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
@@ -167,7 +166,7 @@ private fun LoadingContent() {
 
         Text(
             text = stringResource(R.string.kb_preparing_questions),
-            style = MaterialTheme.typography.bodyMedium,
+            style = IOSTypography.body,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
@@ -193,7 +192,7 @@ private fun ErrorContent(
 
         Text(
             text = message,
-            style = MaterialTheme.typography.bodyMedium,
+            style = IOSTypography.body,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
@@ -250,8 +249,7 @@ private fun ReadyContent(
             Column {
                 Text(
                     text = stringResource(R.string.kb_tips_title),
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
+                    style = IOSTypography.subheadline,
                     color = Color(0xFF5D4037),
                 )
 
@@ -276,13 +274,12 @@ private fun InfoRow(
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.bodyMedium,
+            style = IOSTypography.body,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
             text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
+            style = IOSTypography.body,
         )
     }
 }
@@ -304,7 +301,7 @@ private fun TipRow(tip: String) {
 
         Text(
             text = tip,
-            style = MaterialTheme.typography.bodySmall,
+            style = IOSTypography.caption,
             color = Color(0xFF5D4037),
         )
     }
@@ -331,7 +328,7 @@ private fun ActionButtons(
         ) {
             Text(
                 text = stringResource(R.string.kb_start_practice),
-                style = MaterialTheme.typography.labelLarge,
+                style = IOSTypography.subheadline,
                 modifier = Modifier.padding(vertical = 4.dp),
             )
         }

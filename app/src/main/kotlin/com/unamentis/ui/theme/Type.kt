@@ -3,7 +3,9 @@ package com.unamentis.ui.theme
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 
 // =============================================================================
@@ -261,3 +263,65 @@ val Typography =
                 letterSpacing = 0.5.sp,
             ),
     )
+
+// =============================================================================
+// TEXTSTYLE EXTENSIONS (for iOS-style chaining like .subheadline.bold())
+// =============================================================================
+
+/**
+ * Returns a copy of this TextStyle with bold weight.
+ *
+ * Matches iOS pattern: `.font(.subheadline.bold())`
+ */
+fun TextStyle.bold(): TextStyle = copy(fontWeight = FontWeight.Bold)
+
+/**
+ * Returns a copy of this TextStyle with the specified font weight.
+ *
+ * Matches iOS pattern: `.font(.subheadline.weight(.medium))`
+ *
+ * @param weight The font weight to apply
+ */
+fun TextStyle.weight(weight: FontWeight): TextStyle = copy(fontWeight = weight)
+
+/**
+ * Returns a copy of this TextStyle with italic style.
+ *
+ * Matches iOS pattern: `.italic()`
+ */
+fun TextStyle.italic(): TextStyle = copy(fontStyle = FontStyle.Italic)
+
+/**
+ * Returns a copy of this TextStyle with monospaced digits (tabular figures).
+ *
+ * Matches iOS pattern: `.monospacedDigit()`
+ * Uses OpenType feature "tnum" for tabular (fixed-width) numbers.
+ * This ensures digits align properly in columns and timers.
+ */
+fun TextStyle.monospacedDigit(): TextStyle =
+    copy(
+        fontFeatureSettings = "tnum",
+    )
+
+/**
+ * Creates a serif TextStyle for quotes and special text.
+ *
+ * Matches iOS pattern: `.font(.system(size: 24, design: .serif))`
+ *
+ * @param size The font size in sp
+ */
+fun serifTextStyle(size: TextUnit): TextStyle =
+    TextStyle(
+        fontFamily = FontFamily.Serif,
+        fontSize = size,
+        fontStyle = FontStyle.Italic,
+    )
+
+/**
+ * Returns a copy of this TextStyle with a custom font size.
+ *
+ * Matches iOS pattern: `.font(.system(size: 40))`
+ *
+ * @param size The font size in sp
+ */
+fun TextStyle.size(size: TextUnit): TextStyle = copy(fontSize = size)

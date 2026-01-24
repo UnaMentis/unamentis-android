@@ -306,6 +306,43 @@ class SessionManager(
         }
     }
 
+    // ==========================================================================
+    // CURRICULUM PLAYBACK CONTROLS
+    // ==========================================================================
+
+    /**
+     * Go back one segment in curriculum playback.
+     *
+     * TODO: Implement with CurriculumEngine integration
+     */
+    suspend fun goBackSegment() {
+        Log.i("SessionManager", "Go back segment requested")
+        // TODO: Implement curriculum segment navigation
+        // curriculumEngine.goBackSegment()
+    }
+
+    /**
+     * Replay the current topic from the beginning.
+     *
+     * TODO: Implement with CurriculumEngine integration
+     */
+    suspend fun replayTopic() {
+        Log.i("SessionManager", "Replay topic requested")
+        // TODO: Implement topic replay
+        // curriculumEngine.replayCurrentTopic()
+    }
+
+    /**
+     * Skip to the next topic in the curriculum.
+     *
+     * TODO: Implement with CurriculumEngine integration
+     */
+    suspend fun nextTopic() {
+        Log.i("SessionManager", "Next topic requested")
+        // TODO: Implement next topic navigation
+        // curriculumEngine.nextTopic()
+    }
+
     /**
      * Send a text message (for testing or text-based interaction).
      */

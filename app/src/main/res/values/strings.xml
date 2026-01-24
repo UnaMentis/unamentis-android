@@ -4,7 +4,7 @@
 
     <!-- Tab Navigation -->
     <string name="tab_session">Session</string>
-    <string name="tab_curriculum">Curriculum</string>
+    <string name="tab_curriculum">Learning</string>
     <string name="tab_todo">To-Do</string>
     <string name="tab_history">History</string>
     <string name="tab_analytics">Analytics</string>
@@ -21,6 +21,18 @@
     <string name="slide_to_stop">Slide to stop</string>
     <string name="mute">Mute</string>
     <string name="pause">Pause</string>
+    <string name="microphone_muted">Microphone muted</string>
+    <string name="microphone_on">Microphone on</string>
+    <string name="pause_session">Pause session</string>
+    <string name="resume_session">Resume session</string>
+    <string name="go_back_segment">Go back one segment</string>
+    <string name="replay_topic">Replay topic</string>
+    <string name="next_topic">Next topic</string>
+    <string name="topic_progress">Topic progress: %1$d of %2$d segments</string>
+    <string name="session_status">Session status: %1$s</string>
+    <string name="audio_level_meter">Audio level meter</string>
+    <string name="audio_level_ai_percent">AI at %1$d percent</string>
+    <string name="audio_level_user_percent">Your voice at %1$d percent</string>
 
     <!-- Content Descriptions (Accessibility) -->
     <string name="cd_mute_button">Mute microphone</string>
@@ -33,10 +45,69 @@
     <string name="settings_api_providers">API Providers</string>
     <string name="settings_speech_to_text">Speech-to-Text</string>
     <string name="settings_text_to_speech">Text-to-Speech</string>
+    <string name="settings_language_model">Language Model</string>
+    <string name="settings_api_providers_footer">Tap a provider to see details, pricing, and configure your API key.</string>
+    <string name="settings_session_cost_estimates">Session Cost Estimates</string>
+    <string name="settings_voice">Voice</string>
+    <string name="settings_voice_ai_settings">Voice &amp; AI Settings</string>
+    <string name="settings_voice_footer">Audio, speech recognition, language model, and voice output settings.</string>
+    <string name="settings_self_hosted_server">Self-Hosted Server</string>
+    <string name="settings_enable_self_hosted">Enable Self-Hosted Server</string>
+    <string name="settings_server_ip">Server IP or Hostname</string>
+    <string name="settings_server_ip_hint">e.g., 192.168.1.100 or macbook.local</string>
+    <string name="settings_connection">Connection</string>
+    <string name="settings_capabilities">Capabilities</string>
+    <string name="settings_refresh_connection">Refresh Connection</string>
+    <string name="settings_advanced_server_config">Advanced Server Config</string>
+    <string name="settings_self_hosted_footer_enabled">This IP will be used for LLM, TTS, and optionally logging.</string>
+    <string name="settings_self_hosted_footer_disabled">Enable to use your Mac as an AI server for zero-cost inference.</string>
+    <string name="settings_debug_testing">Debug &amp; Testing</string>
+    <string name="settings_debug_mode">Debug Mode</string>
+    <string name="settings_verbose_logging">Verbose Logging</string>
+    <string name="settings_remote_logging">Remote Logging</string>
+    <string name="settings_log_server_same_ip">Use Same IP as Server</string>
+    <string name="settings_log_server_ip">Log Server IP</string>
+    <string name="settings_debug_footer">Tools for testing subsystems and troubleshooting.</string>
+    <string name="settings_presets">Configuration Presets</string>
+    <string name="settings_providers">Providers</string>
+    <string name="settings_recording">Recording</string>
+    <string name="settings_audio">Audio Settings</string>
+    <string name="settings_vad">Voice Detection</string>
+    <string name="settings_voice_output">Voice Output</string>
+    <string name="settings_curriculum_playback">Curriculum Playback</string>
+    <string name="settings_api_keys">API Keys</string>
+    <string name="settings_help">Help</string>
+    <string name="settings_about">About</string>
+    <string name="settings_version">Version</string>
+    <string name="settings_configured">Configured</string>
+    <string name="settings_not_configured">Not configured</string>
+    <string name="settings_ready">Ready</string>
+    <string name="settings_not_set">Not set</string>
+    <string name="settings_edit">Edit</string>
+    <string name="settings_add">Add</string>
+    <string name="settings_save">Save</string>
 
     <!-- Curriculum Screen -->
     <string name="curriculum_server">Server Curriculum</string>
     <string name="curriculum_downloaded">Downloaded</string>
+    <string name="curriculum_topic_count">%1$d topics</string>
+    <string name="start_lesson">Start Lesson</string>
+    <string name="add_to_todo">Add to To-Do</string>
+    <string name="mastery">Mastery</string>
+    <string name="learning_objectives">Learning Objectives</string>
+    <string name="overview">Overview</string>
+    <string name="topics">Topics</string>
+    <string name="about">About</string>
+    <string name="no_curricula_on_server">No curricula available on server</string>
+    <string name="server_not_available">Server not available</string>
+    <string name="start_management_console">Start the management console on port 8766</string>
+    <string name="no_downloaded_curricula">No downloaded curricula</string>
+    <string name="download_from_server">Download curricula from the Server tab</string>
+    <string name="connecting_to_server">Connecting to server…</string>
+    <string name="connected_to_console">Connected to management console</string>
+    <string name="search_curricula">Search curricula…</string>
+    <string name="refresh">Refresh</string>
+    <string name="cancel_download">Cancel Download</string>
 
     <!-- History Screen -->
     <string name="history_no_sessions">No sessions yet</string>

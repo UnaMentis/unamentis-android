@@ -24,7 +24,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -39,12 +38,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.unamentis.R
 import com.unamentis.modules.knowledgebowl.core.stats.KBStatsManager
 import com.unamentis.modules.knowledgebowl.data.model.KBRegion
 import com.unamentis.modules.knowledgebowl.ui.theme.KBTheme
+import com.unamentis.ui.theme.IOSTypography
 
 /**
  * Knowledge Bowl settings screen.
@@ -68,7 +67,7 @@ fun KBSettingsScreen(
                 title = {
                     Text(
                         text = stringResource(R.string.kb_settings),
-                        fontWeight = FontWeight.Bold,
+                        style = IOSTypography.headline,
                     )
                 },
                 navigationIcon = {
@@ -99,8 +98,7 @@ fun KBSettingsScreen(
             item {
                 Text(
                     text = stringResource(R.string.kb_competition_region),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
+                    style = IOSTypography.headline,
                     color = KBTheme.textPrimary(),
                 )
             }
@@ -123,8 +121,7 @@ fun KBSettingsScreen(
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     text = stringResource(R.string.kb_danger_zone),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
+                    style = IOSTypography.headline,
                     color = KBTheme.focusArea(),
                 )
             }
@@ -203,13 +200,12 @@ private fun RegionCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = region.displayName,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium,
+                    style = IOSTypography.body,
                     color = KBTheme.textPrimary(),
                 )
                 Text(
                     text = region.config.conferringRuleDescription,
-                    style = MaterialTheme.typography.bodySmall,
+                    style = IOSTypography.caption,
                     color = KBTheme.textSecondary(),
                 )
             }
@@ -246,8 +242,7 @@ private fun RegionInfoCard(region: KBRegion) {
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = stringResource(R.string.kb_region_rules),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
+                    style = IOSTypography.subheadline,
                     color = KBTheme.textPrimary(),
                 )
             }
@@ -308,13 +303,12 @@ private fun InfoRow(
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.bodyMedium,
+            style = IOSTypography.body,
             color = KBTheme.textSecondary(),
         )
         Text(
             text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
+            style = IOSTypography.body,
             color = KBTheme.textPrimary(),
         )
     }
@@ -344,13 +338,12 @@ private fun ResetStatsCard(onClick: () -> Unit) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = stringResource(R.string.kb_reset_statistics),
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium,
+                    style = IOSTypography.body,
                     color = KBTheme.focusArea(),
                 )
                 Text(
                     text = stringResource(R.string.kb_reset_stats_description),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = IOSTypography.caption,
                     color = KBTheme.textSecondary(),
                 )
             }

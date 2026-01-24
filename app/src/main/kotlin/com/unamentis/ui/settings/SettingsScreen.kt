@@ -70,8 +70,11 @@ import com.unamentis.core.config.ConfigurationPreset
 import com.unamentis.core.config.RecordingMode
 import com.unamentis.core.device.DeviceCapabilityDetector
 import com.unamentis.services.llm.ModelDownloadManager
+import com.unamentis.ui.components.BrandLogo
 import com.unamentis.ui.components.IOSCard
+import com.unamentis.ui.components.Size
 import com.unamentis.ui.theme.Dimensions
+import com.unamentis.ui.theme.IOSTypography
 import com.unamentis.ui.util.safeProgress
 
 /**
@@ -159,7 +162,18 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Settings") },
+                navigationIcon = {
+                    BrandLogo(
+                        size = Size.Compact,
+                        modifier = Modifier.padding(start = Dimensions.SpacingLarge),
+                    )
+                },
+                title = {
+                    Text(
+                        text = stringResource(R.string.tab_settings),
+                        style = IOSTypography.headline,
+                    )
+                },
             )
         },
     ) { paddingValues ->
@@ -188,8 +202,9 @@ fun SettingsScreen(
             // Provider sections
             item {
                 Text(
-                    text = "Providers",
-                    style = MaterialTheme.typography.titleMedium,
+                    text = stringResource(R.string.settings_providers).uppercase(),
+                    style = IOSTypography.caption,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier =
                         Modifier
                             .padding(top = 8.dp)
@@ -233,8 +248,9 @@ fun SettingsScreen(
             // Recording Mode section
             item {
                 Text(
-                    text = "Recording",
-                    style = MaterialTheme.typography.titleMedium,
+                    text = stringResource(R.string.settings_recording).uppercase(),
+                    style = IOSTypography.caption,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 16.dp),
                 )
             }
@@ -249,8 +265,9 @@ fun SettingsScreen(
             // Advanced Audio Settings section
             item {
                 Text(
-                    text = "Audio Settings",
-                    style = MaterialTheme.typography.titleMedium,
+                    text = stringResource(R.string.settings_audio).uppercase(),
+                    style = IOSTypography.caption,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 16.dp),
                 )
             }
@@ -271,8 +288,9 @@ fun SettingsScreen(
             // VAD Settings section
             item {
                 Text(
-                    text = "Voice Detection",
-                    style = MaterialTheme.typography.titleMedium,
+                    text = stringResource(R.string.settings_vad).uppercase(),
+                    style = IOSTypography.caption,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier =
                         Modifier
                             .padding(top = 16.dp)
@@ -296,8 +314,9 @@ fun SettingsScreen(
             // LLM Settings section
             item {
                 Text(
-                    text = "Language Model",
-                    style = MaterialTheme.typography.titleMedium,
+                    text = stringResource(R.string.settings_language_model).uppercase(),
+                    style = IOSTypography.caption,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 16.dp),
                 )
             }
@@ -314,8 +333,9 @@ fun SettingsScreen(
             // On-Device LLM section
             item {
                 Text(
-                    text = stringResource(R.string.settings_on_device_ai),
-                    style = MaterialTheme.typography.titleMedium,
+                    text = stringResource(R.string.settings_on_device_ai).uppercase(),
+                    style = IOSTypography.caption,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier =
                         Modifier
                             .padding(top = 16.dp)
@@ -340,8 +360,9 @@ fun SettingsScreen(
             // TTS Settings section
             item {
                 Text(
-                    text = "Voice Output",
-                    style = MaterialTheme.typography.titleMedium,
+                    text = stringResource(R.string.settings_voice_output).uppercase(),
+                    style = IOSTypography.caption,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 16.dp),
                 )
             }
@@ -358,8 +379,9 @@ fun SettingsScreen(
             // Curriculum Playback section
             item {
                 Text(
-                    text = "Curriculum Playback",
-                    style = MaterialTheme.typography.titleMedium,
+                    text = stringResource(R.string.settings_curriculum_playback).uppercase(),
+                    style = IOSTypography.caption,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 16.dp),
                 )
             }
@@ -374,8 +396,9 @@ fun SettingsScreen(
             // API Keys section
             item {
                 Text(
-                    text = "API Keys",
-                    style = MaterialTheme.typography.titleMedium,
+                    text = stringResource(R.string.settings_api_keys).uppercase(),
+                    style = IOSTypography.caption,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 16.dp),
                 )
             }
@@ -400,8 +423,9 @@ private fun PresetSection(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
-            text = "Configuration Presets",
-            style = MaterialTheme.typography.titleMedium,
+            text = stringResource(R.string.settings_presets).uppercase(),
+            style = IOSTypography.caption,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
         Row(
@@ -584,7 +608,7 @@ private fun ApiKeySection(
 }
 
 /**
- * Individual API key list item.
+ * Individual API key list item - iOS style.
  */
 @Composable
 private fun ApiKeyItem(
@@ -600,17 +624,34 @@ private fun ApiKeyItem(
         Column {
             Text(
                 text = name,
-                style = MaterialTheme.typography.bodyMedium,
+                style = IOSTypography.body,
             )
             Text(
-                text = if (hasKey) "Configured" else "Not configured",
-                style = MaterialTheme.typography.bodySmall,
-                color = if (hasKey) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                text =
+                    if (hasKey) {
+                        stringResource(R.string.settings_configured)
+                    } else {
+                        stringResource(R.string.settings_not_configured)
+                    },
+                style = IOSTypography.caption,
+                color =
+                    if (hasKey) {
+                        com.unamentis.ui.theme.iOSGreen
+                    } else {
+                        com.unamentis.ui.theme.iOSOrange
+                    },
             )
         }
 
         TextButton(onClick = onEdit) {
-            Text(if (hasKey) "Edit" else "Add")
+            Text(
+                text =
+                    if (hasKey) {
+                        stringResource(R.string.settings_edit)
+                    } else {
+                        stringResource(R.string.settings_add)
+                    },
+            )
         }
     }
 }
@@ -1200,7 +1241,7 @@ private fun CurriculumSettingsSection(
 }
 
 /**
- * Reusable settings toggle row.
+ * Reusable settings toggle row - iOS style.
  */
 @Composable
 private fun SettingsToggle(
@@ -1217,11 +1258,11 @@ private fun SettingsToggle(
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.bodyMedium,
+                style = IOSTypography.body,
             )
             Text(
                 text = description,
-                style = MaterialTheme.typography.bodySmall,
+                style = IOSTypography.caption,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
