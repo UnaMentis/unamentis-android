@@ -80,6 +80,14 @@ enum class KBDomain(
         }
 
         /**
+         * Get a domain by its ID (same as serialized name).
+         *
+         * @param id The domain ID (e.g., "science", "mathematics", "social_studies")
+         * @return The matching KBDomain, or null if not found
+         */
+        fun fromId(id: String): KBDomain? = fromSerialName(id)
+
+        /**
          * Get the total weight (should sum to 1.0).
          */
         val totalWeight: Float

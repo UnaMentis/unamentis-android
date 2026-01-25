@@ -139,14 +139,14 @@ private fun ModeHeader(mode: KBStudyMode) {
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = mode.displayName,
+            text = stringResource(mode.displayNameResId),
             style = IOSTypography.title2,
         )
 
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = mode.description,
+            text = stringResource(mode.descriptionResId),
             style = IOSTypography.body,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,

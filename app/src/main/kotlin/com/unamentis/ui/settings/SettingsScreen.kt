@@ -787,6 +787,7 @@ private fun RecordingModeOption(
     isSelected: Boolean,
     onSelected: () -> Unit,
 ) {
+    val modeDisplayName = stringResource(mode.displayNameResId)
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
@@ -795,6 +796,7 @@ private fun RecordingModeOption(
         RadioButton(
             selected = isSelected,
             onClick = onSelected,
+            modifier = Modifier.semantics { contentDescription = modeDisplayName },
         )
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -1282,6 +1284,12 @@ private fun SettingsToggle(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
 ) {
+    val toggleStateDesc =
+        if (checked) {
+            stringResource(R.string.cd_toggle_on, title)
+        } else {
+            stringResource(R.string.cd_toggle_off, title)
+        }
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -1301,6 +1309,7 @@ private fun SettingsToggle(
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,
+            modifier = Modifier.semantics { contentDescription = toggleStateDesc },
         )
     }
 }

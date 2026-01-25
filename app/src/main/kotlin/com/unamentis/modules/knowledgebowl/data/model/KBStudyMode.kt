@@ -1,5 +1,7 @@
 package com.unamentis.modules.knowledgebowl.data.model
 
+import androidx.annotation.StringRes
+import com.unamentis.R
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -74,7 +76,41 @@ enum class KBStudyMode {
     ;
 
     /**
-     * Human-readable display name.
+     * String resource ID for the human-readable display name.
+     *
+     * Use with stringResource() for localized display in Compose UI.
+     */
+    @get:StringRes
+    val displayNameResId: Int
+        get() =
+            when (this) {
+                DIAGNOSTIC -> R.string.kb_mode_diagnostic
+                TARGETED -> R.string.kb_mode_targeted
+                BREADTH -> R.string.kb_mode_breadth
+                SPEED -> R.string.kb_mode_speed
+                COMPETITION -> R.string.kb_mode_competition
+                TEAM -> R.string.kb_mode_team
+            }
+
+    /**
+     * String resource ID for the description.
+     *
+     * Use with stringResource() for localized display in Compose UI.
+     */
+    @get:StringRes
+    val descriptionResId: Int
+        get() =
+            when (this) {
+                DIAGNOSTIC -> R.string.kb_mode_diagnostic_desc
+                TARGETED -> R.string.kb_mode_targeted_desc
+                BREADTH -> R.string.kb_mode_breadth_desc
+                SPEED -> R.string.kb_mode_speed_desc
+                COMPETITION -> R.string.kb_mode_competition_desc
+                TEAM -> R.string.kb_mode_team_desc
+            }
+
+    /**
+     * Human-readable display name (non-localized, for logging/debugging).
      */
     val displayName: String
         get() =
@@ -88,7 +124,7 @@ enum class KBStudyMode {
             }
 
     /**
-     * Description of the mode.
+     * Description of the mode (non-localized, for logging/debugging).
      */
     val description: String
         get() =

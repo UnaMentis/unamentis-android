@@ -53,6 +53,7 @@ import com.unamentis.R
 import com.unamentis.modules.knowledgebowl.data.model.KBDomain
 import com.unamentis.modules.knowledgebowl.data.model.KBQuestion
 import com.unamentis.modules.knowledgebowl.data.model.KBRegion
+import com.unamentis.modules.knowledgebowl.data.model.KBRegionalConfig
 import com.unamentis.modules.knowledgebowl.data.model.KBStudyMode
 import com.unamentis.modules.knowledgebowl.ui.theme.KBTheme
 import com.unamentis.modules.knowledgebowl.ui.theme.color
@@ -277,11 +278,12 @@ private fun StudyModeCard(
     mode: KBStudyMode,
     onClick: () -> Unit,
 ) {
+    val modeDisplayName = stringResource(mode.displayNameResId)
     Card(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .semantics { contentDescription = mode.displayName }
+                .semantics { contentDescription = modeDisplayName }
                 .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(containerColor = KBTheme.bgSecondary()),
         shape = RoundedCornerShape(12.dp),
@@ -291,12 +293,12 @@ private fun StudyModeCard(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
-                text = mode.displayName,
+                text = modeDisplayName,
                 style = IOSTypography.subheadline,
                 color = KBTheme.textPrimary(),
             )
             Text(
-                text = mode.description,
+                text = stringResource(mode.descriptionResId),
                 style = IOSTypography.caption,
                 color = KBTheme.textSecondary(),
             )
@@ -406,11 +408,12 @@ private fun DomainMasteryCard(
     onClick: () -> Unit,
 ) {
     val percentFormatter = NumberFormat.getPercentInstance(Locale.getDefault())
+    val domainDisplayName = stringResource(domain.stringResId)
     Card(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .semantics { contentDescription = domain.displayName }
+                .semantics { contentDescription = domainDisplayName }
                 .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(containerColor = domain.color().copy(alpha = 0.1f)),
         shape = RoundedCornerShape(8.dp),
@@ -426,7 +429,7 @@ private fun DomainMasteryCard(
                 color = domain.color(),
             )
             Text(
-                text = domain.displayName,
+                text = domainDisplayName,
                 style = IOSTypography.caption2,
                 color = KBTheme.textPrimary(),
                 textAlign = TextAlign.Center,
@@ -585,7 +588,7 @@ private fun RegionSelector(
         }
 
         Text(
-            text = selectedRegion.config.conferringRuleDescription,
+            text = conferringRuleDescription(selectedRegion.config),
             style = IOSTypography.caption,
             color = KBTheme.textSecondary(),
         )
@@ -646,3 +649,14 @@ private val KBDomain.icon: String
             KBDomain.RELIGION_PHILOSOPHY -> "\u2728" // sparkles
             KBDomain.MISCELLANEOUS -> "\u2753" // question mark
         }
+
+/**
+ * Get the localized conferring rule description for a regional config.
+ */
+@Composable
+private fun conferringRuleDescription(config: KBRegionalConfig): String =
+    when {
+        config.verbalConferringAllowed -> stringResource(R.string.kb_conferring_verbal)
+        config.handSignalsAllowed -> stringResource(R.string.kb_conferring_hand_signals)
+        else -> stringResource(R.string.kb_conferring_none)
+    }

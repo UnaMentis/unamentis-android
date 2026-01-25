@@ -1,7 +1,7 @@
 # UnaMentis Android Style Guide and Standards
 
-**Version:** 1.0
-**Last Updated:** January 2026
+**Version:** 1.1
+**Last Updated:** January 24, 2026
 **Status:** Mandatory
 
 This document defines the coding standards, accessibility requirements, internationalization patterns, and UI/UX guidelines for the UnaMentis Android application. **All contributors (human and AI) must comply with these standards.**
@@ -83,6 +83,26 @@ Icon(
     modifier = Modifier.semantics {
         stateDescription = if (isRecording) "Recording" else "Not recording"
     }
+)
+
+// REQUIRED for Switch controls
+val toggleStateDesc = if (checked) {
+    stringResource(R.string.cd_toggle_on, title)  // "%1$s, enabled"
+} else {
+    stringResource(R.string.cd_toggle_off, title)  // "%1$s, disabled"
+}
+Switch(
+    checked = checked,
+    onCheckedChange = onCheckedChange,
+    modifier = Modifier.semantics { contentDescription = toggleStateDesc }
+)
+
+// REQUIRED for RadioButton
+val modeDisplayName = stringResource(mode.displayNameResId)
+RadioButton(
+    selected = isSelected,
+    onClick = onSelected,
+    modifier = Modifier.semantics { contentDescription = modeDisplayName }
 )
 
 // REQUIRED for dynamic content
@@ -284,11 +304,10 @@ val percentFormatter = NumberFormat.getPercentInstance(Locale.getDefault())
 val accuracy = 0.85f
 Text(text = percentFormatter.format(accuracy.toDouble()))  // "85%" in en-US, "85 %" in fr-FR
 
-// ALTERNATIVE: For integer percentages with localized text, use string resources:
-// Note: %% escapes to a literal % character, and %1$d is the integer placeholder
-// <string name="kb_percent_format">%1$d%%</string>
-val intPercent = (accuracy * 100).toInt()
-Text(text = stringResource(R.string.kb_percent_format, intPercent))  // "85%"
+// ALTERNATIVE: For percentages in string resources, pass the formatted result:
+// <string name="kb_percent_format">%1$s</string>
+val formattedPercent = percentFormatter.format(accuracy.toDouble())
+Text(text = stringResource(R.string.kb_percent_format, formattedPercent))  // "85%" or "85 %"
 
 // INCORRECT: String.format() - doesn't respect locale
 Text(text = String.format("%.0f%%", accuracy * 100))  // BAD: Not locale-aware
@@ -340,7 +359,43 @@ enum class RecordingMode(
 }
 ```
 
-### 2.6 Units and Suffixes
+### 2.6 ViewModel Status Messages
+
+**ViewModels should NOT return hardcoded strings for UI display.** Return `@StringRes Int` resource IDs instead, and resolve them in the Composable layer:
+
+```kotlin
+import androidx.annotation.StringRes
+
+// CORRECT: ViewModel returns resource ID
+data class SessionUiState(
+    @StringRes val statusMessageResId: Int = R.string.session_status_ready,
+    // ... other fields
+)
+
+// In ViewModel
+@StringRes
+private fun getStatusMessageResId(state: SessionState): Int {
+    return when (state) {
+        SessionState.IDLE -> R.string.session_status_listening
+        SessionState.PROCESSING -> R.string.session_status_processing
+        SessionState.SPEAKING -> R.string.session_status_ai_speaking
+        SessionState.ERROR -> R.string.session_status_error
+    }
+}
+
+// In Composable: resolve the string
+@Composable
+fun StatusDisplay(uiState: SessionUiState) {
+    Text(text = stringResource(uiState.statusMessageResId))
+}
+
+// INCORRECT: ViewModel returns hardcoded string
+data class SessionUiState(
+    val statusMessage: String = "Ready to start",  // BAD: Not localizable
+)
+```
+
+### 2.7 Units and Suffixes
 
 Use string resources with placeholders for units:
 
@@ -357,7 +412,7 @@ Text(text = "${stats.avgLatency}ms")  // BAD: Not localizable
 Text(text = "${value} ms")  // BAD: Hardcoded
 ```
 
-### 2.7 Right-to-Left (RTL) Support
+### 2.8 Right-to-Left (RTL) Support
 
 Use start/end instead of left/right:
 
@@ -370,7 +425,7 @@ Row(horizontalArrangement = Arrangement.Start) { /* ... */ }
 Modifier.padding(left = 16.dp, right = 8.dp)  // BAD
 ```
 
-### 2.8 Plurals
+### 2.9 Plurals
 
 Use quantity strings for proper pluralization:
 

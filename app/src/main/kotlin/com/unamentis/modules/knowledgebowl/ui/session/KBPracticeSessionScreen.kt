@@ -103,7 +103,7 @@ fun KBPracticeSessionScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(mode.displayName) },
+                title = { Text(stringResource(mode.displayNameResId)) },
                 navigationIcon = {
                     if (sessionState != KBSessionState.Completed) {
                         IconButton(onClick = { showExitDialog = true }) {
@@ -566,12 +566,15 @@ private fun CompletedContent(
                             }
                         }
                     summary.domainBreakdown.forEach { (domainId, score) ->
+                        val domainLabel =
+                            KBDomain.fromId(domainId)?.stringResId?.let { stringResource(it) }
+                                ?: domainId.replaceFirstChar { it.uppercase() }
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                         ) {
                             Text(
-                                text = domainId.replaceFirstChar { it.uppercase() },
+                                text = domainLabel,
                                 style = IOSTypography.body,
                             )
                             Row {

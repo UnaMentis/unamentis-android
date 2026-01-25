@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import com.unamentis.R
 import com.unamentis.modules.knowledgebowl.core.stats.KBStatsManager
 import com.unamentis.modules.knowledgebowl.data.model.KBRegion
+import com.unamentis.modules.knowledgebowl.data.model.KBRegionalConfig
 import com.unamentis.modules.knowledgebowl.ui.theme.KBTheme
 import com.unamentis.ui.theme.IOSTypography
 
@@ -204,7 +205,7 @@ private fun RegionCard(
                     color = KBTheme.textPrimary(),
                 )
                 Text(
-                    text = region.config.conferringRuleDescription,
+                    text = conferringRuleDescription(region.config),
                     style = IOSTypography.caption,
                     color = KBTheme.textSecondary(),
                 )
@@ -356,3 +357,14 @@ private fun ResetStatsCard(onClick: () -> Unit) {
         }
     }
 }
+
+/**
+ * Get the localized conferring rule description for a regional config.
+ */
+@Composable
+private fun conferringRuleDescription(config: KBRegionalConfig): String =
+    when {
+        config.verbalConferringAllowed -> stringResource(R.string.kb_conferring_verbal)
+        config.handSignalsAllowed -> stringResource(R.string.kb_conferring_hand_signals)
+        else -> stringResource(R.string.kb_conferring_none)
+    }

@@ -36,8 +36,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntOffset
 import com.unamentis.R
 import com.unamentis.ui.theme.Dimensions
@@ -184,14 +182,13 @@ private fun SwipeActionButton(
                 Modifier
                     .width(Dimensions.SwipeActionThreshold)
                     .fillMaxHeight()
-                    .background(action.backgroundColor)
-                    .semantics { contentDescription = action.label },
+                    .background(action.backgroundColor),
             contentAlignment = Alignment.Center,
         ) {
             IconButton(onClick = action.onClick) {
                 Icon(
                     imageVector = action.icon,
-                    contentDescription = null,
+                    contentDescription = action.label,
                     tint = action.iconTint,
                     modifier = Modifier.size(Dimensions.SwipeActionIconSize),
                 )

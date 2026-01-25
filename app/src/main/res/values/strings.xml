@@ -276,6 +276,11 @@
     <string name="kb_reset_stats_message">This will permanently delete all your practice history and statistics. This action cannot be undone.</string>
     <string name="kb_reset">Reset</string>
 
+    <!-- KB Conferring Rule Descriptions -->
+    <string name="kb_conferring_verbal">Verbal discussion allowed</string>
+    <string name="kb_conferring_hand_signals">Hand signals only (no verbal)</string>
+    <string name="kb_conferring_none">No conferring</string>
+
     <!-- Knowledge Bowl Dashboard -->
     <string name="kb_ready_label">Ready</string>
     <string name="kb_diagnostic_prompt">Complete a diagnostic session to see your readiness score</string>
@@ -732,6 +737,37 @@
         <item quantity="other">%1$d segments</item>
     </plurals>
     <string name="cd_segments_in_topic">%1$d segments in this topic</string>
+
+    <!-- Toggle accessibility -->
+    <string name="cd_toggle_on">%1$s, enabled</string>
+    <string name="cd_toggle_off">%1$s, disabled</string>
+
+    <!-- Session status messages -->
+    <string name="session_status_listening">Listening…</string>
+    <string name="session_status_hold_to_speak">Hold to speak</string>
+    <string name="session_status_tap_to_speak">Tap to speak</string>
+    <string name="session_status_recording">Recording… release to send</string>
+    <string name="session_status_processing">Processing…</string>
+    <string name="session_status_ai_thinking">Thinking…</string>
+    <string name="session_status_ai_speaking">Speaking…</string>
+    <string name="session_status_interrupted">Interrupted</string>
+    <string name="session_status_paused">Paused</string>
+    <string name="session_status_error">Error occurred</string>
+    <string name="session_status_ready">Ready to start</string>
+
+    <!-- KB Study Mode names and descriptions -->
+    <string name="kb_mode_diagnostic">Diagnostic</string>
+    <string name="kb_mode_diagnostic_desc">Assess your knowledge across all domains</string>
+    <string name="kb_mode_targeted">Targeted Practice</string>
+    <string name="kb_mode_targeted_desc">Focus on specific domains or weak areas</string>
+    <string name="kb_mode_breadth">Breadth Practice</string>
+    <string name="kb_mode_breadth_desc">Ensure balanced coverage of all topics</string>
+    <string name="kb_mode_speed">Speed Drill</string>
+    <string name="kb_mode_speed_desc">Quick timed practice to improve speed</string>
+    <string name="kb_mode_competition">Competition Simulation</string>
+    <string name="kb_mode_competition_desc">Simulate a real competition round</string>
+    <string name="kb_mode_team">Team Practice</string>
+    <string name="kb_mode_team_desc">Practice with team conferring</string>
 
     <!-- Export share intent -->
     <string name="export_share_subject">UnaMentis Session Export</string>

@@ -1,7 +1,10 @@
 package com.unamentis.ui.session
 
+import android.util.Log
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.unamentis.R
 import com.unamentis.core.config.ProviderConfig
 import com.unamentis.core.config.RecordingMode
 import com.unamentis.core.session.SessionManager
@@ -151,7 +154,7 @@ class SessionViewModel
                     transcript = transcriptList,
                     turnCount = session?.turnCount ?: 0,
                     metrics = sessionMetrics,
-                    statusMessage = getStatusMessage(state, mode, manuallyRecording),
+                    statusMessageResId = getStatusMessageResId(state, mode, manuallyRecording),
                     recordingMode = mode,
                     isManuallyRecording = manuallyRecording,
                 )
@@ -272,7 +275,9 @@ class SessionViewModel
          */
         fun goBackSegment() {
             viewModelScope.launch {
-                sessionManager.goBackSegment()
+                sessionManager.goBackSegment().onFailure { error ->
+                    Log.w("SessionViewModel", "Failed to go back segment: ${error.message}")
+                }
             }
         }
 
@@ -281,7 +286,9 @@ class SessionViewModel
          */
         fun replayTopic() {
             viewModelScope.launch {
-                sessionManager.replayTopic()
+                sessionManager.replayTopic().onFailure { error ->
+                    Log.w("SessionViewModel", "Failed to replay topic: ${error.message}")
+                }
             }
         }
 
@@ -290,35 +297,42 @@ class SessionViewModel
          */
         fun nextTopic() {
             viewModelScope.launch {
-                sessionManager.nextTopic()
+                sessionManager.nextTopic().onFailure { error ->
+                    Log.w("SessionViewModel", "Failed to skip to next topic: ${error.message}")
+                }
             }
         }
 
         /**
-         * Get status message for current state.
+         * Get status message resource ID for current state.
          */
-        private fun getStatusMessage(
+        @StringRes
+        private fun getStatusMessageResId(
             state: SessionState,
             mode: RecordingMode,
-            _isManuallyRecording: Boolean,
-        ): String {
+            @Suppress("UNUSED_PARAMETER") isManuallyRecording: Boolean,
+        ): Int {
             return when (state) {
                 SessionState.IDLE -> {
                     when (mode) {
-                        RecordingMode.VAD -> "Listening..."
-                        RecordingMode.PUSH_TO_TALK -> "Hold to speak"
-                        RecordingMode.TOGGLE -> "Tap to speak"
+                        RecordingMode.VAD -> R.string.session_status_listening
+                        RecordingMode.PUSH_TO_TALK -> R.string.session_status_hold_to_speak
+                        RecordingMode.TOGGLE -> R.string.session_status_tap_to_speak
                     }
                 }
                 SessionState.USER_SPEAKING -> {
-                    if (mode == RecordingMode.PUSH_TO_TALK) "Recording... release to send" else "Listening..."
+                    if (mode == RecordingMode.PUSH_TO_TALK) {
+                        R.string.session_status_recording
+                    } else {
+                        R.string.session_status_listening
+                    }
                 }
-                SessionState.PROCESSING_UTTERANCE -> "Processing..."
-                SessionState.AI_THINKING -> "Thinking..."
-                SessionState.AI_SPEAKING -> "Speaking..."
-                SessionState.INTERRUPTED -> "Interrupted"
-                SessionState.PAUSED -> "Paused"
-                SessionState.ERROR -> "Error occurred"
+                SessionState.PROCESSING_UTTERANCE -> R.string.session_status_processing
+                SessionState.AI_THINKING -> R.string.session_status_ai_thinking
+                SessionState.AI_SPEAKING -> R.string.session_status_ai_speaking
+                SessionState.INTERRUPTED -> R.string.session_status_interrupted
+                SessionState.PAUSED -> R.string.session_status_paused
+                SessionState.ERROR -> R.string.session_status_error
             }
         }
 
@@ -344,7 +358,7 @@ data class SessionUiState(
     val transcript: List<TranscriptEntry> = emptyList(),
     val turnCount: Int = 0,
     val metrics: SessionMetrics = SessionMetrics(),
-    val statusMessage: String = "Ready to start",
+    @StringRes val statusMessageResId: Int = R.string.session_status_ready,
     val recordingMode: RecordingMode = RecordingMode.VAD,
     val isManuallyRecording: Boolean = false,
     // Curriculum mode fields

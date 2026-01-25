@@ -313,34 +313,88 @@ class SessionManager(
     /**
      * Go back one segment in curriculum playback.
      *
-     * TODO: Implement with CurriculumEngine integration
+     * @return Result.success if segment was changed, Result.failure if at first segment or no topic loaded
      */
-    suspend fun goBackSegment() {
+    suspend fun goBackSegment(): Result<Unit> {
         Log.i("SessionManager", "Go back segment requested")
-        // TODO: Implement curriculum segment navigation
-        // curriculumEngine.goBackSegment()
+
+        if (curriculumEngine.currentTopic.value == null) {
+            Log.w("SessionManager", "Cannot go back: no topic loaded")
+            return Result.failure(IllegalStateException("No topic loaded"))
+        }
+
+        val currentIndex = curriculumEngine.currentSegmentIndex.value
+        if (currentIndex <= 0) {
+            Log.w("SessionManager", "Cannot go back: already at first segment")
+            return Result.failure(IllegalStateException("Already at first segment"))
+        }
+
+        curriculumEngine.previousSegment()
+        Log.i("SessionManager", "Moved back to segment ${curriculumEngine.currentSegmentIndex.value}")
+        return Result.success(Unit)
     }
 
     /**
      * Replay the current topic from the beginning.
      *
-     * TODO: Implement with CurriculumEngine integration
+     * @return Result.success if topic was reset to beginning, Result.failure if no topic loaded
      */
-    suspend fun replayTopic() {
+    suspend fun replayTopic(): Result<Unit> {
         Log.i("SessionManager", "Replay topic requested")
-        // TODO: Implement topic replay
-        // curriculumEngine.replayCurrentTopic()
+
+        if (curriculumEngine.currentTopic.value == null) {
+            Log.w("SessionManager", "Cannot replay: no topic loaded")
+            return Result.failure(IllegalStateException("No topic loaded"))
+        }
+
+        curriculumEngine.goToSegment(0)
+        Log.i("SessionManager", "Replaying topic from beginning")
+        return Result.success(Unit)
     }
 
     /**
      * Skip to the next topic in the curriculum.
      *
-     * TODO: Implement with CurriculumEngine integration
+     * @return Result.success if advanced to next topic, Result.failure if at last topic or no curriculum loaded
      */
-    suspend fun nextTopic() {
+    @Suppress("ReturnCount")
+    suspend fun nextTopic(): Result<Unit> {
         Log.i("SessionManager", "Next topic requested")
-        // TODO: Implement next topic navigation
-        // curriculumEngine.nextTopic()
+
+        val curriculum = curriculumEngine.currentCurriculum.value
+        val currentTopic = curriculumEngine.currentTopic.value
+
+        // Validate prerequisites
+        val error =
+            when {
+                curriculum == null -> "No curriculum loaded"
+                currentTopic == null -> "No topic loaded"
+                else -> null
+            }
+        if (error != null) {
+            Log.w("SessionManager", "Cannot skip to next topic: $error")
+            return Result.failure(IllegalStateException(error))
+        }
+
+        // Find current position and validate
+        val currentIndex = curriculum!!.topics.indexOfFirst { it.id == currentTopic!!.id }
+        val nextIndex = currentIndex + 1
+        val indexError =
+            when {
+                currentIndex == -1 -> "Current topic not found in curriculum"
+                nextIndex >= curriculum.topics.size -> "Already at last topic"
+                else -> null
+            }
+        if (indexError != null) {
+            Log.w("SessionManager", "Cannot skip to next topic: $indexError")
+            return Result.failure(IllegalStateException(indexError))
+        }
+
+        // Navigate to next topic
+        val nextTopicData = curriculum.topics[nextIndex]
+        curriculumEngine.loadTopic(nextTopicData.id)
+        Log.i("SessionManager", "Skipped to next topic: ${nextTopicData.title}")
+        return Result.success(Unit)
     }
 
     /**
