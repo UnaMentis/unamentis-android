@@ -32,7 +32,9 @@ val iOSBlue = Color(0xFF007AFF)
 val iOSGreen = Color(0xFF34C759)
 val iOSRed = Color(0xFFFF3B30)
 val iOSOrange = Color(0xFFFF9500)
+val iOSYellow = Color(0xFFFFCC00)
 val iOSPurple = Color(0xFFA855F7)
+val iOSCyan = Color(0xFF00BCD4)
 val iOSGray = Color(0xFF8E8E93)
 val iOSGray2 = Color(0xFFAEAEB2)
 val iOSGray3 = Color(0xFFC7C7CC)
@@ -166,8 +168,32 @@ val StatusPending = iOSOrange
 val StatusInProgress = iOSBlue
 val StatusFailed = iOSRed
 
+// Session state colors (matching iOS SessionView.swift statusColor)
+val SessionStateIdle = iOSGray
+val SessionStateUserSpeaking = iOSGreen
+val SessionStateAIThinking = iOSOrange
+val SessionStateAISpeaking = iOSBlue
+val SessionStateInterrupted = Color(0xFFFFCC00) // iOS yellow
+val SessionStatePaused = Color(0xFF00BCD4) // iOS cyan
+val SessionStateProcessing = iOSPurple
+val SessionStateError = iOSRed
+
 // Onboarding page accent colors (matching iOS OnboardingView.swift)
 val OnboardingWelcome = iOSBlue
 val OnboardingCurriculum = iOSOrange
 val OnboardingOffline = iOSGreen
 val OnboardingHandsFree = iOSPurple
+
+// =============================================================================
+// IOS SYSTEM BACKGROUND COLORS (for semantic mapping)
+// =============================================================================
+// These map to iOS Color(.systemBackground), Color(.systemGray6), etc.
+// Use these for consistent background treatment across the app
+
+/** iOS systemBackground equivalent - pure white in light, near-black in dark */
+val iOSSystemBackground = Color(0xFFFFFFFF)
+val iOSSystemBackgroundDark = Color(0xFF000000)
+
+/** iOS systemGroupedBackground equivalent - slightly off-white in light */
+val iOSSystemGroupedBackground = iOSGray6
+val iOSSystemGroupedBackgroundDark = Color(0xFF000000)

@@ -35,11 +35,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
+import com.unamentis.R
 import com.unamentis.core.export.ExportFormat
 import com.unamentis.core.export.ExportResult
+import com.unamentis.ui.theme.IOSTypography
 import java.io.File
 
 /**
@@ -77,15 +80,15 @@ fun ExportBottomSheet(
                     .padding(bottom = 32.dp),
         ) {
             Text(
-                text = "Export Session",
-                style = MaterialTheme.typography.titleLarge,
+                text = stringResource(R.string.export_session_title),
+                style = IOSTypography.title2,
                 modifier = Modifier.padding(bottom = 16.dp),
             )
 
             // Format selection
             Text(
-                text = "Select Format",
-                style = MaterialTheme.typography.titleSmall,
+                text = stringResource(R.string.export_select_format),
+                style = IOSTypography.subheadline,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 8.dp),
             )
@@ -138,7 +141,7 @@ fun ExportBottomSheet(
             if (exportResult is ExportResult.Error) {
                 Text(
                     text = exportResult.message,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = IOSTypography.body,
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(bottom = 16.dp),
                 )
@@ -155,7 +158,7 @@ fun ExportBottomSheet(
                     },
                     modifier = Modifier.weight(1f),
                 ) {
-                    Text("Preview")
+                    Text(stringResource(R.string.export_preview))
                 }
 
                 Button(
@@ -174,16 +177,17 @@ fun ExportBottomSheet(
                         modifier = Modifier.size(18.dp),
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Share")
+                    Text(stringResource(R.string.export_share))
                 }
             }
 
             // Preview area (if export result available)
             if (exportResult is ExportResult.Success) {
                 Spacer(modifier = Modifier.height(16.dp))
+                val previewFormatName = stringResource(exportResult.format.labelResId)
                 Text(
-                    text = "Preview (${exportResult.format.displayName})",
-                    style = MaterialTheme.typography.titleSmall,
+                    text = stringResource(R.string.export_preview_format, previewFormatName),
+                    style = IOSTypography.subheadline,
                     modifier = Modifier.padding(bottom = 8.dp),
                 )
                 Card(
@@ -197,7 +201,7 @@ fun ExportBottomSheet(
                         text =
                             exportResult.content.take(500) +
                                 if (exportResult.content.length > 500) "\n..." else "",
-                        style = MaterialTheme.typography.bodySmall,
+                        style = IOSTypography.caption,
                         modifier = Modifier.padding(12.dp),
                     )
                 }
@@ -227,6 +231,7 @@ private fun FormatCard(
             ),
         modifier = modifier,
     ) {
+        val formatLabel = stringResource(format.labelResId)
         Column(
             modifier =
                 Modifier
@@ -236,7 +241,7 @@ private fun FormatCard(
         ) {
             Icon(
                 imageVector = icon,
-                contentDescription = format.displayName,
+                contentDescription = formatLabel,
                 tint =
                     if (isSelected) {
                         MaterialTheme.colorScheme.primary
@@ -247,8 +252,8 @@ private fun FormatCard(
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = format.displayName,
-                style = MaterialTheme.typography.labelMedium,
+                text = formatLabel,
+                style = IOSTypography.caption2,
                 textAlign = TextAlign.Center,
                 color =
                     if (isSelected) {
@@ -268,6 +273,9 @@ private fun shareExportedContent(
     context: Context,
     result: ExportResult.Success,
 ) {
+    val shareSubject = context.getString(R.string.export_share_subject)
+    val shareChooserTitle = context.getString(R.string.export_share_chooser_title)
+
     try {
         // Write content to a temporary file
         val cacheDir = File(context.cacheDir, "exports")
@@ -288,13 +296,13 @@ private fun shareExportedContent(
             Intent(Intent.ACTION_SEND).apply {
                 type = result.format.mimeType
                 putExtra(Intent.EXTRA_STREAM, contentUri)
-                putExtra(Intent.EXTRA_SUBJECT, "UnaMentis Session Export")
+                putExtra(Intent.EXTRA_SUBJECT, shareSubject)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
 
         // Launch share chooser
         context.startActivity(
-            Intent.createChooser(shareIntent, "Share Session Export"),
+            Intent.createChooser(shareIntent, shareChooserTitle),
         )
     } catch (e: Exception) {
         // Fall back to plain text share when file sharing fails
@@ -303,10 +311,10 @@ private fun shareExportedContent(
             Intent(Intent.ACTION_SEND).apply {
                 type = "text/plain"
                 putExtra(Intent.EXTRA_TEXT, result.content)
-                putExtra(Intent.EXTRA_SUBJECT, "UnaMentis Session Export")
+                putExtra(Intent.EXTRA_SUBJECT, shareSubject)
             }
         context.startActivity(
-            Intent.createChooser(shareIntent, "Share Session Export"),
+            Intent.createChooser(shareIntent, shareChooserTitle),
         )
     }
 }

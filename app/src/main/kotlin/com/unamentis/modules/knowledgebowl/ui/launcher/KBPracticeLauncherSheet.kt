@@ -41,7 +41,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -49,6 +48,7 @@ import com.unamentis.R
 import com.unamentis.modules.knowledgebowl.data.model.KBQuestion
 import com.unamentis.modules.knowledgebowl.data.model.KBStudyMode
 import com.unamentis.modules.knowledgebowl.ui.theme.KBTheme
+import com.unamentis.ui.theme.IOSTypography
 
 /**
  * Bottom sheet shown before starting a practice session.
@@ -139,16 +139,15 @@ private fun ModeHeader(mode: KBStudyMode) {
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = mode.displayName,
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
+            text = stringResource(mode.displayNameResId),
+            style = IOSTypography.title2,
         )
 
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = mode.description,
-            style = MaterialTheme.typography.bodyMedium,
+            text = stringResource(mode.descriptionResId),
+            style = IOSTypography.body,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
@@ -167,7 +166,7 @@ private fun LoadingContent() {
 
         Text(
             text = stringResource(R.string.kb_preparing_questions),
-            style = MaterialTheme.typography.bodyMedium,
+            style = IOSTypography.body,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
@@ -193,7 +192,7 @@ private fun ErrorContent(
 
         Text(
             text = message,
-            style = MaterialTheme.typography.bodyMedium,
+            style = IOSTypography.body,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
@@ -228,7 +227,10 @@ private fun ReadyContent(
 
                 if (mode == KBStudyMode.SPEED) {
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                    InfoRow(label = stringResource(R.string.kb_time_limit_label), value = "5 minutes")
+                    InfoRow(
+                        label = stringResource(R.string.kb_time_limit_label),
+                        value = stringResource(R.string.kb_time_limit_minutes, 5),
+                    )
                 }
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
@@ -244,15 +246,14 @@ private fun ReadyContent(
                 Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xFFFFF8E1))
+                    .background(KBTheme.tipBackground())
                     .padding(16.dp),
         ) {
             Column {
                 Text(
                     text = stringResource(R.string.kb_tips_title),
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF5D4037),
+                    style = IOSTypography.subheadline,
+                    color = KBTheme.tipText(),
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -276,13 +277,12 @@ private fun InfoRow(
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.bodyMedium,
+            style = IOSTypography.body,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Text(
             text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
+            style = IOSTypography.body,
         )
     }
 }
@@ -297,15 +297,15 @@ private fun TipRow(tip: String) {
             imageVector = Icons.Default.Lightbulb,
             contentDescription = null,
             modifier = Modifier.size(16.dp),
-            tint = Color(0xFFFFB300),
+            tint = KBTheme.tipIcon(),
         )
 
         Spacer(modifier = Modifier.size(8.dp))
 
         Text(
             text = tip,
-            style = MaterialTheme.typography.bodySmall,
-            color = Color(0xFF5D4037),
+            style = IOSTypography.caption,
+            color = KBTheme.tipText(),
         )
     }
 }
@@ -331,7 +331,7 @@ private fun ActionButtons(
         ) {
             Text(
                 text = stringResource(R.string.kb_start_practice),
-                style = MaterialTheme.typography.labelLarge,
+                style = IOSTypography.subheadline,
                 modifier = Modifier.padding(vertical = 4.dp),
             )
         }

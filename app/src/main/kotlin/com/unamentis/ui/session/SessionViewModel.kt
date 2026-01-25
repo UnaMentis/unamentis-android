@@ -1,7 +1,10 @@
 package com.unamentis.ui.session
 
+import android.util.Log
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.unamentis.R
 import com.unamentis.core.config.ProviderConfig
 import com.unamentis.core.config.RecordingMode
 import com.unamentis.core.session.SessionManager
@@ -10,7 +13,10 @@ import com.unamentis.data.model.Session
 import com.unamentis.data.model.SessionState
 import com.unamentis.data.model.TranscriptEntry
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -30,6 +36,8 @@ import javax.inject.Inject
  * - uiState: Derived UI state with computed properties
  *
  * @property sessionManager Core session orchestrator
+ * @property providerConfig Provider configuration for recording mode
+ * @property sessionActivityState Session activity state for tab bar visibility control
  */
 @HiltViewModel
 class SessionViewModel
@@ -37,7 +45,25 @@ class SessionViewModel
     constructor(
         private val sessionManager: SessionManager,
         private val providerConfig: ProviderConfig,
+        private val sessionActivityState: SessionActivityState,
     ) : ViewModel() {
+        init {
+            // Update tab bar visibility based on session state
+            viewModelScope.launch {
+                combine(
+                    sessionManager.currentSession,
+                    sessionManager.sessionState,
+                ) { session, state ->
+                    val isActive = session != null
+                    val isPaused = state == SessionState.PAUSED
+                    Pair(isActive, isPaused)
+                }.collect { (isActive, isPaused) ->
+                    sessionActivityState.setSessionActive(isActive)
+                    sessionActivityState.setPaused(isPaused)
+                }
+            }
+        }
+
         /**
          * Session state from SessionManager.
          */
@@ -105,34 +131,108 @@ class SessionViewModel
                 )
 
         /**
+         * Whether a curriculum is loaded.
+         */
+        private val isCurriculumMode: StateFlow<Boolean> =
+            sessionManager.isCurriculumMode
+                .stateIn(
+                    scope = viewModelScope,
+                    started = SharingStarted.WhileSubscribed(5000),
+                    initialValue = false,
+                )
+
+        /**
+         * Current segment index within the topic.
+         */
+        private val currentSegmentIndex: StateFlow<Int> =
+            sessionManager.currentSegmentIndex
+                .stateIn(
+                    scope = viewModelScope,
+                    started = SharingStarted.WhileSubscribed(5000),
+                    initialValue = 0,
+                )
+
+        /**
+         * Total segments in the current topic.
+         */
+        private val totalSegments: StateFlow<Int> =
+            sessionManager.totalSegments
+                .stateIn(
+                    scope = viewModelScope,
+                    started = SharingStarted.WhileSubscribed(5000),
+                    initialValue = 0,
+                )
+
+        /**
+         * Whether there is a next topic available.
+         */
+        private val hasNextTopic: StateFlow<Boolean> =
+            sessionManager.hasNextTopic
+                .stateIn(
+                    scope = viewModelScope,
+                    started = SharingStarted.WhileSubscribed(5000),
+                    initialValue = false,
+                )
+
+        /**
+         * Audio level in dB for VU meter.
+         */
+        private val audioLevelDb: StateFlow<Float> =
+            sessionManager.audioLevelDb
+                .stateIn(
+                    scope = viewModelScope,
+                    started = SharingStarted.WhileSubscribed(5000),
+                    initialValue = -60f,
+                )
+
+        /**
          * Derived UI state.
          */
         val uiState: StateFlow<SessionUiState> =
             combine(
-                sessionState,
-                currentSession,
-                transcript,
-                combine(metrics, recordingMode, isManuallyRecording) { m, rm, imr -> Triple(m, rm, imr) },
-            ) { state, session, transcriptList, (sessionMetrics, mode, manuallyRecording) ->
+                combine(sessionState, currentSession, transcript) { state, session, transcriptList ->
+                    SessionCoreState(state, session, transcriptList)
+                },
+                combine(metrics, recordingMode, isManuallyRecording) { m, rm, imr ->
+                    RecordingState(m, rm, imr)
+                },
+                combine(isCurriculumMode, currentSegmentIndex, totalSegments, hasNextTopic) { icm, csi, ts, hnt ->
+                    CurriculumUiState(icm, csi, ts, hnt)
+                },
+                audioLevelDb,
+            ) { core, recording, curriculum, audioLevel ->
                 SessionUiState(
-                    sessionState = state,
-                    isSessionActive = session != null,
-                    canStart = state == SessionState.IDLE && session == null,
+                    sessionState = core.state,
+                    isSessionActive = core.session != null,
+                    isLoading =
+                        core.state == SessionState.PROCESSING_UTTERANCE ||
+                            core.state == SessionState.AI_THINKING,
+                    canStart = core.state == SessionState.IDLE && core.session == null,
                     canPause =
-                        state !in
+                        core.state !in
                             listOf(
                                 SessionState.IDLE,
                                 SessionState.PAUSED,
                                 SessionState.ERROR,
-                            ) && session != null,
-                    canResume = state == SessionState.PAUSED,
-                    canStop = session != null,
-                    transcript = transcriptList,
-                    turnCount = session?.turnCount ?: 0,
-                    metrics = sessionMetrics,
-                    statusMessage = getStatusMessage(state, mode, manuallyRecording),
-                    recordingMode = mode,
-                    isManuallyRecording = manuallyRecording,
+                            ) && core.session != null,
+                    canResume = core.state == SessionState.PAUSED,
+                    canStop = core.session != null,
+                    transcript = core.transcriptList,
+                    turnCount = core.session?.turnCount ?: 0,
+                    metrics = recording.metrics,
+                    statusMessageResId =
+                        getStatusMessageResId(
+                            core.state,
+                            recording.mode,
+                            recording.isManuallyRecording,
+                        ),
+                    recordingMode = recording.mode,
+                    isManuallyRecording = recording.isManuallyRecording,
+                    isCurriculumMode = curriculum.isCurriculumMode,
+                    currentSegmentIndex = curriculum.currentSegmentIndex,
+                    totalSegments = curriculum.totalSegments,
+                    hasNextTopic = curriculum.hasNextTopic,
+                    audioLevel = audioLevel,
                 )
             }.stateIn(
                 scope = viewModelScope,
@@ -242,36 +342,80 @@ class SessionViewModel
             }
         }
 
+        // ==========================================================================
+        // CURRICULUM PLAYBACK CONTROLS
+        // ==========================================================================
+
         /**
-         * Get status message for current state.
+         * Go back one segment in curriculum playback.
          */
-        private fun getStatusMessage(
+        fun goBackSegment() {
+            viewModelScope.launch {
+                sessionManager.goBackSegment().onFailure { error ->
+                    Log.w("SessionViewModel", "Failed to go back segment: ${error.message}")
+                }
+            }
+        }
+
+        /**
+         * Replay the current topic from the beginning.
+         */
+        fun replayTopic() {
+            viewModelScope.launch {
+                sessionManager.replayTopic().onFailure { error ->
+                    Log.w("SessionViewModel", "Failed to replay topic: ${error.message}")
+                }
+            }
+        }
+
+        /**
+         * Skip to the next topic in the curriculum.
+         */
+        fun nextTopic() {
+            viewModelScope.launch {
+                sessionManager.nextTopic().onFailure { error ->
+                    Log.w("SessionViewModel", "Failed to skip to next topic: ${error.message}")
+                }
+            }
+        }
+
+        /**
+         * Get status message resource ID for current state.
+         */
+        @StringRes
+        private fun getStatusMessageResId(
             state: SessionState,
             mode: RecordingMode,
-            _isManuallyRecording: Boolean,
-        ): String {
+            @Suppress("UNUSED_PARAMETER") isManuallyRecording: Boolean,
+        ): Int {
             return when (state) {
                 SessionState.IDLE -> {
                     when (mode) {
-                        RecordingMode.VAD -> "Listening..."
-                        RecordingMode.PUSH_TO_TALK -> "Hold to speak"
-                        RecordingMode.TOGGLE -> "Tap to speak"
+                        RecordingMode.VAD -> R.string.session_status_listening
+                        RecordingMode.PUSH_TO_TALK -> R.string.session_status_hold_to_speak
+                        RecordingMode.TOGGLE -> R.string.session_status_tap_to_speak
                     }
                 }
                 SessionState.USER_SPEAKING -> {
-                    if (mode == RecordingMode.PUSH_TO_TALK) "Recording... release to send" else "Listening..."
+                    if (mode == RecordingMode.PUSH_TO_TALK) {
+                        R.string.session_status_recording
+                    } else {
+                        R.string.session_status_listening
+                    }
                 }
-                SessionState.PROCESSING_UTTERANCE -> "Processing..."
-                SessionState.AI_THINKING -> "Thinking..."
-                SessionState.AI_SPEAKING -> "Speaking..."
-                SessionState.INTERRUPTED -> "Interrupted"
-                SessionState.PAUSED -> "Paused"
-                SessionState.ERROR -> "Error occurred"
+                SessionState.PROCESSING_UTTERANCE -> R.string.session_status_processing
+                SessionState.AI_THINKING -> R.string.session_status_ai_thinking
+                SessionState.AI_SPEAKING -> R.string.session_status_ai_speaking
+                SessionState.INTERRUPTED -> R.string.session_status_interrupted
+                SessionState.PAUSED -> R.string.session_status_paused
+                SessionState.ERROR -> R.string.session_status_error
             }
         }
 
         override fun onCleared() {
             super.onCleared()
+            // Reset tab bar visibility when leaving session screen
+            sessionActivityState.reset()
             // SessionManager cleanup handled by its own lifecycle
         }
     }
@@ -282,6 +426,7 @@ class SessionViewModel
 data class SessionUiState(
     val sessionState: SessionState = SessionState.IDLE,
     val isSessionActive: Boolean = false,
+    val isLoading: Boolean = false,
     val canStart: Boolean = true,
     val canPause: Boolean = false,
     val canResume: Boolean = false,
@@ -289,7 +434,42 @@ data class SessionUiState(
     val transcript: List<TranscriptEntry> = emptyList(),
     val turnCount: Int = 0,
     val metrics: SessionMetrics = SessionMetrics(),
-    val statusMessage: String = "Ready to start",
+    @StringRes val statusMessageResId: Int = R.string.session_status_ready,
     val recordingMode: RecordingMode = RecordingMode.VAD,
     val isManuallyRecording: Boolean = false,
+    // Curriculum mode fields
+    val isCurriculumMode: Boolean = false,
+    val currentSegmentIndex: Int = 0,
+    val totalSegments: Int = 0,
+    val hasNextTopic: Boolean = false,
+    // Audio level for VU meter
+    val audioLevel: Float = -60f,
+)
+
+/**
+ * Internal data class for combining core session state in the uiState flow.
+ */
+private data class SessionCoreState(
+    val state: SessionState,
+    val session: Session?,
+    val transcriptList: List<TranscriptEntry>,
+)
+
+/**
+ * Internal data class for combining recording state in the uiState flow.
+ */
+private data class RecordingState(
+    val metrics: SessionMetrics,
+    val mode: RecordingMode,
+    val isManuallyRecording: Boolean,
+)
+
+/**
+ * Internal data class for combining curriculum state in the uiState flow.
+ */
+private data class CurriculumUiState(
+    val isCurriculumMode: Boolean,
+    val currentSegmentIndex: Int,
+    val totalSegments: Int,
+    val hasNextTopic: Boolean,
 )

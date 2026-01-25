@@ -1,7 +1,7 @@
 # UnaMentis Android Style Guide and Standards
 
-**Version:** 1.0
-**Last Updated:** January 2026
+**Version:** 1.1
+**Last Updated:** January 24, 2026
 **Status:** Mandatory
 
 This document defines the coding standards, accessibility requirements, internationalization patterns, and UI/UX guidelines for the UnaMentis Android application. **All contributors (human and AI) must comply with these standards.**
@@ -40,6 +40,41 @@ Button(
 ) {
     Text("Start")
 }
+```
+
+#### Using stringResource() Inside Semantics Blocks
+
+**Important:** `stringResource()` is a `@Composable` function and **cannot be called inside non-composable lambda blocks** like `semantics {}`. You must extract the string to a variable first:
+
+```kotlin
+// CORRECT: Extract stringResource() before semantics block
+val buttonDescription = stringResource(R.string.cd_start_session)
+Button(
+    onClick = { /* ... */ },
+    modifier = Modifier.semantics {
+        contentDescription = buttonDescription
+    }
+) {
+    Text(stringResource(R.string.start_session))
+}
+
+// CORRECT: With conditional descriptions
+val selectedDescription = stringResource(R.string.cd_region_selected, region.displayName)
+val unselectedDescription = stringResource(R.string.cd_region_button, region.displayName)
+val accessibilityDescription = if (isSelected) selectedDescription else unselectedDescription
+
+Box(
+    modifier = Modifier.semantics {
+        contentDescription = accessibilityDescription
+    }
+) { /* ... */ }
+
+// INCORRECT: stringResource() inside semantics block - WILL NOT COMPILE
+Button(
+    modifier = Modifier.semantics {
+        contentDescription = stringResource(R.string.cd_start)  // BAD: Compilation error
+    }
+) { /* ... */ }
 
 // REQUIRED for icons
 Icon(
@@ -48,6 +83,26 @@ Icon(
     modifier = Modifier.semantics {
         stateDescription = if (isRecording) "Recording" else "Not recording"
     }
+)
+
+// REQUIRED for Switch controls
+val toggleStateDesc = if (checked) {
+    stringResource(R.string.cd_toggle_on, title)  // "%1$s, enabled"
+} else {
+    stringResource(R.string.cd_toggle_off, title)  // "%1$s, disabled"
+}
+Switch(
+    checked = checked,
+    onCheckedChange = onCheckedChange,
+    modifier = Modifier.semantics { contentDescription = toggleStateDesc }
+)
+
+// REQUIRED for RadioButton
+val modeDisplayName = stringResource(mode.displayNameResId)
+RadioButton(
+    selected = isSelected,
+    onClick = onSelected,
+    modifier = Modifier.semantics { contentDescription = modeDisplayName }
 )
 
 // REQUIRED for dynamic content
@@ -236,7 +291,111 @@ Text(text = "$${String.format("%.2f", cost)}")  // BAD: Only works for USD
 Text(text = "\$12.50")  // BAD: Hardcoded symbol
 ```
 
-### 2.4 Units and Suffixes
+### 2.4 Percentage Formatting
+
+**Never use `String.format()` for percentages.** Always use `NumberFormat.getPercentInstance()`:
+
+```kotlin
+import java.text.NumberFormat
+import java.util.Locale
+
+// CORRECT: Locale-aware percentage (preferred approach)
+val percentFormatter = NumberFormat.getPercentInstance(Locale.getDefault())
+val accuracy = 0.85f
+Text(text = percentFormatter.format(accuracy.toDouble()))  // "85%" in en-US, "85 %" in fr-FR
+
+// ALTERNATIVE: For percentages in string resources, pass the formatted result:
+// <string name="kb_percent_format">%1$s</string>
+val formattedPercent = percentFormatter.format(accuracy.toDouble())
+Text(text = stringResource(R.string.kb_percent_format, formattedPercent))  // "85%" or "85 %"
+
+// INCORRECT: String.format() - doesn't respect locale
+Text(text = String.format("%.0f%%", accuracy * 100))  // BAD: Not locale-aware
+Text(text = "${(accuracy * 100).toInt()}%")  // BAD: Hardcoded format
+```
+
+### 2.5 Enum Localization
+
+When enums have user-facing display names or descriptions, **use `@StringRes` properties** instead of hardcoded strings:
+
+```kotlin
+import androidx.annotation.StringRes
+import com.unamentis.R
+
+// CORRECT: Uses @StringRes properties
+enum class RecordingMode {
+    VAD,
+    PUSH_TO_TALK,
+    TOGGLE,
+    ;
+
+    @get:StringRes
+    val displayNameResId: Int
+        get() = when (this) {
+            VAD -> R.string.settings_recording_mode_vad
+            PUSH_TO_TALK -> R.string.settings_recording_mode_push_to_talk
+            TOGGLE -> R.string.settings_recording_mode_toggle
+        }
+
+    @get:StringRes
+    val descriptionResId: Int
+        get() = when (this) {
+            VAD -> R.string.settings_recording_mode_vad_desc
+            PUSH_TO_TALK -> R.string.settings_recording_mode_push_to_talk_desc
+            TOGGLE -> R.string.settings_recording_mode_toggle_desc
+        }
+}
+
+// Usage in Composable:
+Text(text = stringResource(mode.displayNameResId))
+Text(text = stringResource(mode.descriptionResId))
+
+// INCORRECT: Hardcoded strings in enum
+enum class RecordingMode(
+    val displayName: String,  // BAD: Not localizable
+    val description: String   // BAD: Not localizable
+) {
+    VAD("Auto (VAD)", "Automatically detects when you speak")
+}
+```
+
+### 2.6 ViewModel Status Messages
+
+**ViewModels should NOT return hardcoded strings for UI display.** Return `@StringRes Int` resource IDs instead, and resolve them in the Composable layer:
+
+```kotlin
+import androidx.annotation.StringRes
+
+// CORRECT: ViewModel returns resource ID
+data class SessionUiState(
+    @StringRes val statusMessageResId: Int = R.string.session_status_ready,
+    // ... other fields
+)
+
+// In ViewModel
+@StringRes
+private fun getStatusMessageResId(state: SessionState): Int {
+    return when (state) {
+        SessionState.IDLE -> R.string.session_status_listening
+        SessionState.PROCESSING -> R.string.session_status_processing
+        SessionState.SPEAKING -> R.string.session_status_ai_speaking
+        SessionState.ERROR -> R.string.session_status_error
+    }
+}
+
+// In Composable: resolve the string
+@Composable
+fun StatusDisplay(uiState: SessionUiState) {
+    Text(text = stringResource(uiState.statusMessageResId))
+}
+
+// INCORRECT: ViewModel returns hardcoded string
+data class SessionUiState(
+    val statusMessage: String = "Ready to start",  // BAD: Not localizable
+)
+```
+
+### 2.7 Units and Suffixes
 
 Use string resources with placeholders for units:
 
@@ -253,7 +412,7 @@ Text(text = "${stats.avgLatency}ms")  // BAD: Not localizable
 Text(text = "${value} ms")  // BAD: Hardcoded
 ```
 
-### 2.5 Right-to-Left (RTL) Support
+### 2.8 Right-to-Left (RTL) Support
 
 Use start/end instead of left/right:
 
@@ -266,7 +425,7 @@ Row(horizontalArrangement = Arrangement.Start) { /* ... */ }
 Modifier.padding(left = 16.dp, right = 8.dp)  // BAD
 ```
 
-### 2.6 Plurals
+### 2.9 Plurals
 
 Use quantity strings for proper pluralization:
 

@@ -658,21 +658,36 @@ enum class ConfigurationPreset(
  * - VAD: Voice Activity Detection - automatic speech detection (default)
  * - PUSH_TO_TALK: Hold-to-record - press and hold to record
  * - TOGGLE: Tap-to-toggle - tap once to start, tap again to stop
+ *
+ * Use [displayNameResId] and [descriptionResId] with stringResource() for localized text.
  */
-enum class RecordingMode(
-    val displayName: String,
-    val description: String,
-) {
-    VAD(
-        displayName = "Auto (VAD)",
-        description = "Automatically detects when you speak",
-    ),
-    PUSH_TO_TALK(
-        displayName = "Push to Talk",
-        description = "Hold the mic button to record",
-    ),
-    TOGGLE(
-        displayName = "Toggle",
-        description = "Tap to start/stop recording",
-    ),
+enum class RecordingMode {
+    VAD,
+    PUSH_TO_TALK,
+    TOGGLE,
+    ;
+
+    /**
+     * String resource ID for the display name.
+     */
+    @get:androidx.annotation.StringRes
+    val displayNameResId: Int
+        get() =
+            when (this) {
+                VAD -> com.unamentis.R.string.settings_recording_mode_vad
+                PUSH_TO_TALK -> com.unamentis.R.string.settings_recording_mode_push_to_talk
+                TOGGLE -> com.unamentis.R.string.settings_recording_mode_toggle
+            }
+
+    /**
+     * String resource ID for the description.
+     */
+    @get:androidx.annotation.StringRes
+    val descriptionResId: Int
+        get() =
+            when (this) {
+                VAD -> com.unamentis.R.string.settings_recording_mode_vad_desc
+                PUSH_TO_TALK -> com.unamentis.R.string.settings_recording_mode_push_to_talk_desc
+                TOGGLE -> com.unamentis.R.string.settings_recording_mode_toggle_desc
+            }
 }

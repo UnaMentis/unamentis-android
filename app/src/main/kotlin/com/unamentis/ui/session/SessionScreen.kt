@@ -4,58 +4,73 @@ import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.unamentis.core.config.RecordingMode
+import com.unamentis.R
 import com.unamentis.data.model.SessionState
-import com.unamentis.data.model.TranscriptEntry
-import com.unamentis.ui.components.GlassCapsule
-import com.unamentis.ui.theme.AssistantBubbleDark
-import com.unamentis.ui.theme.AssistantBubbleLight
+import com.unamentis.ui.components.BrandLogo
+import com.unamentis.ui.components.LatencyBadge
+import com.unamentis.ui.components.SessionStatusBadge
+import com.unamentis.ui.components.Size
 import com.unamentis.ui.theme.Dimensions
-import com.unamentis.ui.theme.UserBubbleDark
-import com.unamentis.ui.theme.UserBubbleLight
-import java.text.SimpleDateFormat
-import java.util.*
+import com.unamentis.ui.theme.IOSTypography
+import com.unamentis.ui.theme.iOSBlue
 
 /**
  * Session screen - Main voice conversation interface.
  *
- * Features:
- * - Transcript display with reverse scroll (newest at bottom)
- * - Session controls (start, pause, resume, stop)
- * - Real-time status indicator
- * - Turn counter
- * - Latency metrics display
+ * Matches iOS SessionView layout:
+ * - Background gradient
+ * - Topic progress bar (curriculum mode)
+ * - Session status badge
+ * - Transcript display with glass background
+ * - Audio level VU meter (when active)
+ * - Control bar (curriculum or freeform mode)
  *
- * Layout:
- * - Transcript (LazyColumn, reverse layout)
- * - Status bar (session state, turn count)
- * - Control bar (action buttons)
- *
- * @param initialCurriculumId Optional curriculum ID from deep link to start session with
- * @param initialTopicId Optional topic ID from deep link to start session with
+ * @param initialCurriculumId Optional curriculum ID from deep link
+ * @param initialTopicId Optional topic ID from deep link
  */
 @Composable
 fun SessionScreen(
@@ -90,12 +105,10 @@ fun SessionScreen(
         ) { isGranted ->
             hasMicPermission = isGranted
             if (isGranted) {
-                // Permission granted, start the session
                 viewModel.startSession()
             }
         }
 
-    // Function to handle start with permission check
     val onStartWithPermission: () -> Unit = {
         if (hasMicPermission) {
             viewModel.startSession()
@@ -104,561 +117,303 @@ fun SessionScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            SessionTopBar(
-                sessionState = uiState.sessionState,
-                turnCount = uiState.turnCount,
-                isSessionActive = uiState.isSessionActive,
-            )
-        },
-        bottomBar = {
-            SessionControlBar(
-                uiState = uiState,
-                onStart = onStartWithPermission,
-                onPause = { viewModel.pauseSession() },
-                onResume = { viewModel.resumeSession() },
-                onStop = { viewModel.stopSession() },
-                onStartManualRecording = { viewModel.startManualRecording() },
-                onStopManualRecording = { viewModel.stopManualRecording() },
-                onToggleManualRecording = { viewModel.toggleManualRecording() },
-            )
-        },
-    ) { paddingValues ->
-        Column(
+    // Help sheet state
+    var showHelp by remember { mutableStateOf(false) }
+
+    // Mute/pause state for curriculum controls
+    var isMuted by remember { mutableStateOf(false) }
+
+    Box(
+        modifier = Modifier.fillMaxSize(),
+    ) {
+        // Background gradient (matching iOS)
+        Box(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(paddingValues),
+                    .background(
+                        brush =
+                            Brush.verticalGradient(
+                                colors =
+                                    listOf(
+                                        MaterialTheme.colorScheme.background,
+                                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                                    ),
+                            ),
+                    ),
+        )
+
+        Column(
+            modifier = Modifier.fillMaxSize(),
         ) {
-            // Status indicator
-            SessionStatusIndicator(
-                statusMessage = uiState.statusMessage,
+            // Top app bar
+            SessionTopBar(
                 sessionState = uiState.sessionState,
+                isSessionActive = uiState.isSessionActive,
+                latencyMs = uiState.metrics.e2eLatency.toInt(),
+                onHelpClick = { showHelp = true },
             )
 
-            // Transcript display
-            TranscriptDisplay(
-                transcript = uiState.transcript,
-                modifier = Modifier.weight(1f),
-            )
+            // Main content area
+            Box(
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .padding(horizontal = Dimensions.ScreenHorizontalPadding),
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
+                ) {
+                    // Topic progress bar (curriculum mode only)
+                    if (uiState.isCurriculumMode && uiState.totalSegments > 0) {
+                        TopicProgressBar(
+                            completedSegments = uiState.currentSegmentIndex,
+                            totalSegments = uiState.totalSegments,
+                            modifier = Modifier.padding(top = 8.dp),
+                        )
+                    }
 
-            // Metrics display (when session active)
-            if (uiState.isSessionActive) {
-                MetricsDisplay(
-                    metrics = uiState.metrics,
+                    // Session status badge
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        SessionStatusBadge(
+                            state = uiState.sessionState,
+                            modifier =
+                                Modifier.padding(
+                                    top = if (uiState.isCurriculumMode) 4.dp else 12.dp,
+                                ),
+                        )
+                    }
+
+                    // Transcript display (takes most of the space)
+                    Box(
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .fillMaxWidth()
+                                // Add bottom padding when session active for control bar
+                                .padding(bottom = if (uiState.isSessionActive) 140.dp else 0.dp),
+                    ) {
+                        TranscriptDisplay(
+                            entries = uiState.transcript,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
+                }
+            }
+        }
+
+        // Idle state: Large start button
+        if (!uiState.isSessionActive && !uiState.isLoading) {
+            Box(
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(bottom = 100.dp),
+                contentAlignment = Alignment.BottomCenter,
+            ) {
+                SessionStartButton(
+                    onClick = onStartWithPermission,
+                    isLoading = uiState.isLoading,
                 )
             }
         }
+
+        // Active session: Bottom control area
+        AnimatedVisibility(
+            visible = uiState.isSessionActive,
+            enter =
+                fadeIn() +
+                    slideInVertically(
+                        animationSpec = spring(),
+                        initialOffsetY = { it },
+                    ),
+            exit =
+                fadeOut() +
+                    slideOutVertically(
+                        animationSpec = spring(),
+                        targetOffsetY = { it },
+                    ),
+            modifier = Modifier.align(Alignment.BottomCenter),
+        ) {
+            Column(
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = Dimensions.ScreenHorizontalPadding)
+                        .padding(bottom = Dimensions.ControlBarBottomPadding),
+                verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
+            ) {
+                // Audio level VU meter
+                AudioLevelView(
+                    level = uiState.audioLevel,
+                    state = uiState.sessionState,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                // Control bar based on mode
+                if (uiState.isCurriculumMode) {
+                    CurriculumSessionControlBar(
+                        isPaused = uiState.sessionState == SessionState.PAUSED,
+                        isMuted = isMuted,
+                        currentSegmentIndex = uiState.currentSegmentIndex,
+                        hasNextTopic = uiState.hasNextTopic,
+                        onPauseChanged = { paused ->
+                            if (paused) viewModel.pauseSession() else viewModel.resumeSession()
+                        },
+                        onMuteChanged = { muted -> isMuted = muted },
+                        onStop = { viewModel.stopSession() },
+                        onGoBack = { viewModel.goBackSegment() },
+                        onReplay = { viewModel.replayTopic() },
+                        onNextTopic = { viewModel.nextTopic() },
+                    )
+                } else {
+                    // Freeform mode controls
+                    FreeformSessionControlBar(
+                        isPaused = uiState.sessionState == SessionState.PAUSED,
+                        isMuted = isMuted,
+                        onPauseChanged = { paused ->
+                            if (paused) viewModel.pauseSession() else viewModel.resumeSession()
+                        },
+                        onMuteChanged = { muted -> isMuted = muted },
+                        onStop = { viewModel.stopSession() },
+                    )
+                }
+            }
+        }
+    }
+
+    // Help sheet
+    if (showHelp) {
+        SessionHelpSheet(onDismiss = { showHelp = false })
     }
 }
 
 /**
  * Top app bar with session info.
- * Uses iOS-style glass capsule badge for session state (matching iOS ultraThinMaterial).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@Suppress("UnusedParameter") // sessionState reserved for future status display
 private fun SessionTopBar(
     sessionState: SessionState,
-    turnCount: Int,
     isSessionActive: Boolean,
+    latencyMs: Int,
+    onHelpClick: () -> Unit,
 ) {
     TopAppBar(
-        title = {
-            Column {
-                Text(
-                    text = "Session",
-                    style = MaterialTheme.typography.titleLarge,
+        navigationIcon = {
+            if (isSessionActive) {
+                // Show latency badge when active
+                LatencyBadge(
+                    latencyMs = latencyMs,
+                    modifier = Modifier.padding(start = Dimensions.SpacingLarge),
                 )
-                if (isSessionActive) {
-                    Text(
-                        text = "$turnCount turns",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+            } else {
+                // Show brand logo when idle
+                BrandLogo(
+                    size = Size.Compact,
+                    modifier = Modifier.padding(start = Dimensions.SpacingLarge),
+                )
             }
         },
-        actions = {
-            // Session state indicator - iOS-style glass capsule with colored dot
-            SessionStateBadge(
-                state = sessionState,
-                modifier = Modifier.padding(end = Dimensions.SpacingLarge),
+        title = {
+            Text(
+                text = stringResource(R.string.tab_session),
+                style = IOSTypography.headline,
             )
+        },
+        actions = {
+            IconButton(onClick = onHelpClick) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.HelpOutline,
+                    contentDescription = "Session help",
+                )
+            }
         },
     )
 }
 
 /**
- * iOS-style session state badge with glass effect and colored dot.
- * Matches iOS pattern: Capsule().fill(.ultraThinMaterial) with status dot.
+ * Large session start button for idle state.
+ *
+ * Matches iOS SessionControlButton with 80pt size when inactive.
  */
 @Composable
-private fun SessionStateBadge(
-    state: SessionState,
+private fun SessionStartButton(
+    onClick: () -> Unit,
+    isLoading: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val stateColor = getStateColor(state)
-    val statusText = getStateDisplayName(state)
+    val buttonSize = Dimensions.SessionButtonSizeIdle
+    val iconSize = Dimensions.SessionButtonIconSizeIdle
 
-    GlassCapsule(modifier = modifier) {
-        Row(
-            modifier =
-                Modifier
-                    .padding(
-                        horizontal = Dimensions.BadgePaddingHorizontal,
-                        vertical = Dimensions.BadgePaddingVertical,
-                    )
-                    .semantics { contentDescription = "Session status: $statusText" },
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
-        ) {
-            // Colored status dot
-            Canvas(modifier = Modifier.size(Dimensions.StatusDotSize)) {
-                drawCircle(color = stateColor)
-            }
-            Text(
-                text = statusText,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-        }
-    }
-}
-
-/**
- * Get display name for session state.
- */
-private fun getStateDisplayName(state: SessionState): String {
-    return when (state) {
-        SessionState.IDLE -> "Ready"
-        SessionState.USER_SPEAKING -> "Listening"
-        SessionState.PROCESSING_UTTERANCE -> "Processing"
-        SessionState.AI_THINKING -> "Thinking"
-        SessionState.AI_SPEAKING -> "Speaking"
-        SessionState.INTERRUPTED -> "Interrupted"
-        SessionState.PAUSED -> "Paused"
-        SessionState.ERROR -> "Error"
-    }
-}
-
-/**
- * Status indicator showing current state message.
- */
-@Composable
-private fun SessionStatusIndicator(
-    statusMessage: String,
-    sessionState: SessionState,
-) {
     Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surfaceVariant,
+        onClick = onClick,
+        modifier =
+            modifier
+                .size(buttonSize)
+                .shadow(10.dp, CircleShape)
+                .semantics { contentDescription = "Start session" },
+        shape = CircleShape,
+        color = iOSBlue,
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(
-                imageVector = getStateIcon(sessionState),
-                contentDescription = null,
-                tint = getStateColor(sessionState),
-                modifier = Modifier.size(20.dp),
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = statusMessage,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
-            )
-        }
-    }
-}
-
-/**
- * Transcript display with reverse scroll.
- * Uses iOS-matching spacing: 20dp horizontal padding, 12dp vertical spacing.
- */
-@Composable
-private fun TranscriptDisplay(
-    transcript: List<TranscriptEntry>,
-    modifier: Modifier = Modifier,
-) {
-    val listState = rememberLazyListState()
-
-    // Auto-scroll to bottom when new messages arrive
-    LaunchedEffect(transcript.size) {
-        if (transcript.isNotEmpty()) {
-            listState.animateScrollToItem(transcript.size - 1)
-        }
-    }
-
-    if (transcript.isEmpty()) {
-        // Empty state
         Box(
-            modifier = modifier.fillMaxSize(),
+            modifier = Modifier.size(buttonSize),
             contentAlignment = Alignment.Center,
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
-            ) {
+            if (isLoading) {
+                androidx.compose.material3.CircularProgressIndicator(
+                    modifier = Modifier.size(iconSize),
+                    color = Color.White,
+                    strokeWidth = 3.dp,
+                )
+            } else {
                 Icon(
                     imageVector = Icons.Default.Mic,
                     contentDescription = null,
-                    modifier = Modifier.size(64.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                    tint = Color.White,
+                    modifier = Modifier.size(iconSize),
                 )
-                Text(
-                    text = "Start a session to begin",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-    } else {
-        LazyColumn(
-            modifier =
-                modifier
-                    .fillMaxSize()
-                    .padding(horizontal = Dimensions.ScreenHorizontalPadding),
-            state = listState,
-            verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
-            contentPadding = PaddingValues(vertical = Dimensions.SpacingLarge),
-        ) {
-            items(
-                items = transcript,
-                key = { it.id },
-            ) { entry ->
-                TranscriptBubble(entry = entry)
             }
         }
     }
 }
 
 /**
- * Individual transcript bubble.
- * Uses iOS-style corner radius (16dp) and padding (12dp).
+ * Session help sheet with tips and status explanations.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun TranscriptBubble(entry: TranscriptEntry) {
-    val isUser = entry.role == "user"
-    val alignment = if (isUser) Alignment.End else Alignment.Start
-
-    val bubbleColor =
-        if (isUser) {
-            if (MaterialTheme.colorScheme.surface == MaterialTheme.colorScheme.background) {
-                UserBubbleLight
-            } else {
-                UserBubbleDark
-            }
-        } else {
-            if (MaterialTheme.colorScheme.surface == MaterialTheme.colorScheme.background) {
-                AssistantBubbleLight
-            } else {
-                AssistantBubbleDark
-            }
-        }
-
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = alignment,
-    ) {
-        // Role label
-        Text(
-            text = if (isUser) "You" else "AI Tutor",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier =
-                Modifier.padding(
-                    horizontal = Dimensions.BubblePadding,
-                    vertical = Dimensions.SpacingXSmall,
+private fun SessionHelpSheet(onDismiss: () -> Unit) {
+    com.unamentis.ui.components.HelpSheet(
+        title = "Voice Session Help",
+        description = "Have natural voice conversations with your AI tutor. The session adapts to your learning needs.",
+        tips =
+            listOf(
+                com.unamentis.ui.components.HelpTip(
+                    title = "Speak naturally",
+                    description =
+                        "Talk just like you would with a teacher. " +
+                            "Ask questions, share thoughts, or request explanations.",
                 ),
-        )
-
-        // Message bubble
-        Surface(
-            shape =
-                RoundedCornerShape(
-                    topStart = Dimensions.BubbleCornerRadius,
-                    topEnd = Dimensions.BubbleCornerRadius,
-                    bottomStart = if (isUser) Dimensions.BubbleCornerRadius else Dimensions.SpacingXSmall,
-                    bottomEnd = if (isUser) Dimensions.SpacingXSmall else Dimensions.BubbleCornerRadius,
+                com.unamentis.ui.components.HelpTip(
+                    title = "Interrupt anytime",
+                    description = "Start speaking while the AI is talking to interrupt and ask a follow-up question.",
                 ),
-            color = bubbleColor,
-            modifier = Modifier.widthIn(max = Dimensions.BubbleMaxWidth),
-        ) {
-            Column(
-                modifier = Modifier.padding(Dimensions.BubblePadding),
-            ) {
-                Text(
-                    text = entry.text,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-
-                // Timestamp
-                Text(
-                    text = formatTimestamp(entry.timestamp),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    modifier = Modifier.padding(top = Dimensions.SpacingXSmall),
-                )
-            }
-        }
-    }
-}
-
-/**
- * Metrics display showing latency stats.
- */
-@Composable
-private fun MetricsDisplay(metrics: com.unamentis.core.session.SessionMetrics) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surfaceVariant,
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-        ) {
-            MetricItem(label = "TTFT", value = "${metrics.llmTTFT}ms")
-            MetricItem(label = "TTFB", value = "${metrics.ttsTTFB}ms")
-            MetricItem(label = "E2E", value = "${metrics.e2eLatency}ms")
-        }
-    }
-}
-
-/**
- * Individual metric item.
- */
-@Composable
-private fun MetricItem(
-    label: String,
-    value: String,
-) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Bold,
-        )
-    }
-}
-
-/**
- * Control bar with session action buttons.
- * Uses iOS-matching spacing: 16dp padding, 12dp spacing.
- */
-@Composable
-private fun SessionControlBar(
-    uiState: SessionUiState,
-    onStart: () -> Unit,
-    onPause: () -> Unit,
-    onResume: () -> Unit,
-    onStop: () -> Unit,
-    onStartManualRecording: () -> Unit,
-    onStopManualRecording: () -> Unit,
-    onToggleManualRecording: () -> Unit,
-) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 8.dp,
-    ) {
-        Column(
-            modifier = Modifier.padding(Dimensions.ControlBarPadding),
-            verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
-        ) {
-            // Manual recording button for PTT/Toggle modes (shown when session is active)
-            if (uiState.isSessionActive &&
-                uiState.recordingMode != RecordingMode.VAD &&
-                uiState.sessionState in listOf(SessionState.IDLE, SessionState.USER_SPEAKING)
-            ) {
-                MicrophoneButton(
-                    recordingMode = uiState.recordingMode,
-                    isRecording = uiState.isManuallyRecording,
-                    onStartRecording = onStartManualRecording,
-                    onStopRecording = onStopManualRecording,
-                    onToggleRecording = onToggleManualRecording,
-                    modifier = Modifier.align(Alignment.CenterHorizontally),
-                )
-            }
-
-            // Session control buttons
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                // Start button
-                if (uiState.canStart) {
-                    Button(
-                        onClick = onStart,
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(Dimensions.ButtonCornerRadius),
-                    ) {
-                        Icon(Icons.Default.PlayArrow, contentDescription = "Start session")
-                        Spacer(modifier = Modifier.width(Dimensions.SpacingSmall))
-                        Text("Start Session")
-                    }
-                }
-
-                // Pause button
-                if (uiState.canPause) {
-                    FilledTonalButton(
-                        onClick = onPause,
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(Dimensions.ButtonCornerRadius),
-                    ) {
-                        Icon(Icons.Default.Pause, contentDescription = "Pause session")
-                        Spacer(modifier = Modifier.width(Dimensions.SpacingSmall))
-                        Text("Pause")
-                    }
-                }
-
-                // Resume button
-                if (uiState.canResume) {
-                    Button(
-                        onClick = onResume,
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(Dimensions.ButtonCornerRadius),
-                    ) {
-                        Icon(Icons.Default.PlayArrow, contentDescription = "Resume session")
-                        Spacer(modifier = Modifier.width(Dimensions.SpacingSmall))
-                        Text("Resume")
-                    }
-                }
-
-                // Stop button
-                if (uiState.canStop) {
-                    OutlinedButton(
-                        onClick = onStop,
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(Dimensions.ButtonCornerRadius),
-                    ) {
-                        Icon(Icons.Default.Stop, contentDescription = "Stop session")
-                        Spacer(modifier = Modifier.width(Dimensions.SpacingSmall))
-                        Text("Stop")
-                    }
-                }
-            }
-        }
-    }
-}
-
-/**
- * Microphone button for manual recording modes (PTT and Toggle).
- */
-@Composable
-private fun MicrophoneButton(
-    recordingMode: RecordingMode,
-    isRecording: Boolean,
-    onStartRecording: () -> Unit,
-    onStopRecording: () -> Unit,
-    onToggleRecording: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val buttonColor =
-        if (isRecording) {
-            MaterialTheme.colorScheme.error
-        } else {
-            MaterialTheme.colorScheme.primary
-        }
-
-    val contentDescription =
-        when {
-            recordingMode == RecordingMode.PUSH_TO_TALK && isRecording -> "Release to send"
-            recordingMode == RecordingMode.PUSH_TO_TALK -> "Hold to speak"
-            recordingMode == RecordingMode.TOGGLE && isRecording -> "Tap to stop recording"
-            else -> "Tap to start recording"
-        }
-
-    val gestureModifier =
-        when (recordingMode) {
-            RecordingMode.PUSH_TO_TALK ->
-                Modifier.pointerInput(Unit) {
-                    detectTapGestures(
-                        onPress = {
-                            onStartRecording()
-                            tryAwaitRelease()
-                            onStopRecording()
-                        },
-                    )
-                }
-            RecordingMode.TOGGLE ->
-                Modifier.pointerInput(Unit) {
-                    detectTapGestures(
-                        onTap = { onToggleRecording() },
-                    )
-                }
-            RecordingMode.VAD -> Modifier
-        }
-
-    Surface(
-        modifier =
-            modifier
-                .size(72.dp)
-                .then(gestureModifier),
-        shape = CircleShape,
-        color = buttonColor,
-        shadowElevation = if (isRecording) 8.dp else 4.dp,
-    ) {
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier.fillMaxSize(),
-        ) {
-            Icon(
-                imageVector = if (isRecording) Icons.Default.MicNone else Icons.Default.Mic,
-                contentDescription = contentDescription,
-                tint = MaterialTheme.colorScheme.onPrimary,
-                modifier = Modifier.size(32.dp),
-            )
-        }
-    }
-}
-
-/**
- * Get color for session state.
- */
-@Composable
-private fun getStateColor(state: SessionState): androidx.compose.ui.graphics.Color {
-    return when (state) {
-        SessionState.IDLE -> MaterialTheme.colorScheme.primary
-        SessionState.USER_SPEAKING -> MaterialTheme.colorScheme.secondary
-        SessionState.PROCESSING_UTTERANCE -> MaterialTheme.colorScheme.tertiary
-        SessionState.AI_THINKING -> MaterialTheme.colorScheme.tertiary
-        SessionState.AI_SPEAKING -> MaterialTheme.colorScheme.primary
-        SessionState.INTERRUPTED -> MaterialTheme.colorScheme.error
-        SessionState.PAUSED -> MaterialTheme.colorScheme.outline
-        SessionState.ERROR -> MaterialTheme.colorScheme.error
-    }
-}
-
-/**
- * Get icon for session state.
- */
-private fun getStateIcon(state: SessionState): androidx.compose.ui.graphics.vector.ImageVector {
-    return when (state) {
-        SessionState.IDLE -> Icons.Default.Mic
-        SessionState.USER_SPEAKING -> Icons.Default.MicNone
-        SessionState.PROCESSING_UTTERANCE -> Icons.Default.HourglassBottom
-        SessionState.AI_THINKING -> Icons.Default.Psychology
-        SessionState.AI_SPEAKING -> Icons.Default.VolumeUp
-        SessionState.INTERRUPTED -> Icons.Default.Stop
-        SessionState.PAUSED -> Icons.Default.Pause
-        SessionState.ERROR -> Icons.Default.Error
-    }
-}
-
-/**
- * Format timestamp for display.
- */
-private fun formatTimestamp(timestamp: Long): String {
-    val formatter = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
-    return formatter.format(Date(timestamp))
+                com.unamentis.ui.components.HelpTip(
+                    title = "Session states",
+                    description = "Green = listening, Blue = AI speaking, Orange = thinking, Gray = ready.",
+                ),
+                com.unamentis.ui.components.HelpTip(
+                    title = "Slide to stop",
+                    description = "In curriculum mode, slide the stop button to prevent accidental session ends.",
+                ),
+            ),
+        onDismiss = onDismiss,
+    )
 }

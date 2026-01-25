@@ -27,8 +27,7 @@ import org.junit.runner.RunWith
  * back stack management, and deep link handling.
  *
  * Navigation structure:
- * - Primary tabs (bottom nav): Session, Curriculum, To-Do, History
- * - More menu items: Analytics, Settings
+ * - All 6 tabs directly visible in bottom nav: Session, Curriculum, To-Do, History, Analytics, Settings
  */
 @HiltAndroidTest
 @RunWith(AndroidJUnit4::class)
@@ -51,33 +50,11 @@ class NavigationFlowTest {
 
     /**
      * Navigate to a tab using testTag.
-     * Primary tabs: nav_session, nav_curriculum, nav_todo, nav_history
-     * More menu items: menu_analytics, menu_settings (requires opening More menu first)
+     * All tabs: nav_session, nav_curriculum, nav_todo, nav_history, nav_analytics, nav_settings
      */
     private fun navigateToTab(route: String) {
-        val moreMenuRoutes = listOf("analytics", "settings")
-        if (route in moreMenuRoutes) {
-            // Open More menu first
-            composeTestRule.onNodeWithTag("nav_more").performClick()
-
-            // Wait for menu to appear and stabilize
-            composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
-                composeTestRule.onAllNodesWithTag("menu_$route")
-                    .fetchSemanticsNodes().isNotEmpty()
-            }
-
-            // Small delay for menu animation
-            composeTestRule.mainClock.advanceTimeBy(300)
-
-            // Click the menu item
-            composeTestRule.onNodeWithTag("menu_$route").performClick()
-
-            // Wait for navigation to complete
-            composeTestRule.waitForIdle()
-        } else {
-            composeTestRule.onNodeWithTag("nav_$route").performClick()
-            composeTestRule.waitForIdle()
-        }
+        composeTestRule.onNodeWithTag("nav_$route").performClick()
+        composeTestRule.waitForIdle()
     }
 
     @Test
@@ -144,23 +121,23 @@ class NavigationFlowTest {
     }
 
     @Test
-    fun navigation_switchToMoreMenuItems_succeeds() {
-        // Navigate to More menu items (Analytics, Settings)
+    fun navigation_switchToAnalyticsAndSettings_succeeds() {
+        // Navigate to Analytics and Settings tabs
         val analyticsText = composeTestRule.activity.getString(R.string.tab_analytics)
 
         composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
-            composeTestRule.onAllNodesWithTag("nav_more")
+            composeTestRule.onAllNodesWithTag("nav_analytics")
                 .fetchSemanticsNodes().isNotEmpty()
         }
 
-        // Navigate to Analytics via More menu
+        // Navigate to Analytics tab
         navigateToTab("analytics")
         composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithText(analyticsText)
                 .fetchSemanticsNodes().isNotEmpty()
         }
 
-        // Navigate to Settings via More menu
+        // Navigate to Settings tab
         navigateToTab("settings")
         // Use testTag for settings screen detection (actual text is "Providers")
         composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
@@ -285,11 +262,11 @@ class NavigationFlowTest {
         val textToSpeechText = composeTestRule.activity.getString(R.string.settings_text_to_speech)
 
         composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
-            composeTestRule.onAllNodesWithTag("nav_more")
+            composeTestRule.onAllNodesWithTag("nav_settings")
                 .fetchSemanticsNodes().isNotEmpty()
         }
 
-        // Navigate to Settings via More menu
+        // Navigate to Settings tab
         navigateToTab("settings")
 
         // Wait for screen to load using testTag
@@ -338,11 +315,11 @@ class NavigationFlowTest {
         val startSessionText = composeTestRule.activity.getString(R.string.cd_start_session)
 
         composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
-            composeTestRule.onAllNodesWithTag("nav_more")
+            composeTestRule.onAllNodesWithTag("nav_analytics")
                 .fetchSemanticsNodes().isNotEmpty()
         }
 
-        // Navigate to Analytics via More menu
+        // Navigate to Analytics tab
         navigateToTab("analytics")
 
         // Wait for screen to load
@@ -385,21 +362,18 @@ class NavigationFlowTest {
     }
 
     @Test
-    fun navigation_allPrimaryTabsAccessible_fromBottomNav() {
-        val primaryTabs = listOf("session", "curriculum", "todo", "history")
+    fun navigation_allTabsAccessible_fromBottomNav() {
+        val allTabs = listOf("session", "curriculum", "todo", "history", "analytics", "settings")
 
         composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithTag("nav_session")
                 .fetchSemanticsNodes().isNotEmpty()
         }
 
-        // Verify all primary tabs are present in bottom navigation
-        primaryTabs.forEach { route ->
+        // Verify all tabs are present in bottom navigation
+        allTabs.forEach { route ->
             composeTestRule.onNodeWithTag("nav_$route").assertExists()
         }
-
-        // Verify More menu is present
-        composeTestRule.onNodeWithTag("nav_more").assertExists()
     }
 
     @Test
@@ -471,11 +445,11 @@ class NavigationFlowTest {
         val startSessionText = composeTestRule.activity.getString(R.string.cd_start_session)
 
         composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
-            composeTestRule.onAllNodesWithTag("nav_more")
+            composeTestRule.onAllNodesWithTag("nav_settings")
                 .fetchSemanticsNodes().isNotEmpty()
         }
 
-        // Navigate to Settings via More menu
+        // Navigate to Settings tab
         navigateToTab("settings")
 
         // Wait for screen to load using testTag

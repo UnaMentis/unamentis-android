@@ -638,7 +638,7 @@ private fun navigateToSettings() {
 | TestTag | Description |
 |---------|-------------|
 | `nav_session` | Session tab (primary) |
-| `nav_curriculum` | Curriculum tab (primary) |
+| `nav_curriculum` | Learning tab (primary) |
 | `nav_history` | History tab (primary) |
 | `nav_todo` | Todo tab (primary) |
 | `nav_more` | More menu button |

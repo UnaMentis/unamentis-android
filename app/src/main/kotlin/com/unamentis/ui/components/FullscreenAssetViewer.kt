@@ -34,9 +34,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.unamentis.R
+import com.unamentis.ui.theme.IOSTypography
 
 /**
  * Data class representing an asset for display.
@@ -133,11 +136,13 @@ fun FullscreenAssetViewer(
                             },
                 ) { page ->
                     val asset = assets[page]
+                    val imageDescription =
+                        asset.title ?: stringResource(R.string.viewer_image_number, page + 1)
                     when (asset.type) {
                         AssetType.IMAGE -> {
                             ZoomableImageWithState(
                                 imageUrl = asset.url,
-                                contentDescription = asset.title ?: "Image ${page + 1}",
+                                contentDescription = imageDescription,
                                 modifier = Modifier.fillMaxSize(),
                                 placeholder = {
                                     CircularProgressIndicator(
@@ -147,9 +152,9 @@ fun FullscreenAssetViewer(
                                 },
                                 error = {
                                     Text(
-                                        text = "Failed to load image",
+                                        text = stringResource(R.string.viewer_failed_to_load_image),
                                         color = Color.White,
-                                        style = MaterialTheme.typography.bodyLarge,
+                                        style = IOSTypography.body,
                                     )
                                 },
                             )
@@ -161,9 +166,9 @@ fun FullscreenAssetViewer(
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Text(
-                                    text = "Video playback not yet implemented",
+                                    text = stringResource(R.string.viewer_video_not_implemented),
                                     color = Color.White,
-                                    style = MaterialTheme.typography.bodyLarge,
+                                    style = IOSTypography.body,
                                 )
                             }
                         }
@@ -192,7 +197,7 @@ fun FullscreenAssetViewer(
                             IconButton(onClick = onDismiss) {
                                 Icon(
                                     imageVector = Icons.Default.Close,
-                                    contentDescription = "Close",
+                                    contentDescription = stringResource(R.string.viewer_close),
                                     tint = Color.White,
                                 )
                             }
@@ -200,9 +205,14 @@ fun FullscreenAssetViewer(
                             // Page indicator
                             if (assets.size > 1) {
                                 Text(
-                                    text = "${pagerState.currentPage + 1} / ${assets.size}",
+                                    text =
+                                        stringResource(
+                                            R.string.viewer_page_indicator,
+                                            pagerState.currentPage + 1,
+                                            assets.size,
+                                        ),
                                     color = Color.White,
-                                    style = MaterialTheme.typography.titleMedium,
+                                    style = IOSTypography.headline,
                                 )
                             }
 
@@ -214,7 +224,7 @@ fun FullscreenAssetViewer(
                                     IconButton(onClick = { onShare(currentAsset) }) {
                                         Icon(
                                             imageVector = Icons.Default.Share,
-                                            contentDescription = "Share",
+                                            contentDescription = stringResource(R.string.viewer_share),
                                             tint = Color.White,
                                         )
                                     }
@@ -223,7 +233,7 @@ fun FullscreenAssetViewer(
                                     IconButton(onClick = { onDownload(currentAsset) }) {
                                         Icon(
                                             imageVector = Icons.Default.Download,
-                                            contentDescription = "Download",
+                                            contentDescription = stringResource(R.string.viewer_download),
                                             tint = Color.White,
                                         )
                                     }
@@ -245,14 +255,14 @@ fun FullscreenAssetViewer(
                                     Text(
                                         text = it,
                                         color = Color.White,
-                                        style = MaterialTheme.typography.titleMedium,
+                                        style = IOSTypography.headline,
                                     )
                                 }
                                 currentAsset.description?.let {
                                     Text(
                                         text = it,
                                         color = Color.White.copy(alpha = 0.8f),
-                                        style = MaterialTheme.typography.bodyMedium,
+                                        style = IOSTypography.body,
                                     )
                                 }
                             }

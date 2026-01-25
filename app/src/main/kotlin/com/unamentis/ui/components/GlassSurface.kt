@@ -13,6 +13,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.unamentis.ui.theme.Dimensions
+import com.unamentis.ui.theme.iOSGray5Dark
+import com.unamentis.ui.theme.iOSGray6Dark
 
 /**
  * Glass morphism surface mimicking iOS ultraThinMaterial.
@@ -108,7 +110,7 @@ fun ThinMaterialSurface(
     // Slightly more opaque than GlassSurface for better contrast
     val backgroundColor =
         if (isDark) {
-            Color(0xFF1C1C1E).copy(alpha = 0.85f)
+            iOSGray6Dark.copy(alpha = 0.85f)
         } else {
             Color.White.copy(alpha = 0.9f)
         }
@@ -118,6 +120,53 @@ fun ThinMaterialSurface(
             modifier
                 .clip(RoundedCornerShape(Dimensions.ControlBarCornerRadius))
                 .background(backgroundColor),
+        content = content,
+    )
+}
+
+/**
+ * Regular material surface for settings and forms.
+ *
+ * Matches iOS pattern: .background(.regularMaterial)
+ * More opaque than ultraThinMaterial for better readability.
+ *
+ * @param modifier Modifier to apply to the surface
+ * @param cornerRadius Corner radius for the surface shape
+ * @param content Content to display inside the surface
+ */
+@Composable
+fun RegularMaterialSurface(
+    modifier: Modifier = Modifier,
+    cornerRadius: Dp = Dimensions.CardCornerRadius,
+    content: @Composable BoxScope.() -> Unit,
+) {
+    val isDark = isSystemInDarkTheme()
+
+    // iOS regularMaterial approximation - more opaque than ultraThin
+    val backgroundColor =
+        if (isDark) {
+            iOSGray5Dark.copy(alpha = 0.9f)
+        } else {
+            Color.White.copy(alpha = 0.85f)
+        }
+
+    val borderColor =
+        if (isDark) {
+            Color.White.copy(alpha = 0.08f)
+        } else {
+            Color.Black.copy(alpha = 0.04f)
+        }
+
+    Box(
+        modifier =
+            modifier
+                .clip(RoundedCornerShape(cornerRadius))
+                .background(backgroundColor)
+                .border(
+                    width = 0.5.dp,
+                    color = borderColor,
+                    shape = RoundedCornerShape(cornerRadius),
+                ),
         content = content,
     )
 }

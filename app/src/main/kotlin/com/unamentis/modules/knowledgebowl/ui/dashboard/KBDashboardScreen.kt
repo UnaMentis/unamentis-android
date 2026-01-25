@@ -30,7 +30,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -47,7 +46,6 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -55,10 +53,14 @@ import com.unamentis.R
 import com.unamentis.modules.knowledgebowl.data.model.KBDomain
 import com.unamentis.modules.knowledgebowl.data.model.KBQuestion
 import com.unamentis.modules.knowledgebowl.data.model.KBRegion
+import com.unamentis.modules.knowledgebowl.data.model.KBRegionalConfig
 import com.unamentis.modules.knowledgebowl.data.model.KBStudyMode
 import com.unamentis.modules.knowledgebowl.ui.theme.KBTheme
 import com.unamentis.modules.knowledgebowl.ui.theme.color
+import com.unamentis.ui.theme.IOSTypography
 import com.unamentis.ui.util.safeProgress
+import java.text.NumberFormat
+import java.util.Locale
 
 /**
  * Knowledge Bowl Dashboard - Entry point for the KB module.
@@ -200,15 +202,15 @@ private fun HeroSection(
                     color = KBTheme.mathematics(),
                 )
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    val percentFormatter = NumberFormat.getPercentInstance(Locale.getDefault())
                     Text(
-                        text = "${(safeReadiness * 100).toInt()}%",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
+                        text = percentFormatter.format(safeReadiness.toDouble()),
+                        style = IOSTypography.title2,
                         color = KBTheme.textPrimary(),
                     )
                     Text(
                         text = stringResource(R.string.kb_ready_label),
-                        style = MaterialTheme.typography.labelSmall,
+                        style = IOSTypography.caption2,
                         color = KBTheme.textSecondary(),
                     )
                 }
@@ -216,8 +218,7 @@ private fun HeroSection(
 
             Text(
                 text = stringResource(R.string.kb_competition_readiness),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
+                style = IOSTypography.headline,
                 color = KBTheme.textPrimary(),
             )
 
@@ -232,7 +233,7 @@ private fun HeroSection(
                             totalQuestionsAnswered,
                         )
                     },
-                style = MaterialTheme.typography.bodySmall,
+                style = IOSTypography.caption,
                 color = KBTheme.textSecondary(),
                 textAlign = TextAlign.Center,
             )
@@ -248,8 +249,7 @@ private fun StudyModesSection(
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
             text = stringResource(R.string.kb_study_sessions),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
+            style = IOSTypography.headline,
             color = KBTheme.textPrimary(),
         )
 
@@ -278,11 +278,12 @@ private fun StudyModeCard(
     mode: KBStudyMode,
     onClick: () -> Unit,
 ) {
+    val modeDisplayName = stringResource(mode.displayNameResId)
     Card(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .semantics { contentDescription = mode.displayName }
+                .semantics { contentDescription = modeDisplayName }
                 .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(containerColor = KBTheme.bgSecondary()),
         shape = RoundedCornerShape(12.dp),
@@ -292,14 +293,13 @@ private fun StudyModeCard(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
-                text = mode.displayName,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
+                text = modeDisplayName,
+                style = IOSTypography.subheadline,
                 color = KBTheme.textPrimary(),
             )
             Text(
-                text = mode.description,
-                style = MaterialTheme.typography.bodySmall,
+                text = stringResource(mode.descriptionResId),
+                style = IOSTypography.caption,
                 color = KBTheme.textSecondary(),
             )
         }
@@ -323,34 +323,44 @@ private fun StatsSection(
         ) {
             Text(
                 text = stringResource(R.string.kb_your_stats),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
+                style = IOSTypography.headline,
                 color = KBTheme.textPrimary(),
             )
+
+            val numberFormatter = NumberFormat.getNumberInstance(Locale.getDefault())
+            val percentFormatter = NumberFormat.getPercentInstance(Locale.getDefault())
+            val noDataPlaceholder = stringResource(R.string.kb_no_data_placeholder)
+            val noAccuracyPlaceholder = stringResource(R.string.kb_no_accuracy_placeholder)
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly,
             ) {
                 StatBadge(
-                    value = "$totalQuestionsAnswered",
+                    value = numberFormatter.format(totalQuestionsAnswered),
                     label = stringResource(R.string.kb_questions),
                 )
                 StatBadge(
                     value =
                         if (averageResponseTime > 0) {
-                            String.format("%.1fs", averageResponseTime)
+                            val formattedTime =
+                                String.format(
+                                    Locale.getDefault(),
+                                    "%.1f",
+                                    averageResponseTime,
+                                )
+                            stringResource(R.string.kb_avg_speed_seconds, formattedTime)
                         } else {
-                            "--"
+                            noDataPlaceholder
                         },
                     label = stringResource(R.string.kb_avg_speed),
                 )
                 StatBadge(
                     value =
                         if (totalQuestionsAnswered > 0) {
-                            String.format("%.0f%%", accuracy * 100)
+                            percentFormatter.format(accuracy.toDouble())
                         } else {
-                            "--%"
+                            noAccuracyPlaceholder
                         },
                     label = stringResource(R.string.kb_accuracy),
                 )
@@ -367,8 +377,7 @@ private fun DomainMasterySection(
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
             text = stringResource(R.string.kb_domain_mastery),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
+            style = IOSTypography.headline,
             color = KBTheme.textPrimary(),
         )
 
@@ -398,11 +407,13 @@ private fun DomainMasteryCard(
     mastery: Float,
     onClick: () -> Unit,
 ) {
+    val percentFormatter = NumberFormat.getPercentInstance(Locale.getDefault())
+    val domainDisplayName = stringResource(domain.stringResId)
     Card(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .semantics { contentDescription = domain.displayName }
+                .semantics { contentDescription = domainDisplayName }
                 .clickable(onClick = onClick),
         colors = CardDefaults.cardColors(containerColor = domain.color().copy(alpha = 0.1f)),
         shape = RoundedCornerShape(8.dp),
@@ -414,20 +425,19 @@ private fun DomainMasteryCard(
         ) {
             Text(
                 text = domain.icon,
-                style = MaterialTheme.typography.titleLarge,
+                style = IOSTypography.title2,
                 color = domain.color(),
             )
             Text(
-                text = domain.displayName,
-                style = MaterialTheme.typography.labelSmall,
+                text = domainDisplayName,
+                style = IOSTypography.caption2,
                 color = KBTheme.textPrimary(),
                 textAlign = TextAlign.Center,
                 maxLines = 1,
             )
             Text(
-                text = "${(mastery * 100).toInt()}%",
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
+                text = percentFormatter.format(mastery.toDouble()),
+                style = IOSTypography.caption2,
                 color = KBTheme.textSecondary(),
             )
         }
@@ -444,13 +454,12 @@ private fun StatBadge(
     ) {
         Text(
             text = value,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
+            style = IOSTypography.headline,
             color = KBTheme.mastered(),
         )
         Text(
             text = label,
-            style = MaterialTheme.typography.bodySmall,
+            style = IOSTypography.caption,
             color = KBTheme.textSecondary(),
         )
     }
@@ -467,8 +476,7 @@ private fun QuickStartSection(
     ) {
         Text(
             text = stringResource(R.string.kb_quick_start),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
+            style = IOSTypography.headline,
             color = KBTheme.textPrimary(),
         )
 
@@ -508,11 +516,12 @@ private fun QuickStartButton(
     enabled: Boolean,
     onClick: () -> Unit,
 ) {
+    val buttonDescription = stringResource(R.string.cd_quick_start_button, title, subtitle)
     Card(
         modifier =
             modifier
                 .clip(RoundedCornerShape(12.dp))
-                .semantics { contentDescription = "$title, $subtitle" }
+                .semantics { contentDescription = buttonDescription }
                 .clickable(enabled = enabled, onClick = onClick)
                 .border(
                     width = 2.dp,
@@ -540,13 +549,12 @@ private fun QuickStartButton(
             )
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
+                style = IOSTypography.subheadline,
                 color = if (enabled) KBTheme.textPrimary() else KBTheme.textSecondary(),
             )
             Text(
                 text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
+                style = IOSTypography.caption,
                 color = KBTheme.textSecondary(),
             )
         }
@@ -563,8 +571,7 @@ private fun RegionSelector(
     ) {
         Text(
             text = stringResource(R.string.kb_competition_region),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
+            style = IOSTypography.headline,
             color = KBTheme.textPrimary(),
         )
 
@@ -581,8 +588,8 @@ private fun RegionSelector(
         }
 
         Text(
-            text = selectedRegion.config.conferringRuleDescription,
-            style = MaterialTheme.typography.bodySmall,
+            text = conferringRuleDescription(selectedRegion.config),
+            style = IOSTypography.caption,
             color = KBTheme.textSecondary(),
         )
     }
@@ -594,10 +601,18 @@ private fun RegionButton(
     isSelected: Boolean,
     onClick: () -> Unit,
 ) {
+    val accessibilityDescription =
+        if (isSelected) {
+            stringResource(R.string.cd_region_selected, region.displayName)
+        } else {
+            stringResource(R.string.cd_region_button, region.displayName)
+        }
+
     Box(
         modifier =
             Modifier
                 .clip(RoundedCornerShape(8.dp))
+                .semantics { contentDescription = accessibilityDescription }
                 .background(if (isSelected) KBTheme.mastered() else KBTheme.bgSecondary())
                 .border(
                     width = 1.dp,
@@ -609,8 +624,7 @@ private fun RegionButton(
     ) {
         Text(
             text = region.abbreviation,
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
+            style = IOSTypography.subheadline,
             color = if (isSelected) Color.White else KBTheme.textPrimary(),
         )
     }
@@ -635,3 +649,14 @@ private val KBDomain.icon: String
             KBDomain.RELIGION_PHILOSOPHY -> "\u2728" // sparkles
             KBDomain.MISCELLANEOUS -> "\u2753" // question mark
         }
+
+/**
+ * Get the localized conferring rule description for a regional config.
+ */
+@Composable
+private fun conferringRuleDescription(config: KBRegionalConfig): String =
+    when {
+        config.verbalConferringAllowed -> stringResource(R.string.kb_conferring_verbal)
+        config.handSignalsAllowed -> stringResource(R.string.kb_conferring_hand_signals)
+        else -> stringResource(R.string.kb_conferring_none)
+    }

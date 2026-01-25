@@ -51,10 +51,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.unamentis.R
+import com.unamentis.ui.theme.Dimensions
+import com.unamentis.ui.theme.IOSTypography
+import com.unamentis.ui.theme.iOSGreen
+import com.unamentis.ui.theme.iOSOrange
+import com.unamentis.ui.theme.iOSPurple
 
 /**
  * Data class representing a single onboarding page.
@@ -97,7 +101,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
             ),
             OnboardingPage(
                 icon = Icons.Default.Book,
-                iconColor = Color(0xFFFF9800),
+                iconColor = iOSOrange,
                 title = stringResource(R.string.onboarding_curriculum_title),
                 subtitle = stringResource(R.string.onboarding_curriculum_subtitle),
                 description = stringResource(R.string.onboarding_curriculum_description),
@@ -110,7 +114,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
             ),
             OnboardingPage(
                 icon = Icons.Default.PhoneAndroid,
-                iconColor = Color(0xFF4CAF50),
+                iconColor = iOSGreen,
                 title = stringResource(R.string.onboarding_offline_title),
                 subtitle = stringResource(R.string.onboarding_offline_subtitle),
                 description = stringResource(R.string.onboarding_offline_description),
@@ -123,7 +127,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
             ),
             OnboardingPage(
                 icon = Icons.Default.PanTool,
-                iconColor = Color(0xFF9C27B0),
+                iconColor = iOSPurple,
                 title = stringResource(R.string.onboarding_handsfree_title),
                 subtitle = stringResource(R.string.onboarding_handsfree_subtitle),
                 description = stringResource(R.string.onboarding_handsfree_description),
@@ -146,7 +150,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(24.dp),
+                    .padding(Dimensions.SpacingXLarge),
         ) {
             // Header with logo and skip button
             Row(
@@ -161,18 +165,19 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                     tint = MaterialTheme.colorScheme.primary,
                 )
 
+                val skipContentDescription = stringResource(R.string.cd_skip_onboarding)
                 TextButton(
                     onClick = onComplete,
                     modifier =
                         Modifier.semantics {
-                            contentDescription = "Skip onboarding"
+                            contentDescription = skipContentDescription
                         },
                 ) {
                     Text(stringResource(R.string.onboarding_skip))
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(Dimensions.SpacingXLarge))
 
             // Page content
             AnimatedContent(
@@ -200,14 +205,14 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 16.dp),
+                        .padding(vertical = Dimensions.SpacingLarge),
                 horizontalArrangement = Arrangement.Center,
             ) {
                 pages.forEachIndexed { index, _ ->
                     Box(
                         modifier =
                             Modifier
-                                .padding(horizontal = 4.dp)
+                                .padding(horizontal = Dimensions.SpacingXSmall)
                                 .size(if (index == currentPage) 10.dp else 8.dp)
                                 .clip(CircleShape)
                                 .background(
@@ -222,6 +227,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
             }
 
             // Navigation buttons
+            val backContentDescription = stringResource(R.string.cd_go_back)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -231,7 +237,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                         onClick = { currentPage-- },
                         modifier =
                             Modifier.semantics {
-                                contentDescription = "Go back"
+                                contentDescription = backContentDescription
                             },
                     ) {
                         Icon(
@@ -239,12 +245,19 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                             contentDescription = null,
                             modifier = Modifier.size(18.dp),
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(Dimensions.SpacingSmall))
                         Text(stringResource(R.string.onboarding_back))
                     }
                 } else {
                     Spacer(modifier = Modifier.width(1.dp))
                 }
+
+                val nextButtonContentDescription =
+                    if (isLastPage) {
+                        stringResource(R.string.cd_complete_onboarding)
+                    } else {
+                        stringResource(R.string.cd_next_page)
+                    }
 
                 Button(
                     onClick = {
@@ -256,12 +269,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                     },
                     modifier =
                         Modifier.semantics {
-                            contentDescription =
-                                if (isLastPage) {
-                                    "Complete onboarding and get started"
-                                } else {
-                                    "Next page"
-                                }
+                            contentDescription = nextButtonContentDescription
                         },
                 ) {
                     Text(
@@ -272,7 +280,7 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                         },
                     )
                     if (!isLastPage) {
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(Dimensions.SpacingSmall))
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowForward,
                             contentDescription = null,
@@ -300,69 +308,68 @@ private fun OnboardingPageContent(
                 .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(Dimensions.SpacingXLarge))
 
         // Icon or logo
         if (showLogo) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_launcher_foreground),
                 contentDescription = null,
-                modifier = Modifier.size(80.dp),
+                modifier = Modifier.size(Dimensions.OnboardingIconSize),
                 tint = page.iconColor,
             )
         } else if (page.icon != null) {
             Icon(
                 imageVector = page.icon,
                 contentDescription = null,
-                modifier = Modifier.size(80.dp),
+                modifier = Modifier.size(Dimensions.OnboardingIconSize),
                 tint = page.iconColor,
             )
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(Dimensions.SpacingXLarge))
 
         // Title
         Text(
             text = page.title,
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
+            style = IOSTypography.title2,
             textAlign = TextAlign.Center,
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(Dimensions.SpacingSmall))
 
         // Subtitle
         Text(
             text = page.subtitle,
-            style = MaterialTheme.typography.titleMedium,
+            style = IOSTypography.headline,
             color = page.iconColor,
             textAlign = TextAlign.Center,
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(Dimensions.SpacingLarge))
 
         // Description
         Text(
             text = page.description,
-            style = MaterialTheme.typography.bodyMedium,
+            style = IOSTypography.body,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 16.dp),
+            modifier = Modifier.padding(horizontal = Dimensions.ScreenHorizontalPadding),
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(Dimensions.SpacingXLarge))
 
         // Tips box
         Surface(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-            shape = RoundedCornerShape(12.dp),
+                    .padding(horizontal = Dimensions.ScreenHorizontalPadding),
+            shape = RoundedCornerShape(Dimensions.CardCornerRadius),
             color = MaterialTheme.colorScheme.surfaceVariant,
         ) {
             Column(
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier.padding(Dimensions.CardPadding),
             ) {
                 page.tips.forEach { tip ->
                     TipItem(tip = tip)
@@ -370,7 +377,7 @@ private fun OnboardingPageContent(
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(Dimensions.SpacingXLarge))
     }
 }
 
@@ -380,19 +387,19 @@ private fun OnboardingPageContent(
 @Composable
 private fun TipItem(tip: String) {
     Row(
-        modifier = Modifier.padding(vertical = 4.dp),
+        modifier = Modifier.padding(vertical = Dimensions.SpacingXSmall),
         verticalAlignment = Alignment.Top,
     ) {
         Icon(
             imageVector = Icons.Default.Check,
             contentDescription = null,
             modifier = Modifier.size(20.dp),
-            tint = Color(0xFF4CAF50),
+            tint = iOSGreen,
         )
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(Dimensions.SpacingMedium))
         Text(
             text = tip,
-            style = MaterialTheme.typography.bodyMedium,
+            style = IOSTypography.body,
             modifier = Modifier.weight(1f),
         )
     }

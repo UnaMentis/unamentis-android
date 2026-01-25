@@ -52,7 +52,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -64,6 +63,9 @@ import com.unamentis.modules.knowledgebowl.data.model.KBQuestion
 import com.unamentis.modules.knowledgebowl.data.model.KBStudyMode
 import com.unamentis.modules.knowledgebowl.ui.theme.KBTheme
 import com.unamentis.modules.knowledgebowl.ui.theme.color
+import com.unamentis.ui.theme.IOSTypography
+import java.text.NumberFormat
+import java.util.Locale
 
 /**
  * Unified practice session screen for all study modes.
@@ -101,7 +103,7 @@ fun KBPracticeSessionScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(mode.displayName) },
+                title = { Text(stringResource(mode.displayNameResId)) },
                 navigationIcon = {
                     if (sessionState != KBSessionState.Completed) {
                         IconButton(onClick = { showExitDialog = true }) {
@@ -223,8 +225,7 @@ private fun ProgressHeader(
         // Question counter
         Text(
             text = stringResource(R.string.kb_question_of, questionIndex + 1, totalQuestions),
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.Bold,
+            style = IOSTypography.subheadline,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
@@ -241,7 +242,7 @@ private fun ProgressHeader(
             Spacer(modifier = Modifier.width(4.dp))
             Text(
                 text = pluralStringResource(R.plurals.kb_correct_count, correctCount, correctCount),
-                style = MaterialTheme.typography.labelMedium,
+                style = IOSTypography.caption2,
                 color = KBTheme.mastered(),
             )
         }
@@ -259,8 +260,7 @@ private fun ProgressHeader(
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
                     text = formatTime(time),
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
+                    style = IOSTypography.caption2,
                     color = if (time < 30) MaterialTheme.colorScheme.error else KBTheme.currentEvents(),
                 )
             }
@@ -279,7 +279,7 @@ private fun StartingContent() {
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = stringResource(R.string.kb_preparing_questions),
-                style = MaterialTheme.typography.bodyMedium,
+                style = IOSTypography.body,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
@@ -314,7 +314,7 @@ private fun QuestionContent(
         item {
             Text(
                 text = question.text,
-                style = MaterialTheme.typography.titleMedium,
+                style = IOSTypography.headline,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -331,8 +331,8 @@ private fun QuestionContent(
         if (mode == KBStudyMode.SPEED) {
             item {
                 Text(
-                    text = "Target: 10s",
-                    style = MaterialTheme.typography.labelSmall,
+                    text = stringResource(R.string.kb_target_seconds, 10),
+                    style = IOSTypography.caption2,
                     color = KBTheme.currentEvents(),
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth(),
@@ -346,7 +346,7 @@ private fun QuestionContent(
             OutlinedTextField(
                 value = userAnswer,
                 onValueChange = onAnswerChange,
-                label = { Text("Your answer...") },
+                label = { Text(stringResource(R.string.kb_your_answer_hint)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
             )
@@ -359,7 +359,7 @@ private fun QuestionContent(
                 horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
             ) {
                 OutlinedButton(onClick = onSkip) {
-                    Text("Skip")
+                    Text(stringResource(R.string.kb_skip))
                 }
                 Button(
                     onClick = onSubmit,
@@ -408,8 +408,7 @@ private fun AnswerFeedbackContent(
                     } else {
                         stringResource(R.string.kb_incorrect)
                     },
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
+                style = IOSTypography.title2,
                 color = if (isCorrect) KBTheme.mastered() else MaterialTheme.colorScheme.error,
             )
         }
@@ -427,14 +426,13 @@ private fun AnswerFeedbackContent(
             ) {
                 Text(
                     text = stringResource(R.string.kb_correct_answer),
-                    style = MaterialTheme.typography.labelMedium,
+                    style = IOSTypography.caption2,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = question.answer.primary,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
+                    style = IOSTypography.headline,
                 )
             }
         }
@@ -442,19 +440,31 @@ private fun AnswerFeedbackContent(
         // Response time
         lastResult?.let { result ->
             item {
+                val timeFormatter =
+                    remember {
+                        NumberFormat.getNumberInstance(Locale.getDefault()).apply {
+                            maximumFractionDigits = 1
+                            minimumFractionDigits = 1
+                        }
+                    }
+                val responseTimeDescription = stringResource(R.string.cd_response_time)
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Icon(
                         imageVector = Icons.Default.AccessTime,
-                        contentDescription = null,
+                        contentDescription = responseTimeDescription,
                         modifier = Modifier.size(16.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
-                        text = String.format("%.1fs", result.responseTimeSeconds),
-                        style = MaterialTheme.typography.labelMedium,
+                        text =
+                            stringResource(
+                                R.string.kb_seconds_format,
+                                timeFormatter.format(result.responseTimeSeconds),
+                            ),
+                        style = IOSTypography.caption2,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     if (result.wasWithinSpeedTarget) {
@@ -521,8 +531,7 @@ private fun CompletedContent(
         item {
             Text(
                 text = stringResource(R.string.kb_session_complete),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
+                style = IOSTypography.title2,
             )
         }
 
@@ -543,31 +552,45 @@ private fun CompletedContent(
                             .padding(16.dp),
                 ) {
                     Text(
-                        text = "Domain Performance",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
+                        text = stringResource(R.string.kb_domain_performance),
+                        style = IOSTypography.subheadline,
                     )
                     Spacer(modifier = Modifier.height(12.dp))
 
+                    val intFormatter =
+                        remember { NumberFormat.getIntegerInstance(Locale.getDefault()) }
+                    val percentFormatter =
+                        remember {
+                            NumberFormat.getPercentInstance(Locale.getDefault()).apply {
+                                maximumFractionDigits = 0
+                            }
+                        }
                     summary.domainBreakdown.forEach { (domainId, score) ->
+                        val domainLabel =
+                            KBDomain.fromId(domainId)?.stringResId?.let { stringResource(it) }
+                                ?: domainId.replaceFirstChar { it.uppercase() }
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                         ) {
                             Text(
-                                text = domainId.replaceFirstChar { it.uppercase() },
-                                style = MaterialTheme.typography.bodyMedium,
+                                text = domainLabel,
+                                style = IOSTypography.body,
                             )
                             Row {
                                 Text(
-                                    text = "${score.correct}/${score.total}",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Bold,
+                                    text =
+                                        stringResource(
+                                            R.string.kb_correct_total_format,
+                                            intFormatter.format(score.correct),
+                                            intFormatter.format(score.total),
+                                        ),
+                                    style = IOSTypography.body,
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = String.format("%.0f%%", score.accuracy * 100),
-                                    style = MaterialTheme.typography.labelSmall,
+                                    text = percentFormatter.format(score.accuracy),
+                                    style = IOSTypography.caption2,
                                     color =
                                         if (score.accuracy >= 0.7) {
                                             KBTheme.mastered()
@@ -615,19 +638,18 @@ private fun DomainBadge(
         horizontalArrangement = Arrangement.Center,
     ) {
         Text(
-            text = domain.displayName,
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Bold,
+            text = stringResource(domain.stringResId),
+            style = IOSTypography.caption2,
             color = domain.color(),
         )
         if (!subdomain.isNullOrBlank()) {
             Text(
-                text = " \u2022 ",
+                text = stringResource(R.string.kb_domain_separator),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
                 text = subdomain,
-                style = MaterialTheme.typography.labelSmall,
+                style = IOSTypography.caption2,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
@@ -657,6 +679,22 @@ private fun DifficultyIndicator(difficulty: KBDifficulty) {
 
 @Composable
 private fun StatsGrid(summary: KBPracticeSessionSummary) {
+    // Locale-aware formatters
+    val intFormatter = remember { NumberFormat.getIntegerInstance(Locale.getDefault()) }
+    val percentFormatter =
+        remember {
+            NumberFormat.getPercentInstance(Locale.getDefault()).apply {
+                maximumFractionDigits = 0
+            }
+        }
+    val timeFormatter =
+        remember {
+            NumberFormat.getNumberInstance(Locale.getDefault()).apply {
+                maximumFractionDigits = 1
+                minimumFractionDigits = 1
+            }
+        }
+
     // Get colors and labels in composable context
     val accuracyColor = if (summary.accuracy >= 0.7) KBTheme.mastered() else KBTheme.currentEvents()
     val correctColor = KBTheme.intermediate()
@@ -679,7 +717,7 @@ private fun StatsGrid(summary: KBPracticeSessionSummary) {
                 stat =
                     StatItem(
                         title = accuracyLabel,
-                        value = String.format("%.0f%%", summary.accuracy * 100),
+                        value = percentFormatter.format(summary.accuracy),
                         icon = Icons.Default.CheckCircle,
                         color = accuracyColor,
                     ),
@@ -688,7 +726,11 @@ private fun StatsGrid(summary: KBPracticeSessionSummary) {
                 stat =
                     StatItem(
                         title = avgTimeLabel,
-                        value = String.format("%.1fs", summary.averageResponseTime),
+                        value =
+                            stringResource(
+                                R.string.kb_seconds_format,
+                                timeFormatter.format(summary.averageResponseTime),
+                            ),
                         icon = Icons.Default.AccessTime,
                         color = timeColor,
                     ),
@@ -702,7 +744,12 @@ private fun StatsGrid(summary: KBPracticeSessionSummary) {
                 stat =
                     StatItem(
                         title = correctLabel,
-                        value = "${summary.correctAnswers}/${summary.totalQuestions}",
+                        value =
+                            stringResource(
+                                R.string.kb_correct_total_format,
+                                intFormatter.format(summary.correctAnswers),
+                                intFormatter.format(summary.totalQuestions),
+                            ),
                         icon = Icons.Default.Check,
                         color = correctColor,
                     ),
@@ -711,7 +758,7 @@ private fun StatsGrid(summary: KBPracticeSessionSummary) {
                 stat =
                     StatItem(
                         title = speedTargetLabel,
-                        value = String.format("%.0f%%", summary.speedTargetRate * 100),
+                        value = percentFormatter.format(summary.speedTargetRate),
                         icon = Icons.Default.Timer,
                         color = speedColor,
                     ),
@@ -739,12 +786,11 @@ private fun StatCard(stat: StatItem) {
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = stat.value,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
+            style = IOSTypography.headline,
         )
         Text(
             text = stat.title,
-            style = MaterialTheme.typography.labelSmall,
+            style = IOSTypography.caption2,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }

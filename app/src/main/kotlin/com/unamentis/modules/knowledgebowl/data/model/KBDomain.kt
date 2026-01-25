@@ -1,5 +1,7 @@
 package com.unamentis.modules.knowledgebowl.data.model
 
+import androidx.annotation.StringRes
+import com.unamentis.R
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -78,9 +80,40 @@ enum class KBDomain(
         }
 
         /**
+         * Get a domain by its ID (same as serialized name).
+         *
+         * @param id The domain ID (e.g., "science", "mathematics", "social_studies")
+         * @return The matching KBDomain, or null if not found
+         */
+        fun fromId(id: String): KBDomain? = fromSerialName(id)
+
+        /**
          * Get the total weight (should sum to 1.0).
          */
         val totalWeight: Float
             get() = entries.sumOf { it.weight.toDouble() }.toFloat()
     }
+
+    /**
+     * Get the string resource ID for this domain's display name.
+     *
+     * Use with stringResource() for localized display.
+     */
+    @get:StringRes
+    val stringResId: Int
+        get() =
+            when (this) {
+                SCIENCE -> R.string.kb_domain_science
+                MATHEMATICS -> R.string.kb_domain_mathematics
+                LITERATURE -> R.string.kb_domain_literature
+                HISTORY -> R.string.kb_domain_history
+                SOCIAL_STUDIES -> R.string.kb_domain_social_studies
+                ARTS -> R.string.kb_domain_arts
+                CURRENT_EVENTS -> R.string.kb_domain_current_events
+                LANGUAGE -> R.string.kb_domain_language
+                TECHNOLOGY -> R.string.kb_domain_technology
+                POP_CULTURE -> R.string.kb_domain_pop_culture
+                RELIGION_PHILOSOPHY -> R.string.kb_domain_religion_philosophy
+                MISCELLANEOUS -> R.string.kb_domain_miscellaneous
+            }
 }

@@ -88,6 +88,63 @@ class SessionManager(
     private val _isManuallyRecording = MutableStateFlow(false)
     val isManuallyRecording: StateFlow<Boolean> = _isManuallyRecording.asStateFlow()
 
+    // ==========================================================================
+    // CURRICULUM STATE FLOWS (exposed for UI)
+    // ==========================================================================
+
+    /**
+     * Whether a curriculum is loaded (curriculum mode vs free conversation).
+     */
+    val isCurriculumMode: StateFlow<Boolean> =
+        curriculumEngine.currentCurriculum
+            .map { it != null }
+            .stateIn(scope, SharingStarted.Eagerly, false)
+
+    /**
+     * Current segment index within the topic (0-based).
+     */
+    val currentSegmentIndex: StateFlow<Int> = curriculumEngine.currentSegmentIndex
+
+    /**
+     * Total number of segments in the current topic.
+     */
+    val totalSegments: StateFlow<Int> =
+        curriculumEngine.currentTopic
+            .map { it?.transcript?.size ?: 0 }
+            .stateIn(scope, SharingStarted.Eagerly, 0)
+
+    /**
+     * Whether there is a next topic available in the curriculum.
+     */
+    val hasNextTopic: StateFlow<Boolean> =
+        combine(
+            curriculumEngine.currentCurriculum,
+            curriculumEngine.currentTopic,
+        ) { curriculum, currentTopic ->
+            if (curriculum == null || currentTopic == null) {
+                false
+            } else {
+                val currentIndex = curriculum.topics.indexOfFirst { it.id == currentTopic.id }
+                currentIndex >= 0 && currentIndex + 1 < curriculum.topics.size
+            }
+        }.stateIn(scope, SharingStarted.Eagerly, false)
+
+    /**
+     * Current audio level in dB (for VU meter visualization).
+     * Range is typically -60 (silence) to 0 (maximum).
+     */
+    val audioLevelDb: StateFlow<Float> =
+        audioEngine.audioLevel
+            .map { level ->
+                // Convert RMS to dB, with floor at -60dB
+                if (level.rms > 0) {
+                    (20 * kotlin.math.log10(level.rms)).coerceIn(-60f, 0f)
+                } else {
+                    -60f
+                }
+            }
+            .stateIn(scope, SharingStarted.Eagerly, -60f)
+
     // Conversation history for LLM context
     private val conversationHistory = mutableListOf<LLMMessage>()
 
@@ -116,7 +173,7 @@ class SessionManager(
      */
     fun setRecordingMode(mode: RecordingMode) {
         _recordingMode.value = mode
-        Log.i("SessionManager", "Recording mode set to: ${mode.displayName}")
+        Log.i("SessionManager", "Recording mode set to: ${mode.name}")
     }
 
     /**
@@ -304,6 +361,97 @@ class SessionManager(
         } else {
             startManualRecording()
         }
+    }
+
+    // ==========================================================================
+    // CURRICULUM PLAYBACK CONTROLS
+    // ==========================================================================
+
+    /**
+     * Go back one segment in curriculum playback.
+     *
+     * @return Result.success if segment was changed, Result.failure if at first segment or no topic loaded
+     */
+    suspend fun goBackSegment(): Result<Unit> {
+        Log.i("SessionManager", "Go back segment requested")
+
+        if (curriculumEngine.currentTopic.value == null) {
+            Log.w("SessionManager", "Cannot go back: no topic loaded")
+            return Result.failure(IllegalStateException("No topic loaded"))
+        }
+
+        val currentIndex = curriculumEngine.currentSegmentIndex.value
+        if (currentIndex <= 0) {
+            Log.w("SessionManager", "Cannot go back: already at first segment")
+            return Result.failure(IllegalStateException("Already at first segment"))
+        }
+
+        curriculumEngine.previousSegment()
+        Log.i("SessionManager", "Moved back to segment ${curriculumEngine.currentSegmentIndex.value}")
+        return Result.success(Unit)
+    }
+
+    /**
+     * Replay the current topic from the beginning.
+     *
+     * @return Result.success if topic was reset to beginning, Result.failure if no topic loaded
+     */
+    suspend fun replayTopic(): Result<Unit> {
+        Log.i("SessionManager", "Replay topic requested")
+
+        if (curriculumEngine.currentTopic.value == null) {
+            Log.w("SessionManager", "Cannot replay: no topic loaded")
+            return Result.failure(IllegalStateException("No topic loaded"))
+        }
+
+        curriculumEngine.goToSegment(0)
+        Log.i("SessionManager", "Replaying topic from beginning")
+        return Result.success(Unit)
+    }
+
+    /**
+     * Skip to the next topic in the curriculum.
+     *
+     * @return Result.success if advanced to next topic, Result.failure if at last topic or no curriculum loaded
+     */
+    @Suppress("ReturnCount")
+    suspend fun nextTopic(): Result<Unit> {
+        Log.i("SessionManager", "Next topic requested")
+
+        val curriculum = curriculumEngine.currentCurriculum.value
+        val currentTopic = curriculumEngine.currentTopic.value
+
+        // Validate prerequisites
+        val error =
+            when {
+                curriculum == null -> "No curriculum loaded"
+                currentTopic == null -> "No topic loaded"
+                else -> null
+            }
+        if (error != null) {
+            Log.w("SessionManager", "Cannot skip to next topic: $error")
+            return Result.failure(IllegalStateException(error))
+        }
+
+        // Find current position and validate
+        val currentIndex = curriculum!!.topics.indexOfFirst { it.id == currentTopic!!.id }
+        val nextIndex = currentIndex + 1
+        val indexError =
+            when {
+                currentIndex == -1 -> "Current topic not found in curriculum"
+                nextIndex >= curriculum.topics.size -> "Already at last topic"
+                else -> null
+            }
+        if (indexError != null) {
+            Log.w("SessionManager", "Cannot skip to next topic: $indexError")
+            return Result.failure(IllegalStateException(indexError))
+        }
+
+        // Navigate to next topic
+        val nextTopicData = curriculum.topics[nextIndex]
+        curriculumEngine.loadTopic(nextTopicData.id)
+        Log.i("SessionManager", "Skipped to next topic: ${nextTopicData.title}")
+        return Result.success(Unit)
     }
 
     /**

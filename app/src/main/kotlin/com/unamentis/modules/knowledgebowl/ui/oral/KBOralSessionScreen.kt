@@ -45,7 +45,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -59,7 +58,6 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -68,6 +66,7 @@ import com.unamentis.modules.knowledgebowl.data.model.KBQuestion
 import com.unamentis.modules.knowledgebowl.data.model.KBSessionConfig
 import com.unamentis.modules.knowledgebowl.ui.theme.KBTheme
 import com.unamentis.modules.knowledgebowl.ui.theme.color
+import com.unamentis.ui.theme.IOSTypography
 import com.unamentis.ui.util.safeProgress
 
 /**
@@ -176,14 +175,14 @@ private fun SessionHeader(
         ) {
             Text(
                 text = stringResource(R.string.kb_question_of, currentIndex + 1, totalQuestions),
-                style = MaterialTheme.typography.bodyMedium,
+                style = IOSTypography.body,
                 color = KBTheme.textSecondary(),
             )
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = stringResource(R.string.kb_correct_count_label, correctCount),
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = IOSTypography.body,
                     color = KBTheme.mastered(),
                 )
 
@@ -233,8 +232,7 @@ private fun StartScreen(viewModel: KBOralSessionViewModel) {
 
         Text(
             text = stringResource(R.string.kb_oral_practice),
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
+            style = IOSTypography.title2,
             color = KBTheme.textPrimary(),
         )
 
@@ -242,7 +240,7 @@ private fun StartScreen(viewModel: KBOralSessionViewModel) {
 
         Text(
             text = stringResource(R.string.kb_oral_instructions),
-            style = MaterialTheme.typography.bodyLarge,
+            style = IOSTypography.body,
             color = KBTheme.textSecondary(),
             textAlign = TextAlign.Center,
         )
@@ -302,7 +300,7 @@ private fun StartScreen(viewModel: KBOralSessionViewModel) {
         if (!hasPermissions) {
             Text(
                 text = stringResource(R.string.kb_mic_permission_required),
-                style = MaterialTheme.typography.bodySmall,
+                style = IOSTypography.caption,
                 color = KBTheme.focusArea(),
                 textAlign = TextAlign.Center,
             )
@@ -313,7 +311,7 @@ private fun StartScreen(viewModel: KBOralSessionViewModel) {
         sttError?.let { error ->
             Text(
                 text = error,
-                style = MaterialTheme.typography.bodySmall,
+                style = IOSTypography.caption,
                 color = KBTheme.focusArea(),
                 textAlign = TextAlign.Center,
             )
@@ -334,7 +332,7 @@ private fun StartScreen(viewModel: KBOralSessionViewModel) {
         ) {
             Text(
                 text = stringResource(R.string.kb_start_practice),
-                style = MaterialTheme.typography.titleMedium,
+                style = IOSTypography.headline,
             )
         }
     }
@@ -359,14 +357,13 @@ private fun ConfigRow(
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = label,
-            style = MaterialTheme.typography.bodyMedium,
+            style = IOSTypography.body,
             color = KBTheme.textSecondary(),
         )
         Spacer(modifier = Modifier.weight(1f))
         Text(
             text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
+            style = IOSTypography.body,
             color = KBTheme.textPrimary(),
         )
     }
@@ -419,8 +416,7 @@ private fun QuestionReadingScreen(viewModel: KBOralSessionViewModel) {
 
         Text(
             text = stringResource(R.string.kb_reading_question),
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.SemiBold,
+            style = IOSTypography.title2,
             color = KBTheme.textPrimary(),
         )
 
@@ -498,8 +494,7 @@ private fun ConferenceScreen(viewModel: KBOralSessionViewModel) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = "${timeRemaining.toInt()}",
-                    style = MaterialTheme.typography.displayLarge,
-                    fontWeight = FontWeight.Bold,
+                    style = IOSTypography.largeTitle,
                     color =
                         if (timeRemaining < 5) {
                             KBTheme.focusArea()
@@ -509,7 +504,7 @@ private fun ConferenceScreen(viewModel: KBOralSessionViewModel) {
                 )
                 Text(
                     text = stringResource(R.string.kb_seconds),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = IOSTypography.caption,
                     color = KBTheme.textSecondary(),
                 )
             }
@@ -519,8 +514,7 @@ private fun ConferenceScreen(viewModel: KBOralSessionViewModel) {
 
         Text(
             text = stringResource(R.string.kb_conference_time),
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.SemiBold,
+            style = IOSTypography.title2,
             color = KBTheme.textPrimary(),
         )
 
@@ -533,7 +527,7 @@ private fun ConferenceScreen(viewModel: KBOralSessionViewModel) {
                 } else {
                     stringResource(R.string.kb_silent_conferring)
                 },
-            style = MaterialTheme.typography.bodyLarge,
+            style = IOSTypography.body,
             color = KBTheme.textSecondary(),
         )
 
@@ -561,7 +555,7 @@ private fun ConferenceScreen(viewModel: KBOralSessionViewModel) {
         ) {
             Text(
                 text = stringResource(R.string.kb_ready_to_answer),
-                style = MaterialTheme.typography.titleMedium,
+                style = IOSTypography.headline,
             )
         }
     }
@@ -644,8 +638,7 @@ private fun ListeningScreen(viewModel: KBOralSessionViewModel) {
                 } else {
                     stringResource(R.string.kb_tap_to_speak)
                 },
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.SemiBold,
+            style = IOSTypography.title2,
             color = KBTheme.textPrimary(),
         )
 
@@ -662,7 +655,7 @@ private fun ListeningScreen(viewModel: KBOralSessionViewModel) {
             ) {
                 Text(
                     text = error,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = IOSTypography.body,
                     color = KBTheme.focusArea(),
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(16.dp),
@@ -682,7 +675,7 @@ private fun ListeningScreen(viewModel: KBOralSessionViewModel) {
             ) {
                 Text(
                     text = transcript,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = IOSTypography.headline,
                     color = KBTheme.textPrimary(),
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(16.dp),
@@ -734,7 +727,7 @@ private fun ListeningScreen(viewModel: KBOralSessionViewModel) {
                         } else {
                             stringResource(R.string.kb_start_listening)
                         },
-                    style = MaterialTheme.typography.titleMedium,
+                    style = IOSTypography.headline,
                 )
             }
 
@@ -753,7 +746,7 @@ private fun ListeningScreen(viewModel: KBOralSessionViewModel) {
                 ) {
                     Text(
                         text = stringResource(R.string.submit),
-                        style = MaterialTheme.typography.titleMedium,
+                        style = IOSTypography.headline,
                     )
                 }
             }
@@ -809,8 +802,7 @@ private fun FeedbackScreen(viewModel: KBOralSessionViewModel) {
                 } else {
                     stringResource(R.string.kb_incorrect)
                 },
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
+            style = IOSTypography.title2,
             color = if (isCorrect) KBTheme.mastered() else KBTheme.focusArea(),
         )
 
@@ -832,14 +824,13 @@ private fun FeedbackScreen(viewModel: KBOralSessionViewModel) {
                     ) {
                         Text(
                             text = stringResource(R.string.kb_correct_answer),
-                            style = MaterialTheme.typography.bodyMedium,
+                            style = IOSTypography.body,
                             color = KBTheme.textSecondary(),
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = question.answer.primary,
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.SemiBold,
+                            style = IOSTypography.title2,
                             color = KBTheme.textPrimary(),
                             textAlign = TextAlign.Center,
                         )
@@ -854,13 +845,13 @@ private fun FeedbackScreen(viewModel: KBOralSessionViewModel) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = stringResource(R.string.kb_your_answer),
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = IOSTypography.body,
                     color = KBTheme.textSecondary(),
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = transcript,
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = IOSTypography.body,
                     color = KBTheme.textSecondary(),
                 )
             }
@@ -888,7 +879,7 @@ private fun FeedbackScreen(viewModel: KBOralSessionViewModel) {
                     } else {
                         stringResource(R.string.kb_next_question)
                     },
-                style = MaterialTheme.typography.titleMedium,
+                style = IOSTypography.headline,
             )
             Spacer(modifier = Modifier.width(8.dp))
             Icon(
@@ -936,8 +927,7 @@ private fun SummaryScreen(
 
         Text(
             text = stringResource(R.string.kb_session_complete),
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
+            style = IOSTypography.title2,
             color = KBTheme.textPrimary(),
         )
 
@@ -996,7 +986,7 @@ private fun SummaryScreen(
         ) {
             Text(
                 text = stringResource(R.string.done),
-                style = MaterialTheme.typography.titleMedium,
+                style = IOSTypography.headline,
             )
         }
     }
@@ -1013,13 +1003,12 @@ private fun SummaryRow(
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.bodyLarge,
+            style = IOSTypography.body,
             color = KBTheme.textSecondary(),
         )
         Text(
             text = value,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
+            style = IOSTypography.headline,
             color = KBTheme.textPrimary(),
         )
     }
@@ -1031,8 +1020,7 @@ private fun AccuracyMeter(accuracy: Float) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = stringResource(R.string.kb_accuracy),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
+            style = IOSTypography.headline,
             color = KBTheme.textPrimary(),
         )
 
@@ -1057,8 +1045,7 @@ private fun AccuracyMeter(accuracy: Float) {
 
             Text(
                 text = String.format("%.0f%%", accuracy * 100),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
+                style = IOSTypography.title2,
                 color = KBTheme.textPrimary(),
             )
         }
@@ -1096,15 +1083,14 @@ private fun QuestionCard(question: KBQuestion) {
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = question.domain.displayName,
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Medium,
+                        style = IOSTypography.caption2,
                         color = question.domain.color(),
                     )
                 }
 
                 Text(
                     text = question.difficulty.displayName,
-                    style = MaterialTheme.typography.labelSmall,
+                    style = IOSTypography.caption2,
                     color = KBTheme.textSecondary(),
                     modifier =
                         Modifier
@@ -1121,7 +1107,7 @@ private fun QuestionCard(question: KBQuestion) {
             // Question text
             Text(
                 text = question.text,
-                style = MaterialTheme.typography.titleMedium,
+                style = IOSTypography.headline,
                 color = KBTheme.textPrimary(),
             )
         }
@@ -1149,7 +1135,7 @@ private fun QuestionCardCompact(question: KBQuestion) {
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
                     text = question.domain.displayName,
-                    style = MaterialTheme.typography.labelSmall,
+                    style = IOSTypography.caption2,
                     color = question.domain.color(),
                 )
             }
@@ -1158,7 +1144,7 @@ private fun QuestionCardCompact(question: KBQuestion) {
 
             Text(
                 text = question.text,
-                style = MaterialTheme.typography.bodyMedium,
+                style = IOSTypography.body,
                 color = KBTheme.textSecondary(),
                 maxLines = 2,
             )

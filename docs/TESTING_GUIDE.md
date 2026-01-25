@@ -253,7 +253,7 @@ adb shell dumpsys activity activities | grep unamentis
 
 **Test all 6 tabs:**
 1. Tap Session tab - verify placeholder screen
-2. Tap Curriculum tab - verify placeholder screen
+2. Tap Learning tab - verify placeholder screen
 3. Tap To-Do tab - verify placeholder screen
 4. Tap History tab - verify placeholder screen
 5. Tap Analytics tab - verify placeholder screen
@@ -500,7 +500,7 @@ curl -s http://localhost:8765/logs | python3 -m json.tool
 
 ### 8.1 Curriculum Download Test
 
-1. Navigate to Curriculum tab
+1. Navigate to Learning tab
 2. Browse available curricula (from server)
 3. Download a curriculum
 4. Verify download progress

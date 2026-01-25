@@ -1,17 +1,20 @@
 package com.unamentis.core.export
 
+import androidx.annotation.StringRes
+import com.unamentis.R
+
 /**
  * Supported export formats for sessions and analytics data.
  */
 enum class ExportFormat(
     val extension: String,
     val mimeType: String,
-    val displayName: String,
+    @StringRes val labelResId: Int,
 ) {
-    JSON("json", "application/json", "JSON"),
-    TEXT("txt", "text/plain", "Plain Text"),
-    MARKDOWN("md", "text/markdown", "Markdown"),
-    CSV("csv", "text/csv", "CSV"),
+    JSON("json", "application/json", R.string.export_format_json),
+    TEXT("txt", "text/plain", R.string.export_format_text),
+    MARKDOWN("md", "text/markdown", R.string.export_format_markdown),
+    CSV("csv", "text/csv", R.string.export_format_csv),
 }
 
 /**

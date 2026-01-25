@@ -1,0 +1,462 @@
+package com.unamentis.ui.history
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import com.unamentis.R
+import com.unamentis.data.model.Session
+import com.unamentis.ui.theme.Dimensions
+import com.unamentis.ui.theme.IOSTypography
+import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.temporal.ChronoUnit
+import java.util.Date
+import java.util.Locale
+
+// =============================================================================
+// DATE SECTION HEADER (matching iOS grouped list sections)
+// =============================================================================
+
+/**
+ * Section header for date grouping in session list.
+ *
+ * Matches iOS List section headers with uppercase caption style.
+ *
+ * @param title Section title (e.g., "Today", "Yesterday", "January 15, 2024")
+ * @param modifier Modifier to apply
+ */
+@Composable
+fun DateSectionHeader(
+    title: String,
+    modifier: Modifier = Modifier,
+) {
+    Text(
+        text = title.uppercase(),
+        style = IOSTypography.caption,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(
+                    horizontal = Dimensions.SpacingLarge,
+                    vertical = Dimensions.SpacingSmall,
+                ),
+    )
+}
+
+// =============================================================================
+// SESSION ROW (matching iOS SessionRowView)
+// =============================================================================
+
+/**
+ * Session row for history list.
+ *
+ * Matches iOS SessionRowView with:
+ * - Headline font for title
+ * - Caption metadata (duration, turns, cost)
+ * - Chevron indicator
+ *
+ * @param session Session to display
+ * @param onClick Click handler
+ * @param modifier Modifier to apply
+ */
+@Composable
+fun SessionRow(
+    session: Session,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    val title =
+        if (session.curriculumId != null) {
+            stringResource(R.string.session_title_curriculum)
+        } else {
+            stringResource(R.string.session_title_free)
+        }
+    val durationMinutes =
+        session.endTime?.let {
+            ((it - session.startTime) / 1000 / 60).toInt()
+        } ?: 0
+    val starredLabel = stringResource(R.string.session_starred)
+    val turnsLabel =
+        context.resources.getQuantityString(
+            R.plurals.session_turns,
+            session.turnCount,
+            session.turnCount,
+        )
+    val minutesLabel =
+        context.resources.getQuantityString(
+            R.plurals.session_minutes,
+            durationMinutes,
+            durationMinutes,
+        )
+
+    val accessibilityLabel =
+        buildString {
+            append(title)
+            if (session.isStarred) append(", $starredLabel")
+            append(", $turnsLabel")
+            if (durationMinutes > 0) append(", $minutesLabel")
+        }
+
+    Surface(
+        onClick = onClick,
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .semantics { contentDescription = accessibilityLabel },
+        shape = RoundedCornerShape(Dimensions.CardCornerRadius),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+    ) {
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(Dimensions.CardPadding),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
+        ) {
+            // Content
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingXSmall),
+            ) {
+                // Title row with star
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
+                ) {
+                    Text(
+                        text = title,
+                        style = IOSTypography.headline,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+
+                    if (session.isStarred) {
+                        Icon(
+                            imageVector = Icons.Filled.Star,
+                            contentDescription = starredLabel,
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
+
+                // Metadata row
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingLarge),
+                ) {
+                    // Duration
+                    if (durationMinutes > 0) {
+                        SessionMetadataLabel(
+                            icon = Icons.Default.Timer,
+                            text = stringResource(R.string.session_duration_min, durationMinutes),
+                        )
+                    }
+
+                    // Turn count
+                    SessionMetadataLabel(
+                        icon = Icons.AutoMirrored.Filled.Chat,
+                        text = turnsLabel,
+                    )
+                }
+
+                // Topic if present
+                session.topicId?.let { topicId ->
+                    Text(
+                        text = topicId,
+                        style = IOSTypography.caption,
+                        color = MaterialTheme.colorScheme.primary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+
+            // Time label
+            Text(
+                text = formatTimeOnly(session.startTime),
+                style = IOSTypography.caption,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            // Chevron
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(16.dp),
+            )
+        }
+    }
+}
+
+/**
+ * Metadata label with icon and text.
+ *
+ * Matches iOS Label with systemImage.
+ */
+@Composable
+private fun SessionMetadataLabel(
+    icon: ImageVector,
+    text: String,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingXSmall),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(14.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = text,
+            style = IOSTypography.caption,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+// =============================================================================
+// EMPTY STATE (matching iOS ContentUnavailableView)
+// =============================================================================
+
+/**
+ * Empty state for history list.
+ *
+ * Matches iOS ContentUnavailableView with icon, title, and description.
+ *
+ * @param icon Icon to display
+ * @param title Title text
+ * @param description Description text
+ * @param modifier Modifier to apply
+ */
+@Composable
+fun HistoryEmptyState(
+    icon: ImageVector = Icons.Default.History,
+    title: String,
+    description: String,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(Dimensions.EmptyStateIconSize),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+        )
+
+        Text(
+            text = title,
+            style = IOSTypography.headline,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        Text(
+            text = description,
+            style = IOSTypography.caption,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+        )
+    }
+}
+
+// =============================================================================
+// SESSION INFO CARD (matching iOS detail view)
+// =============================================================================
+
+/**
+ * Session info card for detail view.
+ *
+ * Matches iOS glass card with session metadata.
+ *
+ * @param session Session to display
+ * @param modifier Modifier to apply
+ */
+@Composable
+fun SessionInfoCard(
+    session: Session,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(Dimensions.CardCornerRadius),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+    ) {
+        Column(
+            modifier = Modifier.padding(Dimensions.CardPadding),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
+        ) {
+            Text(
+                text = stringResource(R.string.session_info_title),
+                style = IOSTypography.headline,
+            )
+
+            InfoRow(
+                label = stringResource(R.string.session_id_label),
+                value = session.id.take(8) + "...",
+            )
+            session.curriculumId?.let {
+                InfoRow(label = stringResource(R.string.curriculum_label), value = it)
+            }
+            session.topicId?.let {
+                InfoRow(label = stringResource(R.string.topic_label), value = it)
+            }
+            InfoRow(
+                label = stringResource(R.string.started_label),
+                value = formatDateTime(session.startTime),
+            )
+            session.endTime?.let { endTime ->
+                InfoRow(
+                    label = stringResource(R.string.ended_label),
+                    value = formatDateTime(endTime),
+                )
+                val durationMinutes = ((endTime - session.startTime) / 1000 / 60).toInt()
+                val durationText =
+                    context.resources.getQuantityString(
+                        R.plurals.session_minutes,
+                        durationMinutes,
+                        durationMinutes,
+                    )
+                InfoRow(label = stringResource(R.string.duration_label), value = durationText)
+            }
+            val turnsText =
+                context.resources.getQuantityString(
+                    R.plurals.session_turns,
+                    session.turnCount,
+                    session.turnCount,
+                )
+            InfoRow(label = stringResource(R.string.total_turns_label), value = turnsText)
+        }
+    }
+}
+
+/**
+ * Info row with label and value.
+ */
+@Composable
+private fun InfoRow(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(
+            text = label,
+            style = IOSTypography.caption,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = value,
+            style = IOSTypography.caption,
+        )
+    }
+}
+
+// =============================================================================
+// DATE FORMATTING UTILITIES
+// =============================================================================
+
+/**
+ * Format timestamp as relative date string.
+ *
+ * Returns "Today", "Yesterday", or formatted date.
+ * Matches iOS date grouping behavior.
+ * Uses LocalDate to properly handle year boundaries.
+ */
+@Composable
+fun formatRelativeDate(timestamp: Long): String {
+    val dateKey = formatRelativeDateKey(timestamp)
+    return when (dateKey) {
+        "today" -> stringResource(R.string.history_today)
+        "yesterday" -> stringResource(R.string.history_yesterday)
+        else -> dateKey
+    }
+}
+
+/**
+ * Get a key for relative date grouping.
+ *
+ * Returns "today", "yesterday", or the formatted date string.
+ * This non-composable version is used for grouping sessions.
+ */
+fun formatRelativeDateKey(timestamp: Long): String {
+    val dateLocal = Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault()).toLocalDate()
+    val todayLocal = LocalDate.now()
+    val daysBetween = ChronoUnit.DAYS.between(dateLocal, todayLocal)
+
+    return when (daysBetween.toInt()) {
+        0 -> "today"
+        1 -> "yesterday"
+        else -> {
+            val formatter = SimpleDateFormat("MMMM d, yyyy", Locale.getDefault())
+            formatter.format(Date(timestamp))
+        }
+    }
+}
+
+/**
+ * Format timestamp as time only.
+ */
+private fun formatTimeOnly(timestamp: Long): String {
+    val formatter = SimpleDateFormat("h:mm a", Locale.getDefault())
+    return formatter.format(Date(timestamp))
+}
+
+/**
+ * Format timestamp as full date and time.
+ */
+private fun formatDateTime(timestamp: Long): String {
+    val formatter = SimpleDateFormat("MMM d, yyyy h:mm a", Locale.getDefault())
+    return formatter.format(Date(timestamp))
+}
+
+/**
+ * Group sessions by date.
+ *
+ * Returns a map of date key to sessions, ordered by most recent first.
+ * Keys are "today", "yesterday", or formatted date strings.
+ */
+fun groupSessionsByDate(sessions: List<Session>): Map<String, List<Session>> {
+    return sessions
+        .sortedByDescending { it.startTime }
+        .groupBy { formatRelativeDateKey(it.startTime) }
+}

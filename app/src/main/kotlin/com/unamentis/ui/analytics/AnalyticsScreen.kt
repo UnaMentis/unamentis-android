@@ -17,18 +17,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.unamentis.R
+import com.unamentis.ui.components.BrandLogo
 import com.unamentis.ui.components.IOSCard
 import com.unamentis.ui.theme.Dimensions
+import com.unamentis.ui.theme.IOSTypography
 import com.unamentis.ui.util.safeProgress
 import com.unamentis.ui.util.safeProgressRatio
 import java.text.NumberFormat
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import com.unamentis.ui.components.Size as LogoSize
 
 /**
  * Analytics screen - Telemetry dashboard.
@@ -55,6 +57,12 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
     Scaffold(
         topBar = {
             TopAppBar(
+                navigationIcon = {
+                    BrandLogo(
+                        size = LogoSize.Compact,
+                        modifier = Modifier.padding(start = Dimensions.SpacingLarge),
+                    )
+                },
                 title = { Text(stringResource(R.string.analytics_title)) },
                 actions = {
                     IconButton(onClick = { showExportDialog = true }) {
@@ -135,8 +143,7 @@ private fun TimeRangeSelector(
     Column(verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall)) {
         Text(
             text = stringResource(R.string.analytics_time_range),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
+            style = IOSTypography.headline,
         )
 
         Row(
@@ -172,8 +179,7 @@ private fun QuickStatsSection(stats: QuickStats) {
     Column(verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall)) {
         Text(
             text = stringResource(R.string.analytics_overview),
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
+            style = IOSTypography.headline,
         )
 
         Row(
@@ -241,14 +247,13 @@ private fun StatCard(
                 )
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.labelSmall,
+                    style = IOSTypography.caption2,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             Text(
                 text = value,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
+                style = IOSTypography.title2,
             )
         }
     }
@@ -266,8 +271,7 @@ private fun LatencyBreakdownCard(breakdown: LatencyBreakdown) {
         ) {
             Text(
                 text = stringResource(R.string.analytics_latency_breakdown),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
+                style = IOSTypography.headline,
             )
 
             // Bar chart
@@ -300,8 +304,7 @@ private fun CostBreakdownCard(breakdown: CostBreakdown) {
         ) {
             Text(
                 text = stringResource(R.string.analytics_cost_breakdown),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
+                style = IOSTypography.headline,
             )
 
             Row(
@@ -348,13 +351,11 @@ private fun CostBreakdownCard(breakdown: CostBreakdown) {
             ) {
                 Text(
                     text = stringResource(R.string.analytics_total_cost),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
+                    style = IOSTypography.subheadline,
                 )
                 Text(
                     text = NumberFormat.getCurrencyInstance(Locale.getDefault()).format(breakdown.totalCost),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
+                    style = IOSTypography.subheadline,
                     color = MaterialTheme.colorScheme.primary,
                 )
             }
@@ -384,7 +385,7 @@ private fun CostLegendItem(
         val formattedCost = NumberFormat.getCurrencyInstance(Locale.getDefault()).format(cost)
         Text(
             text = stringResource(R.string.analytics_cost_legend_format, label, formattedCost),
-            style = MaterialTheme.typography.bodySmall,
+            style = IOSTypography.caption,
         )
     }
 }
@@ -401,14 +402,13 @@ private fun ProviderBreakdownCard(providers: List<ProviderCostItem>) {
         ) {
             Text(
                 text = stringResource(R.string.analytics_provider_details),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
+                style = IOSTypography.headline,
             )
 
             if (providers.isEmpty()) {
                 Text(
                     text = stringResource(R.string.analytics_no_provider_data),
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = IOSTypography.body,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = Dimensions.CardPadding),
                 )
@@ -445,7 +445,7 @@ private fun ProviderCostRow(provider: ProviderCostItem) {
             ) {
                 Text(
                     text = provider.providerType,
-                    style = MaterialTheme.typography.labelSmall,
+                    style = IOSTypography.caption2,
                     color = Color.White,
                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                 )
@@ -454,12 +454,11 @@ private fun ProviderCostRow(provider: ProviderCostItem) {
             Column {
                 Text(
                     text = provider.providerName,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
+                    style = IOSTypography.body,
                 )
                 Text(
                     text = stringResource(R.string.analytics_requests_count, provider.requestCount),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = IOSTypography.caption,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
@@ -472,8 +471,7 @@ private fun ProviderCostRow(provider: ProviderCostItem) {
             }.format(provider.totalCost)
         Text(
             text = formattedCost,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Bold,
+            style = IOSTypography.subheadline,
             color = MaterialTheme.colorScheme.primary,
         )
     }
@@ -504,14 +502,13 @@ private fun SessionTrendsCard(trends: List<DailyStats>) {
         ) {
             Text(
                 text = stringResource(R.string.analytics_session_trends),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
+                style = IOSTypography.headline,
             )
 
             if (trends.isEmpty()) {
                 Text(
                     text = stringResource(R.string.analytics_no_data),
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = IOSTypography.body,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = Dimensions.SpacingXXLarge),
                 )
@@ -554,7 +551,7 @@ private fun BarChart(
             ) {
                 Text(
                     text = label,
-                    style = MaterialTheme.typography.labelSmall,
+                    style = IOSTypography.caption2,
                     modifier = Modifier.width(70.dp),
                 )
 
@@ -565,7 +562,7 @@ private fun BarChart(
 
                 Text(
                     text = stringResource(R.string.analytics_latency_ms, value),
-                    style = MaterialTheme.typography.labelSmall,
+                    style = IOSTypography.caption2,
                     modifier = Modifier.width(50.dp),
                 )
             }
@@ -684,7 +681,7 @@ private fun ExportDialog(
             Column(verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall)) {
                 Text(
                     text = stringResource(R.string.analytics_json_format),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = IOSTypography.caption,
                 )
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
@@ -693,7 +690,7 @@ private fun ExportDialog(
                 ) {
                     Text(
                         text = json,
-                        style = MaterialTheme.typography.bodySmall,
+                        style = IOSTypography.caption,
                         modifier = Modifier.padding(Dimensions.SpacingMedium),
                     )
                 }

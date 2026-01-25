@@ -66,3 +66,23 @@ hs_err_pid*
 # OS-specific
 .DS_Store
 Thumbs.db
+
+# =============================================================================
+# Internal Development Documents (not for customer-facing repo)
+# =============================================================================
+
+# Session summaries and handoff documents (AI development session logs)
+docs/SESSION_*.md
+docs/*HANDOFF*.md
+
+# Phase progress and completion tracking
+docs/*PROGRESS*.md
+docs/*COMPLETION*.md
+
+# Internal status tracking (compliance reviews, implementation tracking)
+docs/SPECIFICATION_COMPLIANCE_REVIEW.md
+docs/IMPLEMENTATION_STATUS.md
+
+# Internal Claude skills (team-specific tooling)
+.claude/skills/comms/
+COMMS_SKILL_SETUP_GUIDE.md
