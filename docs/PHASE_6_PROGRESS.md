@@ -371,7 +371,7 @@ composeTestRule.onNodeWithContentDescription("Slide to stop session").assertExis
 ```kotlin
 // Tab switching
 composeTestRule.onNodeWithText("Curriculum").performClick()
-composeTestRule.onNodeWithContentDescription("Curriculum tab").assertIsSelected()
+composeTestRule.onNodeWithContentDescription("Learning tab").assertIsSelected()
 
 // State preservation
 composeTestRule.onNodeWithText("Settings").performClick()

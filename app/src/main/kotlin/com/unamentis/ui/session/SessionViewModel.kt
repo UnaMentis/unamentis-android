@@ -36,6 +36,8 @@ import javax.inject.Inject
  * - uiState: Derived UI state with computed properties
  *
  * @property sessionManager Core session orchestrator
+ * @property providerConfig Provider configuration for recording mode
+ * @property sessionActivityState Session activity state for tab bar visibility control
  */
 @HiltViewModel
 class SessionViewModel

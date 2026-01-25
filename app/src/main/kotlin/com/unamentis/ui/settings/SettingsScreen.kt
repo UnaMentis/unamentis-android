@@ -216,7 +216,11 @@ fun SettingsScreen(
             item {
                 ProviderCard(
                     title = stringResource(R.string.settings_speech_to_text_title),
-                    providers = listOf("Deepgram", "Android"),
+                    providers =
+                        listOf(
+                            stringResource(R.string.provider_deepgram),
+                            stringResource(R.string.provider_android),
+                        ),
                     selectedProvider = uiState.selectedSTTProvider,
                     onProviderSelected = { viewModel.setSTTProvider(it) },
                     icon = Icons.Default.Mic,
@@ -227,7 +231,11 @@ fun SettingsScreen(
             item {
                 ProviderCard(
                     title = stringResource(R.string.settings_text_to_speech_title),
-                    providers = listOf("ElevenLabs", "Android"),
+                    providers =
+                        listOf(
+                            stringResource(R.string.provider_elevenlabs),
+                            stringResource(R.string.provider_android),
+                        ),
                     selectedProvider = uiState.selectedTTSProvider,
                     onProviderSelected = { viewModel.setTTSProvider(it) },
                     icon = Icons.Default.VolumeUp,
@@ -238,7 +246,12 @@ fun SettingsScreen(
             item {
                 ProviderCard(
                     title = stringResource(R.string.settings_language_model_title),
-                    providers = listOf("PatchPanel", "OpenAI", "Anthropic"),
+                    providers =
+                        listOf(
+                            stringResource(R.string.provider_patchpanel),
+                            stringResource(R.string.provider_openai),
+                            stringResource(R.string.provider_anthropic),
+                        ),
                     selectedProvider = uiState.selectedLLMProvider,
                     onProviderSelected = { viewModel.setLLMProvider(it) },
                     icon = Icons.Default.Psychology,

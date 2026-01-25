@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
@@ -88,6 +89,12 @@ fun SwipeableListItem(
 
     var offsetX by remember { mutableFloatStateOf(0f) }
     val coroutineScope = rememberCoroutineScope()
+
+    // Re-clamp offsetX when action counts/offset bounds change to ensure
+    // the view snaps into valid range if action lists change while not dragging
+    LaunchedEffect(trailingActions.size, leadingActions.size) {
+        offsetX = offsetX.coerceIn(trailingMaxOffset, leadingMaxOffset)
+    }
 
     val draggableState =
         rememberDraggableState { delta ->

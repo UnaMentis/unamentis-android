@@ -57,6 +57,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **KBColors Tip Colors**: Added `tipBackground`, `tipText`, `tipIcon` with dark mode support for Knowledge Bowl practice launcher
 
 ### Fixed
+- **SwipeActions**: Added `LaunchedEffect` in `SwipeableListItem` to re-clamp `offsetX` when action counts change, ensuring the view snaps into valid range if action lists change while not dragging
+- **SettingsScreen i18n**: Fixed hardcoded provider names ("Deepgram", "ElevenLabs", "OpenAI", "Anthropic", "Android", "PatchPanel") to use `stringResource()` with `R.string.provider_*` resources
 - **SessionManager**: Fixed broken reference to removed `RecordingMode.displayName` property (now uses `mode.name` for log messages)
 - **Instrumented Tests**: Fixed 22 failing instrumented tests (reduced to 0 failures, 1 skipped):
   - CurriculumScreen: Changed hardcoded tab text ("Server"/"Local") to use string resources (`R.string.curriculum_server`, `R.string.curriculum_downloaded`)
@@ -99,6 +101,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - HistoryScreenTest.kt: Fixed "No Sessions Yet" text matching
 
 ### Changed
+- **Tab Terminology**: Updated user-facing references from "Curriculum tab" to "Learning tab" for consistency:
+  - `onboarding_curriculum_tip1` string resource now says "Learning tab"
+  - Documentation updated: TESTING_GUIDE.md, TESTING.md, PHASE_6_PROGRESS.md
+  - Note: iOS uses "Curriculum" while Android uses "Learning" as the tab label
+- **SessionViewModel KDoc**: Added documentation for `providerConfig` and `sessionActivityState` properties
 - **RecordingMode Enum**: Migrated from hardcoded `displayName`/`description` properties to `@StringRes displayNameResId`/`descriptionResId` for proper localization
 - **SettingsScreen Locale-Aware Formatting**: Added `NumberFormat.getNumberInstance()` and `NumberFormat.getPercentInstance()` for slider value displays (VAD threshold, temperature, speaking rate, playback speed)
 - **Locale-Aware Formatting**: Replaced `String.format()` with proper locale-aware formatters:

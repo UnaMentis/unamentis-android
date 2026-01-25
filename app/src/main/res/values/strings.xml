@@ -134,7 +134,7 @@
     <string name="onboarding_curriculum_title">Structured Learning</string>
     <string name="onboarding_curriculum_subtitle">Curriculum-Based Lessons</string>
     <string name="onboarding_curriculum_description">Follow structured curricula with topics organized for progressive learning. Track your mastery and progress.</string>
-    <string name="onboarding_curriculum_tip1">Browse available curricula in the Curriculum tab</string>
+    <string name="onboarding_curriculum_tip1">Browse available curricula in the Learning tab</string>
     <string name="onboarding_curriculum_tip2">Each topic has audio narration and visuals</string>
     <string name="onboarding_curriculum_tip3">Your progress is saved automatically</string>
 
