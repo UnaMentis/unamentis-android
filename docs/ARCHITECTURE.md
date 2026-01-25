@@ -150,21 +150,34 @@ The domain layer contains business logic, services, and managers.
 ```kotlin
 // Session Manager - Core orchestration
 class SessionManager(
-    private val audioEngine: AudioEngine,
-    private val vadService: VADService,
-    private val sttService: STTService,
-    private val llmService: LLMService,
-    private val ttsService: TTSService,
-    private val telemetryEngine: TelemetryEngine
+    private val dependencies: SessionDependencies,
+    private val scope: CoroutineScope
 ) {
-    private val _state = MutableStateFlow(SessionState.IDLE)
-    val state: StateFlow<SessionState> = _state.asStateFlow()
+    // Core session state
+    private val _sessionState = MutableStateFlow(SessionState.IDLE)
+    val sessionState: StateFlow<SessionState> = _sessionState.asStateFlow()
 
     private val _transcript = MutableStateFlow<List<TranscriptEntry>>(emptyList())
     val transcript: StateFlow<List<TranscriptEntry>> = _transcript.asStateFlow()
 
-    suspend fun startSession(topic: Topic? = null) {
-        _state.value = SessionState.LISTENING
+    private val _metrics = MutableStateFlow(SessionMetrics())
+    val metrics: StateFlow<SessionMetrics> = _metrics.asStateFlow()
+
+    // Recording mode state
+    val recordingMode: StateFlow<RecordingMode>
+    val isManuallyRecording: StateFlow<Boolean>
+
+    // Curriculum state flows (exposed for UI)
+    val isCurriculumMode: StateFlow<Boolean>      // Whether curriculum is loaded
+    val currentSegmentIndex: StateFlow<Int>        // Current segment (0-based)
+    val totalSegments: StateFlow<Int>              // Total segments in topic
+    val hasNextTopic: StateFlow<Boolean>           // Whether next topic exists
+
+    // Audio level for VU meter visualization
+    val audioLevelDb: StateFlow<Float>             // Range: -60dB to 0dB
+
+    suspend fun startSession(curriculumId: String? = null, topicId: String? = null) {
+        _sessionState.value = SessionState.LISTENING
         startAudioCapture()
         startVADMonitoring()
     }
@@ -487,21 +500,39 @@ Data flows through the application using Kotlin Flow:
 // ViewModel exposes StateFlow
 @HiltViewModel
 class SessionViewModel @Inject constructor(
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val providerConfig: ProviderConfig
 ) : ViewModel() {
 
-    // Combine multiple flows into UI state
-    val state: StateFlow<SessionUiState> = combine(
-        sessionManager.state,
-        sessionManager.transcript,
-        sessionManager.metrics,
-        sessionManager.visualAsset
-    ) { state, transcript, metrics, asset ->
+    // Combine multiple flows into UI state using nested combines
+    // to work around Kotlin's 5-parameter combine limit
+    val uiState: StateFlow<SessionUiState> = combine(
+        combine(sessionState, currentSession, transcript) { state, session, transcriptList ->
+            SessionCoreState(state, session, transcriptList)
+        },
+        combine(metrics, recordingMode, isManuallyRecording) { m, rm, imr ->
+            RecordingState(m, rm, imr)
+        },
+        combine(isCurriculumMode, currentSegmentIndex, totalSegments, hasNextTopic) { icm, csi, ts, hnt ->
+            CurriculumUiState(icm, csi, ts, hnt)
+        },
+        audioLevelDb
+    ) { core, recording, curriculum, audioLevel ->
         SessionUiState(
-            sessionState = state,
-            transcript = transcript,
-            metrics = metrics,
-            currentVisualAsset = asset
+            sessionState = core.state,
+            isSessionActive = core.session != null,
+            isLoading = core.state == SessionState.PROCESSING_UTTERANCE ||
+                core.state == SessionState.AI_THINKING,
+            transcript = core.transcriptList,
+            turnCount = core.session?.turnCount ?: 0,
+            metrics = recording.metrics,
+            recordingMode = recording.mode,
+            isManuallyRecording = recording.isManuallyRecording,
+            isCurriculumMode = curriculum.isCurriculumMode,
+            currentSegmentIndex = curriculum.currentSegmentIndex,
+            totalSegments = curriculum.totalSegments,
+            hasNextTopic = curriculum.hasNextTopic,
+            audioLevel = audioLevel
         )
     }.stateIn(
         scope = viewModelScope,

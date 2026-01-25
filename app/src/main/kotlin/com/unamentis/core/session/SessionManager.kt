@@ -88,6 +88,63 @@ class SessionManager(
     private val _isManuallyRecording = MutableStateFlow(false)
     val isManuallyRecording: StateFlow<Boolean> = _isManuallyRecording.asStateFlow()
 
+    // ==========================================================================
+    // CURRICULUM STATE FLOWS (exposed for UI)
+    // ==========================================================================
+
+    /**
+     * Whether a curriculum is loaded (curriculum mode vs free conversation).
+     */
+    val isCurriculumMode: StateFlow<Boolean> =
+        curriculumEngine.currentCurriculum
+            .map { it != null }
+            .stateIn(scope, SharingStarted.Eagerly, false)
+
+    /**
+     * Current segment index within the topic (0-based).
+     */
+    val currentSegmentIndex: StateFlow<Int> = curriculumEngine.currentSegmentIndex
+
+    /**
+     * Total number of segments in the current topic.
+     */
+    val totalSegments: StateFlow<Int> =
+        curriculumEngine.currentTopic
+            .map { it?.transcript?.size ?: 0 }
+            .stateIn(scope, SharingStarted.Eagerly, 0)
+
+    /**
+     * Whether there is a next topic available in the curriculum.
+     */
+    val hasNextTopic: StateFlow<Boolean> =
+        combine(
+            curriculumEngine.currentCurriculum,
+            curriculumEngine.currentTopic,
+        ) { curriculum, currentTopic ->
+            if (curriculum == null || currentTopic == null) {
+                false
+            } else {
+                val currentIndex = curriculum.topics.indexOfFirst { it.id == currentTopic.id }
+                currentIndex >= 0 && currentIndex + 1 < curriculum.topics.size
+            }
+        }.stateIn(scope, SharingStarted.Eagerly, false)
+
+    /**
+     * Current audio level in dB (for VU meter visualization).
+     * Range is typically -60 (silence) to 0 (maximum).
+     */
+    val audioLevelDb: StateFlow<Float> =
+        audioEngine.audioLevel
+            .map { level ->
+                // Convert RMS to dB, with floor at -60dB
+                if (level.rms > 0) {
+                    (20 * kotlin.math.log10(level.rms)).coerceIn(-60f, 0f)
+                } else {
+                    -60f
+                }
+            }
+            .stateIn(scope, SharingStarted.Eagerly, -60f)
+
     // Conversation history for LLM context
     private val conversationHistory = mutableListOf<LLMMessage>()
 

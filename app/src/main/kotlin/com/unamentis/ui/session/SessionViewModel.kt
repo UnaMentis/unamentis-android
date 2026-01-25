@@ -131,34 +131,108 @@ class SessionViewModel
                 )
 
         /**
+         * Whether a curriculum is loaded.
+         */
+        private val isCurriculumMode: StateFlow<Boolean> =
+            sessionManager.isCurriculumMode
+                .stateIn(
+                    scope = viewModelScope,
+                    started = SharingStarted.WhileSubscribed(5000),
+                    initialValue = false,
+                )
+
+        /**
+         * Current segment index within the topic.
+         */
+        private val currentSegmentIndex: StateFlow<Int> =
+            sessionManager.currentSegmentIndex
+                .stateIn(
+                    scope = viewModelScope,
+                    started = SharingStarted.WhileSubscribed(5000),
+                    initialValue = 0,
+                )
+
+        /**
+         * Total segments in the current topic.
+         */
+        private val totalSegments: StateFlow<Int> =
+            sessionManager.totalSegments
+                .stateIn(
+                    scope = viewModelScope,
+                    started = SharingStarted.WhileSubscribed(5000),
+                    initialValue = 0,
+                )
+
+        /**
+         * Whether there is a next topic available.
+         */
+        private val hasNextTopic: StateFlow<Boolean> =
+            sessionManager.hasNextTopic
+                .stateIn(
+                    scope = viewModelScope,
+                    started = SharingStarted.WhileSubscribed(5000),
+                    initialValue = false,
+                )
+
+        /**
+         * Audio level in dB for VU meter.
+         */
+        private val audioLevelDb: StateFlow<Float> =
+            sessionManager.audioLevelDb
+                .stateIn(
+                    scope = viewModelScope,
+                    started = SharingStarted.WhileSubscribed(5000),
+                    initialValue = -60f,
+                )
+
+        /**
          * Derived UI state.
          */
         val uiState: StateFlow<SessionUiState> =
             combine(
-                sessionState,
-                currentSession,
-                transcript,
-                combine(metrics, recordingMode, isManuallyRecording) { m, rm, imr -> Triple(m, rm, imr) },
-            ) { state, session, transcriptList, (sessionMetrics, mode, manuallyRecording) ->
+                combine(sessionState, currentSession, transcript) { state, session, transcriptList ->
+                    SessionCoreState(state, session, transcriptList)
+                },
+                combine(metrics, recordingMode, isManuallyRecording) { m, rm, imr ->
+                    RecordingState(m, rm, imr)
+                },
+                combine(isCurriculumMode, currentSegmentIndex, totalSegments, hasNextTopic) { icm, csi, ts, hnt ->
+                    CurriculumUiState(icm, csi, ts, hnt)
+                },
+                audioLevelDb,
+            ) { core, recording, curriculum, audioLevel ->
                 SessionUiState(
-                    sessionState = state,
-                    isSessionActive = session != null,
-                    canStart = state == SessionState.IDLE && session == null,
+                    sessionState = core.state,
+                    isSessionActive = core.session != null,
+                    isLoading =
+                        core.state == SessionState.PROCESSING_UTTERANCE ||
+                            core.state == SessionState.AI_THINKING,
+                    canStart = core.state == SessionState.IDLE && core.session == null,
                     canPause =
-                        state !in
+                        core.state !in
                             listOf(
                                 SessionState.IDLE,
                                 SessionState.PAUSED,
                                 SessionState.ERROR,
-                            ) && session != null,
-                    canResume = state == SessionState.PAUSED,
-                    canStop = session != null,
-                    transcript = transcriptList,
-                    turnCount = session?.turnCount ?: 0,
-                    metrics = sessionMetrics,
-                    statusMessageResId = getStatusMessageResId(state, mode, manuallyRecording),
-                    recordingMode = mode,
-                    isManuallyRecording = manuallyRecording,
+                            ) && core.session != null,
+                    canResume = core.state == SessionState.PAUSED,
+                    canStop = core.session != null,
+                    transcript = core.transcriptList,
+                    turnCount = core.session?.turnCount ?: 0,
+                    metrics = recording.metrics,
+                    statusMessageResId =
+                        getStatusMessageResId(
+                            core.state,
+                            recording.mode,
+                            recording.isManuallyRecording,
+                        ),
+                    recordingMode = recording.mode,
+                    isManuallyRecording = recording.isManuallyRecording,
+                    isCurriculumMode = curriculum.isCurriculumMode,
+                    currentSegmentIndex = curriculum.currentSegmentIndex,
+                    totalSegments = curriculum.totalSegments,
+                    hasNextTopic = curriculum.hasNextTopic,
+                    audioLevel = audioLevel,
                 )
             }.stateIn(
                 scope = viewModelScope,
@@ -370,4 +444,32 @@ data class SessionUiState(
     val hasNextTopic: Boolean = false,
     // Audio level for VU meter
     val audioLevel: Float = -60f,
+)
+
+/**
+ * Internal data class for combining core session state in the uiState flow.
+ */
+private data class SessionCoreState(
+    val state: SessionState,
+    val session: Session?,
+    val transcriptList: List<TranscriptEntry>,
+)
+
+/**
+ * Internal data class for combining recording state in the uiState flow.
+ */
+private data class RecordingState(
+    val metrics: SessionMetrics,
+    val mode: RecordingMode,
+    val isManuallyRecording: Boolean,
+)
+
+/**
+ * Internal data class for combining curriculum state in the uiState flow.
+ */
+private data class CurriculumUiState(
+    val isCurriculumMode: Boolean,
+    val currentSegmentIndex: Int,
+    val totalSegments: Int,
+    val hasNextTopic: Boolean,
 )
