@@ -46,17 +46,31 @@ class ShortcutsManager
         /**
          * Initialize and publish all dynamic shortcuts.
          * Call this on app startup.
+         *
+         * Note: Shortcuts are already defined as static shortcuts in res/xml/shortcuts.xml.
+         * We only push dynamic shortcuts if they don't conflict with manifest shortcuts.
+         * On API 36+, manifest shortcuts cannot be manipulated via APIs.
          */
         fun publishShortcuts() {
+            // Get existing manifest shortcut IDs to avoid conflicts
+            val manifestShortcutIds =
+                ShortcutManagerCompat.getShortcuts(context, ShortcutManagerCompat.FLAG_MATCH_MANIFEST)
+                    .map { it.id }
+                    .toSet()
+
+            // Only create dynamic shortcuts for IDs not already in manifest
             val shortcuts =
                 listOf(
                     createStartSessionShortcut(),
                     createResumeShortcut(),
                     createProgressShortcut(),
                     createTodosShortcut(),
-                )
+                ).filter { it.id !in manifestShortcutIds }
 
-            ShortcutManagerCompat.setDynamicShortcuts(context, shortcuts)
+            // Only set dynamic shortcuts if we have any that don't conflict
+            if (shortcuts.isNotEmpty()) {
+                ShortcutManagerCompat.setDynamicShortcuts(context, shortcuts)
+            }
         }
 
         /**
