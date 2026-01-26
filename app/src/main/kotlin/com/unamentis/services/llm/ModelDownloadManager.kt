@@ -46,21 +46,22 @@ class ModelDownloadManager
             private const val TAG = "ModelDownloadManager"
 
             // HuggingFace model URLs
+            // Using QuantFactory's public Ministral (bartowski's is now gated/401)
             private const val MINISTRAL_3B_URL_BASE =
-                "https://huggingface.co/bartowski/Ministral-3B-Instruct-GGUF/resolve/main/"
-            private const val MINISTRAL_3B_FILE = "Ministral-3B-Instruct-Q4_K_M.gguf"
+                "https://huggingface.co/QuantFactory/Ministral-3b-instruct-GGUF/resolve/main/"
+            private const val MINISTRAL_3B_FILE = "Ministral-3b-instruct.Q4_K_M.gguf"
 
             private const val TINYLLAMA_1B_URL_BASE =
                 "https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF/resolve/main/"
             private const val TINYLLAMA_1B_FILE = "tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf"
 
-            // SHA256 checksums for verification
+            // SHA256 checksums for verification (from HuggingFace LFS OIDs)
             private val MODEL_CHECKSUMS =
                 mapOf(
                     OnDeviceLLMService.MINISTRAL_3B_FILENAME to
-                        "b62a8d10c4c0c69f6a7e0d5ad4c5e9c8f2b1d7a3e6c9f0b4a8d2e5f1c7b3a9d6",
+                        "88d665cbee7f074f3b283c64d0ea5c356c5d923d635c9ab65d5c17329d41f734",
                     OnDeviceLLMService.TINYLLAMA_1B_FILENAME to
-                        "a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4",
+                        "9fecc3b3cd76bba89d504f29b616eedf7da85b96540e490ca5824d3f7d2776a0",
                 )
 
             // Download timeout (models are large)
