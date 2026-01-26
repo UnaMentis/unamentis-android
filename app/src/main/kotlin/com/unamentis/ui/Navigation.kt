@@ -52,6 +52,7 @@ import com.unamentis.ui.curriculum.CurriculumScreen
 import com.unamentis.ui.history.HistoryScreen
 import com.unamentis.ui.session.SessionActivityState
 import com.unamentis.ui.session.SessionScreen
+import com.unamentis.ui.settings.ServerSettingsScreen
 import com.unamentis.ui.settings.SettingsScreen
 import com.unamentis.ui.todo.TodoScreen
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -96,6 +97,7 @@ object Routes {
     const val HISTORY_DETAIL = "history/{id}"
     const val ANALYTICS = "analytics"
     const val SETTINGS = "settings?section={section}"
+    const val SERVER_SETTINGS = "settings/servers"
 }
 
 /**
@@ -345,7 +347,19 @@ fun UnaMentisNavHost(
                             ),
                     ) { backStackEntry ->
                         val section = backStackEntry.arguments?.getString("section")
-                        SettingsScreen(initialSection = section)
+                        SettingsScreen(
+                            initialSection = section,
+                            onNavigateToServerSettings = {
+                                navController.navigate(Routes.SERVER_SETTINGS)
+                            },
+                        )
+                    }
+
+                    // Server Settings (sub-screen of Settings)
+                    composable(route = Routes.SERVER_SETTINGS) {
+                        ServerSettingsScreen(
+                            onNavigateBack = { navController.popBackStack() },
+                        )
                     }
                 }
             }

@@ -772,4 +772,50 @@
     <!-- Export share intent -->
     <string name="export_share_subject">UnaMentis Session Export</string>
     <string name="export_share_chooser_title">Share Session Export</string>
+
+    <!-- Server Settings Screen -->
+    <string name="settings_self_hosted_desc">Configure local servers for LLM, STT, and TTS</string>
+    <string name="server_settings_title">Self-Hosted Servers</string>
+    <string name="server_settings_self_hosted_mode">Self-Hosted Mode</string>
+    <string name="server_settings_servers">Servers</string>
+    <string name="server_settings_add">Add</string>
+    <string name="server_settings_no_servers">No servers configured</string>
+    <string name="server_settings_servers_footer">Servers are checked automatically every 30 seconds.</string>
+    <string name="server_settings_quick_setup">Quick Setup</string>
+    <string name="server_settings_discover">Discover Local Servers</string>
+    <string name="server_settings_scan">Scan</string>
+    <string name="server_settings_add_local_mac">Add Local Mac Server</string>
+    <string name="server_settings_quick_setup_footer">Run the setup script on your Mac to set up the UnaMentis server stack.</string>
+    <string name="server_settings_refresh">Refresh</string>
+    <string name="server_settings_test_connection">Test connection</string>
+    <string name="server_settings_delete">Delete</string>
+    <string name="server_settings_status_healthy">Healthy</string>
+    <string name="server_settings_status_degraded">Degraded</string>
+    <string name="server_settings_status_unhealthy">Unhealthy</string>
+    <string name="server_settings_status_checking">Checking</string>
+    <string name="server_settings_status_unknown">Unknown</string>
+    <string name="server_settings_add_server">Add Server</string>
+    <string name="server_settings_edit_server">Edit Server</string>
+    <string name="server_settings_name">Name</string>
+    <string name="server_settings_name_hint">e.g., My Mac Server</string>
+    <string name="server_settings_host">Host</string>
+    <string name="server_settings_host_hint">e.g., 192.168.1.100 or macbook.local</string>
+    <string name="server_settings_port">Port</string>
+    <string name="server_settings_type">Server Type</string>
+    <string name="server_settings_delete_server_title">Delete Server?</string>
+    <string name="server_settings_delete_server_message">Remove %1$s from your server list?</string>
+    <string name="server_settings_discovered_servers">Discovered Servers</string>
+    <string name="server_settings_discovered_message">Found %1$d server(s). Add them to your configuration?</string>
+    <string name="server_settings_add_all">Add All</string>
+
+    <!-- Server Types -->
+    <string name="server_type_unamentis_gateway">UnaMentis Gateway</string>
+    <string name="server_type_ollama">Ollama</string>
+    <string name="server_type_whisper">Whisper STT</string>
+    <string name="server_type_piper">Piper TTS</string>
+    <string name="server_type_vibevoice">VibeVoice TTS</string>
+    <string name="server_type_chatterbox">Chatterbox TTS</string>
+    <string name="server_type_llama_cpp">llama.cpp</string>
+    <string name="server_type_vllm">vLLM</string>
+    <string name="server_type_custom">Custom</string>
 </resources>

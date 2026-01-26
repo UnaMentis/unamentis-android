@@ -2,6 +2,7 @@ package com.unamentis.di
 
 import android.content.Context
 import com.unamentis.BuildConfig
+import com.unamentis.core.config.ServerConfigManager
 import com.unamentis.data.local.AppDatabase
 import com.unamentis.data.local.SecureTokenStorage
 import com.unamentis.data.local.dao.CurriculumDao
@@ -10,6 +11,7 @@ import com.unamentis.data.local.dao.SessionDao
 import com.unamentis.data.local.dao.TodoDao
 import com.unamentis.data.local.dao.TopicProgressDao
 import com.unamentis.data.remote.ApiClient
+import com.unamentis.data.remote.ApiClientConfig
 import com.unamentis.data.remote.CertificatePinning
 import com.unamentis.data.repository.AuthRepository
 import dagger.Module
@@ -150,6 +152,9 @@ object AppModule {
      *
      * The API client is configured with token provider and expiration callback
      * from the AuthRepository for automatic token management.
+     *
+     * The management URL is dynamically resolved from ServerConfigManager,
+     * allowing users to configure self-hosted servers.
      */
     @Provides
     @Singleton
@@ -157,14 +162,21 @@ object AppModule {
         @ApplicationContext context: Context,
         okHttpClient: OkHttpClient,
         json: Json,
+        serverConfigManager: ServerConfigManager,
     ): ApiClient {
         // Note: tokenProvider and onTokenExpired are set to null here (via default config)
         // and will be configured by AuthRepository after initialization.
         // This avoids circular dependency issues.
+        val config =
+            ApiClientConfig(
+                managementUrlProvider = { serverConfigManager.getManagementServerUrl() },
+                logServerUrlProvider = { ServerConfigManager.DEFAULT_LOG_SERVER_URL },
+            )
         return ApiClient(
             _context = context,
             okHttpClient = okHttpClient,
             json = json,
+            config = config,
         )
     }
 

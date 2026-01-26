@@ -24,15 +24,23 @@ import kotlin.math.min
  *
  * @property tokenProvider Function to get current access token (null if not logged in)
  * @property onTokenExpired Callback when token is expired (401 response)
- * @property logServerUrl Log server base URL
- * @property managementUrl Management console base URL
+ * @property logServerUrlProvider Provider function for log server base URL
+ * @property managementUrlProvider Provider function for management console base URL
  */
 data class ApiClientConfig(
     val tokenProvider: (suspend () -> String?)? = null,
     val onTokenExpired: (suspend () -> Unit)? = null,
-    val logServerUrl: String = "http://10.0.2.2:8765",
-    val managementUrl: String = "http://10.0.2.2:8766",
-)
+    val logServerUrlProvider: () -> String = { DEFAULT_LOG_SERVER_URL },
+    val managementUrlProvider: () -> String = { DEFAULT_MANAGEMENT_URL },
+) {
+    companion object {
+        /** Default management URL for Android emulator */
+        const val DEFAULT_MANAGEMENT_URL = "http://10.0.2.2:8766"
+
+        /** Default log server URL for Android emulator */
+        const val DEFAULT_LOG_SERVER_URL = "http://10.0.2.2:8765"
+    }
+}
 
 /**
  * API client for communicating with the UnaMentis management console.
@@ -72,8 +80,8 @@ class ApiClient(
 
     private val tokenProvider get() = config.tokenProvider
     private val onTokenExpired get() = config.onTokenExpired
-    private val logServerUrl get() = config.logServerUrl
-    private val managementUrl get() = config.managementUrl
+    private val logServerUrl get() = config.logServerUrlProvider()
+    private val managementUrl get() = config.managementUrlProvider()
 
     private val deviceId: String by lazy {
         UUID.randomUUID().toString()

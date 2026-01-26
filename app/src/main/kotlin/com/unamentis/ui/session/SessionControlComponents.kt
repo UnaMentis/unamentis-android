@@ -170,7 +170,16 @@ fun SlideToStopButton(
                             },
                             onDragEnd = {
                                 isDragging = false
-                                if (completionProgress >= completionThreshold) {
+                                // Calculate completion progress fresh here instead of using
+                                // captured value - the captured val would be stale since
+                                // pointerInput(Unit) doesn't re-execute on state changes
+                                val currentProgress =
+                                    if (maxDragDistance > 0) {
+                                        (dragOffset / maxDragDistance).coerceIn(0f, 1f)
+                                    } else {
+                                        0f
+                                    }
+                                if (currentProgress >= completionThreshold) {
                                     // Trigger haptic feedback and complete
                                     view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
                                     onStop()

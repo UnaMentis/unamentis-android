@@ -66,7 +66,7 @@ enum class ServerType {
      */
     fun defaultPort(): Int =
         when (this) {
-            UNAMENTIS_GATEWAY -> 8000
+            UNAMENTIS_GATEWAY -> 8766
             OLLAMA -> 11434
             WHISPER -> 9000
             PIPER -> 5002
@@ -75,6 +75,22 @@ enum class ServerType {
             LLAMA_CPP -> 8080
             VLLM -> 8000
             CUSTOM -> 8080
+        }
+
+    /**
+     * Human-readable display name for this server type.
+     */
+    fun displayName(): String =
+        when (this) {
+            UNAMENTIS_GATEWAY -> "UnaMentis Gateway"
+            OLLAMA -> "Ollama"
+            WHISPER -> "Whisper STT"
+            PIPER -> "Piper TTS"
+            VIBE_VOICE -> "VibeVoice TTS"
+            CHATTERBOX -> "Chatterbox TTS"
+            LLAMA_CPP -> "llama.cpp"
+            VLLM -> "vLLM"
+            CUSTOM -> "Custom"
         }
 }
 

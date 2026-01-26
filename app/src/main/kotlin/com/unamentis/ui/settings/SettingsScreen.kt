@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.GraphicEq
+import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.PlaylistPlay
@@ -112,6 +113,7 @@ enum class SettingsSection {
 @Composable
 fun SettingsScreen(
     initialSection: String? = null,
+    onNavigateToServerSettings: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -422,6 +424,56 @@ fun SettingsScreen(
                     uiState = uiState,
                 )
             }
+
+            // Self-Hosted Servers section
+            item {
+                Text(
+                    text = stringResource(R.string.server_settings_self_hosted_mode).uppercase(),
+                    style = IOSTypography.caption,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = Dimensions.SpacingLarge),
+                )
+            }
+
+            item {
+                SelfHostedServersCard(
+                    onClick = onNavigateToServerSettings,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Card for navigating to Self-Hosted Servers settings.
+ */
+@Composable
+private fun SelfHostedServersCard(onClick: () -> Unit) {
+    IOSCard(
+        modifier = Modifier.fillMaxWidth(),
+        onClick = onClick,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column {
+                Text(
+                    text = stringResource(R.string.server_settings_title),
+                    style = IOSTypography.body,
+                )
+                Text(
+                    text = stringResource(R.string.settings_self_hosted_desc),
+                    style = IOSTypography.caption,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Icon(
+                Icons.Default.KeyboardArrowRight,
+                contentDescription = stringResource(R.string.server_settings_title),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }

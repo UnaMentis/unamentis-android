@@ -35,10 +35,11 @@ class ApiClientTest {
         mockServer.start()
 
         val context = mockk<Context>(relaxed = true)
+        val baseUrl = mockServer.url("/").toString().trimEnd('/')
         val config =
             ApiClientConfig(
-                logServerUrl = mockServer.url("/").toString().trimEnd('/'),
-                managementUrl = mockServer.url("/").toString().trimEnd('/'),
+                logServerUrlProvider = { baseUrl },
+                managementUrlProvider = { baseUrl },
             )
         apiClient =
             ApiClient(
