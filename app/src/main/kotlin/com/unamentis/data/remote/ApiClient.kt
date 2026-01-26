@@ -207,7 +207,14 @@ class ApiClient(
      *
      * @return List of curriculum summaries
      */
-    suspend fun getCurricula(): ApiResult<List<CurriculumSummary>> = get("/api/curricula")
+    suspend fun getCurricula(): ApiResult<List<CurriculumSummary>> {
+        // Server returns {"curricula": [...]} wrapper, not a direct array
+        return when (val result = get<CurriculaResponse>("/api/curricula")) {
+            is ApiResult.Success -> ApiResult.Success(result.data.curricula)
+            is ApiResult.Error -> result
+            is ApiResult.NetworkError -> result
+        }
+    }
 
     /**
      * Get list of archived curricula.

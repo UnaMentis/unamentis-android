@@ -58,18 +58,20 @@ class ApiClientTest {
     @Test
     fun `getCurricula returns list of curricula`() =
         runTest {
-            // Given
+            // Given - Server returns {"curricula": [...]} wrapper
             val mockResponse =
                 """
-                [
-                    {
-                        "id": "curriculum-001",
-                        "title": "Test Curriculum",
-                        "description": "A test curriculum",
-                        "version": "1.0.0",
-                        "topic_count": 5
-                    }
-                ]
+                {
+                    "curricula": [
+                        {
+                            "id": "curriculum-001",
+                            "title": "Test Curriculum",
+                            "description": "A test curriculum",
+                            "version": "1.0.0",
+                            "topic_count": 5
+                        }
+                    ]
+                }
                 """.trimIndent()
 
             mockServer.enqueue(
