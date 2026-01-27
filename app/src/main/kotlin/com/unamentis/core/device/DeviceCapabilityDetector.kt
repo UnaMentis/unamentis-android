@@ -3,6 +3,7 @@ package com.unamentis.core.device
 import android.app.ActivityManager
 import android.content.Context
 import android.os.Build
+import android.util.Log
 import androidx.core.content.getSystemService
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -31,6 +32,53 @@ class DeviceCapabilityDetector
     constructor(
         @ApplicationContext private val context: Context,
     ) {
+        companion object {
+            private const val TAG = "DeviceCapability"
+
+            // Qualcomm Snapdragon 8 Gen2+ SoC models (support QNN NPU acceleration)
+            private val QUALCOMM_NPU_SOCS =
+                setOf(
+                    // Snapdragon 8 Gen 2
+                    "SM8550",
+                    // Snapdragon 8 Gen 3
+                    "SM8650",
+                    // Snapdragon 8 Gen 4
+                    "SM8750",
+                    // Snapdragon 8 Elite
+                    "SM8750-AB",
+                    // Snapdragon 8 Gen 1 (limited QNN support)
+                    "taro",
+                    // Snapdragon 8 Gen 2 codename
+                    "kalama",
+                    // Snapdragon 8 Gen 3 codename
+                    "pineapple",
+                )
+
+            // SoCs known to have good OpenCL GPU support
+            private val OPENCL_GPU_SOCS =
+                setOf(
+                    // Qualcomm Snapdragon (Adreno GPUs)
+                    "SM8550",
+                    "SM8650",
+                    "SM8750",
+                    "SM8450",
+                    "SM8475",
+                    "SM8350",
+                    "SM7675",
+                    "SM7550",
+                    "kalama",
+                    "pineapple",
+                    "taro",
+                    // MediaTek Dimensity (Mali GPUs)
+                    "MT6989",
+                    "MT6985",
+                    "MT6983",
+                    // Samsung Exynos (RDNA GPUs - best Vulkan support)
+                    "s5e9945",
+                    "s5e9935",
+                )
+        }
+
         private val activityManager: ActivityManager? = context.getSystemService()
 
         /**
@@ -97,6 +145,12 @@ class DeviceCapabilityDetector
             val recommendedLLMModel: OnDeviceModelSpec?,
             val manufacturer: String,
             val model: String,
+            /** Whether device has Qualcomm NPU for QNN acceleration */
+            val hasQualcommNPU: Boolean = false,
+            /** Whether device has OpenCL GPU support */
+            val hasOpenCLGPU: Boolean = false,
+            /** SoC platform identifier */
+            val socPlatform: String = "",
         )
 
         /**
@@ -111,6 +165,13 @@ class DeviceCapabilityDetector
             val supportsVulkan = apiLevel >= 24 // Android 7.0+
 
             val tier = classifyTier(totalRamMB, cpuCores, apiLevel)
+
+            // Detect SoC platform for NPU/GPU capabilities
+            val socPlatform = detectSoCPlatform()
+            val hasQualcommNPU = checkQualcommNPUSupport(socPlatform)
+            val hasOpenCLGPU = checkOpenCLGPUSupport(socPlatform)
+
+            Log.i(TAG, "SoC: $socPlatform, NPU: $hasQualcommNPU, OpenCL: $hasOpenCLGPU")
 
             // Check on-device LLM support (3GB+ RAM, 4+ cores, Android 8.0+)
             val canRunOnDeviceLLM =
@@ -142,6 +203,9 @@ class DeviceCapabilityDetector
                 recommendedLLMModel = recommendedModel,
                 manufacturer = Build.MANUFACTURER,
                 model = Build.MODEL,
+                hasQualcommNPU = hasQualcommNPU,
+                hasOpenCLGPU = hasOpenCLGPU,
+                socPlatform = socPlatform,
             )
         }
 
@@ -336,6 +400,7 @@ class DeviceCapabilityDetector
          */
         private fun getAndroidVersionName(apiLevel: Int): String {
             return when (apiLevel) {
+                35 -> "Android 15"
                 34 -> "Android 14"
                 33 -> "Android 13"
                 32 -> "Android 12L"
@@ -347,5 +412,140 @@ class DeviceCapabilityDetector
                 26 -> "Android 8.0"
                 else -> "Android $apiLevel"
             }
+        }
+
+        /**
+         * Detect the SoC platform identifier.
+         */
+        private fun detectSoCPlatform(): String {
+            // Try multiple sources for SoC identification
+            val sources =
+                listOf(
+                    // API 31+
+                    { Build.SOC_MODEL },
+                    { getSystemProperty("ro.board.platform") },
+                    { getSystemProperty("ro.hardware") },
+                    { Build.HARDWARE },
+                )
+
+            for (source in sources) {
+                try {
+                    val value = source()
+                    if (!value.isNullOrBlank() && value != "unknown") {
+                        return value
+                    }
+                } catch (e: Exception) {
+                    // Continue to next source
+                }
+            }
+
+            return "unknown"
+        }
+
+        /**
+         * Get a system property value.
+         */
+        private fun getSystemProperty(key: String): String? {
+            return try {
+                val process = Runtime.getRuntime().exec("getprop $key")
+                val result = process.inputStream.bufferedReader().readText().trim()
+                process.waitFor()
+                result.ifEmpty { null }
+            } catch (e: Exception) {
+                null
+            }
+        }
+
+        /**
+         * Check if device has Qualcomm NPU support for QNN acceleration.
+         *
+         * Requires Snapdragon 8 Gen2+ for best QNN support.
+         */
+        private fun checkQualcommNPUSupport(socPlatform: String): Boolean {
+            // Check if SoC matches known Qualcomm NPU-capable chips
+            val normalizedSoc = socPlatform.lowercase()
+            return QUALCOMM_NPU_SOCS.any { normalizedSoc.contains(it.lowercase()) }
+        }
+
+        /**
+         * Check if device has OpenCL GPU support.
+         *
+         * Checks both known SoCs and attempts to load OpenCL library.
+         */
+        private fun checkOpenCLGPUSupport(socPlatform: String): Boolean {
+            // First check if SoC is known to have good OpenCL support
+            val normalizedSoc = socPlatform.lowercase()
+            val hasKnownSupport = OPENCL_GPU_SOCS.any { normalizedSoc.contains(it.lowercase()) }
+
+            if (hasKnownSupport) {
+                return true
+            }
+
+            // Try to load OpenCL library as fallback check
+            return try {
+                System.loadLibrary("OpenCL")
+                true
+            } catch (e: UnsatisfiedLinkError) {
+                // OpenCL not available
+                false
+            } catch (e: Exception) {
+                false
+            }
+        }
+
+        /**
+         * Check if device has Qualcomm NPU for QNN acceleration.
+         *
+         * @return true if device supports ExecuTorch with QNN backend
+         */
+        fun hasQualcommNPU(): Boolean {
+            return detect().hasQualcommNPU
+        }
+
+        /**
+         * Check if device has OpenCL GPU support.
+         *
+         * @return true if device supports MediaPipe with OpenCL backend
+         */
+        fun hasOpenCLGPU(): Boolean {
+            return detect().hasOpenCLGPU
+        }
+
+        /**
+         * Check if device is a flagship Qualcomm device (Snapdragon 8 Gen2+).
+         *
+         * @return true if device has Snapdragon 8 Gen2 or newer
+         */
+        fun isSnapdragon8Gen2OrNewer(): Boolean {
+            val socPlatform = detectSoCPlatform().lowercase()
+            val flagshipSocs = setOf("sm8550", "sm8650", "sm8750", "kalama", "pineapple")
+            return flagshipSocs.any { socPlatform.contains(it) }
+        }
+
+        /**
+         * Get the recommended LLM backend type for this device.
+         *
+         * @return Recommended backend type based on device capabilities
+         */
+        fun getRecommendedLLMBackendType(): LLMBackendType {
+            val capabilities = detect()
+
+            return when {
+                capabilities.hasQualcommNPU && capabilities.totalRamMB >= 8192 ->
+                    LLMBackendType.EXECUTORCH_QNN
+                capabilities.hasOpenCLGPU && capabilities.totalRamMB >= 4096 ->
+                    LLMBackendType.MEDIAPIPE
+                else ->
+                    LLMBackendType.LLAMA_CPP
+            }
+        }
+
+        /**
+         * LLM Backend types for device capability detection.
+         */
+        enum class LLMBackendType {
+            EXECUTORCH_QNN,
+            MEDIAPIPE,
+            LLAMA_CPP,
         }
     }

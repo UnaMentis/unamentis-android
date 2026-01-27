@@ -40,6 +40,7 @@ class SessionManagerTest {
         curriculumEngine = mockk(relaxed = true)
 
         every { audioEngine.startCapture(any()) } returns true
+        every { audioEngine.isCapturing } returns MutableStateFlow(false)
         every { curriculumEngine.getCurrentContext() } returns null
 
         val dependencies =

@@ -142,11 +142,27 @@ class SileroOnnxVADService(
     /**
      * Process a full 512-sample buffer through the VAD model.
      */
+    @Suppress("LongMethod") // Contains debug logging; will be cleaned up when model issues are resolved
     private fun processFullBuffer(
         session: OrtSession,
         env: OrtEnvironment,
     ): VADResult {
         return try {
+            // Calculate audio stats for debugging
+            var sumSquares = 0f
+            var maxAbs = 0f
+            for (sample in audioBuffer) {
+                sumSquares += sample * sample
+                val abs = kotlin.math.abs(sample)
+                if (abs > maxAbs) maxAbs = abs
+            }
+            val rms = kotlin.math.sqrt(sumSquares / audioBuffer.size)
+
+            // Log audio stats periodically
+            if (inferenceCount % 50 == 0) {
+                android.util.Log.d(TAG, "VAD input buffer: rms=${"%.4f".format(rms)}, peak=${"%.4f".format(maxAbs)}")
+            }
+
             // Prepare input tensors for Silero VAD v5
 
             // Audio input: shape [1, 512]
@@ -167,12 +183,25 @@ class SileroOnnxVADService(
                     stateShape,
                 )
 
-            // Sample rate tensor: shape [1]
+            // Sample rate tensor - Silero VAD v5 expects int64 scalar
+            // Use explicit shape [1] since ONNX Runtime Java doesn't support true scalars easily
+            val srShape = longArrayOf(1)
             val srTensor =
                 OnnxTensor.createTensor(
                     env,
-                    longArrayOf(sampleRate),
+                    java.nio.LongBuffer.wrap(longArrayOf(sampleRate)),
+                    srShape,
                 )
+
+            // Log tensor shapes for debugging
+            if (inferenceCount % 50 == 0) {
+                android.util.Log.d(
+                    TAG,
+                    "Tensor shapes: input=${inputTensor.info.shape.contentToString()}, " +
+                        "state=${stateTensor.info.shape.contentToString()}, " +
+                        "sr=${srTensor.info.shape.contentToString()}",
+                )
+            }
 
             // Run inference with correct input names for v5
             val inputs =
@@ -187,7 +216,21 @@ class SileroOnnxVADService(
             // Extract outputs
             // Output: speech probability
             val outputTensor = results.get("output").get() as OnnxTensor
-            val probability = outputTensor.floatBuffer.get(0)
+            val outputBuffer = outputTensor.floatBuffer
+            val probability = outputBuffer.get(0)
+
+            // Log raw output for debugging
+            if (inferenceCount % 50 == 0) {
+                outputBuffer.rewind()
+                val outputSize = outputBuffer.remaining()
+                val outputValues = FloatArray(minOf(5, outputSize))
+                outputBuffer.get(outputValues)
+                android.util.Log.d(
+                    TAG,
+                    "Output tensor: shape=${outputTensor.info.shape.contentToString()}, " +
+                        "values=${outputValues.contentToString()}",
+                )
+            }
 
             // Update state for next call
             val stateNTensor = results.get("stateN").get() as OnnxTensor

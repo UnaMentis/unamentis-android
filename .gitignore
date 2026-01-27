@@ -83,6 +83,10 @@ docs/*COMPLETION*.md
 docs/SPECIFICATION_COMPLIANCE_REVIEW.md
 docs/IMPLEMENTATION_STATUS.md
 
+# Business strategy and confidential documents
+docs/REVENUE_ANALYSIS.md
+docs/BUSINESS_*.md
+
 # Internal Claude skills (team-specific tooling)
 .claude/skills/comms/
 COMMS_SKILL_SETUP_GUIDE.md

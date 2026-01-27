@@ -191,12 +191,26 @@ class SettingsViewModel
                 )
 
         /**
-         * Available models with download status.
+         * Available models with download status (legacy llama.cpp models).
          */
         private val _availableModels =
             MutableStateFlow(modelDownloadManager.getAvailableModels())
         val availableModels: StateFlow<List<ModelDownloadManager.ModelInfo>> =
             _availableModels.asStateFlow()
+
+        /**
+         * Available extended models (all backend types: GPU, NPU, CPU).
+         */
+        private val _availableExtendedModels =
+            MutableStateFlow(modelDownloadManager.getExtendedModels())
+        val availableExtendedModels: StateFlow<List<ModelDownloadManager.ExtendedModelInfo>> =
+            _availableExtendedModels.asStateFlow()
+
+        /**
+         * Recommended extended model for this device (prioritizes NPU/GPU).
+         */
+        val recommendedExtendedModel: ModelDownloadManager.ExtendedModelSpec? =
+            modelDownloadManager.getRecommendedExtendedModel()
 
         /**
          * Whether recommended model is downloaded.
@@ -486,6 +500,37 @@ class SettingsViewModel
          */
         fun refreshAvailableModels() {
             _availableModels.value = modelDownloadManager.getAvailableModels()
+            _availableExtendedModels.value = modelDownloadManager.getExtendedModels()
+        }
+
+        // ==================== Extended Model Methods (GPU/NPU/CPU) ====================
+
+        /**
+         * Download an extended model (supports GPU, NPU, and CPU backends).
+         */
+        fun downloadExtendedModel(spec: ModelDownloadManager.ExtendedModelSpec) {
+            viewModelScope.launch {
+                modelDownloadManager.downloadExtendedModel(spec)
+                refreshAvailableModels()
+            }
+        }
+
+        /**
+         * Download the recommended extended model for optimal performance.
+         */
+        fun downloadRecommendedExtendedModel() {
+            viewModelScope.launch {
+                modelDownloadManager.downloadRecommendedExtendedModel()
+                refreshAvailableModels()
+            }
+        }
+
+        /**
+         * Delete an extended model.
+         */
+        fun deleteExtendedModel(spec: ModelDownloadManager.ExtendedModelSpec) {
+            modelDownloadManager.deleteExtendedModel(spec)
+            refreshAvailableModels()
         }
     }
 

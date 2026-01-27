@@ -11,7 +11,6 @@ import com.unamentis.data.model.TTSService
 import com.unamentis.data.model.VADService
 import com.unamentis.data.repository.CurriculumRepository
 import com.unamentis.data.repository.TopicProgressRepository
-import com.unamentis.services.vad.SileroOnnxVADService
 import com.unamentis.services.vad.SimpleVADService
 import dagger.Module
 import dagger.Provides
@@ -52,26 +51,38 @@ object CoreModule {
      * Priority order:
      * 1. Silero VAD (ONNX) - Neural network-based, high accuracy
      * 2. SimpleVAD - Amplitude-based fallback
+     *
+     * TODO: Currently using SimpleVAD due to Silero ONNX model issues.
+     * The Silero model returns very low confidence values (~0.001) even with
+     * proper audio input. Needs further investigation of the ONNX model.
      */
+    @Suppress("UnusedParameter") // context needed when Silero VAD is re-enabled
     @Provides
     @Singleton
     fun provideVADService(
         @ApplicationContext context: Context,
     ): VADService {
-        // Try Silero VAD (ONNX) first - highest accuracy
-        return try {
-            SileroOnnxVADService(context).also { vad ->
-                vad.initialize()
-                android.util.Log.i("CoreModule", "Using Silero VAD (ONNX)")
-            }
-        } catch (e: Exception) {
-            android.util.Log.w("CoreModule", "Silero ONNX VAD failed, falling back to SimpleVAD", e)
-            // Fall back to simple amplitude-based VAD
-            SimpleVADService().also { vad ->
-                vad.initialize()
-                android.util.Log.i("CoreModule", "Using SimpleVAD (amplitude-based fallback)")
-            }
+        // TEMPORARY: Use SimpleVAD while investigating Silero ONNX model issue
+        // SimpleVAD threshold adjusted for amplified audio (100x gain applied in SessionManager)
+        // With 100x gain, RMS 0.05 = original 0.0005 (silence), RMS 0.3+ = speech
+        return SimpleVADService(threshold = 0.08f, hangoverFrames = 5).also { vad ->
+            vad.initialize()
+            android.util.Log.i("CoreModule", "Using SimpleVAD (threshold=0.08, amplified audio)")
         }
+
+        // Original Silero VAD implementation (disabled due to model issues):
+        // return try {
+        //     SileroOnnxVADService(context).also { vad ->
+        //         vad.initialize()
+        //         android.util.Log.i("CoreModule", "Using Silero VAD (ONNX)")
+        //     }
+        // } catch (e: Exception) {
+        //     android.util.Log.w("CoreModule", "Silero ONNX VAD failed, falling back to SimpleVAD", e)
+        //     SimpleVADService().also { vad ->
+        //         vad.initialize()
+        //         android.util.Log.i("CoreModule", "Using SimpleVAD (amplitude-based fallback)")
+        //     }
+        // }
     }
 
     /**

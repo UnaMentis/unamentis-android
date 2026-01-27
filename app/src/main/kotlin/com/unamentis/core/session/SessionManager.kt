@@ -166,6 +166,11 @@ class SessionManager(
     // Configuration
     private val silenceThresholdMs = 1500L // 1.5 seconds of silence to finalize utterance
 
+    // Audio capture resume configuration
+    private val audioResumeDelayMs = 100L // Delay to allow STT microphone release
+    private val maxAudioResumeRetries = 3
+    private val audioResumeRetryDelayMs = 50L
+
     /**
      * Set the recording mode for this session.
      *
@@ -483,12 +488,56 @@ class SessionManager(
         processLLMResponse()
     }
 
+    // Counter for periodic logging
+    private var audioFrameCount = 0
+
+    // Audio gain for amplifying weak microphone signal
+    // Oboe with VoiceRecognition preset often produces very quiet audio (~0.001 RMS)
+    // We need to amplify to typical speech levels (~0.1 RMS) for VAD to work correctly
+    private val audioGain = 100f
+
     /**
      * Process audio frame from AudioEngine.
      */
+    @Suppress("CyclomaticComplexMethod") // Contains debug logging for diagnosing VAD issues
     private suspend fun processAudioFrame(audioSamples: FloatArray) {
-        // Run VAD
-        val vadResult = vadService.processAudio(audioSamples)
+        audioFrameCount++
+
+        // Apply gain to amplify weak microphone signal for VAD
+        // The amplified samples are used for VAD only; UI level meters use original samples
+        val amplifiedSamples =
+            FloatArray(audioSamples.size) { i ->
+                (audioSamples[i] * audioGain).coerceIn(-1f, 1f)
+            }
+
+        // Run VAD on amplified audio
+        val vadResult = vadService.processAudio(amplifiedSamples)
+
+        // Log periodically to avoid spam (every 100 frames = ~1.2 seconds at 12ms frames)
+        if (audioFrameCount % 100 == 0) {
+            // Calculate RMS amplitude for debugging (on amplified samples)
+            var sumSquares = 0f
+            var maxAbs = 0f
+            for (sample in amplifiedSamples) {
+                sumSquares += sample * sample
+                val abs = kotlin.math.abs(sample)
+                if (abs > maxAbs) maxAbs = abs
+            }
+            val rms = kotlin.math.sqrt(sumSquares / amplifiedSamples.size)
+
+            Log.d(
+                "SessionManager",
+                "Audio frame #$audioFrameCount: state=${_sessionState.value}, " +
+                    "mode=${_recordingMode.value}, VAD(isSpeech=${vadResult.isSpeech}, " +
+                    "confidence=${"%.3f".format(vadResult.confidence)}), " +
+                    "amplified(rms=${"%.4f".format(rms)}, peak=${"%.4f".format(maxAbs)}, gain=$audioGain)",
+            )
+        }
+
+        // Log when speech is first detected
+        if (vadResult.isSpeech && _sessionState.value == SessionState.IDLE) {
+            Log.i("SessionManager", "VAD detected speech! confidence=${vadResult.confidence}")
+        }
 
         when (_sessionState.value) {
             SessionState.IDLE, SessionState.USER_SPEAKING -> {
@@ -532,12 +581,14 @@ class SessionManager(
         if (_sessionState.value == SessionState.IDLE) {
             // Start of user utterance
             userSpeechStartTime = System.currentTimeMillis()
+            Log.i("SessionManager", "Transitioning from IDLE to USER_SPEAKING")
             _sessionState.value = SessionState.USER_SPEAKING
 
             // Start STT streaming
+            Log.i("SessionManager", "Starting STT streaming...")
             startSTTStreaming()
 
-            Log.i("SessionManager", "User started speaking")
+            Log.i("SessionManager", "User started speaking - STT streaming started")
         }
     }
 
@@ -594,6 +645,12 @@ class SessionManager(
      */
     private fun startSTTStreaming() {
         sttJob?.cancel()
+
+        // IMPORTANT: Stop AudioEngine capture to release the microphone for Android's SpeechRecognizer
+        // Android's SpeechRecognizer needs exclusive microphone access
+        Log.i("SessionManager", "Pausing AudioEngine capture for STT")
+        audioEngine.stopCapture()
+
         sttJob =
             scope.launch {
                 try {
@@ -609,9 +666,73 @@ class SessionManager(
                     throw e
                 } catch (e: Exception) {
                     Log.e("SessionManager", "STT error", e)
+                    // Resume audio capture on error
+                    resumeAudioCapture()
                     _sessionState.value = SessionState.ERROR
                 }
             }
+    }
+
+    /**
+     * Resume audio capture after STT completes.
+     *
+     * This method attempts to restart audio capture with retries to handle
+     * timing issues when STT releases the microphone.
+     *
+     * @return true if audio capture was successfully resumed (or already active), false otherwise
+     */
+    private suspend fun resumeAudioCapture(): Boolean {
+        Log.i("SessionManager", "Resuming AudioEngine capture after STT")
+
+        // Check if already capturing - if so, audio is already flowing, which is success
+        if (audioEngine.isCapturing.value) {
+            Log.i("SessionManager", "Audio capture already active, no need to resume")
+            return true
+        }
+
+        // Small delay to allow STT to fully release the microphone
+        // Android's SpeechRecognizer needs time to clean up
+        delay(audioResumeDelayMs)
+
+        var retries = 0
+        var success = false
+
+        while (retries < maxAudioResumeRetries && !success) {
+            // Re-check capturing state in case it changed during delay
+            if (audioEngine.isCapturing.value) {
+                Log.i("SessionManager", "Audio capture became active during delay")
+                return true
+            }
+
+            success =
+                audioEngine.startCapture { audioSamples ->
+                    scope.launch {
+                        processAudioFrame(audioSamples)
+                    }
+                }
+
+            if (!success) {
+                retries++
+                Log.w(
+                    "SessionManager",
+                    "Failed to resume audio capture (attempt $retries/$maxAudioResumeRetries)",
+                )
+                if (retries < maxAudioResumeRetries) {
+                    delay(audioResumeRetryDelayMs)
+                }
+            }
+        }
+
+        if (success) {
+            Log.i("SessionManager", "Audio capture resumed successfully")
+        } else {
+            Log.e(
+                "SessionManager",
+                "Failed to resume audio capture after $maxAudioResumeRetries attempts",
+            )
+        }
+
+        return success
     }
 
     /**
@@ -627,17 +748,19 @@ class SessionManager(
      * Handle final transcription from STT.
      */
     private suspend fun handleFinalTranscription(text: String) {
+        // Stop STT
+        sttJob?.cancel()
+        sttService.stopStreaming()
+
         if (text.isBlank()) {
-            // No speech detected, return to idle
-            _sessionState.value = SessionState.IDLE
+            // No speech detected, return to idle and resume listening
+            Log.i("SessionManager", "No speech detected, returning to IDLE")
+            val audioResumed = resumeAudioCapture()
+            _sessionState.value = if (audioResumed) SessionState.IDLE else SessionState.ERROR
             return
         }
 
         Log.i("SessionManager", "Final transcription: $text")
-
-        // Stop STT
-        sttJob?.cancel()
-        sttService.stopStreaming()
 
         // Add to transcript
         val userEntry =
@@ -660,12 +783,14 @@ class SessionManager(
     /**
      * Process LLM response.
      */
+    @Suppress("LongMethod") // Contains streaming logic that's clearer as one method
     private fun processLLMResponse() {
         _sessionState.value = SessionState.AI_THINKING
 
         val llmStartTime = System.currentTimeMillis()
         var firstTokenTime = 0L
-        val responseBuffer = StringBuilder()
+        val responseBuffer = StringBuilder() // Buffer for TTS chunks (cleared after each chunk)
+        val fullResponse = StringBuilder() // Complete response for conversation history
 
         llmJob?.cancel()
         llmJob =
@@ -695,6 +820,7 @@ class SessionManager(
 
                         if (!token.isDone) {
                             responseBuffer.append(token.content)
+                            fullResponse.append(token.content) // Track complete response
 
                             // Stream to TTS in chunks (every ~20 tokens or sentence boundary)
                             if (shouldSendToTTS(responseBuffer.toString())) {
@@ -710,6 +836,15 @@ class SessionManager(
                                 responseBuffer.clear()
                             }
 
+                            // Add assistant response to conversation history
+                            val assistantResponse = fullResponse.toString()
+                            if (assistantResponse.isNotEmpty()) {
+                                conversationHistory.add(
+                                    LLMMessage(role = "assistant", content = assistantResponse),
+                                )
+                                Log.d("SessionManager", "Added assistant response to history: $assistantResponse")
+                            }
+
                             // Finalize response
                             finalizeLLMResponse()
                         }
@@ -718,7 +853,15 @@ class SessionManager(
                     throw e
                 } catch (e: Exception) {
                     Log.e("SessionManager", "LLM error", e)
-                    _sessionState.value = SessionState.ERROR
+                    // Resume audio capture so user can continue speaking
+                    val audioResumed = resumeAudioCapture()
+                    if (audioResumed) {
+                        _sessionState.value = SessionState.IDLE
+                        Log.i("SessionManager", "Recovered from LLM error, returning to IDLE")
+                    } else {
+                        _sessionState.value = SessionState.ERROR
+                        Log.e("SessionManager", "Failed to recover from LLM error - audio capture failed")
+                    }
                 }
             }
     }
@@ -812,9 +955,15 @@ class SessionManager(
                 e2eLatency = (_metrics.value.e2eLatency + e2eLatency) / 2,
             )
 
-        // Return to listening
-        _sessionState.value = SessionState.IDLE
-        currentTurnStartTime = System.currentTimeMillis()
+        // Resume audio capture and return to listening
+        val audioResumed = resumeAudioCapture()
+        if (audioResumed) {
+            _sessionState.value = SessionState.IDLE
+            currentTurnStartTime = System.currentTimeMillis()
+        } else {
+            _sessionState.value = SessionState.ERROR
+            Log.e("SessionManager", "Failed to resume audio capture after LLM response")
+        }
     }
 
     /**

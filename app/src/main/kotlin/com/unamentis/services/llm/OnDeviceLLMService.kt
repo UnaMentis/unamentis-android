@@ -157,23 +157,29 @@ class OnDeviceLLMService
         fun isLoaded(): Boolean = isModelLoaded.get() && nativeContextPtr.get() != 0L
 
         /**
-         * Get available model path (Ministral first, then TinyLlama).
+         * Get available model path.
+         *
+         * Prefers TinyLlama for interactive use as it provides much faster
+         * inference (sub-minute vs 3+ minutes for Ministral).
+         *
+         * TinyLlama 1.1B: ~10-30 seconds per response
+         * Ministral 3B: ~3-5 minutes per response (too slow for interactive)
          */
         fun getAvailableModelPath(): String? {
             val modelsDir = getModelsDirectory()
 
-            // Try Ministral first (primary)
-            val ministral = File(modelsDir, MINISTRAL_3B_FILENAME)
-            if (ministral.exists()) {
-                Log.d(TAG, "Found Ministral model: ${ministral.absolutePath}")
-                return ministral.absolutePath
-            }
-
-            // Fall back to TinyLlama
+            // Prefer TinyLlama for faster inference (suitable for interactive use)
             val tinyllama = File(modelsDir, TINYLLAMA_1B_FILENAME)
             if (tinyllama.exists()) {
                 Log.d(TAG, "Found TinyLlama model: ${tinyllama.absolutePath}")
                 return tinyllama.absolutePath
+            }
+
+            // Fall back to Ministral (slower but higher quality)
+            val ministral = File(modelsDir, MINISTRAL_3B_FILENAME)
+            if (ministral.exists()) {
+                Log.w(TAG, "Using Ministral model (slower, ~3+ min per response): ${ministral.absolutePath}")
+                return ministral.absolutePath
             }
 
             Log.w(TAG, "No models found in: ${modelsDir.absolutePath}")

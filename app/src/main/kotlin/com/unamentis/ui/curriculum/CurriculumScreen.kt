@@ -23,6 +23,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Clear
@@ -53,6 +54,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import com.unamentis.modules.knowledgebowl.ui.KBNavigationHost
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -106,6 +110,7 @@ fun CurriculumScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var selectedCurriculum by remember { mutableStateOf<Curriculum?>(null) }
     var selectedTopic by remember { mutableStateOf<Topic?>(null) }
+    var showKnowledgeBowl by remember { mutableStateOf(false) }
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
@@ -148,6 +153,12 @@ fun CurriculumScreen(
                     text = { Text(stringResource(R.string.curriculum_downloaded)) },
                     icon = { Icon(Icons.Default.Storage, contentDescription = null) },
                 )
+                Tab(
+                    selected = uiState.selectedTab == CurriculumTab.MODULES,
+                    onClick = { viewModel.selectTab(CurriculumTab.MODULES) },
+                    text = { Text(stringResource(R.string.curriculum_modules)) },
+                    icon = { Icon(Icons.Default.Apps, contentDescription = null) },
+                )
             }
 
             // Connection status banner (for server tab)
@@ -175,7 +186,7 @@ fun CurriculumScreen(
                     onTopicClick = { topic -> selectedTopic = topic },
                 )
             } else {
-                // List view - different for server vs local
+                // List view - different for server vs local vs modules
                 when (uiState.selectedTab) {
                     CurriculumTab.SERVER -> {
                         ServerCurriculaListView(
@@ -189,6 +200,15 @@ fun CurriculumScreen(
                             uiState = uiState,
                             onCurriculumClick = { selectedCurriculum = it },
                             onDelete = { viewModel.deleteCurriculum(it.id) },
+                        )
+                    }
+                    CurriculumTab.MODULES -> {
+                        ModulesSection(
+                            onLaunchModule = { module ->
+                                when (module) {
+                                    TrainingModule.KNOWLEDGE_BOWL -> showKnowledgeBowl = true
+                                }
+                            },
                         )
                     }
                 }
@@ -215,6 +235,26 @@ fun CurriculumScreen(
                     }
                 },
             )
+        }
+    }
+
+    // Knowledge Bowl full-screen dialog
+    if (showKnowledgeBowl) {
+        Dialog(
+            onDismissRequest = { showKnowledgeBowl = false },
+            properties = DialogProperties(
+                usePlatformDefaultWidth = false,
+                decorFitsSystemWindows = false,
+            ),
+        ) {
+            Surface(
+                modifier = Modifier.fillMaxSize(),
+                color = MaterialTheme.colorScheme.background,
+            ) {
+                KBNavigationHost(
+                    onBack = { showKnowledgeBowl = false },
+                )
+            }
         }
     }
 }

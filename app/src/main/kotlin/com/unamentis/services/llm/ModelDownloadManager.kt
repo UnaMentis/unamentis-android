@@ -45,6 +45,10 @@ class ModelDownloadManager
         companion object {
             private const val TAG = "ModelDownloadManager"
 
+            // ==========================================
+            // llama.cpp Models (GGUF format)
+            // ==========================================
+
             // HuggingFace model URLs
             // Using QuantFactory's public Ministral (bartowski's is now gated/401)
             private const val MINISTRAL_3B_URL_BASE =
@@ -55,6 +59,35 @@ class ModelDownloadManager
                 "https://huggingface.co/TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF/resolve/main/"
             private const val TINYLLAMA_1B_FILE = "tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf"
 
+            // Llama 3.2 1B for faster inference (llama.cpp format)
+            private const val LLAMA_1B_GGUF_URL =
+                "https://huggingface.co/lmstudio-community/" +
+                    "Llama-3.2-1B-Instruct-GGUF/resolve/main/Llama-3.2-1B-Instruct-Q4_K_M.gguf"
+            const val LLAMA_1B_GGUF_FILENAME = "llama-3.2-1b-instruct-q4_k_m.gguf"
+
+            // ==========================================
+            // MediaPipe Models (.task format)
+            // ==========================================
+
+            // Gemma 2B for MediaPipe LLM Inference
+            // Note: MediaPipe requires models in .task format converted via MediaPipe Model Maker
+            // These are pre-converted models from Google's AI Edge model library
+            private const val GEMMA_2B_TASK_URL =
+                "https://storage.googleapis.com/mediapipe-assets/gemma-2b-it-gpu-int4.task"
+
+            // ==========================================
+            // ExecuTorch Models (.pte format)
+            // ==========================================
+
+            // Note: ExecuTorch .pte models require custom export with QNN backend
+            // These models need to be exported using ExecuTorch's Llama export script
+            // with Qualcomm-specific quantization (16a4w)
+            // For now, we'll use placeholder URLs - actual models need to be hosted
+            private const val LLAMA_1B_PTE_URL =
+                "https://storage.googleapis.com/unamentis-models/llama-3.2-1b-instruct-qnn.pte"
+            private const val LLAMA_3B_PTE_URL =
+                "https://storage.googleapis.com/unamentis-models/llama-3.2-3b-instruct-qnn.pte"
+
             // SHA256 checksums for verification (from HuggingFace LFS OIDs)
             private val MODEL_CHECKSUMS =
                 mapOf(
@@ -62,6 +95,15 @@ class ModelDownloadManager
                         "88d665cbee7f074f3b283c64d0ea5c356c5d923d635c9ab65d5c17329d41f734",
                     OnDeviceLLMService.TINYLLAMA_1B_FILENAME to
                         "9fecc3b3cd76bba89d504f29b616eedf7da85b96540e490ca5824d3f7d2776a0",
+                    // New model checksums (to be updated once models are hosted)
+                    // Will be populated once hosted
+                    LLAMA_1B_GGUF_FILENAME to "",
+                    // Google's model - no checksum verification needed
+                    MediaPipeLLMService.GEMMA_2B_FILENAME to "",
+                    // Custom export - checksum TBD
+                    ExecuTorchLLMService.LLAMA_1B_FILENAME to "",
+                    // Custom export - checksum TBD
+                    ExecuTorchLLMService.LLAMA_3B_FILENAME to "",
                 )
 
             // Download timeout (models are large)
@@ -98,6 +140,69 @@ class ModelDownloadManager
         data class ModelInfo(
             val spec: DeviceCapabilityDetector.OnDeviceModelSpec,
             val downloadUrl: String,
+            val isDownloaded: Boolean,
+            val fileSizeOnDisk: Long,
+        )
+
+        /**
+         * Extended model specification for all backend types.
+         */
+        enum class ExtendedModelSpec(
+            val filename: String,
+            val displayName: String,
+            val sizeBytes: Long,
+            val minRamMB: Int,
+            val backendType: LLMBackendType,
+            val downloadUrl: String,
+        ) {
+            // llama.cpp models (GGUF format)
+            LLAMA_1B_GGUF(
+                filename = LLAMA_1B_GGUF_FILENAME,
+                displayName = "Llama 3.2 1B (Fast)",
+                // ~900MB
+                sizeBytes = 900_000_000L,
+                minRamMB = 2048,
+                backendType = LLMBackendType.LLAMA_CPP,
+                downloadUrl = LLAMA_1B_GGUF_URL,
+            ),
+
+            // MediaPipe models (.task format)
+            GEMMA_2B_TASK(
+                filename = MediaPipeLLMService.GEMMA_2B_FILENAME,
+                displayName = "Gemma 2B (GPU)",
+                // ~1.5GB
+                sizeBytes = 1_500_000_000L,
+                minRamMB = 4096,
+                backendType = LLMBackendType.MEDIAPIPE,
+                downloadUrl = GEMMA_2B_TASK_URL,
+            ),
+
+            // ExecuTorch models (.pte format)
+            LLAMA_1B_PTE(
+                filename = ExecuTorchLLMService.LLAMA_1B_FILENAME,
+                displayName = "Llama 3.2 1B (NPU)",
+                // ~1GB
+                sizeBytes = 1_000_000_000L,
+                minRamMB = 4096,
+                backendType = LLMBackendType.EXECUTORCH_QNN,
+                downloadUrl = LLAMA_1B_PTE_URL,
+            ),
+            LLAMA_3B_PTE(
+                filename = ExecuTorchLLMService.LLAMA_3B_FILENAME,
+                displayName = "Llama 3.2 3B (NPU)",
+                // ~2.5GB
+                sizeBytes = 2_500_000_000L,
+                minRamMB = 8192,
+                backendType = LLMBackendType.EXECUTORCH_QNN,
+                downloadUrl = LLAMA_3B_PTE_URL,
+            ),
+        }
+
+        /**
+         * Extended model info including backend type.
+         */
+        data class ExtendedModelInfo(
+            val spec: ExtendedModelSpec,
             val isDownloaded: Boolean,
             val fileSizeOnDisk: Long,
         )
@@ -457,5 +562,279 @@ class ModelDownloadManager
             }
 
             return digest.digest().joinToString("") { "%02x".format(it) }
+        }
+
+        // ==========================================
+        // Extended Model Support (All Backend Types)
+        // ==========================================
+
+        /**
+         * Get all extended models available for this device.
+         * Includes llama.cpp, MediaPipe, and ExecuTorch models.
+         */
+        fun getExtendedModels(): List<ExtendedModelInfo> {
+            val capabilities = deviceCapabilityDetector.detect()
+            val modelsDir = getModelsDirectory()
+
+            return ExtendedModelSpec.entries
+                .filter { spec ->
+                    // Filter by RAM requirements
+                    capabilities.totalRamMB >= spec.minRamMB &&
+                        // Filter by backend availability
+                        when (spec.backendType) {
+                            LLMBackendType.EXECUTORCH_QNN -> capabilities.hasQualcommNPU
+                            LLMBackendType.MEDIAPIPE -> capabilities.hasOpenCLGPU
+                            LLMBackendType.LLAMA_CPP -> true // Always available
+                        }
+                }
+                .map { spec ->
+                    val file = File(modelsDir, spec.filename)
+                    ExtendedModelInfo(
+                        spec = spec,
+                        isDownloaded = file.exists() && file.length() > 0,
+                        fileSizeOnDisk = if (file.exists()) file.length() else 0L,
+                    )
+                }
+        }
+
+        /**
+         * Get the recommended extended model for this device.
+         * Priority: ExecuTorch > MediaPipe > llama.cpp
+         */
+        fun getRecommendedExtendedModel(): ExtendedModelSpec? {
+            val capabilities = deviceCapabilityDetector.detect()
+
+            return when {
+                // Flagship Qualcomm with NPU: Use ExecuTorch
+                capabilities.hasQualcommNPU && capabilities.totalRamMB >= 8192 ->
+                    ExtendedModelSpec.LLAMA_1B_PTE
+                capabilities.hasQualcommNPU && capabilities.totalRamMB >= 4096 ->
+                    ExtendedModelSpec.LLAMA_1B_PTE
+                // High-end with GPU: Use MediaPipe
+                capabilities.hasOpenCLGPU && capabilities.totalRamMB >= 4096 ->
+                    ExtendedModelSpec.GEMMA_2B_TASK
+                // Fallback: llama.cpp with fast 1B model
+                capabilities.totalRamMB >= 2048 ->
+                    ExtendedModelSpec.LLAMA_1B_GGUF
+                else -> null
+            }
+        }
+
+        /**
+         * Download an extended model specification.
+         */
+        @Suppress("LongMethod", "CyclomaticComplexMethod")
+        suspend fun downloadExtendedModel(spec: ExtendedModelSpec): Result<String> =
+            withContext(Dispatchers.IO) {
+                currentDownloadJob = currentCoroutineContext()[Job]
+                isCancelled.set(false)
+                _downloadState.value = DownloadState.Downloading(0f, 0, spec.sizeBytes)
+
+                val modelsDir = getModelsDirectory()
+                val targetFile = File(modelsDir, spec.filename)
+                val tempFile = File(modelsDir, "${spec.filename}.download")
+
+                try {
+                    // Check if already downloaded
+                    if (targetFile.exists() && targetFile.length() > 0) {
+                        currentDownloadJob = null
+                        Log.i(TAG, "Extended model already exists: ${targetFile.absolutePath}")
+                        _downloadState.value = DownloadState.Complete(targetFile.absolutePath)
+                        return@withContext Result.success(targetFile.absolutePath)
+                    }
+
+                    Log.i(TAG, "Starting extended model download: ${spec.downloadUrl}")
+
+                    // Build request (with resume support)
+                    val requestBuilder = Request.Builder().url(spec.downloadUrl)
+
+                    // Resume from existing partial download
+                    val startByte =
+                        if (tempFile.exists()) {
+                            val existingSize = tempFile.length()
+                            requestBuilder.header("Range", "bytes=$existingSize-")
+                            Log.i(TAG, "Resuming from byte $existingSize")
+                            existingSize
+                        } else {
+                            0L
+                        }
+
+                    val request = requestBuilder.build()
+                    val call = downloadClient.newCall(request)
+                    currentCall = call
+                    val response = call.execute()
+
+                    response.use { resp ->
+                        if (!resp.isSuccessful && resp.code != 206) {
+                            currentCall = null
+                            currentDownloadJob = null
+                            val error = "Download failed: HTTP ${resp.code}"
+                            Log.e(TAG, error)
+                            _downloadState.value = DownloadState.Error(error)
+                            return@withContext Result.failure(IOException(error))
+                        }
+
+                        // Handle server ignoring Range header
+                        val actualStartByte: Long
+                        if (startByte > 0 && resp.code != 206) {
+                            Log.w(TAG, "Server ignored Range header. Restarting download.")
+                            currentCall = null
+                            tempFile.delete()
+                            return@withContext downloadExtendedModel(spec)
+                        } else {
+                            actualStartByte = startByte
+                        }
+
+                        val body =
+                            resp.body ?: run {
+                                currentCall = null
+                                currentDownloadJob = null
+                                val error = "Empty response body"
+                                Log.e(TAG, error)
+                                _downloadState.value = DownloadState.Error(error)
+                                return@withContext Result.failure(IOException(error))
+                            }
+
+                        val contentLength = body.contentLength()
+                        val totalBytes =
+                            if (resp.code == 206) {
+                                val contentRange = resp.header("Content-Range")
+                                contentRange?.substringAfter("/")?.toLongOrNull()
+                                    ?: (actualStartByte + contentLength)
+                            } else {
+                                contentLength
+                            }
+
+                        Log.i(TAG, "Total size: $totalBytes bytes")
+
+                        val outputStream = FileOutputStream(tempFile, actualStartByte > 0)
+                        val inputStream = body.byteStream()
+                        val buffer = ByteArray(BUFFER_SIZE)
+                        var downloadedBytes = actualStartByte
+                        var bytesRead: Int
+                        var lastReportedProgress = -1
+
+                        outputStream.use { output ->
+                            inputStream.use { input ->
+                                while (input.read(buffer).also { bytesRead = it } != -1) {
+                                    if (isCancelled.get()) {
+                                        currentCall = null
+                                        currentDownloadJob = null
+                                        Log.i(TAG, "Download cancelled")
+                                        _downloadState.value = DownloadState.Cancelled
+                                        return@withContext Result.failure(
+                                            IOException("Download cancelled"),
+                                        )
+                                    }
+
+                                    output.write(buffer, 0, bytesRead)
+                                    downloadedBytes += bytesRead
+
+                                    val progress = downloadedBytes.toFloat() / totalBytes
+                                    val currentPercent = (progress * 100).toInt()
+                                    if (currentPercent > lastReportedProgress) {
+                                        lastReportedProgress = currentPercent
+                                        _downloadState.value =
+                                            DownloadState.Downloading(
+                                                progress = progress,
+                                                downloadedBytes = downloadedBytes,
+                                                totalBytes = totalBytes,
+                                            )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Log.i(TAG, "Download complete, verifying...")
+                    _downloadState.value = DownloadState.Verifying(spec.filename)
+
+                    // Verify checksum (if available)
+                    val expectedChecksum = MODEL_CHECKSUMS[spec.filename]
+                    if (!expectedChecksum.isNullOrBlank()) {
+                        val actualChecksum = calculateSha256(tempFile)
+                        if (actualChecksum != expectedChecksum) {
+                            currentCall = null
+                            currentDownloadJob = null
+                            tempFile.delete()
+                            val error = "Checksum verification failed"
+                            Log.e(TAG, "$error: expected $expectedChecksum, got $actualChecksum")
+                            _downloadState.value = DownloadState.Error(error)
+                            return@withContext Result.failure(IOException(error))
+                        }
+                        Log.i(TAG, "Checksum verified")
+                    } else {
+                        Log.w(TAG, "No checksum available for ${spec.filename}, skipping verification")
+                    }
+
+                    // Rename temp file to final
+                    if (!tempFile.renameTo(targetFile)) {
+                        currentCall = null
+                        currentDownloadJob = null
+                        val error = "Failed to rename temp file"
+                        Log.e(TAG, error)
+                        _downloadState.value = DownloadState.Error(error)
+                        return@withContext Result.failure(IOException(error))
+                    }
+
+                    currentCall = null
+                    currentDownloadJob = null
+                    Log.i(TAG, "Extended model ready: ${targetFile.absolutePath}")
+                    _downloadState.value = DownloadState.Complete(targetFile.absolutePath)
+                    Result.success(targetFile.absolutePath)
+                } catch (e: Exception) {
+                    currentCall = null
+                    currentDownloadJob = null
+                    if (isCancelled.get()) {
+                        Log.i(TAG, "Download cancelled")
+                        _downloadState.value = DownloadState.Cancelled
+                        Result.failure(IOException("Download cancelled"))
+                    } else {
+                        Log.e(TAG, "Download failed", e)
+                        _downloadState.value = DownloadState.Error(e.message ?: "Unknown error")
+                        Result.failure(e)
+                    }
+                }
+            }
+
+        /**
+         * Download the recommended extended model for this device.
+         */
+        suspend fun downloadRecommendedExtendedModel(): Result<String> {
+            val recommended =
+                getRecommendedExtendedModel()
+                    ?: return Result.failure(
+                        IllegalStateException("No recommended model for this device"),
+                    )
+
+            return downloadExtendedModel(recommended)
+        }
+
+        /**
+         * Check if the recommended extended model is downloaded.
+         */
+        fun isRecommendedExtendedModelDownloaded(): Boolean {
+            val recommended = getRecommendedExtendedModel() ?: return false
+            val file = File(getModelsDirectory(), recommended.filename)
+            return file.exists() && file.length() > 0
+        }
+
+        /**
+         * Delete an extended model.
+         */
+        fun deleteExtendedModel(spec: ExtendedModelSpec): Boolean {
+            val file = File(getModelsDirectory(), spec.filename)
+            val tempFile = File(getModelsDirectory(), "${spec.filename}.download")
+
+            var deleted = false
+            if (file.exists()) {
+                deleted = file.delete()
+                Log.i(TAG, "Deleted extended model: ${spec.filename}, success: $deleted")
+            }
+            if (tempFile.exists()) {
+                tempFile.delete()
+            }
+
+            return deleted
         }
     }

@@ -5,6 +5,8 @@ import android.os.Build
 import android.util.Log
 import com.unamentis.BuildConfig
 import com.unamentis.data.model.Curriculum
+import com.unamentis.data.model.UMCFDocument
+import com.unamentis.data.model.UMCFParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -240,10 +242,17 @@ class ApiClient(
      *
      * GET /api/curricula/{id}/full-with-assets
      *
+     * The server returns UMCF 2.0 format which is converted to the internal
+     * Curriculum model using UMCFParser.
+     *
      * @param id Curriculum ID
+     * @param selectedTopicIds Optional set of topic IDs to include. If empty, includes all topics.
      * @return Complete curriculum with assets
      */
-    suspend fun getCurriculumFullWithAssets(id: String): Curriculum =
+    suspend fun getCurriculumFullWithAssets(
+        id: String,
+        selectedTopicIds: Set<String> = emptySet(),
+    ): Curriculum =
         withContext(Dispatchers.IO) {
             val request =
                 Request.Builder()
@@ -257,10 +266,10 @@ class ApiClient(
                     throw IOException("API error: ${response.code} ${response.message}")
                 }
                 val body = response.body?.string() ?: throw IOException("Empty response body")
-                // The response has "curriculum" and "assets" fields, we extract curriculum
-                val fullResponse = json.decodeFromString<Map<String, kotlinx.serialization.json.JsonElement>>(body)
-                val curriculumJson = json.encodeToString(fullResponse["curriculum"])
-                json.decodeFromString<Curriculum>(curriculumJson)
+
+                // Parse as UMCF 2.0 document and convert to internal model
+                val umcfDocument = json.decodeFromString<UMCFDocument>(body)
+                UMCFParser.convertToCurriculum(umcfDocument, selectedTopicIds)
             }
         }
 

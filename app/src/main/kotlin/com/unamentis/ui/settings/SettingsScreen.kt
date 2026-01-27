@@ -70,6 +70,7 @@ import com.unamentis.R
 import com.unamentis.core.config.ConfigurationPreset
 import com.unamentis.core.config.RecordingMode
 import com.unamentis.core.device.DeviceCapabilityDetector
+import com.unamentis.services.llm.LLMBackendType
 import com.unamentis.services.llm.ModelDownloadManager
 import com.unamentis.ui.components.BrandLogo
 import com.unamentis.ui.components.IOSCard
@@ -137,6 +138,7 @@ fun SettingsScreen(
     // On-Device LLM settings
     val downloadState by viewModel.downloadState.collectAsStateWithLifecycle()
     val availableModels by viewModel.availableModels.collectAsStateWithLifecycle()
+    val availableExtendedModels by viewModel.availableExtendedModels.collectAsStateWithLifecycle()
 
     // Handle deep link to specific section
     LaunchedEffect(initialSection) {
@@ -365,10 +367,14 @@ fun SettingsScreen(
                     recommendedModel = viewModel.recommendedModel,
                     downloadState = downloadState,
                     availableModels = availableModels,
+                    availableExtendedModels = availableExtendedModels,
+                    recommendedExtendedModel = viewModel.recommendedExtendedModel,
                     onDownloadRecommended = { viewModel.downloadRecommendedModel() },
                     onDownloadModel = { viewModel.downloadModel(it) },
                     onCancelDownload = { viewModel.cancelDownload() },
                     onDeleteModel = { viewModel.deleteModel(it) },
+                    onDownloadExtendedModel = { viewModel.downloadExtendedModel(it) },
+                    onDeleteExtendedModel = { viewModel.deleteExtendedModel(it) },
                 )
             }
 
@@ -1392,13 +1398,18 @@ private fun OnDeviceLlmSection(
     recommendedModel: DeviceCapabilityDetector.OnDeviceModelSpec?,
     downloadState: ModelDownloadManager.DownloadState,
     availableModels: List<ModelDownloadManager.ModelInfo>,
+    availableExtendedModels: List<ModelDownloadManager.ExtendedModelInfo>,
+    recommendedExtendedModel: ModelDownloadManager.ExtendedModelSpec?,
     onDownloadRecommended: () -> Unit,
     onDownloadModel: (DeviceCapabilityDetector.OnDeviceModelSpec) -> Unit,
     onCancelDownload: () -> Unit,
     onDeleteModel: (DeviceCapabilityDetector.OnDeviceModelSpec) -> Unit,
+    onDownloadExtendedModel: (ModelDownloadManager.ExtendedModelSpec) -> Unit,
+    onDeleteExtendedModel: (ModelDownloadManager.ExtendedModelSpec) -> Unit,
 ) {
     val context = LocalContext.current
     var showDeleteDialog by remember { mutableStateOf<DeviceCapabilityDetector.OnDeviceModelSpec?>(null) }
+    var showExtendedDeleteDialog by remember { mutableStateOf<ModelDownloadManager.ExtendedModelSpec?>(null) }
 
     Card(
         modifier =
@@ -1450,25 +1461,56 @@ private fun OnDeviceLlmSection(
                 onCancel = onCancelDownload,
             )
 
-            // Available models
-            Text(
-                text = stringResource(R.string.settings_available_models),
-                style = IOSTypography.body,
-            )
-
-            availableModels.forEach { modelInfo ->
-                ModelCard(
-                    modelInfo = modelInfo,
-                    isRecommended = modelInfo.spec == recommendedModel,
-                    isDownloading = downloadState is ModelDownloadManager.DownloadState.Downloading,
-                    onDownload = { onDownloadModel(modelInfo.spec) },
-                    onDelete = { showDeleteDialog = modelInfo.spec },
+            // High-performance models (NPU/GPU accelerated)
+            if (availableExtendedModels.isNotEmpty()) {
+                Text(
+                    text = stringResource(R.string.settings_high_performance_models),
+                    style = IOSTypography.body,
                 )
+                Text(
+                    text = stringResource(R.string.settings_high_performance_models_desc),
+                    style = IOSTypography.caption,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
+                availableExtendedModels.forEach { modelInfo ->
+                    ExtendedModelCard(
+                        modelInfo = modelInfo,
+                        isRecommended = modelInfo.spec == recommendedExtendedModel,
+                        isDownloading = downloadState is ModelDownloadManager.DownloadState.Downloading,
+                        onDownload = { onDownloadExtendedModel(modelInfo.spec) },
+                        onDelete = { showExtendedDeleteDialog = modelInfo.spec },
+                    )
+                }
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = Dimensions.SpacingSmall))
             }
 
-            // Quick download for recommended model
-            if (availableModels.none { it.isDownloaded } &&
-                downloadState is ModelDownloadManager.DownloadState.Idle
+            // Legacy models (CPU)
+            if (availableModels.isNotEmpty()) {
+                Text(
+                    text = stringResource(R.string.settings_legacy_models),
+                    style = IOSTypography.body,
+                )
+
+                availableModels.forEach { modelInfo ->
+                    ModelCard(
+                        modelInfo = modelInfo,
+                        isRecommended = modelInfo.spec == recommendedModel,
+                        isDownloading = downloadState is ModelDownloadManager.DownloadState.Downloading,
+                        onDownload = { onDownloadModel(modelInfo.spec) },
+                        onDelete = { showDeleteDialog = modelInfo.spec },
+                    )
+                }
+            }
+
+            // Quick download for recommended extended model
+            val hasAnyModelDownloaded =
+                availableExtendedModels.any { it.isDownloaded } ||
+                    availableModels.any { it.isDownloaded }
+            if (!hasAnyModelDownloaded &&
+                downloadState is ModelDownloadManager.DownloadState.Idle &&
+                recommendedExtendedModel != null
             ) {
                 TextButton(
                     onClick = onDownloadRecommended,
@@ -1515,6 +1557,38 @@ private fun OnDeviceLlmSection(
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = null }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            },
+        )
+    }
+
+    // Delete confirmation dialog for extended models
+    showExtendedDeleteDialog?.let { spec ->
+        AlertDialog(
+            onDismissRequest = { showExtendedDeleteDialog = null },
+            title = { Text(stringResource(R.string.settings_delete_model_title)) },
+            text = {
+                Text(
+                    stringResource(
+                        R.string.settings_delete_model_body,
+                        spec.displayName,
+                        Formatter.formatFileSize(context, spec.sizeBytes),
+                    ),
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onDeleteExtendedModel(spec)
+                        showExtendedDeleteDialog = null
+                    },
+                ) {
+                    Text(stringResource(R.string.settings_delete), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showExtendedDeleteDialog = null }) {
                     Text(stringResource(R.string.cancel))
                 }
             },
@@ -1825,4 +1899,138 @@ private fun ModelCard(
             }
         }
     }
+}
+
+/**
+ * Extended model card showing download/delete options with backend type badge.
+ */
+@Composable
+private fun ExtendedModelCard(
+    modelInfo: ModelDownloadManager.ExtendedModelInfo,
+    isRecommended: Boolean,
+    isDownloading: Boolean,
+    onDownload: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    val context = LocalContext.current
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
+                ) {
+                    Text(
+                        text = modelInfo.spec.displayName,
+                        style = IOSTypography.body,
+                    )
+                    // Backend type badge
+                    BackendTypeBadge(backendType = modelInfo.spec.backendType)
+                    if (isRecommended) {
+                        FilterChip(
+                            selected = true,
+                            onClick = {},
+                            label = {
+                                Text(
+                                    stringResource(R.string.settings_recommended),
+                                    style = IOSTypography.caption2,
+                                )
+                            },
+                        )
+                    }
+                }
+
+                Text(
+                    text =
+                        buildString {
+                            append(Formatter.formatFileSize(context, modelInfo.spec.sizeBytes))
+                            append(" • ")
+                            append(
+                                context.getString(
+                                    R.string.settings_model_requires_ram,
+                                    modelInfo.spec.minRamMB / 1024,
+                                ),
+                            )
+                        },
+                    style = IOSTypography.caption,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+
+                if (modelInfo.isDownloaded) {
+                    Text(
+                        text = stringResource(R.string.settings_downloaded),
+                        style = IOSTypography.caption,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
+
+            if (modelInfo.isDownloaded) {
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = stringResource(R.string.cd_delete_model),
+                        tint = MaterialTheme.colorScheme.error,
+                    )
+                }
+            } else {
+                IconButton(
+                    onClick = onDownload,
+                    enabled = !isDownloading,
+                ) {
+                    Icon(
+                        Icons.Default.Download,
+                        contentDescription = stringResource(R.string.cd_download_model),
+                        tint =
+                            if (isDownloading) {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            } else {
+                                MaterialTheme.colorScheme.primary
+                            },
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Backend type badge showing NPU/GPU/CPU.
+ */
+@Composable
+private fun BackendTypeBadge(backendType: LLMBackendType) {
+    val (label, color) =
+        when (backendType) {
+            LLMBackendType.EXECUTORCH_QNN -> {
+                stringResource(R.string.settings_backend_npu) to MaterialTheme.colorScheme.tertiary
+            }
+            LLMBackendType.MEDIAPIPE -> {
+                stringResource(R.string.settings_backend_gpu) to MaterialTheme.colorScheme.secondary
+            }
+            LLMBackendType.LLAMA_CPP -> {
+                stringResource(R.string.settings_backend_cpu) to MaterialTheme.colorScheme.outline
+            }
+        }
+
+    FilterChip(
+        selected = false,
+        onClick = {},
+        label = {
+            Text(
+                text = label,
+                style = IOSTypography.caption2,
+                color = color,
+            )
+        },
+    )
 }

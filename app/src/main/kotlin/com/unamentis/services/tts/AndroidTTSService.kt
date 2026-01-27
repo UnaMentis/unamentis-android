@@ -41,29 +41,51 @@ class AndroidTTSService(
 
     private var tts: TextToSpeech? = null
     private var isInitialized = false
+    private var initializationInProgress = false
+    private val initLock = Object()
+    private val initCallbacks = mutableListOf<() -> Unit>()
 
     /**
      * Initialize TTS engine.
      * Should be called before synthesize().
      */
     fun initialize(onReady: (() -> Unit)? = null) {
+        synchronized(initLock) {
+            if (isInitialized) {
+                onReady?.invoke()
+                return
+            }
+            if (onReady != null) {
+                initCallbacks.add(onReady)
+            }
+            if (initializationInProgress) {
+                return
+            }
+            initializationInProgress = true
+        }
+
         tts =
             TextToSpeech(context) { status ->
-                if (status == TextToSpeech.SUCCESS) {
-                    val result = tts?.setLanguage(language)
-                    if (result == TextToSpeech.LANG_MISSING_DATA ||
-                        result == TextToSpeech.LANG_NOT_SUPPORTED
-                    ) {
-                        android.util.Log.e("AndroidTTS", "Language not supported: $language")
-                        isInitialized = false
+                synchronized(initLock) {
+                    initializationInProgress = false
+                    if (status == TextToSpeech.SUCCESS) {
+                        val result = tts?.setLanguage(language)
+                        if (result == TextToSpeech.LANG_MISSING_DATA ||
+                            result == TextToSpeech.LANG_NOT_SUPPORTED
+                        ) {
+                            android.util.Log.e("AndroidTTS", "Language not supported: $language")
+                            isInitialized = false
+                        } else {
+                            isInitialized = true
+                            android.util.Log.i("AndroidTTS", "TTS initialized successfully")
+                        }
                     } else {
-                        isInitialized = true
-                        android.util.Log.i("AndroidTTS", "TTS initialized successfully")
-                        onReady?.invoke()
+                        android.util.Log.e("AndroidTTS", "TTS initialization failed")
+                        isInitialized = false
                     }
-                } else {
-                    android.util.Log.e("AndroidTTS", "TTS initialization failed")
-                    isInitialized = false
+                    // Notify all waiting callbacks
+                    initCallbacks.forEach { it.invoke() }
+                    initCallbacks.clear()
                 }
             }
     }
@@ -74,15 +96,34 @@ class AndroidTTSService(
      * Note: Android TTS doesn't support true streaming. This implementation
      * synthesizes to a file first, then reads it back as chunks.
      *
+     * Auto-initializes if not already initialized.
+     *
      * @param text Text to synthesize
      * @return Flow of audio chunks
      */
     override fun synthesize(text: String): Flow<TTSAudioChunk> =
         callbackFlow {
+            // Auto-initialize if needed
             if (!isInitialized || tts == null) {
-                android.util.Log.e("AndroidTTS", "TTS not initialized")
-                close(IllegalStateException("TTS not initialized. Call initialize() first."))
-                return@callbackFlow
+                android.util.Log.i("AndroidTTS", "Auto-initializing TTS...")
+                val initComplete = kotlinx.coroutines.CompletableDeferred<Boolean>()
+
+                initialize {
+                    initComplete.complete(isInitialized)
+                }
+
+                // Wait for initialization (with timeout)
+                val initialized =
+                    kotlinx.coroutines.withTimeoutOrNull(5000L) {
+                        initComplete.await()
+                    } ?: false
+
+                if (!initialized) {
+                    android.util.Log.e("AndroidTTS", "TTS initialization failed or timed out")
+                    close(IllegalStateException("TTS initialization failed. Please try again."))
+                    return@callbackFlow
+                }
+                android.util.Log.i("AndroidTTS", "TTS auto-initialized successfully")
             }
 
             val utteranceId = UUID.randomUUID().toString()

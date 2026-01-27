@@ -258,7 +258,14 @@ fun UnaMentisNavHost(
                                 navDeepLink { uriPattern = DeepLinkRoutes.URI_CURRICULUM },
                             ),
                     ) {
-                        CurriculumScreen()
+                        CurriculumScreen(
+                            onNavigateToSession = { curriculumId, topicId ->
+                                val route =
+                                    "session/start?curriculum_id=$curriculumId" +
+                                        (topicId?.let { "&topic_id=$it" } ?: "")
+                                navController.navigate(route)
+                            },
+                        )
                     }
 
                     // Curriculum detail
@@ -274,7 +281,15 @@ fun UnaMentisNavHost(
                             ),
                     ) { backStackEntry ->
                         val curriculumId = backStackEntry.arguments?.getString("id")
-                        CurriculumScreen(initialCurriculumId = curriculumId)
+                        CurriculumScreen(
+                            initialCurriculumId = curriculumId,
+                            onNavigateToSession = { navCurriculumId, topicId ->
+                                val route =
+                                    "session/start?curriculum_id=$navCurriculumId" +
+                                        (topicId?.let { "&topic_id=$it" } ?: "")
+                                navController.navigate(route)
+                            },
+                        )
                     }
 
                     // To-Do tab with deep link support

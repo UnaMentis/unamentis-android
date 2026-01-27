@@ -252,6 +252,9 @@ enum class CurriculumTab {
 
     /** Local tab - shows downloaded curricula */
     LOCAL,
+
+    /** Modules tab - shows specialized training modules like Knowledge Bowl */
+    MODULES,
 }
 
 /**

@@ -12,6 +12,10 @@ import com.unamentis.data.model.LLMService
 import com.unamentis.data.model.STTService
 import com.unamentis.data.model.TTSService
 import com.unamentis.services.llm.AnthropicLLMService
+import com.unamentis.services.llm.ExecuTorchLLMService
+import com.unamentis.services.llm.LLMBackend
+import com.unamentis.services.llm.LLMBackendSelector
+import com.unamentis.services.llm.MediaPipeLLMService
 import com.unamentis.services.llm.ModelDownloadManager
 import com.unamentis.services.llm.OnDeviceLLMService
 import com.unamentis.services.llm.OpenAILLMService
@@ -202,6 +206,79 @@ object ProviderModule {
         @ApplicationContext context: Context,
     ): LLMService {
         return OnDeviceLLMService(context)
+    }
+
+    // ==========================================
+    // High-Performance LLM Backends
+    // ==========================================
+
+    /**
+     * Provide MediaPipe LLM service for GPU-accelerated inference.
+     *
+     * Uses Google's MediaPipe LLM Inference API with OpenCL GPU acceleration.
+     * Performance: 20-50 tok/sec on high-end devices.
+     */
+    @Provides
+    @Singleton
+    fun provideMediaPipeLLMService(
+        @ApplicationContext context: Context,
+    ): MediaPipeLLMService {
+        return MediaPipeLLMService(context)
+    }
+
+    /**
+     * Provide ExecuTorch LLM service for Qualcomm NPU acceleration.
+     *
+     * Uses PyTorch ExecuTorch with Qualcomm AI Engine Direct (QNN) backend.
+     * Performance: 50+ tok/sec on Snapdragon 8 Gen2+ devices.
+     */
+    @Provides
+    @Singleton
+    fun provideExecuTorchLLMService(
+        @ApplicationContext context: Context,
+    ): ExecuTorchLLMService {
+        return ExecuTorchLLMService(context)
+    }
+
+    /**
+     * Provide LLM Backend Selector for automatic backend selection.
+     *
+     * Selects the optimal backend based on device capabilities:
+     * 1. ExecuTorch + QNN (Snapdragon 8 Gen2+): 50+ tok/sec
+     * 2. MediaPipe (OpenCL GPU): 20-30 tok/sec
+     * 3. llama.cpp CPU fallback: 5-10 tok/sec
+     */
+    @Provides
+    @Singleton
+    fun provideLLMBackendSelector(
+        deviceCapabilityDetector: DeviceCapabilityDetector,
+        execuTorchProvider: Provider<ExecuTorchLLMService>,
+        mediaPipeProvider: Provider<MediaPipeLLMService>,
+        @Named("OnDeviceLLM") llamaCppProvider: Provider<LLMService>,
+    ): LLMBackendSelector {
+        return LLMBackendSelector(
+            deviceCapabilityDetector = deviceCapabilityDetector,
+            execuTorchProvider = execuTorchProvider,
+            mediaPipeProvider = mediaPipeProvider,
+            llamaCppProvider =
+                Provider {
+                    llamaCppProvider.get() as OnDeviceLLMService
+                },
+        )
+    }
+
+    /**
+     * Provide the best available LLM backend for this device.
+     *
+     * Uses LLMBackendSelector to automatically choose:
+     * - ExecuTorch (NPU) on flagship Qualcomm devices
+     * - MediaPipe (GPU) on devices with OpenCL support
+     * - llama.cpp (CPU) as fallback
+     */
+    @Provides
+    @Singleton
+    fun provideOptimalLLMBackend(selector: LLMBackendSelector): LLMBackend {
+        return selector.getSelectedBackend()
     }
 
     /**
@@ -419,17 +496,46 @@ object ProviderModule {
 
     /**
      * Provide default LLM service based on configuration.
+     *
+     * Reads the user's selected LLM provider from ProviderConfig and returns
+     * the appropriate service:
+     * - "OnDevice": Uses llama.cpp with Ministral/TinyLlama (free, offline)
+     * - "OpenAI": Uses OpenAI API (requires API key)
+     * - "Anthropic": Uses Anthropic API (requires API key)
+     * - "PatchPanel" (default): Intelligent routing based on task type
+     *
+     * Note: Changes take effect on app restart since Hilt provides singletons.
      */
     @Provides
     @Singleton
     fun provideDefaultLLMService(
         @Named("PatchPanelLLM") patchPanel: LLMService,
-        @Named("OpenAILLM") _openai: LLMService,
-        @Named("AnthropicLLM") _anthropic: LLMService,
-        _config: ProviderConfig,
+        @Named("OpenAILLM") openai: LLMService,
+        @Named("AnthropicLLM") anthropic: LLMService,
+        @Named("OnDeviceLLM") onDevice: LLMService,
+        config: ProviderConfig,
     ): LLMService {
-        // TODO: Read from config.selectedLLMProvider flow
-        // For now, default to PatchPanel
-        return patchPanel
+        val selectedProvider = config.getLLMProvider()
+        android.util.Log.i("ProviderModule", "Selected LLM provider: $selectedProvider")
+
+        return when (selectedProvider) {
+            "OnDevice" -> {
+                android.util.Log.i("ProviderModule", "Using OnDevice LLM (llama.cpp)")
+                onDevice
+            }
+            "OpenAI" -> {
+                android.util.Log.i("ProviderModule", "Using OpenAI LLM")
+                openai
+            }
+            "Anthropic" -> {
+                android.util.Log.i("ProviderModule", "Using Anthropic LLM")
+                anthropic
+            }
+            else -> {
+                // Default to PatchPanel for intelligent routing
+                android.util.Log.i("ProviderModule", "Using PatchPanel LLM (intelligent routing)")
+                patchPanel
+            }
+        }
     }
 }

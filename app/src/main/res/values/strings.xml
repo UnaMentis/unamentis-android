@@ -108,6 +108,22 @@
     <string name="search_curricula">Search curricula…</string>
     <string name="refresh">Refresh</string>
     <string name="cancel_download">Cancel Download</string>
+    <string name="curriculum_modules">Modules</string>
+
+    <!-- Modules Section -->
+    <string name="modules_section_title">Training Modules</string>
+    <string name="modules_section_subtitle">Specialized practice for competitions and exams</string>
+    <string name="module_knowledge_bowl_title">Knowledge Bowl</string>
+    <string name="module_knowledge_bowl_description">Academic competition prep across 12 subject domains</string>
+    <string name="module_kb_feature_domains">12 knowledge domains (Science, Math, Literature, History, and more)</string>
+    <string name="module_kb_feature_practice">Written and oral practice modes</string>
+    <string name="module_kb_feature_competition">Competition simulation with regional rules</string>
+    <string name="tap_to_start_practicing">Tap to start practicing</string>
+    <string name="coming_soon">Coming Soon</string>
+    <string name="coming_soon_badge">Soon</string>
+    <string name="module_sat_prep_title">SAT Preparation</string>
+    <string name="module_sat_prep_description">Comprehensive SAT practice and strategies</string>
+    <string name="cd_module_card">%1$s module. Double tap to open.</string>
 
     <!-- History Screen -->
     <string name="history_no_sessions">No sessions yet</string>
@@ -337,6 +353,85 @@
     <string name="cd_kb_speaking">Speaking</string>
     <string name="cd_kb_listening">Listening</string>
     <string name="cd_kb_tap_to_speak">Tap to speak</string>
+
+    <!-- Knowledge Bowl Match Simulation -->
+    <string name="kb_match_format_quick">Quick Match</string>
+    <string name="kb_match_format_half">Half Match</string>
+    <string name="kb_match_format_full">Full Match</string>
+    <string name="kb_opponent_beginner">Beginner</string>
+    <string name="kb_opponent_intermediate">Intermediate</string>
+    <string name="kb_opponent_advanced">Advanced</string>
+    <string name="kb_opponent_expert">Expert</string>
+    <string name="kb_match_simulation">Match Simulation</string>
+    <string name="kb_match_simulation_description">Compete against AI opponents in a full match</string>
+    <string name="kb_setup_match">Set Up Match</string>
+    <string name="kb_match_format">Match Format</string>
+    <string name="kb_opponent_strength">Opponent Strength</string>
+    <string name="kb_your_team">Your Team</string>
+    <string name="kb_start_match">Start Match</string>
+    <string name="kb_written_round">Written Round</string>
+    <string name="kb_oral_round">Oral Round</string>
+    <string name="kb_oral_round_n">Oral Round %d</string>
+    <string name="kb_round_review">Round Review</string>
+    <string name="kb_match_results">Match Results</string>
+    <string name="kb_scoreboard">Scoreboard</string>
+    <string name="kb_your_rank">Your Rank</string>
+    <string name="kb_rank_format">#%d</string>
+    <string name="kb_you_won">You Won!</string>
+    <string name="kb_your_performance">Your Performance</string>
+    <string name="kb_written_accuracy">Written Accuracy</string>
+    <string name="kb_oral_accuracy">Oral Accuracy</string>
+    <string name="kb_start_oral_rounds">Start Oral Rounds</string>
+    <string name="kb_next_round">Next Round</string>
+    <string name="kb_finish_match">Finish Match</string>
+    <string name="kb_buzz">Buzz!</string>
+    <string name="kb_buzzed_first">%s buzzed first!</string>
+    <string name="kb_you_buzzed_first">You buzzed first!</string>
+    <string name="kb_waiting_for_buzz">Waiting for buzz…</string>
+    <string name="kb_answer_question">Answer the question</string>
+    <string name="kb_opponent_answered">%s answered</string>
+    <string name="kb_rebound_opportunity">Rebound opportunity!</string>
+    <string name="kb_points_display">%d pts</string>
+
+    <!-- Knowledge Bowl Conference Training -->
+    <string name="kb_conference_training">Conference Training</string>
+    <string name="kb_conference_training_description">Practice team discussion with time limits</string>
+    <string name="kb_hand_signals">Hand Signals</string>
+    <string name="kb_signal_confident">Confident</string>
+    <string name="kb_signal_unsure">Unsure</string>
+    <string name="kb_signal_pass">Pass</string>
+    <string name="kb_signal_wait">Wait</string>
+    <string name="kb_signal_answer">Answer</string>
+    <string name="kb_signal_agree">Agree</string>
+    <string name="kb_signal_disagree">Disagree</string>
+    <string name="kb_conference_efficiency">Conference Efficiency</string>
+    <string name="kb_fastest_time">Fastest Time</string>
+    <string name="kb_timeouts">Timeouts</string>
+
+    <!-- Knowledge Bowl Rebound Training -->
+    <string name="kb_rebound_training">Rebound Training</string>
+    <string name="kb_rebound_training_description">Practice answering after opponent mistakes</string>
+    <string name="kb_opponent_buzzing">Opponent buzzing…</string>
+    <string name="kb_opponent_incorrect">Opponent answered incorrectly!</string>
+    <string name="kb_your_turn">Your turn!</string>
+    <string name="kb_rebound_success">Rebound Success</string>
+    <string name="kb_strategic_decisions">Strategic Decisions</string>
+    <string name="kb_buzzed_correctly">Buzzed Correctly</string>
+    <string name="kb_strategic_hold">Strategic Hold</string>
+    <string name="kb_missed_opportunity">Missed Opportunity</string>
+
+    <!-- Knowledge Bowl Domain Drill -->
+    <string name="kb_domain_drill">Domain Drill</string>
+    <string name="kb_domain_drill_description">Focus on specific knowledge domains</string>
+    <string name="kb_select_domain">Select Domain</string>
+    <string name="kb_difficulty_range">Difficulty Range</string>
+    <string name="kb_start_drill">Start Drill</string>
+    <string name="kb_weak_areas">Weak Areas</string>
+    <string name="kb_practice_weak_areas">Practice your weak areas</string>
+
+    <!-- Knowledge Bowl Competition Training Section -->
+    <string name="kb_competition_training">Competition Training</string>
+    <string name="kb_competition_training_subtitle">Advanced training modes</string>
 
     <!-- Analytics Screen -->
     <string name="analytics_title">Analytics</string>
@@ -687,6 +782,15 @@
     <string name="settings_error_label">Error: %1$s</string>
     <string name="settings_not_supported_message">Your device doesn\'t meet the minimum requirements for on-device AI. Cloud-based AI will be used instead.</string>
     <string name="settings_models_storage_hint">Models are stored locally and can be deleted anytime to free space.</string>
+
+    <!-- LLM Backend type labels -->
+    <string name="settings_backend_npu">NPU</string>
+    <string name="settings_backend_gpu">GPU</string>
+    <string name="settings_backend_cpu">CPU</string>
+    <string name="settings_high_performance_models">High-Performance Models</string>
+    <string name="settings_high_performance_models_desc">Optimized models using hardware acceleration (NPU/GPU)</string>
+    <string name="settings_legacy_models">Legacy Models</string>
+    <string name="settings_backend_speed">%1$d tok/sec</string>
     <string name="cd_success">Success</string>
     <string name="cd_error">Error</string>
     <string name="cd_delete_model">Delete model</string>
