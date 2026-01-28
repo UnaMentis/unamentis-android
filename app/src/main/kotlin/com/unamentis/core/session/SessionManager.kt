@@ -160,8 +160,11 @@ class SessionManager(
     // Active jobs for cancellation
     private var sttJob: Job? = null
     private var llmJob: Job? = null
-    private var ttsJob: Job? = null
     private var vadJob: Job? = null
+
+    // TTS jobs collection - tracks ALL active TTS jobs to prevent race conditions
+    // Each call to synthesizeAndPlay() adds to this list instead of overwriting
+    private val ttsJobs = mutableListOf<Job>()
 
     // Configuration
     private val silenceThresholdMs = 1500L // 1.5 seconds of silence to finalize utterance
@@ -627,7 +630,13 @@ class SessionManager(
 
         // Cancel AI operations
         llmJob?.cancel()
-        ttsJob?.cancel()
+
+        // Cancel ALL TTS jobs (not just one)
+        synchronized(ttsJobs) {
+            ttsJobs.forEach { it.cancel() }
+            ttsJobs.clear()
+        }
+
         audioEngine.stopPlayback()
 
         _sessionState.value = SessionState.INTERRUPTED
@@ -681,6 +690,7 @@ class SessionManager(
      *
      * @return true if audio capture was successfully resumed (or already active), false otherwise
      */
+    @Suppress("ReturnCount") // Multiple early returns improve readability in retry logic
     private suspend fun resumeAudioCapture(): Boolean {
         Log.i("SessionManager", "Resuming AudioEngine capture after STT")
 
@@ -725,6 +735,13 @@ class SessionManager(
 
         if (success) {
             Log.i("SessionManager", "Audio capture resumed successfully")
+
+            // Verify audio is actually flowing by waiting briefly and checking state
+            delay(50) // Wait for first audio callback
+            if (!audioEngine.isCapturing.value) {
+                Log.w("SessionManager", "Audio capture state changed to false after resume")
+                success = false
+            }
         } else {
             Log.e(
                 "SessionManager",
@@ -876,9 +893,13 @@ class SessionManager(
 
     /**
      * Synthesize text and play audio.
+     *
+     * IMPORTANT: This method adds TTS jobs to a list instead of overwriting a single job.
+     * This prevents race conditions when multiple LLM chunks trigger TTS synthesis.
+     * All jobs are awaited in finalizeLLMResponse() before transitioning state.
      */
     private fun synthesizeAndPlay(text: String) {
-        ttsJob =
+        val job =
             scope.launch {
                 try {
                     val audioChunks = mutableListOf<ByteArray>()
@@ -915,14 +936,31 @@ class SessionManager(
                     Log.e("SessionManager", "TTS error", e)
                 }
             }
+
+        // Add to the list of TTS jobs (instead of overwriting single ttsJob)
+        synchronized(ttsJobs) {
+            ttsJobs.add(job)
+        }
     }
 
     /**
      * Finalize LLM response and add to transcript.
      */
     private suspend fun finalizeLLMResponse() {
-        // Wait for TTS to complete
-        ttsJob?.join()
+        // Wait for ALL TTS jobs to complete (fixes race condition)
+        val jobsToAwait: List<Job>
+        synchronized(ttsJobs) {
+            jobsToAwait = ttsJobs.toList()
+        }
+
+        Log.i("SessionManager", "Waiting for ${jobsToAwait.size} TTS jobs to complete")
+        jobsToAwait.forEach { it.join() }
+
+        // Clear the TTS jobs list
+        synchronized(ttsJobs) {
+            ttsJobs.clear()
+        }
+        Log.i("SessionManager", "All TTS jobs completed")
 
         // Get full response from conversation history
         val fullResponse = conversationHistory.lastOrNull { it.role == "assistant" }?.content ?: ""
@@ -998,8 +1036,13 @@ class SessionManager(
     private fun cancelActiveOperations() {
         sttJob?.cancel()
         llmJob?.cancel()
-        ttsJob?.cancel()
         vadJob?.cancel()
+
+        // Cancel ALL TTS jobs (not just one)
+        synchronized(ttsJobs) {
+            ttsJobs.forEach { it.cancel() }
+            ttsJobs.clear()
+        }
 
         // Launch coroutine to stop services asynchronously
         scope.launch {

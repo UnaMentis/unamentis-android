@@ -125,6 +125,9 @@ class AndroidSTTService(
                                             latencyMs = latency,
                                         ),
                                     )
+                                    // Close the flow after emitting empty result
+                                    android.util.Log.i("AndroidSTT", "Closing flow after empty result")
+                                    close()
                                 } else {
                                     close(Exception(errorMessage))
                                 }
@@ -135,19 +138,23 @@ class AndroidSTTService(
                                 val confidences = results?.getFloatArray(SpeechRecognizer.CONFIDENCE_SCORES)
                                 val latency = System.currentTimeMillis() - startTime
 
-                                matches?.firstOrNull()?.let { text ->
-                                    val confidence = confidences?.firstOrNull() ?: 1.0f
-                                    android.util.Log.i("AndroidSTT", "Final result: $text (confidence: $confidence)")
+                                val text = matches?.firstOrNull() ?: ""
+                                val confidence = confidences?.firstOrNull() ?: 1.0f
+                                android.util.Log.i("AndroidSTT", "Final result: $text (confidence: $confidence)")
 
-                                    trySend(
-                                        STTResult(
-                                            text = text,
-                                            isFinal = true,
-                                            confidence = confidence,
-                                            latencyMs = latency,
-                                        ),
-                                    )
-                                }
+                                trySend(
+                                    STTResult(
+                                        text = text,
+                                        isFinal = true,
+                                        confidence = confidence,
+                                        latencyMs = latency,
+                                    ),
+                                )
+
+                                // Close the flow after emitting final result
+                                // This ensures proper state transition in SessionManager
+                                android.util.Log.i("AndroidSTT", "Closing flow after final result")
+                                close()
                             }
 
                             override fun onPartialResults(partialResults: Bundle?) {

@@ -30,6 +30,9 @@ class SessionManagerTest {
     private val testDispatcher = StandardTestDispatcher()
     private val testScope = TestScope(testDispatcher)
 
+    // Track mock audio capturing state to simulate real AudioEngine behavior
+    private val mockIsCapturing = MutableStateFlow(false)
+
     @Before
     fun setup() {
         audioEngine = mockk(relaxed = true)
@@ -39,8 +42,19 @@ class SessionManagerTest {
         llmService = mockk(relaxed = true)
         curriculumEngine = mockk(relaxed = true)
 
-        every { audioEngine.startCapture(any()) } returns true
-        every { audioEngine.isCapturing } returns MutableStateFlow(false)
+        // Reset capturing state for each test
+        mockIsCapturing.value = false
+
+        // Simulate AudioEngine behavior: startCapture sets isCapturing to true
+        every { audioEngine.startCapture(any()) } answers {
+            mockIsCapturing.value = true
+            true
+        }
+        every { audioEngine.stopCapture() } answers {
+            mockIsCapturing.value = false
+            Unit
+        }
+        every { audioEngine.isCapturing } returns mockIsCapturing
         every { curriculumEngine.getCurrentContext() } returns null
 
         val dependencies =
