@@ -12,11 +12,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.School
@@ -49,12 +47,13 @@ enum class TrainingModule(
     val icon: ImageVector,
     val color: Color,
 ) {
+    // Purple color for Knowledge Bowl module
     KNOWLEDGE_BOWL(
         id = "knowledge-bowl",
         icon = Icons.Default.Psychology,
-        color = Color(0xFF9C27B0), // Purple
+        color = Color(0xFF9C27B0),
     ),
-    // Future modules can be added here
+    // Future modules can be added here:
     // SAT_PREP("sat-prep", Icons.Default.School, Color(0xFF2196F3)),
 }
 
@@ -73,10 +72,11 @@ fun ModulesSection(
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(
-            horizontal = Dimensions.ScreenHorizontalPadding,
-            vertical = Dimensions.SpacingLarge,
-        ),
+        contentPadding =
+            androidx.compose.foundation.layout.PaddingValues(
+                horizontal = Dimensions.ScreenHorizontalPadding,
+                vertical = Dimensions.SpacingLarge,
+            ),
         verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
     ) {
         item {
@@ -89,11 +89,12 @@ fun ModulesSection(
                 module = TrainingModule.KNOWLEDGE_BOWL,
                 title = stringResource(R.string.module_knowledge_bowl_title),
                 description = stringResource(R.string.module_knowledge_bowl_description),
-                features = listOf(
-                    stringResource(R.string.module_kb_feature_domains),
-                    stringResource(R.string.module_kb_feature_practice),
-                    stringResource(R.string.module_kb_feature_competition),
-                ),
+                features =
+                    listOf(
+                        stringResource(R.string.module_kb_feature_domains),
+                        stringResource(R.string.module_kb_feature_practice),
+                        stringResource(R.string.module_kb_feature_competition),
+                    ),
                 onClick = { onLaunchModule(TrainingModule.KNOWLEDGE_BOWL) },
             )
         }
@@ -142,14 +143,16 @@ private fun ModuleCard(
     val cardContentDescription = stringResource(R.string.cd_module_card, title)
 
     Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .semantics { contentDescription = cardContentDescription }
-            .clickable(onClick = onClick),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .semantics { contentDescription = cardContentDescription }
+                .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-        ),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface,
+            ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Column(
@@ -163,10 +166,11 @@ private fun ModuleCard(
             ) {
                 // Module icon
                 Box(
-                    modifier = Modifier
-                        .size(56.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(module.color.copy(alpha = 0.15f)),
+                    modifier =
+                        Modifier
+                            .size(56.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(module.color.copy(alpha = 0.15f)),
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
@@ -216,10 +220,11 @@ private fun ModuleCard(
                 color = module.color.copy(alpha = 0.1f),
             ) {
                 Row(
-                    modifier = Modifier.padding(
-                        horizontal = Dimensions.SpacingMedium,
-                        vertical = Dimensions.SpacingSmall,
-                    ),
+                    modifier =
+                        Modifier.padding(
+                            horizontal = Dimensions.SpacingMedium,
+                            vertical = Dimensions.SpacingSmall,
+                        ),
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -250,10 +255,11 @@ private fun FeatureBadge(
         horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingXSmall),
     ) {
         Box(
-            modifier = Modifier
-                .size(6.dp)
-                .clip(RoundedCornerShape(3.dp))
-                .background(color),
+            modifier =
+                Modifier
+                    .size(6.dp)
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(color),
         )
         Text(
             text = text,
@@ -299,9 +305,10 @@ private fun ComingSoonCard(
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-        ),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+            ),
     ) {
         Row(
             modifier = Modifier.padding(Dimensions.CardPadding),

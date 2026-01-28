@@ -404,21 +404,100 @@
     <string name="kb_signal_answer">Answer</string>
     <string name="kb_signal_agree">Agree</string>
     <string name="kb_signal_disagree">Disagree</string>
+    <string name="kb_signal_confident_gesture">Thumbs up</string>
+    <string name="kb_signal_unsure_gesture">Flat hand wobble</string>
+    <string name="kb_signal_pass_gesture">Wave off</string>
+    <string name="kb_signal_wait_gesture">Raised finger</string>
+    <string name="kb_signal_answer_gesture">Point to self</string>
+    <string name="kb_signal_agree_gesture">Nod or thumbs sideways</string>
+    <string name="kb_signal_disagree_gesture">Subtle head shake</string>
     <string name="kb_conference_efficiency">Conference Efficiency</string>
     <string name="kb_fastest_time">Fastest Time</string>
+    <string name="kb_slowest_time">Slowest Time</string>
     <string name="kb_timeouts">Timeouts</string>
+    <string name="kb_conference_rules">%1$s Conference Rules</string>
+    <string name="kb_time_limit">Time Limit</string>
+    <string name="kb_seconds_format">%1$d seconds</string>
+    <string name="kb_communication">Communication</string>
+    <string name="kb_hand_signals_only">Hand signals only</string>
+    <string name="kb_verbal_allowed">Verbal allowed</string>
+    <string name="kb_no_talking_warning">No talking during conference!</string>
+    <string name="kb_training_options">Training Options</string>
+    <string name="kb_progressive_difficulty">Progressive Difficulty</string>
+    <string name="kb_progressive_levels">Time limits: 15s → 12s → 10s → 8s</string>
+    <string name="kb_questions_count">Questions: %1$d</string>
+    <string name="kb_start_training">Start Training</string>
+    <string name="kb_practice_hand_signals">Practice Hand Signals</string>
+    <string name="kb_level_format">Level %1$d</string>
+    <string name="kb_time_limit_format">Time Limit: %1$ds</string>
+    <string name="kb_use_hand_signals">Use hand signals to confer</string>
+    <string name="kb_team_agreed_answer">Team Agreed - Answer</string>
+    <string name="kb_need_more_time">More Time</string>
+    <string name="kb_skip_question">Skip Question</string>
+    <string name="kb_signal_practice">Hand Signal Practice</string>
+    <string name="kb_learn_kb_signals">Learn the standard KB hand signals</string>
+    <string name="kb_scenario">Scenario:</string>
+    <string name="kb_what_signal">What signal would you use?</string>
+    <string name="kb_back_to_training">Back to Training</string>
+    <string name="kb_back">Back</string>
+    <string name="kb_done">Done</string>
+    <string name="kb_training_settings">Training Settings</string>
+    <string name="kb_train_again">Train Again</string>
+    <string name="kb_final_level">Final Level</string>
+    <string name="kb_excellent">Excellent!</string>
+    <string name="kb_good_progress">Good Progress!</string>
+    <string name="kb_keep_practicing">Keep Practicing!</string>
+    <string name="kb_correct_of_total">%1$d/%2$d correct</string>
+    <string name="kb_practice_quick_team_decisions">Practice quick team decisions within the time limit</string>
 
     <!-- Knowledge Bowl Rebound Training -->
     <string name="kb_rebound_training">Rebound Training</string>
+    <string name="kb_rebound_training_subtitle">Capitalize on mistakes</string>
     <string name="kb_rebound_training_description">Practice answering after opponent mistakes</string>
-    <string name="kb_opponent_buzzing">Opponent buzzing…</string>
+    <string name="kb_rebound_description">Practice capitalizing on opponent misses</string>
+    <string name="kb_how_rebounds_work">How Rebounds Work</string>
+    <string name="kb_rebound_step_1">Opponent buzzes and answers</string>
+    <string name="kb_rebound_step_2">If wrong, it\'s a rebound opportunity</string>
+    <string name="kb_rebound_step_3">Decide: buzz for points or hold strategically</string>
+    <string name="kb_rebound_key_strategy">Key Strategy: Don\'t buzz unless you\'re confident. A wrong rebound costs points!</string>
+    <string name="kb_opponent_accuracy_value">Opponent Accuracy: %1$s</string>
+    <string name="kb_lower_more_rebounds">Lower = more rebound opportunities</string>
+    <string name="kb_rebound_probability_value">Rebound Probability: %1$s</string>
+    <string name="kb_chance_opponent_buzzes">Chance opponent buzzes first</string>
+    <string name="kb_show_opponent_answer">Show Opponent\'s Answer</string>
+    <string name="kb_questions_count_label">Questions: %1$d</string>
+    <string name="kb_view_practice_scenarios">View Practice Scenarios</string>
+    <string name="kb_practice_scenarios">Practice Scenarios</string>
+    <string name="kb_vs_opponent">vs %1$s</string>
+    <string name="kb_question_progress">%1$d/%2$d</string>
+    <string name="kb_opponent_buzzed">%1$s BUZZED!</string>
+    <string name="kb_their_answer">Their answer:</string>
     <string name="kb_opponent_incorrect">Opponent answered incorrectly!</string>
-    <string name="kb_your_turn">Your turn!</string>
+    <string name="kb_opponent_got_wrong">%1$s got it WRONG</string>
+    <string name="kb_rebound_opportunity_alert">REBOUND OPPORTUNITY!</string>
+    <string name="kb_rebound_buzz">BUZZ!</string>
+    <string name="kb_hold_dont_know">Hold (Don\'t know)</string>
+    <string name="kb_rebound_time_remaining">Time remaining: %1$ss</string>
+    <string name="kb_rebound_your_turn">Your turn to answer!</string>
+    <string name="kb_i_got_it_right">I Got It Right</string>
+    <string name="kb_i_got_it_wrong">I Got It Wrong</string>
+    <string name="kb_correct_answer_label">Correct answer:</string>
     <string name="kb_rebound_success">Rebound Success</string>
+    <string name="kb_rebound_master">Rebound Master!</string>
+    <string name="kb_good_instincts">Good Instincts!</string>
+    <string name="kb_rebounds_correct_of_taken">%1$d/%2$d rebounds correct</string>
+    <string name="kb_total_points">Total Points</string>
+    <string name="kb_rebound_accuracy">Rebound Accuracy</string>
+    <string name="kb_opportunities">Opportunities</string>
+    <string name="kb_rebounds_taken">Rebounds Taken</string>
     <string name="kb_strategic_decisions">Strategic Decisions</string>
-    <string name="kb_buzzed_correctly">Buzzed Correctly</string>
-    <string name="kb_strategic_hold">Strategic Hold</string>
-    <string name="kb_missed_opportunity">Missed Opportunity</string>
+    <string name="kb_strategic_holds">Strategic Holds</string>
+    <string name="kb_avg_response">Avg Response</string>
+    <string name="kb_rebound_buzzed_correctly">Buzzed &amp; Correct</string>
+    <string name="kb_rebound_buzzed_incorrectly">Buzzed &amp; Wrong</string>
+    <string name="kb_rebound_strategic_hold">Strategic Hold</string>
+    <string name="kb_rebound_missed_opportunity">Missed Opportunity</string>
+    <string name="kb_rebound_correctly_ignored">Correctly Ignored</string>
 
     <!-- Knowledge Bowl Domain Drill -->
     <string name="kb_domain_drill">Domain Drill</string>
@@ -428,10 +507,26 @@
     <string name="kb_start_drill">Start Drill</string>
     <string name="kb_weak_areas">Weak Areas</string>
     <string name="kb_practice_weak_areas">Practice your weak areas</string>
+    <string name="kb_end_drill">End</string>
+    <string name="kb_time_pressure_mode">Time Pressure Mode</string>
+    <string name="kb_seconds_per_question">%1$d seconds per question</string>
+    <string name="kb_type_your_answer">Type your answer…</string>
+    <string name="kb_press_enter_to_submit">Press Enter to submit</string>
+    <string name="kb_source_label">Source: %1$s</string>
+    <string name="kb_drill_complete">Drill Complete!</string>
+    <string name="kb_best_streak">Best Streak</string>
+    <string name="kb_drill_difficulty">Difficulty</string>
+    <string name="kb_seconds_value">%.1fs</string>
+    <string name="kb_question_breakdown">Question Breakdown</string>
+    <string name="kb_drill_again">Drill Again</string>
+    <string name="kb_choose_different_domain">Choose Different Domain</string>
 
     <!-- Knowledge Bowl Competition Training Section -->
     <string name="kb_competition_training">Competition Training</string>
     <string name="kb_competition_training_subtitle">Advanced training modes</string>
+    <string name="kb_match_simulation_subtitle">vs AI opponents</string>
+    <string name="kb_conference_training_subtitle">Team discussion</string>
+    <string name="cd_competition_training_button">%1$s, %2$s</string>
 
     <!-- Analytics Screen -->
     <string name="analytics_title">Analytics</string>
@@ -693,7 +788,6 @@
     <string name="kb_points_format">+%1$d</string>
     <string name="kb_domain_mastery_format">%1$s: %2$s</string>
     <string name="kb_correct_total_format">%1$s/%2$s</string>
-    <string name="kb_seconds_format">%1$ss</string>
     <string name="kb_domain_separator"> • </string>
     <string name="cd_response_time">Response time</string>
 
@@ -712,7 +806,7 @@
     <string name="viewer_page_indicator">%1$d / %2$d</string>
 
     <!-- KBSettingsScreen unit strings -->
-    <string name="kb_questions_count">%1$d questions</string>
+    <string name="kb_questions_count_settings">%1$d questions</string>
     <string name="kb_minutes_count">%1$d minutes</string>
     <string name="kb_points_per_correct">%1$d per correct</string>
     <string name="kb_seconds_count">%1$d seconds</string>

@@ -23,8 +23,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
@@ -54,9 +54,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
-import com.unamentis.modules.knowledgebowl.ui.KBNavigationHost
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -73,6 +70,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.unamentis.R
@@ -80,6 +79,7 @@ import com.unamentis.data.model.Curriculum
 import com.unamentis.data.model.Topic
 import com.unamentis.data.remote.CurriculumSummary
 import com.unamentis.data.repository.ConnectionState
+import com.unamentis.modules.knowledgebowl.ui.KBNavigationHost
 import com.unamentis.ui.theme.Dimensions
 import com.unamentis.ui.theme.IOSTypography
 import com.unamentis.ui.theme.iOSBlue
@@ -242,10 +242,11 @@ fun CurriculumScreen(
     if (showKnowledgeBowl) {
         Dialog(
             onDismissRequest = { showKnowledgeBowl = false },
-            properties = DialogProperties(
-                usePlatformDefaultWidth = false,
-                decorFitsSystemWindows = false,
-            ),
+            properties =
+                DialogProperties(
+                    usePlatformDefaultWidth = false,
+                    decorFitsSystemWindows = false,
+                ),
         ) {
             Surface(
                 modifier = Modifier.fillMaxSize(),

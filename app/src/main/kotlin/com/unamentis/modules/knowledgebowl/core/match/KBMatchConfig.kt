@@ -22,12 +22,13 @@ data class KBMatchConfig(
         /**
          * Create default configuration for a region.
          */
-        fun forRegion(region: KBRegion): KBMatchConfig = KBMatchConfig(
-            region = region,
-            matchFormat = MatchFormat.QUICK_MATCH,
-            opponentStrengths = listOf(OpponentStrength.INTERMEDIATE, OpponentStrength.INTERMEDIATE),
-            enablePracticeMode = true,
-        )
+        fun forRegion(region: KBRegion): KBMatchConfig =
+            KBMatchConfig(
+                region = region,
+                matchFormat = MatchFormat.QUICK_MATCH,
+                opponentStrengths = listOf(OpponentStrength.INTERMEDIATE, OpponentStrength.INTERMEDIATE),
+                enablePracticeMode = true,
+            )
     }
 }
 

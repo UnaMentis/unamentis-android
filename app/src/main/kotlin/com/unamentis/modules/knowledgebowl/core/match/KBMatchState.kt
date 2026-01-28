@@ -10,10 +10,15 @@ import java.util.UUID
  */
 sealed class MatchPhase {
     data object NotStarted : MatchPhase()
+
     data object WrittenRound : MatchPhase()
+
     data object WrittenReview : MatchPhase()
+
     data class OralRound(val roundNumber: Int) : MatchPhase()
+
     data class OralReview(val roundNumber: Int) : MatchPhase()
+
     data object FinalResults : MatchPhase()
 
     val isWritten: Boolean

@@ -21,10 +21,12 @@ class KBOpponentSimulator(
     /**
      * Attempt to buzz on an oral question.
      *
-     * @param question The question being asked
+     * @param question The question being asked (reserved for difficulty-based timing)
      * @return Buzz time in seconds if the opponent would buzz, null otherwise
      */
-    fun attemptBuzz(question: KBQuestion): Double? {
+    fun attemptBuzz(
+        @Suppress("UnusedParameter") question: KBQuestion,
+    ): Double? {
         // Higher strength = more likely to buzz
         val shouldBuzz = Random.nextDouble() < strength.buzzProbability
 
@@ -39,20 +41,24 @@ class KBOpponentSimulator(
     /**
      * Answer a written question.
      *
-     * @param question The question to answer
+     * @param question The question to answer (reserved for difficulty-based accuracy)
      * @return True if the answer is correct
      */
-    fun answerWrittenQuestion(question: KBQuestion): Boolean {
+    fun answerWrittenQuestion(
+        @Suppress("UnusedParameter") question: KBQuestion,
+    ): Boolean {
         return Random.nextDouble() < strength.accuracy
     }
 
     /**
      * Answer an oral question after buzzing.
      *
-     * @param question The question to answer
+     * @param question The question to answer (reserved for difficulty-based accuracy)
      * @return True if the answer is correct
      */
-    fun answerOralQuestion(question: KBQuestion): Boolean {
+    fun answerOralQuestion(
+        @Suppress("UnusedParameter") question: KBQuestion,
+    ): Boolean {
         return Random.nextDouble() < strength.accuracy
     }
 
@@ -61,7 +67,10 @@ class KBOpponentSimulator(
      * This is a placeholder that would normally come from a more
      * sophisticated AI system.
      */
-    fun getSimulatedAnswer(question: KBQuestion, isCorrect: Boolean): String {
+    fun getSimulatedAnswer(
+        question: KBQuestion,
+        isCorrect: Boolean,
+    ): String {
         return if (isCorrect) {
             question.answer.primary
         } else {
@@ -70,6 +79,7 @@ class KBOpponentSimulator(
         }
     }
 
+    @Suppress("CyclomaticComplexMethod")
     private fun generateIncorrectAnswer(question: KBQuestion): String {
         // For MCQ questions, pick a wrong option
         if (!question.mcqOptions.isNullOrEmpty()) {
@@ -98,13 +108,14 @@ class KBOpponentSimulator(
         /**
          * Team names for opponent teams.
          */
-        val OPPONENT_TEAM_NAMES = listOf(
-            "Alpha Academy",
-            "Beta School",
-            "Gamma Institute",
-            "Delta High",
-            "Epsilon Prep",
-        )
+        val OPPONENT_TEAM_NAMES =
+            listOf(
+                "Alpha Academy",
+                "Beta School",
+                "Gamma Institute",
+                "Delta High",
+                "Epsilon Prep",
+            )
 
         /**
          * Get a team name for the given index.

@@ -10,9 +10,13 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.unamentis.modules.knowledgebowl.data.model.KBQuestion
 import com.unamentis.modules.knowledgebowl.data.model.KBSessionConfig
 import com.unamentis.modules.knowledgebowl.data.model.KBStudyMode
+import com.unamentis.modules.knowledgebowl.ui.conference.KBConferenceTrainingScreen
 import com.unamentis.modules.knowledgebowl.ui.dashboard.KBDashboardScreen
 import com.unamentis.modules.knowledgebowl.ui.dashboard.KBDashboardViewModel
+import com.unamentis.modules.knowledgebowl.ui.drill.KBDomainDrillScreen
+import com.unamentis.modules.knowledgebowl.ui.match.KBMatchSimulationScreen
 import com.unamentis.modules.knowledgebowl.ui.oral.KBOralSessionScreen
+import com.unamentis.modules.knowledgebowl.ui.rebound.KBReboundTrainingScreen
 import com.unamentis.modules.knowledgebowl.ui.session.KBPracticeSessionScreen
 import com.unamentis.modules.knowledgebowl.ui.settings.KBSettingsScreen
 import com.unamentis.modules.knowledgebowl.ui.written.KBWrittenSessionScreen
@@ -36,6 +40,14 @@ sealed class KBDestination {
         val mode: KBStudyMode,
         val questions: List<KBQuestion>,
     ) : KBDestination()
+
+    data object MatchSimulation : KBDestination()
+
+    data object ConferenceTraining : KBDestination()
+
+    data object ReboundTraining : KBDestination()
+
+    data object DomainDrill : KBDestination()
 }
 
 /**
@@ -77,6 +89,18 @@ fun KBNavigationHost(onBack: () -> Unit = {}) {
                 onNavigateToPracticeSession = { mode, questions ->
                     currentDestination = KBDestination.PracticeSession(mode, questions)
                 },
+                onNavigateToMatchSimulation = {
+                    currentDestination = KBDestination.MatchSimulation
+                },
+                onNavigateToConferenceTraining = {
+                    currentDestination = KBDestination.ConferenceTraining
+                },
+                onNavigateToReboundTraining = {
+                    currentDestination = KBDestination.ReboundTraining
+                },
+                onNavigateToDomainDrill = {
+                    currentDestination = KBDestination.DomainDrill
+                },
                 viewModel = dashboardViewModel,
             )
         }
@@ -110,6 +134,30 @@ fun KBNavigationHost(onBack: () -> Unit = {}) {
                 questions = destination.questions,
                 onComplete = { _ -> currentDestination = KBDestination.Dashboard },
                 onBack = { currentDestination = KBDestination.Dashboard },
+            )
+        }
+
+        is KBDestination.MatchSimulation -> {
+            KBMatchSimulationScreen(
+                onNavigateBack = { currentDestination = KBDestination.Dashboard },
+            )
+        }
+
+        is KBDestination.ConferenceTraining -> {
+            KBConferenceTrainingScreen(
+                onNavigateBack = { currentDestination = KBDestination.Dashboard },
+            )
+        }
+
+        is KBDestination.ReboundTraining -> {
+            KBReboundTrainingScreen(
+                onNavigateBack = { currentDestination = KBDestination.Dashboard },
+            )
+        }
+
+        is KBDestination.DomainDrill -> {
+            KBDomainDrillScreen(
+                onNavigateBack = { currentDestination = KBDestination.Dashboard },
             )
         }
     }

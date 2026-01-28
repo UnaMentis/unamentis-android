@@ -1,15 +1,10 @@
 package com.unamentis.modules.knowledgebowl.ui.match
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,8 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -29,8 +22,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.EmojiEvents
-import androidx.compose.material.icons.filled.Groups
-import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -40,7 +31,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -59,7 +49,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -73,6 +62,7 @@ import com.unamentis.modules.knowledgebowl.core.match.OpponentStrength
 import com.unamentis.modules.knowledgebowl.data.model.KBQuestion
 import com.unamentis.modules.knowledgebowl.data.model.KBRegion
 import com.unamentis.modules.knowledgebowl.ui.theme.KBTheme
+import com.unamentis.modules.knowledgebowl.ui.theme.color
 import com.unamentis.ui.theme.Dimensions
 import com.unamentis.ui.theme.IOSTypography
 import com.unamentis.ui.theme.iOSGreen
@@ -111,17 +101,19 @@ fun KBMatchSimulationScreen(
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = KBTheme.bgPrimary(),
-                ),
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = KBTheme.bgPrimary(),
+                    ),
             )
         },
         containerColor = KBTheme.bgPrimary(),
     ) { paddingValues ->
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
         ) {
             when {
                 uiState.isLoading -> {
@@ -193,10 +185,11 @@ private fun SetupView(
     onStartMatch: () -> Unit,
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(Dimensions.ScreenHorizontalPadding),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(Dimensions.ScreenHorizontalPadding),
         verticalArrangement = Arrangement.spacedBy(Dimensions.SectionSpacing),
     ) {
         Text(
@@ -222,10 +215,11 @@ private fun SetupView(
                     SegmentedButton(
                         selected = uiState.selectedRegion == region,
                         onClick = { onRegionSelected(region) },
-                        shape = SegmentedButtonDefaults.itemShape(
-                            index = index,
-                            count = 3,
-                        ),
+                        shape =
+                            SegmentedButtonDefaults.itemShape(
+                                index = index,
+                                count = 3,
+                            ),
                     ) {
                         Text(region.abbreviation)
                     }
@@ -253,10 +247,11 @@ private fun SetupView(
                     SegmentedButton(
                         selected = uiState.selectedOpponentStrength == strength,
                         onClick = { onStrengthSelected(strength) },
-                        shape = SegmentedButtonDefaults.itemShape(
-                            index = index,
-                            count = OpponentStrength.entries.size,
-                        ),
+                        shape =
+                            SegmentedButtonDefaults.itemShape(
+                                index = index,
+                                count = OpponentStrength.entries.size,
+                            ),
                     ) {
                         Text(
                             text = stringResource(strength.displayNameResId),
@@ -272,12 +267,14 @@ private fun SetupView(
         // Start button
         Button(
             onClick = onStartMatch,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = KBTheme.mastered(),
-            ),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+            colors =
+                ButtonDefaults.buttonColors(
+                    containerColor = KBTheme.mastered(),
+                ),
         ) {
             Text(
                 text = stringResource(R.string.kb_start_match),
@@ -309,15 +306,20 @@ private fun FormatOptionCard(
     onClick: () -> Unit,
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) KBTheme.mastered().copy(alpha = 0.1f) else KBTheme.bgSecondary(),
-        ),
-        border = if (isSelected) {
-            androidx.compose.foundation.BorderStroke(2.dp, KBTheme.mastered())
-        } else null,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = if (isSelected) KBTheme.mastered().copy(alpha = 0.1f) else KBTheme.bgSecondary(),
+            ),
+        border =
+            if (isSelected) {
+                androidx.compose.foundation.BorderStroke(2.dp, KBTheme.mastered())
+            } else {
+                null
+            },
     ) {
         Row(
             modifier = Modifier.padding(Dimensions.CardPadding),
@@ -398,11 +400,12 @@ private fun MatchContentView(
                 ReviewView(
                     title = stringResource(R.string.kb_oral_round_n, uiState.phase.roundNumber),
                     teams = uiState.teams,
-                    actionLabel = if (isLastRound) {
-                        stringResource(R.string.kb_finish_match)
-                    } else {
-                        stringResource(R.string.kb_next_round)
-                    },
+                    actionLabel =
+                        if (isLastRound) {
+                            stringResource(R.string.kb_finish_match)
+                        } else {
+                            stringResource(R.string.kb_next_round)
+                        },
                     onAction = if (isLastRound) onFinishMatch else onNextRound,
                 )
             }
@@ -422,9 +425,10 @@ private fun MatchContentView(
 @Composable
 private fun ScoreboardCard(teams: List<KBTeam>) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(Dimensions.ScreenHorizontalPadding),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(Dimensions.ScreenHorizontalPadding),
         colors = CardDefaults.cardColors(containerColor = KBTheme.bgSecondary()),
     ) {
         Column(modifier = Modifier.padding(Dimensions.CardPadding)) {
@@ -437,9 +441,10 @@ private fun ScoreboardCard(teams: List<KBTeam>) {
 
             teams.sortedByDescending { it.totalScore }.forEachIndexed { index, team ->
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -483,9 +488,10 @@ private fun WrittenRoundView(
     val (current, total) = uiState.writtenProgress
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(Dimensions.ScreenHorizontalPadding),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(Dimensions.ScreenHorizontalPadding),
         verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
     ) {
         // Progress
@@ -509,9 +515,10 @@ private fun WrittenRoundView(
         // Submit button
         Button(
             onClick = onSubmitAnswer,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
             enabled = uiState.selectedAnswer != null && !uiState.showFeedback,
         ) {
             Text(stringResource(R.string.kb_submit_answer))
@@ -554,7 +561,7 @@ private fun QuestionCard(
     question: KBQuestion,
     selectedAnswer: Int?,
     showFeedback: Boolean,
-    isCorrect: Boolean?,
+    @Suppress("UnusedParameter") isCorrect: Boolean?,
     onSelectAnswer: (Int) -> Unit,
 ) {
     Card(
@@ -589,26 +596,29 @@ private fun QuestionCard(
                 val isSelected = selectedAnswer == index
                 val isCorrectAnswer = option == question.answer.primary
 
-                val backgroundColor = when {
-                    showFeedback && isCorrectAnswer -> iOSGreen.copy(alpha = 0.2f)
-                    showFeedback && isSelected && !isCorrectAnswer -> iOSRed.copy(alpha = 0.2f)
-                    isSelected -> KBTheme.mastered().copy(alpha = 0.2f)
-                    else -> Color.Transparent
-                }
+                val backgroundColor =
+                    when {
+                        showFeedback && isCorrectAnswer -> iOSGreen.copy(alpha = 0.2f)
+                        showFeedback && isSelected && !isCorrectAnswer -> iOSRed.copy(alpha = 0.2f)
+                        isSelected -> KBTheme.mastered().copy(alpha = 0.2f)
+                        else -> Color.Transparent
+                    }
 
-                val borderColor = when {
-                    showFeedback && isCorrectAnswer -> iOSGreen
-                    showFeedback && isSelected && !isCorrectAnswer -> iOSRed
-                    isSelected -> KBTheme.mastered()
-                    else -> KBTheme.border()
-                }
+                val borderColor =
+                    when {
+                        showFeedback && isCorrectAnswer -> iOSGreen
+                        showFeedback && isSelected && !isCorrectAnswer -> iOSRed
+                        isSelected -> KBTheme.mastered()
+                        else -> KBTheme.border()
+                    }
 
                 Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
-                        .border(1.dp, borderColor, RoundedCornerShape(8.dp))
-                        .clickable(enabled = !showFeedback) { onSelectAnswer(index) },
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .border(1.dp, borderColor, RoundedCornerShape(8.dp))
+                            .clickable(enabled = !showFeedback) { onSelectAnswer(index) },
                     color = backgroundColor,
                 ) {
                     Row(
@@ -662,9 +672,10 @@ private fun OralRoundView(
     val question = uiState.currentQuestion ?: return
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(Dimensions.ScreenHorizontalPadding),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(Dimensions.ScreenHorizontalPadding),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         // Progress
@@ -722,9 +733,10 @@ private fun OralRoundView(
                 OpponentAnswerCard(
                     answer = uiState.opponentAnswer,
                     isCorrect = uiState.opponentAnswerCorrect ?: false,
-                    teamName = uiState.buzzResult?.let { buzz ->
-                        uiState.teams.find { it.id == buzz.teamId }?.name
-                    } ?: "Opponent",
+                    teamName =
+                        uiState.buzzResult?.let { buzz ->
+                            uiState.teams.find { it.id == buzz.teamId }?.name
+                        } ?: "Opponent",
                 )
 
                 if (uiState.isReboundOpportunity) {
@@ -746,7 +758,8 @@ private fun OralRoundView(
                 }
             }
 
-            uiState.buzzResult != null && uiState.teams.find { it.id == uiState.buzzResult.teamId }?.isPlayer == true -> {
+            uiState.buzzResult != null &&
+                uiState.teams.find { it.id == uiState.buzzResult.teamId }?.isPlayer == true -> {
                 if (uiState.playerBuzzed || uiState.showFeedback) {
                     // Show answer input or feedback
                     if (uiState.showFeedback) {
@@ -795,9 +808,10 @@ private fun OpponentAnswerCard(
     teamName: String,
 ) {
     Card(
-        colors = CardDefaults.cardColors(
-            containerColor = if (isCorrect) iOSGreen.copy(alpha = 0.1f) else iOSRed.copy(alpha = 0.1f),
-        ),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = if (isCorrect) iOSGreen.copy(alpha = 0.1f) else iOSRed.copy(alpha = 0.1f),
+            ),
     ) {
         Column(
             modifier = Modifier.padding(Dimensions.CardPadding),
@@ -824,9 +838,10 @@ private fun OpponentAnswerCard(
 @Composable
 private fun FeedbackCard(isCorrect: Boolean) {
     Card(
-        colors = CardDefaults.cardColors(
-            containerColor = if (isCorrect) iOSGreen.copy(alpha = 0.1f) else iOSRed.copy(alpha = 0.1f),
-        ),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = if (isCorrect) iOSGreen.copy(alpha = 0.1f) else iOSRed.copy(alpha = 0.1f),
+            ),
     ) {
         Row(
             modifier = Modifier.padding(Dimensions.CardPadding),
@@ -839,11 +854,12 @@ private fun FeedbackCard(isCorrect: Boolean) {
                 tint = if (isCorrect) iOSGreen else iOSRed,
             )
             Text(
-                text = if (isCorrect) {
-                    stringResource(R.string.cd_kb_correct_answer)
-                } else {
-                    stringResource(R.string.cd_kb_incorrect_answer)
-                },
+                text =
+                    if (isCorrect) {
+                        stringResource(R.string.cd_kb_correct_answer)
+                    } else {
+                        stringResource(R.string.cd_kb_incorrect_answer)
+                    },
                 style = IOSTypography.headline,
             )
         }
@@ -856,14 +872,15 @@ private fun FeedbackCard(isCorrect: Boolean) {
 @Composable
 private fun ReviewView(
     title: String,
-    teams: List<KBTeam>,
+    @Suppress("UnusedParameter") teams: List<KBTeam>,
     actionLabel: String,
     onAction: () -> Unit,
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(Dimensions.ScreenHorizontalPadding),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .padding(Dimensions.ScreenHorizontalPadding),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(modifier = Modifier.height(Dimensions.SpacingLarge))
@@ -883,9 +900,10 @@ private fun ReviewView(
 
         Button(
             onClick = onAction,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
         ) {
             Text(actionLabel)
         }
@@ -903,10 +921,11 @@ private fun ResultsView(
     val percentFormatter = NumberFormat.getPercentInstance(Locale.getDefault())
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(Dimensions.ScreenHorizontalPadding),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(Dimensions.ScreenHorizontalPadding),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(modifier = Modifier.height(Dimensions.SpacingLarge))
@@ -937,7 +956,7 @@ private fun ResultsView(
 
         Text(
             text = stringResource(R.string.kb_rank_format, summary.playerRank),
-            style = IOSTypography.title1,
+            style = IOSTypography.title,
             fontWeight = FontWeight.Bold,
         )
 
@@ -957,9 +976,10 @@ private fun ResultsView(
 
                 summary.teams.forEachIndexed { index, team ->
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1018,9 +1038,10 @@ private fun ResultsView(
 
         Button(
             onClick = onFinish,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
         ) {
             Text(stringResource(R.string.done))
         }
@@ -1073,10 +1094,4 @@ private fun ErrorView(
             }
         }
     }
-}
-
-// Extension to get domain color
-@Composable
-private fun com.unamentis.modules.knowledgebowl.data.model.KBDomain.color(): Color {
-    return com.unamentis.modules.knowledgebowl.ui.theme.color(this)
 }
