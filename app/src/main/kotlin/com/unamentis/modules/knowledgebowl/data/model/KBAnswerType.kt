@@ -27,6 +27,10 @@ enum class KBAnswerType {
     @SerialName("number")
     NUMBER,
 
+    /** Numeric answer (alternative name used in some sources) */
+    @SerialName("numeric")
+    NUMERIC,
+
     /** Date answer - handle multiple formats (1776, July 4th 1776) */
     @SerialName("date")
     DATE,
@@ -40,7 +44,7 @@ enum class KBAnswerType {
     SCIENTIFIC,
 
     /** Multiple choice answer (A, B, C, D) */
-    @SerialName("multiple_choice")
+    @SerialName("multipleChoice")
     MULTIPLE_CHOICE,
     ;
 

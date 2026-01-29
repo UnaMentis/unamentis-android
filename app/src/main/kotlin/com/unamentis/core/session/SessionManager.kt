@@ -196,6 +196,9 @@ class SessionManager(
         topicId: String? = null,
         recordingMode: RecordingMode = RecordingMode.VAD,
     ) {
+        // DEBUG: Log at ERROR level to ensure visibility
+        Log.e("SessionManager", "SESSION_DEBUG: startSession called, mode=$recordingMode, curriculum=$curriculumId")
+
         _recordingMode.value = recordingMode
         // Block if state is not IDLE or if there's already an active session
         if (_sessionState.value != SessionState.IDLE || _currentSession.value != null) {
@@ -506,6 +509,11 @@ class SessionManager(
     private suspend fun processAudioFrame(audioSamples: FloatArray) {
         audioFrameCount++
 
+        // DEBUG: Log every 500 frames at ERROR level to ensure visibility
+        if (audioFrameCount % 500 == 1) {
+            Log.e("SessionManager", "AUDIO_DEBUG: Frame #$audioFrameCount, samples=${audioSamples.size}, state=${_sessionState.value}")
+        }
+
         // Apply gain to amplify weak microphone signal for VAD
         // The amplified samples are used for VAD only; UI level meters use original samples
         val amplifiedSamples =
@@ -515,6 +523,16 @@ class SessionManager(
 
         // Run VAD on amplified audio
         val vadResult = vadService.processAudio(amplifiedSamples)
+
+        // DEBUG: Log VAD result at ERROR level periodically
+        if (audioFrameCount % 500 == 1) {
+            var sumSquares = 0f
+            for (sample in amplifiedSamples) {
+                sumSquares += sample * sample
+            }
+            val rms = kotlin.math.sqrt(sumSquares / amplifiedSamples.size)
+            Log.e("SessionManager", "VAD_DEBUG: isSpeech=${vadResult.isSpeech}, conf=${vadResult.confidence}, rms=${"%.4f".format(rms)}")
+        }
 
         // Log periodically to avoid spam (every 100 frames = ~1.2 seconds at 12ms frames)
         if (audioFrameCount % 100 == 0) {

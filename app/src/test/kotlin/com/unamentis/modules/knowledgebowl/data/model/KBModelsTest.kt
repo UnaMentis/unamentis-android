@@ -89,9 +89,9 @@ class KBModelsTest {
     @Test
     fun `KBGradeLevel serializes correctly`() {
         val encoded = json.encodeToString(KBGradeLevel.HIGH_SCHOOL)
-        assertEquals("\"high_school\"", encoded)
+        assertEquals("\"highSchool\"", encoded)
 
-        val decoded = json.decodeFromString<KBGradeLevel>("\"high_school\"")
+        val decoded = json.decodeFromString<KBGradeLevel>("\"highSchool\"")
         assertEquals(KBGradeLevel.HIGH_SCHOOL, decoded)
     }
 
@@ -148,7 +148,7 @@ class KBModelsTest {
 
         val encoded = json.encodeToString(answer)
         assertTrue(encoded.contains("\"primary\":\"Einstein\""))
-        assertTrue(encoded.contains("\"answer_type\":\"person\""))
+        assertTrue(encoded.contains("\"answerType\":\"person\""))
 
         val decoded = json.decodeFromString<KBAnswer>(encoded)
         assertEquals("Einstein", decoded.primary)
@@ -170,7 +170,7 @@ class KBModelsTest {
 
         val encoded = json.encodeToString(question)
         assertTrue(encoded.contains("\"id\":\"test-q-1\""))
-        assertTrue(encoded.contains("\"domain\":\"social_studies\""))
+        assertTrue(encoded.contains("\"domain\":\"socialStudies\""))
 
         val decoded = json.decodeFromString<KBQuestion>(encoded)
         assertEquals("test-q-1", decoded.id)

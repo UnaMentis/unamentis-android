@@ -45,9 +45,22 @@ class OnDeviceLLMService
         companion object {
             private const val TAG = "OnDeviceLLM"
 
-            // Model specifications
+            // Model specifications - all supported GGUF models
             const val MINISTRAL_3B_FILENAME = "ministral-3b-instruct-q4_k_m.gguf"
             const val TINYLLAMA_1B_FILENAME = "tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf"
+            const val LLAMA_3_2_1B_FILENAME = "llama-3.2-1b-instruct-q4_k_m.gguf"
+
+            // Model priority for selection (lower index = higher priority)
+            // Fast 1B models are preferred for interactive voice sessions
+            private val MODEL_PRIORITY =
+                listOf(
+                    // Llama 3.2 1B - fast, modern, good quality
+                    LLAMA_3_2_1B_FILENAME,
+                    // TinyLlama 1.1B - fast fallback
+                    TINYLLAMA_1B_FILENAME,
+                    // Ministral 3B - slow but highest quality
+                    MINISTRAL_3B_FILENAME,
+                )
 
             // Default configuration
             private const val DEFAULT_CONTEXT_SIZE = 4096
@@ -159,27 +172,35 @@ class OnDeviceLLMService
         /**
          * Get available model path.
          *
-         * Prefers TinyLlama for interactive use as it provides much faster
-         * inference (sub-minute vs 3+ minutes for Ministral).
-         *
-         * TinyLlama 1.1B: ~10-30 seconds per response
-         * Ministral 3B: ~3-5 minutes per response (too slow for interactive)
+         * Selection priority:
+         * 1. Check known models in priority order (fast 1B models first)
+         * 2. Fall back to any .gguf file found in the models directory
          */
         fun getAvailableModelPath(): String? {
             val modelsDir = getModelsDirectory()
 
-            // Prefer TinyLlama for faster inference (suitable for interactive use)
-            val tinyllama = File(modelsDir, TINYLLAMA_1B_FILENAME)
-            if (tinyllama.exists()) {
-                Log.d(TAG, "Found TinyLlama model: ${tinyllama.absolutePath}")
-                return tinyllama.absolutePath
+            // Check known models in priority order
+            for (modelFilename in MODEL_PRIORITY) {
+                val modelFile = File(modelsDir, modelFilename)
+                if (modelFile.exists()) {
+                    Log.i(TAG, "Found model: ${modelFile.absolutePath}")
+                    return modelFile.absolutePath
+                }
             }
 
-            // Fall back to Ministral (slower but higher quality)
-            val ministral = File(modelsDir, MINISTRAL_3B_FILENAME)
-            if (ministral.exists()) {
-                Log.w(TAG, "Using Ministral model (slower, ~3+ min per response): ${ministral.absolutePath}")
-                return ministral.absolutePath
+            // Fall back: scan for any GGUF file in the models directory
+            val ggufFiles =
+                modelsDir.listFiles { file ->
+                    file.isFile && file.name.endsWith(".gguf", ignoreCase = true)
+                }
+
+            if (!ggufFiles.isNullOrEmpty()) {
+                // Sort by size (smaller = faster) and pick the first one
+                val selectedModel = ggufFiles.minByOrNull { it.length() }
+                if (selectedModel != null) {
+                    Log.i(TAG, "Found GGUF model (fallback scan): ${selectedModel.absolutePath}")
+                    return selectedModel.absolutePath
+                }
             }
 
             Log.w(TAG, "No models found in: ${modelsDir.absolutePath}")

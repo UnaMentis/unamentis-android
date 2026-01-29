@@ -1,6 +1,5 @@
 package com.unamentis.modules.knowledgebowl.data.model
 
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
@@ -13,13 +12,9 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 data class KBSuitability(
-    @SerialName("for_written")
     val forWritten: Boolean = true,
-    @SerialName("for_oral")
     val forOral: Boolean = true,
-    @SerialName("mcq_possible")
     val mcqPossible: Boolean = true,
-    @SerialName("requires_visual")
     val requiresVisual: Boolean = false,
 ) {
     companion object {

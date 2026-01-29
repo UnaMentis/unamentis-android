@@ -322,16 +322,31 @@ class MediaPipeLLMService
         /**
          * Check if MediaPipe LLM Inference is available on this device.
          *
-         * Requires OpenCL support for GPU acceleration.
+         * Requires:
+         * 1. MediaPipe LLM library in classpath
+         * 2. A compatible model file (.task format) downloaded
          */
         fun isAvailable(): Boolean {
-            return try {
-                // Check if the MediaPipe LLM class is available
-                Class.forName("com.google.mediapipe.tasks.genai.llminference.LlmInference")
-                true
-            } catch (e: ClassNotFoundException) {
-                Log.w(TAG, "MediaPipe LLM Inference not available")
-                false
+            // Check if the MediaPipe LLM class is available
+            val hasLibrary =
+                try {
+                    Class.forName("com.google.mediapipe.tasks.genai.llminference.LlmInference")
+                    true
+                } catch (e: ClassNotFoundException) {
+                    Log.w(TAG, "MediaPipe LLM Inference library not available")
+                    false
+                }
+
+            if (!hasLibrary) return false
+
+            // Check if a model file exists
+            val modelPath = getAvailableModelPath()
+            if (modelPath == null) {
+                Log.w(TAG, "MediaPipe model file not found - backend not available")
+                return false
             }
+
+            Log.d(TAG, "MediaPipe available with model: $modelPath")
+            return true
         }
     }

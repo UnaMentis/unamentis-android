@@ -287,10 +287,12 @@ object ProviderModule {
      * Routes to multiple LLM providers based on configuration:
      * - OpenAI (cloud, requires API key)
      * - Anthropic (cloud, requires API key)
-     * - OnDevice (offline, uses llama.cpp with GGUF models)
+     * - OnDevice (offline, uses optimal backend via LLMBackendSelector):
+     *   - ExecuTorch (NPU) on Snapdragon 8 Gen2+ devices
+     *   - MediaPipe (GPU) on devices with OpenCL support
+     *   - llama.cpp (CPU) as fallback
      *
-     * Note: OnDevice uses Provider<LLMService> to defer construction until needed,
-     * avoiding expensive System.loadLibrary calls on devices that don't support it.
+     * Note: OnDevice uses LLMBackendSelector to choose the fastest available backend.
      */
     @Provides
     @Singleton
@@ -298,7 +300,7 @@ object ProviderModule {
     fun providePatchPanelService(
         @Named("OpenAILLM") openai: LLMService,
         @Named("AnthropicLLM") anthropic: LLMService,
-        @Named("OnDeviceLLM") onDeviceProvider: Provider<LLMService>,
+        backendSelector: LLMBackendSelector,
         deviceCapabilityDetector: DeviceCapabilityDetector,
     ): LLMService {
         val providers =
@@ -307,10 +309,14 @@ object ProviderModule {
                 put("Anthropic", anthropic)
 
                 // Add OnDevice provider only if device supports it
-                // Using Provider.get() defers OnDeviceLLMService construction
-                // (including System.loadLibrary) until this point
+                // Uses LLMBackendSelector to choose optimal backend (ExecuTorch > MediaPipe > llama.cpp)
                 if (deviceCapabilityDetector.supportsOnDeviceLLM()) {
-                    put("OnDevice", onDeviceProvider.get())
+                    val backend = backendSelector.getSelectedBackend()
+                    android.util.Log.i(
+                        "ProviderModule",
+                        "PatchPanel OnDevice backend: ${backend.backendName}",
+                    )
+                    put("OnDevice", backend)
                 }
             }
         return PatchPanelService(providers)
@@ -499,7 +505,10 @@ object ProviderModule {
      *
      * Reads the user's selected LLM provider from ProviderConfig and returns
      * the appropriate service:
-     * - "OnDevice": Uses llama.cpp with Ministral/TinyLlama (free, offline)
+     * - "OnDevice": Uses LLMBackendSelector to choose the best backend:
+     *   - ExecuTorch (NPU) on Snapdragon 8 Gen2+ devices (50+ tok/sec)
+     *   - MediaPipe (GPU) on devices with OpenCL support (20-30 tok/sec)
+     *   - llama.cpp (CPU) as fallback (5-10 tok/sec)
      * - "OpenAI": Uses OpenAI API (requires API key)
      * - "Anthropic": Uses Anthropic API (requires API key)
      * - "PatchPanel" (default): Intelligent routing based on task type
@@ -512,7 +521,7 @@ object ProviderModule {
         @Named("PatchPanelLLM") patchPanel: LLMService,
         @Named("OpenAILLM") openai: LLMService,
         @Named("AnthropicLLM") anthropic: LLMService,
-        @Named("OnDeviceLLM") onDevice: LLMService,
+        backendSelector: LLMBackendSelector,
         config: ProviderConfig,
     ): LLMService {
         val selectedProvider = config.getLLMProvider()
@@ -520,8 +529,14 @@ object ProviderModule {
 
         return when (selectedProvider) {
             "OnDevice" -> {
-                android.util.Log.i("ProviderModule", "Using OnDevice LLM (llama.cpp)")
-                onDevice
+                // Use the backend selector to choose the optimal backend
+                // (ExecuTorch > MediaPipe > llama.cpp based on device capabilities)
+                val backend = backendSelector.getSelectedBackend()
+                android.util.Log.i(
+                    "ProviderModule",
+                    "Using OnDevice LLM: ${backend.backendName} (${backend.expectedToksPerSec} tok/sec expected)",
+                )
+                backend
             }
             "OpenAI" -> {
                 android.util.Log.i("ProviderModule", "Using OpenAI LLM")

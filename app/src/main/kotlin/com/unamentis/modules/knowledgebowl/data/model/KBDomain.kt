@@ -43,13 +43,13 @@ enum class KBDomain(
     @SerialName("history")
     HISTORY("History", "history", 0.12f),
 
-    @SerialName("social_studies")
+    @SerialName("socialStudies")
     SOCIAL_STUDIES("Social Studies", "public", 0.10f),
 
     @SerialName("arts")
     ARTS("Arts", "palette", 0.08f),
 
-    @SerialName("current_events")
+    @SerialName("currentEvents")
     CURRENT_EVENTS("Current Events", "newspaper", 0.08f),
 
     @SerialName("language")
@@ -58,10 +58,10 @@ enum class KBDomain(
     @SerialName("technology")
     TECHNOLOGY("Technology", "computer", 0.04f),
 
-    @SerialName("pop_culture")
+    @SerialName("popCulture")
     POP_CULTURE("Pop Culture", "star", 0.03f),
 
-    @SerialName("religion_philosophy")
+    @SerialName("religionPhilosophy")
     RELIGION_PHILOSOPHY("Religion/Philosophy", "auto_awesome", 0.02f),
 
     @SerialName("miscellaneous")

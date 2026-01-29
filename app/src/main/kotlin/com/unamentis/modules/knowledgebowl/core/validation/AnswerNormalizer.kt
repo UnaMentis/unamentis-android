@@ -91,7 +91,7 @@ object AnswerNormalizer {
             KBAnswerType.TEXT -> normalizeText(normalized)
             KBAnswerType.PERSON -> normalizePerson(normalized)
             KBAnswerType.PLACE -> normalizePlace(normalized)
-            KBAnswerType.NUMBER -> normalizeNumber(normalized)
+            KBAnswerType.NUMBER, KBAnswerType.NUMERIC -> normalizeNumber(normalized)
             KBAnswerType.DATE -> normalizeDate(normalized)
             KBAnswerType.TITLE -> normalizeTitle(normalized)
             KBAnswerType.SCIENTIFIC -> normalizeScientific(normalized)
