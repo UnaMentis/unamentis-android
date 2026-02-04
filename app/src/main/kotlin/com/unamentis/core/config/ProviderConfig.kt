@@ -59,6 +59,11 @@ class ProviderConfig(
         val CONFIGURATION_PRESET = stringPreferencesKey("configuration_preset")
         val RECORDING_MODE = stringPreferencesKey("recording_mode")
 
+        // Self-hosted server settings
+        val SELF_HOSTED_ENABLED = stringPreferencesKey("self_hosted_enabled")
+        val PRIMARY_SERVER_IP = stringPreferencesKey("primary_server_ip")
+        val SELECTED_OLLAMA_MODEL = stringPreferencesKey("selected_ollama_model")
+
         // Advanced audio settings
         val SAMPLE_RATE = stringPreferencesKey("sample_rate")
         val ENABLE_VOICE_PROCESSING = stringPreferencesKey("enable_voice_processing")
@@ -191,6 +196,54 @@ class ProviderConfig(
         } catch (_: IllegalArgumentException) {
             RecordingMode.VAD
         }
+    }
+
+    // ==================== Self-Hosted Server Settings ====================
+
+    /**
+     * Self-hosted server enabled state (as Flow for reactive updates).
+     */
+    val selfHostedEnabled: Flow<Boolean> =
+        dataStore.data.map { prefs ->
+            prefs[PreferenceKeys.SELF_HOSTED_ENABLED]?.toBoolean() ?: false
+        }
+
+    /**
+     * Get self-hosted enabled synchronously (for dependency injection).
+     */
+    fun isSelfHostedEnabled(): Boolean {
+        return syncPrefs.getString(PreferenceKeys.SELF_HOSTED_ENABLED.name, "false")?.toBoolean() ?: false
+    }
+
+    /**
+     * Primary server IP address (as Flow for reactive updates).
+     */
+    val primaryServerIP: Flow<String?> =
+        dataStore.data.map { prefs ->
+            prefs[PreferenceKeys.PRIMARY_SERVER_IP]
+        }
+
+    /**
+     * Get primary server IP synchronously (for dependency injection).
+     */
+    fun getPrimaryServerIP(): String? {
+        return syncPrefs.getString(PreferenceKeys.PRIMARY_SERVER_IP.name, null)
+    }
+
+    /**
+     * Selected Ollama model name (as Flow for reactive updates).
+     * Defaults to "qwen2.5:7b" which is a good balance of quality and speed.
+     */
+    val selectedOllamaModel: Flow<String> =
+        dataStore.data.map { prefs ->
+            prefs[PreferenceKeys.SELECTED_OLLAMA_MODEL] ?: "qwen2.5:7b"
+        }
+
+    /**
+     * Get selected Ollama model synchronously (for dependency injection).
+     */
+    fun getSelectedOllamaModel(): String {
+        return syncPrefs.getString(PreferenceKeys.SELECTED_OLLAMA_MODEL.name, "qwen2.5:7b") ?: "qwen2.5:7b"
     }
 
     // ==================== Advanced Audio Settings ====================
@@ -361,6 +414,52 @@ class ProviderConfig(
         // Also write to DataStore for reactive updates
         dataStore.edit { prefs ->
             prefs[PreferenceKeys.RECORDING_MODE] = mode.name
+        }
+    }
+
+    // ==================== Self-Hosted Server Settings Setters ====================
+
+    /**
+     * Set self-hosted server enabled.
+     */
+    suspend fun setSelfHostedEnabled(enabled: Boolean) {
+        // Write to sync prefs for immediate availability
+        syncPrefs.edit().putString(PreferenceKeys.SELF_HOSTED_ENABLED.name, enabled.toString()).apply()
+        // Also write to DataStore for reactive updates
+        dataStore.edit { prefs ->
+            prefs[PreferenceKeys.SELF_HOSTED_ENABLED] = enabled.toString()
+        }
+    }
+
+    /**
+     * Set primary server IP address.
+     */
+    suspend fun setPrimaryServerIP(ip: String?) {
+        // Write to sync prefs for immediate availability
+        if (ip != null) {
+            syncPrefs.edit().putString(PreferenceKeys.PRIMARY_SERVER_IP.name, ip).apply()
+        } else {
+            syncPrefs.edit().remove(PreferenceKeys.PRIMARY_SERVER_IP.name).apply()
+        }
+        // Also write to DataStore for reactive updates
+        dataStore.edit { prefs ->
+            if (ip != null) {
+                prefs[PreferenceKeys.PRIMARY_SERVER_IP] = ip
+            } else {
+                prefs.remove(PreferenceKeys.PRIMARY_SERVER_IP)
+            }
+        }
+    }
+
+    /**
+     * Set selected Ollama model.
+     */
+    suspend fun setSelectedOllamaModel(model: String) {
+        // Write to sync prefs for immediate availability
+        syncPrefs.edit().putString(PreferenceKeys.SELECTED_OLLAMA_MODEL.name, model).apply()
+        // Also write to DataStore for reactive updates
+        dataStore.edit { prefs ->
+            prefs[PreferenceKeys.SELECTED_OLLAMA_MODEL] = model
         }
     }
 

@@ -6,6 +6,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import com.unamentis.core.config.ProviderConfig
 import com.unamentis.core.config.ProviderDataStore
+import com.unamentis.core.config.ServerConfigManager
 import com.unamentis.core.device.DeviceCapabilityDetector
 import com.unamentis.core.health.HealthMonitorConfig
 import com.unamentis.core.health.ProviderHealthMonitor
@@ -21,6 +22,7 @@ import com.unamentis.services.llm.ModelDownloadManager
 import com.unamentis.services.llm.OnDeviceLLMService
 import com.unamentis.services.llm.OpenAILLMService
 import com.unamentis.services.llm.PatchPanelService
+import com.unamentis.services.llm.SelfHostedLLMService
 import com.unamentis.services.stt.AndroidSTTService
 import com.unamentis.services.stt.DeepgramSTTService
 import com.unamentis.services.stt.GLMASROnDeviceSTTService
@@ -216,6 +218,49 @@ object ProviderModule {
     }
 
     /**
+     * Provide Ollama/Self-Hosted LLM service.
+     *
+     * This is an optional provider that returns an LLMService if:
+     * 1. Self-hosted mode is enabled in settings
+     * 2. A server IP is configured
+     * 3. An LLM-capable server is discovered and healthy
+     *
+     * Returns null if not configured or unavailable.
+     * The service connects to Ollama (port 11434) or UnaMentis Gateway (port 8766).
+     */
+    @Provides
+    @Singleton
+    @Named("OllamaLLM")
+    fun provideOllamaLLMService(
+        serverConfigManager: ServerConfigManager,
+        config: ProviderConfig,
+        client: OkHttpClient,
+    ): LLMService? {
+        // Only enable if self-hosted is enabled in settings
+        if (!config.isSelfHostedEnabled()) {
+            Log.i("ProviderModule", "Self-hosted LLM disabled in settings")
+            return null
+        }
+
+        // Try auto-discovery from ServerConfigManager
+        val model = config.getSelectedOllamaModel()
+        val service =
+            SelfHostedLLMService.autoDiscover(
+                serverConfigManager = serverConfigManager,
+                model = model,
+                client = client,
+            )
+
+        if (service != null) {
+            Log.i("ProviderModule", "Ollama provider discovered: $model")
+        } else {
+            Log.i("ProviderModule", "No Ollama server available")
+        }
+
+        return service
+    }
+
+    /**
      * Provide OnDevice LLM service using llama.cpp.
      *
      * This provides fully offline LLM inference using:
@@ -312,6 +357,7 @@ object ProviderModule {
      * Routes to multiple LLM providers based on configuration:
      * - OpenAI (cloud, requires API key)
      * - Anthropic (cloud, requires API key)
+     * - Ollama (self-hosted, free if enabled and server available)
      * - OnDevice (offline, uses optimal backend via LLMBackendSelector):
      *   - ExecuTorch (NPU) on Snapdragon 8 Gen2+ devices
      *   - MediaPipe (GPU) on devices with OpenCL support
@@ -325,6 +371,7 @@ object ProviderModule {
     fun providePatchPanelService(
         @Named("OpenAILLM") openai: LLMService,
         @Named("AnthropicLLM") anthropic: LLMService,
+        @Named("OllamaLLM") ollama: LLMService?,
         backendSelector: LLMBackendSelector,
         deviceCapabilityDetector: DeviceCapabilityDetector,
     ): LLMService {
@@ -332,6 +379,12 @@ object ProviderModule {
             buildMap {
                 put("OpenAI", openai)
                 put("Anthropic", anthropic)
+
+                // Add Ollama if discovered and healthy (self-hosted, free)
+                if (ollama != null) {
+                    Log.i("ProviderModule", "PatchPanel adding Ollama provider")
+                    put("Ollama", ollama)
+                }
 
                 // Add OnDevice provider only if device supports it
                 // Uses LLMBackendSelector to choose optimal backend (ExecuTorch > MediaPipe > llama.cpp)
@@ -572,6 +625,7 @@ object ProviderModule {
      *   - llama.cpp (CPU) as fallback (5-10 tok/sec)
      * - "OpenAI": Uses OpenAI API (requires API key)
      * - "Anthropic": Uses Anthropic API (requires API key)
+     * - "Ollama": Uses self-hosted Ollama server (requires server configured)
      * - "PatchPanel" (default): Intelligent routing based on task type
      *
      * Note: Changes take effect on app restart since Hilt provides singletons.
@@ -582,6 +636,7 @@ object ProviderModule {
         @Named("PatchPanelLLM") patchPanel: LLMService,
         @Named("OpenAILLM") openai: LLMService,
         @Named("AnthropicLLM") anthropic: LLMService,
+        @Named("OllamaLLM") ollama: LLMService?,
         backendSelector: LLMBackendSelector,
         config: ProviderConfig,
     ): LLMService {
@@ -606,6 +661,16 @@ object ProviderModule {
             "Anthropic" -> {
                 Log.i("ProviderModule", "Using Anthropic LLM")
                 anthropic
+            }
+            "Ollama" -> {
+                if (ollama != null) {
+                    Log.i("ProviderModule", "Using Ollama LLM (self-hosted)")
+                    ollama
+                } else {
+                    // Fall back to PatchPanel if Ollama not available
+                    Log.w("ProviderModule", "Ollama selected but not available, falling back to PatchPanel")
+                    patchPanel
+                }
             }
             else -> {
                 // Default to PatchPanel for intelligent routing
