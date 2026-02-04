@@ -102,6 +102,7 @@
     <string name="debug_audio_diagnostics">Audio Diagnostics</string>
     <string name="debug_latency_test">Latency Test</string>
     <string name="debug_cache_management">Cache Management</string>
+    <string name="debug_cache_size">Cache Size</string>
     <string name="debug_device_info">Device Information</string>
     <string name="debug_clear_cache">Clear Cache</string>
     <string name="debug_cache_cleared">Cache cleared</string>

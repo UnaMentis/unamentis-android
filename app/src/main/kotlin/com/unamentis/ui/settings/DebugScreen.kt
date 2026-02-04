@@ -161,10 +161,13 @@ fun DebugScreen(onNavigateBack: () -> Unit) {
                     Column(modifier = Modifier.padding(Dimensions.CardPadding)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
+                            horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                            Row(
+                                modifier = Modifier.weight(1f),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
                                 Icon(
                                     imageVector = Icons.Default.Storage,
                                     contentDescription = null,
@@ -172,7 +175,7 @@ fun DebugScreen(onNavigateBack: () -> Unit) {
                                 )
                                 Column(modifier = Modifier.padding(start = Dimensions.SpacingMedium)) {
                                     Text(
-                                        text = stringResource(R.string.debug_cache_management),
+                                        text = stringResource(R.string.debug_cache_size),
                                         style = IOSTypography.body,
                                     )
                                     Text(
