@@ -504,14 +504,20 @@ class SessionManager(
 
     /**
      * Process audio frame from AudioEngine.
+     *
+     * Contains debug logging for diagnosing VAD issues.
      */
-    @Suppress("CyclomaticComplexMethod") // Contains debug logging for diagnosing VAD issues
+    @Suppress("CyclomaticComplexMethod", "LongMethod")
     private suspend fun processAudioFrame(audioSamples: FloatArray) {
         audioFrameCount++
 
         // DEBUG: Log every 500 frames at ERROR level to ensure visibility
         if (audioFrameCount % 500 == 1) {
-            Log.e("SessionManager", "AUDIO_DEBUG: Frame #$audioFrameCount, samples=${audioSamples.size}, state=${_sessionState.value}")
+            Log.e(
+                "SessionManager",
+                "AUDIO_DEBUG: Frame #$audioFrameCount, " +
+                    "samples=${audioSamples.size}, state=${_sessionState.value}",
+            )
         }
 
         // Apply gain to amplify weak microphone signal for VAD
@@ -531,7 +537,11 @@ class SessionManager(
                 sumSquares += sample * sample
             }
             val rms = kotlin.math.sqrt(sumSquares / amplifiedSamples.size)
-            Log.e("SessionManager", "VAD_DEBUG: isSpeech=${vadResult.isSpeech}, conf=${vadResult.confidence}, rms=${"%.4f".format(rms)}")
+            Log.e(
+                "SessionManager",
+                "VAD_DEBUG: isSpeech=${vadResult.isSpeech}, " +
+                    "conf=${vadResult.confidence}, rms=${"%.4f".format(rms)}",
+            )
         }
 
         // Log periodically to avoid spam (every 100 frames = ~1.2 seconds at 12ms frames)

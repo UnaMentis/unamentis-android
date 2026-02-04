@@ -560,6 +560,37 @@
     <string name="analytics_label_e2e">E2E</string>
     <string name="analytics_cost_legend_format">%1$s: %2$s</string>
 
+    <!-- GLM-ASR On-Device STT -->
+    <string name="settings_glm_asr_on_device">GLM-ASR On-Device</string>
+    <string name="settings_glm_asr_on_device_desc">High-quality on-device speech recognition using GLM-ASR-Nano</string>
+    <string name="settings_glm_asr_models">GLM-ASR Models</string>
+    <string name="settings_glm_asr_models_desc">On-device speech recognition models (~2.4GB)</string>
+    <string name="settings_glm_asr_status_ready">Ready</string>
+    <string name="settings_glm_asr_status_not_downloaded">Not Downloaded</string>
+    <string name="settings_glm_asr_status_downloading">Downloading…</string>
+    <string name="settings_glm_asr_status_loading">Loading…</string>
+    <string name="settings_glm_asr_status_error">Error</string>
+    <string name="settings_glm_asr_download_models">Download Models</string>
+    <string name="settings_glm_asr_delete_models">Delete Models</string>
+    <string name="settings_glm_asr_delete_models_title">Delete GLM-ASR Models?</string>
+    <string name="settings_glm_asr_delete_models_message">This will delete all GLM-ASR model files (~2.4GB). You can re-download them later.</string>
+    <string name="settings_glm_asr_model_whisper_encoder">Whisper Encoder</string>
+    <string name="settings_glm_asr_model_audio_adapter">Audio Adapter</string>
+    <string name="settings_glm_asr_model_embed_head">Embed Head</string>
+    <string name="settings_glm_asr_model_decoder">Text Decoder</string>
+    <string name="settings_glm_asr_download_progress">Downloading %1$s: %2$d%%</string>
+    <string name="settings_glm_asr_device_not_supported">Your device doesn\'t support GLM-ASR on-device (requires 8GB+ RAM and Android 12+)</string>
+    <string name="settings_glm_asr_features_title">Features</string>
+    <string name="settings_glm_asr_feature_zero_cost">Zero cost - no API fees</string>
+    <string name="settings_glm_asr_feature_privacy">Complete privacy - audio never leaves device</string>
+    <string name="settings_glm_asr_feature_offline">Works offline</string>
+    <string name="settings_glm_asr_feature_high_quality">High-quality transcription</string>
+    <string name="settings_glm_asr_requirements_title">Requirements</string>
+    <string name="settings_glm_asr_requirement_ram">8GB+ RAM (12GB recommended)</string>
+    <string name="settings_glm_asr_requirement_android">Android 12 or later</string>
+    <string name="settings_glm_asr_requirement_storage">~2.4GB storage for models</string>
+    <string name="provider_glm_asr_on_device">GLM-ASR On-Device</string>
+
     <!-- On-Device LLM Settings -->
     <string name="settings_on_device_ai">On-Device AI</string>
     <string name="settings_on_device_models">On-Device AI Models</string>

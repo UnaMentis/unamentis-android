@@ -548,4 +548,112 @@ class DeviceCapabilityDetector
             MEDIAPIPE,
             LLAMA_CPP,
         }
+
+        // ==================== GLM-ASR On-Device Support ====================
+
+        /**
+         * GLM-ASR On-Device model specifications.
+         *
+         * GLM-ASR-Nano-2512 is a speech-to-text model that can run on-device.
+         * Requires ~2.4GB of model storage and 8GB+ RAM for operation.
+         */
+        object GLMASRModelSpec {
+            /** Total size of all model files */
+            const val TOTAL_SIZE_BYTES = 2_400_000_000L // ~2.4GB
+
+            /** Minimum RAM required (in MB) */
+            const val MIN_RAM_MB = 8192 // 8GB
+
+            /** Recommended RAM for optimal performance (in MB) */
+            const val RECOMMENDED_RAM_MB = 12288 // 12GB
+
+            /** Minimum Android API level */
+            const val MIN_API_LEVEL = 31 // Android 12
+
+            /** Model files */
+            const val WHISPER_ENCODER_FILE = "glm_asr_whisper_encoder.onnx"
+            const val AUDIO_ADAPTER_FILE = "glm_asr_audio_adapter.onnx"
+            const val EMBED_HEAD_FILE = "glm_asr_embed_head.onnx"
+            const val DECODER_FILE = "glm-asr-nano-q4km.gguf"
+        }
+
+        /**
+         * Check if device supports on-device GLM-ASR speech recognition.
+         *
+         * Requirements:
+         * - 8GB+ RAM minimum (12GB recommended)
+         * - Android 12+ (API 31+)
+         * - 4+ CPU cores
+         * - Models present in app storage (optional check)
+         *
+         * @param checkModels If true, also verify model files are present
+         * @return true if device can run on-device GLM-ASR
+         */
+        fun supportsGLMASROnDevice(checkModels: Boolean = false): Boolean {
+            val capabilities = detect()
+
+            val meetsHardwareRequirements =
+                capabilities.totalRamMB >= GLMASRModelSpec.MIN_RAM_MB &&
+                    capabilities.cpuCores >= 4 &&
+                    capabilities.apiLevel >= GLMASRModelSpec.MIN_API_LEVEL
+
+            if (!meetsHardwareRequirements) {
+                Log.d(TAG, "Device does not meet GLM-ASR hardware requirements")
+                return false
+            }
+
+            if (checkModels) {
+                return areGLMASRModelsPresent()
+            }
+
+            return true
+        }
+
+        /**
+         * Check if GLM-ASR model files are present in app storage.
+         *
+         * @return true if all required model files exist
+         */
+        fun areGLMASRModelsPresent(): Boolean {
+            val modelDir = context.filesDir.resolve("models/glm-asr-nano")
+            if (!modelDir.exists()) {
+                return false
+            }
+
+            val requiredFiles =
+                listOf(
+                    GLMASRModelSpec.WHISPER_ENCODER_FILE,
+                    GLMASRModelSpec.AUDIO_ADAPTER_FILE,
+                    GLMASRModelSpec.EMBED_HEAD_FILE,
+                    GLMASRModelSpec.DECODER_FILE,
+                )
+
+            return requiredFiles.all { modelDir.resolve(it).exists() }
+        }
+
+        /**
+         * Get the GLM-ASR model directory.
+         *
+         * @return File pointing to the GLM-ASR model directory
+         */
+        fun getGLMASRModelDirectory(): java.io.File {
+            return context.filesDir.resolve("models/glm-asr-nano")
+        }
+
+        /**
+         * Check if device has optimal hardware for GLM-ASR on-device.
+         *
+         * Optimal means:
+         * - 12GB+ RAM
+         * - Qualcomm NPU or good OpenCL GPU support
+         * - High-end SoC (Snapdragon 8 Gen2+)
+         *
+         * @return true if device has optimal hardware
+         */
+        fun hasOptimalGLMASRHardware(): Boolean {
+            val capabilities = detect()
+            return capabilities.totalRamMB >= GLMASRModelSpec.RECOMMENDED_RAM_MB &&
+                (capabilities.hasQualcommNPU || capabilities.hasOpenCLGPU) &&
+                isSnapdragon8Gen2OrNewer()
+        }
     }

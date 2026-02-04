@@ -1,6 +1,7 @@
 package com.unamentis.di
 
 import android.content.Context
+import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import com.unamentis.core.config.ProviderConfig
@@ -22,6 +23,7 @@ import com.unamentis.services.llm.OpenAILLMService
 import com.unamentis.services.llm.PatchPanelService
 import com.unamentis.services.stt.AndroidSTTService
 import com.unamentis.services.stt.DeepgramSTTService
+import com.unamentis.services.stt.GLMASROnDeviceSTTService
 import com.unamentis.services.stt.STTProviderPriority
 import com.unamentis.services.stt.STTProviderRegistration
 import com.unamentis.services.stt.STTProviderRouter
@@ -130,6 +132,29 @@ object ProviderModule {
         @ApplicationContext context: Context,
     ): STTService {
         return AndroidSTTService(context)
+    }
+
+    /**
+     * Provide GLM-ASR On-Device STT service.
+     *
+     * Uses GLM-ASR-Nano-2512 for fully on-device speech recognition.
+     * Features:
+     * - Zero cost (no API fees)
+     * - Complete privacy (audio never leaves device)
+     * - Works offline
+     *
+     * Requirements:
+     * - 8GB+ RAM (12GB recommended)
+     * - Android 12+ (API 31+)
+     * - ~2.4GB storage for models
+     */
+    @Provides
+    @Singleton
+    @Named("GLMASROnDeviceSTT")
+    fun provideGLMASROnDeviceSTTService(
+        @ApplicationContext context: Context,
+    ): GLMASROnDeviceSTTService {
+        return GLMASROnDeviceSTTService(context)
     }
 
     // TTS Service Providers
@@ -312,7 +337,7 @@ object ProviderModule {
                 // Uses LLMBackendSelector to choose optimal backend (ExecuTorch > MediaPipe > llama.cpp)
                 if (deviceCapabilityDetector.supportsOnDeviceLLM()) {
                     val backend = backendSelector.getSelectedBackend()
-                    android.util.Log.i(
+                    Log.i(
                         "ProviderModule",
                         "PatchPanel OnDevice backend: ${backend.backendName}",
                     )
@@ -371,9 +396,10 @@ object ProviderModule {
     /**
      * Provide STT provider router with automatic failover.
      *
-     * Priority order:
-     * 1. Android STT (on-device, free) - always available
-     * 2. Deepgram (cloud, paid) - if API key configured and healthy
+     * Priority order (lower value = higher priority):
+     * 1. GLM-ASR On-Device (on-device, highest quality) - if device supports and models downloaded
+     * 2. Android STT (on-device, fallback) - always available
+     * 3. Deepgram (cloud, paid) - if API key configured and healthy
      */
     @Provides
     @Singleton
@@ -381,17 +407,52 @@ object ProviderModule {
     fun provideSTTProviderRouter(
         @Named("DeepgramSTT") deepgram: STTService,
         @Named("AndroidSTT") android: STTService,
+        @Named("GLMASROnDeviceSTT") glmAsrOnDevice: GLMASROnDeviceSTTService,
         @Named("DeepgramHealthMonitor") deepgramHealthMonitor: ProviderHealthMonitor,
         config: ProviderConfig,
     ): STTProviderRouter {
         val router = STTProviderRouter()
 
-        // Register Android STT (on-device, always available)
+        // Register GLM-ASR On-Device (highest quality on-device, if supported and models present)
+        // This provides the best on-device STT with GLM-ASR-Nano-2512
+        if (glmAsrOnDevice.isSupported() && glmAsrOnDevice.areModelsReady()) {
+            Log.i(
+                "ProviderModule",
+                "Registering GLM-ASR On-Device STT (models ready)",
+            )
+            router.registerProvider(
+                STTProviderRegistration(
+                    service = glmAsrOnDevice,
+                    priority = STTProviderPriority.ON_DEVICE,
+                    healthMonitor = null,
+                    requiresApiKey = false,
+                    isOnDevice = true,
+                ),
+            )
+        } else if (glmAsrOnDevice.isSupported()) {
+            Log.i(
+                "ProviderModule",
+                "GLM-ASR On-Device STT supported but models not downloaded",
+            )
+        } else {
+            Log.i(
+                "ProviderModule",
+                "GLM-ASR On-Device STT not supported on this device",
+            )
+        }
+
+        // Register Android STT (on-device fallback, always available)
         // On-device doesn't need health monitoring
         router.registerProvider(
             STTProviderRegistration(
                 service = android,
-                priority = STTProviderPriority.ON_DEVICE,
+                // Use SELF_HOSTED priority if GLM-ASR is available, otherwise ON_DEVICE
+                priority =
+                    if (glmAsrOnDevice.isSupported() && glmAsrOnDevice.areModelsReady()) {
+                        STTProviderPriority.SELF_HOSTED
+                    } else {
+                        STTProviderPriority.ON_DEVICE
+                    },
                 healthMonitor = null,
                 requiresApiKey = false,
                 isOnDevice = true,
@@ -525,30 +586,30 @@ object ProviderModule {
         config: ProviderConfig,
     ): LLMService {
         val selectedProvider = config.getLLMProvider()
-        android.util.Log.i("ProviderModule", "Selected LLM provider: $selectedProvider")
+        Log.i("ProviderModule", "Selected LLM provider: $selectedProvider")
 
         return when (selectedProvider) {
             "OnDevice" -> {
                 // Use the backend selector to choose the optimal backend
                 // (ExecuTorch > MediaPipe > llama.cpp based on device capabilities)
                 val backend = backendSelector.getSelectedBackend()
-                android.util.Log.i(
+                Log.i(
                     "ProviderModule",
                     "Using OnDevice LLM: ${backend.backendName} (${backend.expectedToksPerSec} tok/sec expected)",
                 )
                 backend
             }
             "OpenAI" -> {
-                android.util.Log.i("ProviderModule", "Using OpenAI LLM")
+                Log.i("ProviderModule", "Using OpenAI LLM")
                 openai
             }
             "Anthropic" -> {
-                android.util.Log.i("ProviderModule", "Using Anthropic LLM")
+                Log.i("ProviderModule", "Using Anthropic LLM")
                 anthropic
             }
             else -> {
                 // Default to PatchPanel for intelligent routing
-                android.util.Log.i("ProviderModule", "Using PatchPanel LLM (intelligent routing)")
+                Log.i("ProviderModule", "Using PatchPanel LLM (intelligent routing)")
                 patchPanel
             }
         }
