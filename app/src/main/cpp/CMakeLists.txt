@@ -157,3 +157,57 @@ if(CMAKE_ANDROID_ARCH_ABI STREQUAL "arm64-v8a")
     )
     message(STATUS "UnaMentis: llama_inference ARM64 optimizations enabled")
 endif()
+
+# ============================================================================
+# GLM-ASR Decoder Native Library (for on-device STT)
+# ============================================================================
+
+# GLM-ASR decoder using llama.cpp for embedding-to-text generation
+add_library(
+    glm_asr_decoder
+    SHARED
+    glm_asr_decoder.cpp
+    glm_asr_decoder_jni.cpp
+)
+
+# Link llama.cpp libraries
+target_link_libraries(
+    glm_asr_decoder
+    ${log-lib}
+    ${android-lib}
+    llama
+    ggml
+)
+
+# Include directories for llama.cpp headers
+target_include_directories(
+    glm_asr_decoder
+    PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/llama.cpp/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/llama.cpp/ggml/include
+)
+
+# Compiler flags for glm_asr_decoder - optimized for ARM64 performance
+target_compile_options(
+    glm_asr_decoder
+    PRIVATE
+    -Wall
+    -Wextra
+    -O3
+    -DNDEBUG
+    -ffast-math              # Faster floating point operations
+    -ftree-vectorize         # Enable auto-vectorization
+    -fomit-frame-pointer     # Free up a register for general use
+)
+
+# ARM64-specific optimizations for glm_asr_decoder
+if(CMAKE_ANDROID_ARCH_ABI STREQUAL "arm64-v8a")
+    target_compile_options(
+        glm_asr_decoder
+        PRIVATE
+        -march=armv8-a+simd      # Enable ARMv8-A with SIMD extensions
+        -mtune=cortex-a76        # Tune for modern Cortex cores (common in flagships)
+    )
+    message(STATUS "UnaMentis: glm_asr_decoder ARM64 optimizations enabled")
+endif()

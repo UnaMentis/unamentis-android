@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Google Assistant App Actions for UnaMentis
+
+    Enables voice commands like:
+    - "Hey Google, start learning with UnaMentis"
+    - "Hey Google, open my progress in UnaMentis"
+    - "Hey Google, show my to-do list in UnaMentis"
+
+    Documentation: https://developers.google.com/assistant/app/action-schema
+-->
+<actions>
+    <!--
+        START_EXERCISE - Start a learning session
+        Voice: "Hey Google, start learning with UnaMentis"
+        Voice: "Hey Google, start a study session on UnaMentis"
+    -->
+    <action intentName="actions.intent.START_EXERCISE">
+        <fulfillment urlTemplate="unamentis://session" />
+    </action>
+
+    <!--
+        OPEN_APP_FEATURE - Open specific screens
+        Voice: "Hey Google, open my progress in UnaMentis"
+        Voice: "Hey Google, show my to-do list in UnaMentis"
+    -->
+    <action intentName="actions.intent.OPEN_APP_FEATURE">
+        <parameter name="feature">
+            <entity-set-reference entitySetId="FeatureEntitySet" />
+        </parameter>
+        <fulfillment urlTemplate="unamentis://{feature}" />
+    </action>
+
+    <!--
+        GET_THING - Check current status
+        Voice: "Hey Google, what's my progress in UnaMentis?"
+    -->
+    <action intentName="actions.intent.GET_THING">
+        <parameter name="thing.name">
+            <entity-set-reference entitySetId="StatusEntitySet" />
+        </parameter>
+        <fulfillment urlTemplate="unamentis://analytics" />
+    </action>
+
+    <!-- Entity Set for app features -->
+    <entity-set entitySetId="FeatureEntitySet">
+        <!-- Analytics / Progress -->
+        <entity
+            name="@string/assistant_feature_progress"
+            alternateName="@array/assistant_feature_progress_synonyms"
+            identifier="analytics" />
+
+        <!-- Curriculum -->
+        <entity
+            name="@string/assistant_feature_curriculum"
+            alternateName="@array/assistant_feature_curriculum_synonyms"
+            identifier="curriculum" />
+
+        <!-- History -->
+        <entity
+            name="@string/assistant_feature_history"
+            alternateName="@array/assistant_feature_history_synonyms"
+            identifier="history" />
+
+        <!-- To-Do -->
+        <entity
+            name="@string/assistant_feature_todo"
+            alternateName="@array/assistant_feature_todo_synonyms"
+            identifier="todo" />
+
+        <!-- Settings -->
+        <entity
+            name="@string/assistant_feature_settings"
+            alternateName="@array/assistant_feature_settings_synonyms"
+            identifier="settings" />
+    </entity-set>
+
+    <!-- Entity Set for status queries -->
+    <entity-set entitySetId="StatusEntitySet">
+        <entity
+            name="@string/assistant_status_progress"
+            alternateName="@array/assistant_status_synonyms"
+            identifier="progress" />
+    </entity-set>
+</actions>

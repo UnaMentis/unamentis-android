@@ -70,6 +70,9 @@ class GLMASROnDeviceSTTService
             // Native library for ONNX Runtime (optional)
             private var onnxAvailable = false
 
+            // Native library for GLM-ASR decoder (llama.cpp)
+            private var decoderAvailable = false
+
             init {
                 try {
                     // Try to load ONNX Runtime native library
@@ -79,6 +82,16 @@ class GLMASROnDeviceSTTService
                 } catch (e: UnsatisfiedLinkError) {
                     Log.w(TAG, "ONNX Runtime not available, on-device GLM-ASR disabled")
                     onnxAvailable = false
+                }
+
+                try {
+                    // Try to load GLM-ASR decoder native library
+                    System.loadLibrary("glm_asr_decoder")
+                    decoderAvailable = true
+                    Log.i(TAG, "GLM-ASR decoder native library loaded")
+                } catch (e: UnsatisfiedLinkError) {
+                    Log.w(TAG, "GLM-ASR decoder not available")
+                    decoderAvailable = false
                 }
             }
         }
@@ -98,13 +111,14 @@ class GLMASROnDeviceSTTService
         private val bufferMutex = Mutex()
         private var sessionStartTime = 0L
 
-        // ONNX Runtime sessions (native pointers)
-        private val whisperEncoderPtr = AtomicLong(0)
-        private val audioAdapterPtr = AtomicLong(0)
-        private val embedHeadPtr = AtomicLong(0)
+        // ONNX Runtime inference manager
+        private var onnxInference: GLMASRONNXInference? = null
 
         // llama.cpp context for text decoding
         private val llamaContextPtr = AtomicLong(0)
+
+        // Number of mel bands for spectrogram
+        private val nMels = GLMASROnDeviceConfig.N_MELS
 
         // Mel spectrogram processor
         private val melSpectrogram = GLMASRMelSpectrogram()
@@ -343,30 +357,61 @@ class GLMASROnDeviceSTTService
         @Suppress("ReturnCount")
         private fun runPipeline(samples: FloatArray): String? {
             // Step 1: Compute mel spectrogram
-            val melSpec = melSpectrogram.computeFlat(samples)
-            if (melSpec.isEmpty()) {
+            val melSpec2D = melSpectrogram.compute(samples)
+            if (melSpec2D[0].isEmpty()) {
                 Log.w(TAG, "Empty mel spectrogram")
                 return null
             }
 
-            // Step 2: Run through ONNX pipeline (stub for now)
-            val encodedAudio = runWhisperEncoder(melSpec) ?: return null
-            val adaptedAudio = runAudioAdapter(encodedAudio) ?: return null
-            val embeddings = runEmbedHead(adaptedAudio) ?: return null
+            // Flatten mel spectrogram for ONNX input
+            val nFrames = melSpec2D[0].size
+            val melSpecFlat = FloatArray(nMels * nFrames)
+            for (mel in 0 until nMels) {
+                for (frame in 0 until nFrames) {
+                    melSpecFlat[mel * nFrames + frame] = melSpec2D[mel][frame]
+                }
+            }
+
+            // Step 2: Run through ONNX pipeline
+            val embeddings = runONNXPipeline(melSpecFlat, nFrames) ?: return null
 
             // Step 3: Run llama.cpp decoder
             return runLlamaDecoder(embeddings)
         }
 
+        /**
+         * Run the ONNX encoder pipeline.
+         */
+        private fun runONNXPipeline(
+            melSpec: FloatArray,
+            nFrames: Int,
+        ): FloatArray? {
+            val inference = onnxInference
+
+            // If ONNX is not available, use stub
+            if (!onnxAvailable || inference == null) {
+                return runStubPipeline()
+            }
+
+            return inference.runEncoderPipeline(melSpec, nMels, nFrames)
+        }
+
+        /**
+         * Run stub pipeline when ONNX is not available.
+         */
+        private fun runStubPipeline(): FloatArray {
+            // Return simulated embeddings for testing
+            return FloatArray(
+                GLMASRONNXInference.OutputDimensions.ADAPTER_TOKENS *
+                    GLMASRONNXInference.OutputDimensions.EMBED_DIM,
+            )
+        }
+
         // ==================== ONNX Runtime Integration ====================
 
         /**
-         * Load ONNX models.
-         *
-         * NOTE: This is a stub implementation. Full implementation requires
-         * ONNX Runtime Android library integration.
+         * Load ONNX models using GLMASRONNXInference.
          */
-        @Suppress("UnusedParameter")
         private fun loadONNXModels(cfg: GLMASROnDeviceConfig): Boolean {
             if (!onnxAvailable) {
                 Log.w(TAG, "ONNX Runtime not available, using stub implementation")
@@ -374,81 +419,53 @@ class GLMASROnDeviceSTTService
                 return true
             }
 
-            // TODO: Implement actual ONNX model loading when library is added
-            // whisperEncoderPtr.set(nativeLoadONNXModel(cfg.whisperEncoderPath.absolutePath, cfg.useGPU))
-            // audioAdapterPtr.set(nativeLoadONNXModel(cfg.audioAdapterPath.absolutePath, cfg.useGPU))
-            // embedHeadPtr.set(nativeLoadONNXModel(cfg.embedHeadPath.absolutePath, cfg.useGPU))
+            try {
+                // Create inference manager with configuration
+                val inference =
+                    GLMASRONNXInference(
+                        useGPU = cfg.useGPU,
+                        numThreads = cfg.numThreads,
+                    )
 
-            Log.i(TAG, "ONNX models loaded (stub)")
-            return true
+                // Load all three ONNX models
+                val success =
+                    inference.loadModels(
+                        whisperEncoderPath = cfg.whisperEncoderPath,
+                        audioAdapterPath = cfg.audioAdapterPath,
+                        embedHeadPath = cfg.embedHeadPath,
+                    )
+
+                if (success) {
+                    onnxInference = inference
+                    Log.i(TAG, "ONNX models loaded successfully")
+                    return true
+                } else {
+                    inference.release()
+                    Log.e(TAG, "Failed to load ONNX models")
+                    return false
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error loading ONNX models", e)
+                return false
+            }
         }
 
         private fun unloadONNXModels() {
-            // TODO: Implement ONNX model unloading
-            whisperEncoderPtr.set(0)
-            audioAdapterPtr.set(0)
-            embedHeadPtr.set(0)
-        }
-
-        /**
-         * Run Whisper encoder on mel spectrogram.
-         *
-         * @param melSpec Flattened mel spectrogram [nMels * nFrames]
-         * @return Encoded audio features, or null on error
-         */
-        @Suppress("UnusedParameter")
-        private fun runWhisperEncoder(melSpec: FloatArray): FloatArray? {
-            if (!onnxAvailable) {
-                // Stub: Return simulated encoded output
-                return FloatArray(1500 * 1280) // Expected output shape
-            }
-
-            // TODO: Run actual ONNX inference
-            // return nativeRunONNXInference(whisperEncoderPtr.get(), melSpec)
-            return null
-        }
-
-        /**
-         * Run audio adapter to align features with LLM space.
-         *
-         * @param encodedAudio Whisper encoder output
-         * @return Adapted features, or null on error
-         */
-        @Suppress("UnusedParameter")
-        private fun runAudioAdapter(encodedAudio: FloatArray): FloatArray? {
-            if (!onnxAvailable) {
-                // Stub: Return simulated adapted output
-                return FloatArray(375 * 2048) // Expected output shape
-            }
-
-            // TODO: Run actual ONNX inference
-            // return nativeRunONNXInference(audioAdapterPtr.get(), encodedAudio)
-            return null
-        }
-
-        /**
-         * Run embed head to produce token embeddings.
-         *
-         * @param adaptedAudio Adapter output
-         * @return Token embeddings, or null on error
-         */
-        @Suppress("UnusedParameter")
-        private fun runEmbedHead(adaptedAudio: FloatArray): FloatArray? {
-            if (!onnxAvailable) {
-                // Stub: Return simulated embeddings
-                return FloatArray(375 * 4096) // Expected output shape
-            }
-
-            // TODO: Run actual ONNX inference
-            // return nativeRunONNXInference(embedHeadPtr.get(), adaptedAudio)
-            return null
+            onnxInference?.release()
+            onnxInference = null
         }
 
         // ==================== llama.cpp Decoder ====================
 
+        // Expected embedding dimensions from ONNX pipeline
+        private val numEmbeddingTokens = GLMASRONNXInference.OutputDimensions.ADAPTER_TOKENS
+        private val embeddingDim = GLMASRONNXInference.OutputDimensions.EMBED_DIM
+        private val maxOutputTokens = 256
+
         /**
          * Load llama.cpp decoder model.
          */
+        @Suppress("ReturnCount")
         private fun loadLlamaDecoder(cfg: GLMASROnDeviceConfig): Boolean {
             val decoderPath = cfg.decoderPath
             if (!decoderPath.exists()) {
@@ -456,18 +473,43 @@ class GLMASROnDeviceSTTService
                 return false
             }
 
-            // Use the native llama.cpp bindings from OnDeviceLLMService
-            // TODO: Implement decoder loading through JNI
-            // llamaContextPtr.set(nativeLoadLlamaModel(decoderPath.absolutePath, cfg.numThreads, cfg.gpuLayers))
+            if (!decoderAvailable) {
+                Log.w(TAG, "GLM-ASR decoder native library not available, using stub")
+                return true
+            }
 
-            Log.i(TAG, "llama.cpp decoder loaded (stub)")
-            return true
+            try {
+                val contextPtr =
+                    nativeLoadDecoder(
+                        decoderPath.absolutePath,
+                        cfg.contextSize,
+                        cfg.gpuLayers,
+                        cfg.numThreads,
+                    )
+
+                if (contextPtr == 0L) {
+                    Log.e(TAG, "Failed to load decoder model")
+                    return false
+                }
+
+                llamaContextPtr.set(contextPtr)
+                Log.i(TAG, "GLM-ASR decoder loaded successfully")
+                return true
+            } catch (e: Exception) {
+                Log.e(TAG, "Error loading decoder model", e)
+                return false
+            }
         }
 
         private fun unloadLlamaDecoder() {
             val ptr = llamaContextPtr.getAndSet(0)
-            if (ptr != 0L) {
-                // nativeFreeLlamaModel(ptr)
+            if (ptr != 0L && decoderAvailable) {
+                try {
+                    nativeFreeDecoder(ptr)
+                    Log.i(TAG, "GLM-ASR decoder unloaded")
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error unloading decoder", e)
+                }
             }
         }
 
@@ -477,19 +519,114 @@ class GLMASROnDeviceSTTService
          * @param embeddings Token embeddings from embed head
          * @return Transcribed text, or null on error
          */
-        @Suppress("UnusedParameter", "FunctionOnlyReturningConstant")
         private fun runLlamaDecoder(embeddings: FloatArray): String {
-            // TODO: Implement actual decoding with audio embeddings
-            // For now, return stub output
+            val ptr = llamaContextPtr.get()
 
-            // The real implementation would:
-            // 1. Inject embeddings into the decoder context
-            // 2. Run autoregressive generation
-            // 3. Detokenize and return text
+            if (ptr == 0L || !decoderAvailable) {
+                // Fallback to stub when decoder not available
+                return STUB_TRANSCRIPT
+            }
 
-            // Stub implementation - always returns placeholder text
-            return STUB_TRANSCRIPT
+            return try {
+                val result =
+                    nativeDecodeEmbeddingsSync(
+                        ptr,
+                        embeddings,
+                        numEmbeddingTokens,
+                        embeddingDim,
+                        maxOutputTokens,
+                    )
+                result.ifEmpty { STUB_TRANSCRIPT }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error decoding embeddings", e)
+                STUB_TRANSCRIPT
+            }
         }
+
+        // ==================== Native Method Declarations ====================
+
+        /**
+         * Load the GLM-ASR decoder model.
+         *
+         * @param modelPath Path to the GGUF model file
+         * @param contextSize Context window size
+         * @param gpuLayers Number of layers to offload to GPU
+         * @param nThreads Number of CPU threads
+         * @return Native context pointer, or 0 on error
+         */
+        private external fun nativeLoadDecoder(
+            modelPath: String,
+            contextSize: Int,
+            gpuLayers: Int,
+            nThreads: Int,
+        ): Long
+
+        /**
+         * Decode audio embeddings to text (synchronous).
+         *
+         * @param contextPtr Native context pointer
+         * @param embeddings Flattened embedding array
+         * @param numTokens Number of audio tokens (e.g., 375)
+         * @param embeddingDim Dimension of each embedding (e.g., 4096)
+         * @param maxOutputTokens Maximum tokens to generate
+         * @return Transcribed text
+         */
+        private external fun nativeDecodeEmbeddingsSync(
+            contextPtr: Long,
+            embeddings: FloatArray,
+            numTokens: Int,
+            embeddingDim: Int,
+            maxOutputTokens: Int,
+        ): String
+
+        /**
+         * Decode audio embeddings with streaming callback.
+         *
+         * @param contextPtr Native context pointer
+         * @param embeddings Flattened embedding array
+         * @param numTokens Number of audio tokens
+         * @param embeddingDim Dimension of each embedding
+         * @param maxOutputTokens Maximum tokens to generate
+         * @param callback Called for each token (token: String, isDone: Boolean) -> Unit
+         */
+        @Suppress("UnusedPrivateMember", "LongParameterList")
+        private external fun nativeDecodeEmbeddings(
+            contextPtr: Long,
+            embeddings: FloatArray,
+            numTokens: Int,
+            embeddingDim: Int,
+            maxOutputTokens: Int,
+            callback: (String, Boolean) -> Unit,
+        )
+
+        /**
+         * Stop ongoing decoding.
+         */
+        @Suppress("UnusedPrivateMember")
+        private external fun nativeStopDecoder(contextPtr: Long)
+
+        /**
+         * Free the decoder context.
+         */
+        private external fun nativeFreeDecoder(contextPtr: Long)
+
+        /**
+         * Check if decoder is loaded.
+         */
+        @Suppress("UnusedPrivateMember")
+        private external fun nativeIsDecoderLoaded(contextPtr: Long): Boolean
+
+        /**
+         * Check if currently decoding.
+         */
+        @Suppress("UnusedPrivateMember")
+        private external fun nativeIsDecoding(contextPtr: Long): Boolean
+
+        /**
+         * Get embedding dimension of loaded model.
+         */
+        @Suppress("UnusedPrivateMember")
+        private external fun nativeGetEmbeddingDim(contextPtr: Long): Int
 
         // ==================== Utilities ====================
 

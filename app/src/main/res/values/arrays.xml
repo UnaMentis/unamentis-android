@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Google Assistant App Actions - Feature Synonyms -->
+
+    <!-- Progress/Analytics feature synonyms -->
+    <string-array name="assistant_feature_progress_synonyms">
+        <item>progress</item>
+        <item>analytics</item>
+        <item>stats</item>
+        <item>statistics</item>
+        <item>metrics</item>
+        <item>my progress</item>
+        <item>learning progress</item>
+        <item>study progress</item>
+    </string-array>
+
+    <!-- Curriculum feature synonyms -->
+    <string-array name="assistant_feature_curriculum_synonyms">
+        <item>curriculum</item>
+        <item>lessons</item>
+        <item>courses</item>
+        <item>topics</item>
+        <item>content</item>
+        <item>learning content</item>
+        <item>study material</item>
+    </string-array>
+
+    <!-- History feature synonyms -->
+    <string-array name="assistant_feature_history_synonyms">
+        <item>history</item>
+        <item>past sessions</item>
+        <item>session history</item>
+        <item>previous sessions</item>
+        <item>records</item>
+        <item>learning history</item>
+    </string-array>
+
+    <!-- To-Do feature synonyms -->
+    <string-array name="assistant_feature_todo_synonyms">
+        <item>to-do list</item>
+        <item>todo</item>
+        <item>tasks</item>
+        <item>goals</item>
+        <item>my tasks</item>
+        <item>learning goals</item>
+        <item>study tasks</item>
+    </string-array>
+
+    <!-- Settings feature synonyms -->
+    <string-array name="assistant_feature_settings_synonyms">
+        <item>settings</item>
+        <item>preferences</item>
+        <item>configuration</item>
+        <item>options</item>
+        <item>app settings</item>
+    </string-array>
+
+    <!-- Status query synonyms -->
+    <string-array name="assistant_status_synonyms">
+        <item>progress</item>
+        <item>my progress</item>
+        <item>how am I doing</item>
+        <item>my stats</item>
+        <item>my status</item>
+        <item>learning status</item>
+    </string-array>
+</resources>

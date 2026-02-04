@@ -36,6 +36,7 @@ import javax.inject.Singleton
  * bloating the APK size.
  */
 @Singleton
+@Suppress("LargeClass") // Manages multiple model types (llama.cpp, MediaPipe, ExecuTorch, GLM-ASR)
 class ModelDownloadManager
     @Inject
     constructor(
@@ -88,6 +89,21 @@ class ModelDownloadManager
             private const val LLAMA_3B_PTE_URL =
                 "https://storage.googleapis.com/unamentis-models/llama-3.2-3b-instruct-qnn.pte"
 
+            // ==========================================
+            // GLM-ASR On-Device STT Models
+            // ==========================================
+
+            // GLM-ASR-Nano-2512 model components
+            // Note: These URLs are placeholders - actual models to be hosted on HuggingFace
+            private const val GLM_ASR_BASE_URL =
+                "https://huggingface.co/zai-org/GLM-ASR-Nano-2512/resolve/main/"
+
+            // Model filenames
+            const val GLM_ASR_WHISPER_ENCODER_FILENAME = "glm_asr_whisper_encoder.onnx"
+            const val GLM_ASR_AUDIO_ADAPTER_FILENAME = "glm_asr_audio_adapter.onnx"
+            const val GLM_ASR_EMBED_HEAD_FILENAME = "glm_asr_embed_head.onnx"
+            const val GLM_ASR_DECODER_FILENAME = "glm_asr_decoder_q4km.gguf"
+
             // SHA256 checksums for verification (from HuggingFace LFS OIDs)
             private val MODEL_CHECKSUMS =
                 mapOf(
@@ -104,6 +120,11 @@ class ModelDownloadManager
                     ExecuTorchLLMService.LLAMA_1B_FILENAME to "",
                     // Custom export - checksum TBD
                     ExecuTorchLLMService.LLAMA_3B_FILENAME to "",
+                    // GLM-ASR STT models - checksums TBD
+                    GLM_ASR_WHISPER_ENCODER_FILENAME to "",
+                    GLM_ASR_AUDIO_ADAPTER_FILENAME to "",
+                    GLM_ASR_EMBED_HEAD_FILENAME to "",
+                    GLM_ASR_DECODER_FILENAME to "",
                 )
 
             // Download timeout (models are large)
@@ -197,6 +218,74 @@ class ModelDownloadManager
                 downloadUrl = LLAMA_3B_PTE_URL,
             ),
         }
+
+        /**
+         * GLM-ASR on-device STT model specification.
+         *
+         * These models form the GLM-ASR-Nano-2512 pipeline:
+         * 1. Whisper Encoder - Converts mel spectrograms to audio features (ONNX)
+         * 2. Audio Adapter - Aligns features with LLM space (ONNX)
+         * 3. Embed Head - Produces token embeddings (ONNX)
+         * 4. Decoder - Generates text from embeddings (GGUF)
+         */
+        enum class GLMASRModelSpec(
+            val filename: String,
+            val displayName: String,
+            val sizeBytes: Long,
+            val minRamMB: Int,
+            val downloadUrl: String,
+        ) {
+            /** Whisper encoder for mel spectrogram processing (~1.2GB). */
+            WHISPER_ENCODER(
+                filename = GLM_ASR_WHISPER_ENCODER_FILENAME,
+                displayName = "Whisper Encoder",
+                sizeBytes = 1_200_000_000L,
+                minRamMB = 8192,
+                downloadUrl = "${GLM_ASR_BASE_URL}whisper_encoder.onnx",
+            ),
+
+            /** Audio adapter for LLM alignment (~56MB). */
+            AUDIO_ADAPTER(
+                filename = GLM_ASR_AUDIO_ADAPTER_FILENAME,
+                displayName = "Audio Adapter",
+                sizeBytes = 56_000_000L,
+                minRamMB = 8192,
+                downloadUrl = "${GLM_ASR_BASE_URL}audio_adapter.onnx",
+            ),
+
+            /** Embed head for token embeddings (~232MB). */
+            EMBED_HEAD(
+                filename = GLM_ASR_EMBED_HEAD_FILENAME,
+                displayName = "Embed Head",
+                sizeBytes = 232_000_000L,
+                minRamMB = 8192,
+                downloadUrl = "${GLM_ASR_BASE_URL}embed_head.onnx",
+            ),
+
+            /** Text decoder for transcript generation (~935MB). */
+            DECODER(
+                filename = GLM_ASR_DECODER_FILENAME,
+                displayName = "Text Decoder",
+                sizeBytes = 935_000_000L,
+                minRamMB = 8192,
+                downloadUrl = "${GLM_ASR_BASE_URL}decoder_q4km.gguf",
+            ),
+            ;
+
+            companion object {
+                /** Total size of all GLM-ASR models. */
+                val TOTAL_SIZE_BYTES: Long = entries.sumOf { it.sizeBytes }
+            }
+        }
+
+        /**
+         * GLM-ASR model info for UI display.
+         */
+        data class GLMASRModelInfo(
+            val spec: GLMASRModelSpec,
+            val isDownloaded: Boolean,
+            val fileSizeOnDisk: Long,
+        )
 
         /**
          * Extended model info including backend type.
@@ -836,5 +925,226 @@ class ModelDownloadManager
             }
 
             return deleted
+        }
+
+        // ==========================================
+        // GLM-ASR On-Device STT Model Support
+        // ==========================================
+
+        /**
+         * Get GLM-ASR models directory.
+         */
+        fun getGLMASRModelsDirectory(): File {
+            val modelsDir = getModelsDirectory()
+            val glmAsrDir = File(modelsDir, "glm-asr-nano")
+            if (!glmAsrDir.exists()) {
+                glmAsrDir.mkdirs()
+            }
+            return glmAsrDir
+        }
+
+        /**
+         * Get all GLM-ASR models with download status.
+         */
+        fun getGLMASRModels(): List<GLMASRModelInfo> {
+            val modelsDir = getGLMASRModelsDirectory()
+
+            return GLMASRModelSpec.entries.map { spec ->
+                val file = File(modelsDir, spec.filename)
+                GLMASRModelInfo(
+                    spec = spec,
+                    isDownloaded = file.exists() && file.length() > 0,
+                    fileSizeOnDisk = if (file.exists()) file.length() else 0L,
+                )
+            }
+        }
+
+        /**
+         * Check if all GLM-ASR models are downloaded.
+         */
+        fun areAllGLMASRModelsDownloaded(): Boolean {
+            val modelsDir = getGLMASRModelsDirectory()
+            return GLMASRModelSpec.entries.all { spec ->
+                val file = File(modelsDir, spec.filename)
+                file.exists() && file.length() > 0
+            }
+        }
+
+        /**
+         * Get total size of missing GLM-ASR models.
+         */
+        fun getMissingGLMASRModelsSize(): Long {
+            val modelsDir = getGLMASRModelsDirectory()
+            return GLMASRModelSpec.entries
+                .filter { spec ->
+                    val file = File(modelsDir, spec.filename)
+                    !file.exists() || file.length() == 0L
+                }
+                .sumOf { it.sizeBytes }
+        }
+
+        /**
+         * Download a specific GLM-ASR model.
+         */
+        @Suppress("LongMethod", "CyclomaticComplexMethod")
+        suspend fun downloadGLMASRModel(spec: GLMASRModelSpec): Result<String> =
+            withContext(Dispatchers.IO) {
+                currentDownloadJob = currentCoroutineContext()[Job]
+                isCancelled.set(false)
+                _downloadState.value = DownloadState.Downloading(0f, 0, spec.sizeBytes)
+
+                val modelsDir = getGLMASRModelsDirectory()
+                val targetFile = File(modelsDir, spec.filename)
+                val tempFile = File(modelsDir, "${spec.filename}.download")
+
+                try {
+                    // Check if already downloaded
+                    if (targetFile.exists() && targetFile.length() > 0) {
+                        currentDownloadJob = null
+                        Log.i(TAG, "GLM-ASR model already exists: ${targetFile.absolutePath}")
+                        _downloadState.value = DownloadState.Complete(targetFile.absolutePath)
+                        return@withContext Result.success(targetFile.absolutePath)
+                    }
+
+                    Log.i(TAG, "Starting GLM-ASR download: ${spec.downloadUrl}")
+
+                    // Build request with resume support
+                    val requestBuilder = Request.Builder().url(spec.downloadUrl)
+                    val startByte =
+                        if (tempFile.exists()) {
+                            val existingSize = tempFile.length()
+                            requestBuilder.header("Range", "bytes=$existingSize-")
+                            Log.i(TAG, "Resuming from byte $existingSize")
+                            existingSize
+                        } else {
+                            0L
+                        }
+
+                    val request = requestBuilder.build()
+                    val call = downloadClient.newCall(request)
+                    currentCall = call
+                    val response = call.execute()
+
+                    response.use { resp ->
+                        if (!resp.isSuccessful && resp.code != 206) {
+                            currentCall = null
+                            currentDownloadJob = null
+                            val error = "GLM-ASR download failed: HTTP ${resp.code}"
+                            Log.e(TAG, error)
+                            _downloadState.value = DownloadState.Error(error)
+                            return@withContext Result.failure(IOException(error))
+                        }
+
+                        val body =
+                            resp.body
+                                ?: run {
+                                    _downloadState.value = DownloadState.Error("Empty response")
+                                    return@withContext Result.failure(IOException("Empty response"))
+                                }
+
+                        val totalBytes = body.contentLength() + startByte
+                        var downloadedBytes = startByte
+                        var lastReportedProgress = -1
+
+                        FileOutputStream(tempFile, startByte > 0).use { output ->
+                            val buffer = ByteArray(BUFFER_SIZE)
+                            body.byteStream().use { input ->
+                                var bytesRead: Int
+                                while (input.read(buffer).also { bytesRead = it } != -1) {
+                                    if (isCancelled.get()) {
+                                        _downloadState.value = DownloadState.Cancelled
+                                        return@withContext Result.failure(
+                                            IOException("Download cancelled"),
+                                        )
+                                    }
+
+                                    output.write(buffer, 0, bytesRead)
+                                    downloadedBytes += bytesRead
+
+                                    // Update progress (throttled)
+                                    val progress = downloadedBytes.toFloat() / totalBytes
+                                    val currentPercent = (progress * 100).toInt()
+                                    if (currentPercent > lastReportedProgress) {
+                                        _downloadState.value =
+                                            DownloadState.Downloading(
+                                                progress = progress,
+                                                downloadedBytes = downloadedBytes,
+                                                totalBytes = totalBytes,
+                                            )
+                                        lastReportedProgress = currentPercent
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    currentCall = null
+
+                    // Rename temp file to final
+                    if (!tempFile.renameTo(targetFile)) {
+                        val error = "Failed to rename temp file"
+                        Log.e(TAG, error)
+                        _downloadState.value = DownloadState.Error(error)
+                        return@withContext Result.failure(IOException(error))
+                    }
+
+                    currentDownloadJob = null
+                    Log.i(TAG, "GLM-ASR model downloaded: ${targetFile.absolutePath}")
+                    _downloadState.value = DownloadState.Complete(targetFile.absolutePath)
+                    Result.success(targetFile.absolutePath)
+                } catch (e: Exception) {
+                    currentCall = null
+                    currentDownloadJob = null
+                    Log.e(TAG, "GLM-ASR download failed", e)
+                    _downloadState.value = DownloadState.Error(e.message ?: "Download failed")
+                    Result.failure(e)
+                }
+            }
+
+        /**
+         * Download all GLM-ASR models sequentially.
+         */
+        suspend fun downloadAllGLMASRModels(): Result<Unit> {
+            for (spec in GLMASRModelSpec.entries) {
+                val result = downloadGLMASRModel(spec)
+                if (result.isFailure) {
+                    return Result.failure(
+                        result.exceptionOrNull() ?: IOException("Download failed"),
+                    )
+                }
+            }
+            return Result.success(Unit)
+        }
+
+        /**
+         * Delete a specific GLM-ASR model.
+         */
+        fun deleteGLMASRModel(spec: GLMASRModelSpec): Boolean {
+            val file = File(getGLMASRModelsDirectory(), spec.filename)
+            val tempFile = File(getGLMASRModelsDirectory(), "${spec.filename}.download")
+
+            var deleted = false
+            if (file.exists()) {
+                deleted = file.delete()
+                Log.i(TAG, "Deleted GLM-ASR model: ${spec.filename}, success: $deleted")
+            }
+            if (tempFile.exists()) {
+                tempFile.delete()
+            }
+
+            return deleted
+        }
+
+        /**
+         * Delete all GLM-ASR models.
+         */
+        fun deleteAllGLMASRModels(): Boolean {
+            var allDeleted = true
+            for (spec in GLMASRModelSpec.entries) {
+                if (!deleteGLMASRModel(spec)) {
+                    allDeleted = false
+                }
+            }
+            return allDeleted
         }
     }

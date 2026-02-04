@@ -1,6 +1,7 @@
 package com.unamentis.core.accessibility
 
 import android.content.Context
+import android.provider.Settings
 import android.view.accessibility.AccessibilityManager
 import androidx.core.content.getSystemService
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -56,6 +57,18 @@ class AccessibilityChecker
         private val _fontScale = MutableStateFlow(1.0f)
         val fontScale: StateFlow<Float> = _fontScale.asStateFlow()
 
+        /**
+         * Reduce motion preference state.
+         *
+         * When true, animations should be minimized or disabled to accommodate
+         * users who are sensitive to motion (vestibular disorders, motion sickness, etc.).
+         *
+         * This is detected by checking if the system animator duration scale is 0 (off)
+         * or very low, which users can set in Developer Options or Accessibility settings.
+         */
+        private val _isReduceMotionEnabled = MutableStateFlow(false)
+        val isReduceMotionEnabled: StateFlow<Boolean> = _isReduceMotionEnabled.asStateFlow()
+
         init {
             updateAccessibilityState()
         }
@@ -67,7 +80,37 @@ class AccessibilityChecker
             _isTalkBackEnabled.value = isTalkBackActive()
             _isTouchExplorationEnabled.value = accessibilityManager?.isTouchExplorationEnabled ?: false
             _fontScale.value = context.resources.configuration.fontScale
+            _isReduceMotionEnabled.value = isReduceMotionActive()
         }
+
+        /**
+         * Check if reduce motion is requested by the user.
+         *
+         * This checks the system animator duration scale setting.
+         * A value of 0 means animations are disabled.
+         * A value below 0.5 indicates the user prefers reduced motion.
+         */
+        private fun isReduceMotionActive(): Boolean {
+            return try {
+                val animatorScale =
+                    Settings.Global.getFloat(
+                        context.contentResolver,
+                        Settings.Global.ANIMATOR_DURATION_SCALE,
+                        1.0f,
+                    )
+                // Consider reduce motion if animations are off or significantly reduced
+                animatorScale < 0.5f
+            } catch (e: Exception) {
+                false
+            }
+        }
+
+        /**
+         * Check if reduce motion is enabled.
+         *
+         * Use this to conditionally disable or simplify animations.
+         */
+        fun shouldReduceMotion(): Boolean = _isReduceMotionEnabled.value
 
         /**
          * Check if TalkBack is active.
@@ -120,6 +163,7 @@ class AccessibilityChecker
                 appendLine("Accessibility Status:")
                 appendLine("- TalkBack: ${if (_isTalkBackEnabled.value) "Enabled" else "Disabled"}")
                 appendLine("- Touch Exploration: ${if (_isTouchExplorationEnabled.value) "Enabled" else "Disabled"}")
+                appendLine("- Reduce Motion: ${if (_isReduceMotionEnabled.value) "Enabled" else "Disabled"}")
                 appendLine("- Font Scale: ${_fontScale.value}x")
                 appendLine("- Recommended Timeout: ${getRecommendedTimeoutMs()}ms")
             }
@@ -135,6 +179,7 @@ class AccessibilityChecker
             val supportsLargeFonts: Boolean,
             val hasLogicalFocusOrder: Boolean,
             val hasStateAnnouncements: Boolean,
+            val supportsReduceMotion: Boolean = true,
         ) {
             fun isFullyAccessible(): Boolean {
                 return hasContentDescriptions &&
@@ -142,7 +187,8 @@ class AccessibilityChecker
                     meetsColorContrastRatio &&
                     supportsLargeFonts &&
                     hasLogicalFocusOrder &&
-                    hasStateAnnouncements
+                    hasStateAnnouncements &&
+                    supportsReduceMotion
             }
 
             fun getMissingRequirements(): List<String> {
@@ -153,6 +199,7 @@ class AccessibilityChecker
                 if (!supportsLargeFonts) missing.add("Support for large font sizes (2x)")
                 if (!hasLogicalFocusOrder) missing.add("Logical focus order")
                 if (!hasStateAnnouncements) missing.add("Screen reader announcements")
+                if (!supportsReduceMotion) missing.add("Reduce motion support for vestibular sensitivity")
                 return missing
             }
         }

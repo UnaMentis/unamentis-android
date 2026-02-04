@@ -66,6 +66,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.unamentis.BuildConfig
 import com.unamentis.R
 import com.unamentis.core.config.ConfigurationPreset
 import com.unamentis.core.config.RecordingMode
@@ -115,6 +116,8 @@ enum class SettingsSection {
 fun SettingsScreen(
     initialSection: String? = null,
     onNavigateToServerSettings: () -> Unit = {},
+    onNavigateToAbout: () -> Unit = {},
+    onNavigateToDebug: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -139,6 +142,9 @@ fun SettingsScreen(
     val downloadState by viewModel.downloadState.collectAsStateWithLifecycle()
     val availableModels by viewModel.availableModels.collectAsStateWithLifecycle()
     val availableExtendedModels by viewModel.availableExtendedModels.collectAsStateWithLifecycle()
+
+    // GLM-ASR On-Device STT settings
+    val glmAsrModels by viewModel.glmAsrModels.collectAsStateWithLifecycle()
 
     // Handle deep link to specific section
     LaunchedEffect(initialSection) {
@@ -378,6 +384,30 @@ fun SettingsScreen(
                 )
             }
 
+            // GLM-ASR On-Device STT section
+            item {
+                Text(
+                    text = stringResource(R.string.settings_on_device_stt).uppercase(),
+                    style = IOSTypography.caption,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = Dimensions.SpacingLarge),
+                )
+            }
+
+            item {
+                GLMASRSttSection(
+                    supportsGLMASR = viewModel.supportsGLMASR,
+                    deviceRamMB = viewModel.deviceRamMB,
+                    glmAsrModels = glmAsrModels,
+                    downloadState = downloadState,
+                    onDownloadAll = { viewModel.downloadAllGLMASRModels() },
+                    onDownloadModel = { viewModel.downloadGLMASRModel(it) },
+                    onCancelDownload = { viewModel.cancelDownload() },
+                    onDeleteAll = { viewModel.deleteAllGLMASRModels() },
+                    onDeleteModel = { viewModel.deleteGLMASRModel(it) },
+                )
+            }
+
             // TTS Settings section
             item {
                 Text(
@@ -446,6 +476,27 @@ fun SettingsScreen(
                     onClick = onNavigateToServerSettings,
                 )
             }
+
+            // About & Debug section
+            item {
+                Text(
+                    text = stringResource(R.string.settings_info_section).uppercase(),
+                    style = IOSTypography.caption,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = Dimensions.SpacingLarge),
+                )
+            }
+
+            item {
+                AboutCard(onClick = onNavigateToAbout)
+            }
+
+            // Debug Tools (only in debug builds)
+            if (BuildConfig.DEBUG) {
+                item {
+                    DebugCard(onClick = onNavigateToDebug)
+                }
+            }
         }
     }
 }
@@ -478,6 +529,74 @@ private fun SelfHostedServersCard(onClick: () -> Unit) {
             Icon(
                 Icons.Default.KeyboardArrowRight,
                 contentDescription = stringResource(R.string.server_settings_title),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/**
+ * Card for navigating to About screen.
+ */
+@Composable
+private fun AboutCard(onClick: () -> Unit) {
+    IOSCard(
+        modifier = Modifier.fillMaxWidth(),
+        onClick = onClick,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column {
+                Text(
+                    text = stringResource(R.string.settings_about),
+                    style = IOSTypography.body,
+                )
+                Text(
+                    text = stringResource(R.string.settings_about_desc),
+                    style = IOSTypography.caption,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Icon(
+                Icons.Default.KeyboardArrowRight,
+                contentDescription = stringResource(R.string.settings_about),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/**
+ * Card for navigating to Debug Tools screen.
+ */
+@Composable
+private fun DebugCard(onClick: () -> Unit) {
+    IOSCard(
+        modifier = Modifier.fillMaxWidth(),
+        onClick = onClick,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column {
+                Text(
+                    text = stringResource(R.string.settings_debug_tools),
+                    style = IOSTypography.body,
+                )
+                Text(
+                    text = stringResource(R.string.settings_debug_desc),
+                    style = IOSTypography.caption,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Icon(
+                Icons.Default.KeyboardArrowRight,
+                contentDescription = stringResource(R.string.settings_debug_tools),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
@@ -2033,4 +2152,314 @@ private fun BackendTypeBadge(backendType: LLMBackendType) {
             )
         },
     )
+}
+
+/**
+ * GLM-ASR On-Device STT section.
+ *
+ * Shows device capability, download status, and available GLM-ASR models.
+ * Allows downloading models for fully offline speech-to-text.
+ */
+@Composable
+private fun GLMASRSttSection(
+    supportsGLMASR: Boolean,
+    deviceRamMB: Int,
+    glmAsrModels: List<ModelDownloadManager.GLMASRModelInfo>,
+    downloadState: ModelDownloadManager.DownloadState,
+    onDownloadAll: () -> Unit,
+    onDownloadModel: (ModelDownloadManager.GLMASRModelSpec) -> Unit,
+    onCancelDownload: () -> Unit,
+    onDeleteAll: () -> Unit,
+    onDeleteModel: (ModelDownloadManager.GLMASRModelSpec) -> Unit,
+) {
+    val context = LocalContext.current
+    var showDeleteAllDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf<ModelDownloadManager.GLMASRModelSpec?>(null) }
+
+    Card(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .animateContentSize(),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingLarge),
+        ) {
+            // Header
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
+            ) {
+                Icon(
+                    Icons.Default.Mic,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                Text(
+                    text = stringResource(R.string.settings_glm_asr_models),
+                    style = IOSTypography.subheadline,
+                )
+            }
+
+            // Description
+            Text(
+                text = stringResource(R.string.settings_glm_asr_desc),
+                style = IOSTypography.caption,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            // Features
+            Text(
+                text = stringResource(R.string.settings_glm_asr_features),
+                style = IOSTypography.caption,
+                color = MaterialTheme.colorScheme.primary,
+            )
+
+            // Device info
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    text = stringResource(R.string.settings_device_ram_label, deviceRamMB),
+                    style = IOSTypography.caption,
+                )
+                if (supportsGLMASR) {
+                    Text(
+                        text = stringResource(R.string.settings_on_device_supported),
+                        style = IOSTypography.caption,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                } else {
+                    Text(
+                        text = stringResource(R.string.settings_on_device_not_supported),
+                        style = IOSTypography.caption,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
+
+            if (!supportsGLMASR) {
+                Text(
+                    text = stringResource(R.string.settings_glm_asr_not_supported),
+                    style = IOSTypography.caption,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                return@Column
+            }
+
+            HorizontalDivider()
+
+            // Download state indicator
+            DownloadStateIndicator(
+                downloadState = downloadState,
+                onCancel = onCancelDownload,
+            )
+
+            // Model list
+            glmAsrModels.forEach { modelInfo ->
+                GLMASRModelCard(
+                    modelInfo = modelInfo,
+                    isDownloading = downloadState is ModelDownloadManager.DownloadState.Downloading,
+                    onDownload = { onDownloadModel(modelInfo.spec) },
+                    onDelete = { showDeleteDialog = modelInfo.spec },
+                )
+            }
+
+            // Download all / Delete all buttons
+            val downloadedCount = glmAsrModels.count { it.isDownloaded }
+            val allDownloaded = downloadedCount == glmAsrModels.size
+
+            if (!allDownloaded && downloadState is ModelDownloadManager.DownloadState.Idle) {
+                TextButton(
+                    onClick = onDownloadAll,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(Icons.Default.Download, contentDescription = null)
+                    Spacer(Modifier.width(Dimensions.SpacingSmall))
+                    Text(stringResource(R.string.settings_glm_asr_download_all))
+                }
+
+                Text(
+                    text = stringResource(R.string.settings_glm_asr_total_size),
+                    style = IOSTypography.caption,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+
+            if (downloadedCount > 0) {
+                if (allDownloaded) {
+                    Text(
+                        text = stringResource(R.string.settings_glm_asr_ready),
+                        style = IOSTypography.body,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                } else {
+                    Text(
+                        text =
+                            stringResource(
+                                R.string.settings_glm_asr_partial,
+                                downloadedCount,
+                                glmAsrModels.size,
+                            ),
+                        style = IOSTypography.caption,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
+                TextButton(
+                    onClick = { showDeleteAllDialog = true },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                    )
+                    Spacer(Modifier.width(Dimensions.SpacingSmall))
+                    Text(
+                        text = stringResource(R.string.settings_glm_asr_delete_all),
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
+
+            // Storage hint
+            Text(
+                text = stringResource(R.string.settings_models_storage_hint),
+                style = IOSTypography.caption,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+
+    // Delete all confirmation dialog
+    if (showDeleteAllDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteAllDialog = false },
+            title = { Text(stringResource(R.string.settings_delete_model_title)) },
+            text = {
+                Text(stringResource(R.string.settings_glm_asr_delete_all))
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onDeleteAll()
+                        showDeleteAllDialog = false
+                    },
+                ) {
+                    Text(stringResource(R.string.settings_delete), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteAllDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            },
+        )
+    }
+
+    // Delete single model confirmation dialog
+    showDeleteDialog?.let { spec ->
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = null },
+            title = { Text(stringResource(R.string.settings_delete_model_title)) },
+            text = {
+                Text(
+                    stringResource(
+                        R.string.settings_delete_model_body,
+                        spec.displayName,
+                        Formatter.formatFileSize(context, spec.sizeBytes),
+                    ),
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onDeleteModel(spec)
+                        showDeleteDialog = null
+                    },
+                ) {
+                    Text(stringResource(R.string.settings_delete), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = null }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            },
+        )
+    }
+}
+
+/**
+ * Card for a single GLM-ASR model.
+ */
+@Composable
+private fun GLMASRModelCard(
+    modelInfo: ModelDownloadManager.GLMASRModelInfo,
+    isDownloading: Boolean,
+    onDownload: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    val context = LocalContext.current
+
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = Dimensions.SpacingSmall),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = modelInfo.spec.displayName,
+                style = IOSTypography.body,
+            )
+            Text(
+                text = Formatter.formatFileSize(context, modelInfo.spec.sizeBytes),
+                style = IOSTypography.caption,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
+        if (modelInfo.isDownloaded) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    Icons.Default.Check,
+                    contentDescription = stringResource(R.string.cd_success),
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = stringResource(R.string.cd_delete_model),
+                        tint = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
+        } else {
+            IconButton(
+                onClick = onDownload,
+                enabled = !isDownloading,
+            ) {
+                Icon(
+                    Icons.Default.Download,
+                    contentDescription = stringResource(R.string.cd_download_model),
+                    tint =
+                        if (isDownloading) {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        } else {
+                            MaterialTheme.colorScheme.primary
+                        },
+                )
+            }
+        }
+    }
 }

@@ -78,6 +78,44 @@
     <string name="settings_api_keys">API Keys</string>
     <string name="settings_help">Help</string>
     <string name="settings_about">About</string>
+    <string name="settings_about_desc">Version info, licenses, and support</string>
+    <string name="settings_debug_tools">Debug Tools</string>
+    <string name="settings_debug_desc">Diagnostics and troubleshooting</string>
+    <string name="settings_info_section">Information</string>
+
+    <!-- About Screen -->
+    <string name="about_tagline">Your AI-powered learning companion</string>
+    <string name="about_version">Version</string>
+    <string name="about_build">Build</string>
+    <string name="about_links_section">Links</string>
+    <string name="about_documentation">Documentation</string>
+    <string name="about_privacy_policy">Privacy Policy</string>
+    <string name="about_terms_of_service">Terms of Service</string>
+    <string name="about_open_source_licenses">Open Source Licenses</string>
+    <string name="about_support_section">Support</string>
+    <string name="about_contact_support">Contact Support</string>
+    <string name="about_support_email">support@unamentis.com</string>
+    <string name="about_copyright">2024 UnaMentis. All rights reserved.</string>
+
+    <!-- Debug Screen -->
+    <string name="debug_provider_connectivity">Provider Connectivity</string>
+    <string name="debug_audio_diagnostics">Audio Diagnostics</string>
+    <string name="debug_latency_test">Latency Test</string>
+    <string name="debug_cache_management">Cache Management</string>
+    <string name="debug_device_info">Device Information</string>
+    <string name="debug_clear_cache">Clear Cache</string>
+    <string name="debug_cache_cleared">Cache cleared</string>
+    <string name="debug_test_connection">Test Connection</string>
+    <string name="debug_testing">Testing…</string>
+    <string name="debug_connected">Connected</string>
+    <string name="debug_disconnected">Disconnected</string>
+    <string name="debug_error">Error</string>
+    <string name="debug_device_model">Device Model</string>
+    <string name="debug_android_version">Android Version</string>
+    <string name="debug_sdk_version">SDK Version</string>
+    <string name="debug_device_tier">Device Tier</string>
+    <string name="debug_available_memory">Available Memory</string>
+    <string name="debug_app_version">App Version</string>
     <string name="settings_version">Version</string>
     <string name="settings_configured">Configured</string>
     <string name="settings_not_configured">Not configured</string>
@@ -179,6 +217,14 @@
     <string name="shortcut_progress_long">View your learning progress</string>
     <string name="shortcut_todos_short">To-Dos</string>
     <string name="shortcut_todos_long">View your to-do list</string>
+
+    <!-- Google Assistant App Actions -->
+    <string name="assistant_feature_progress">progress</string>
+    <string name="assistant_feature_curriculum">curriculum</string>
+    <string name="assistant_feature_history">history</string>
+    <string name="assistant_feature_todo">to-do list</string>
+    <string name="assistant_feature_settings">settings</string>
+    <string name="assistant_status_progress">my progress</string>
 
     <!-- Widgets -->
     <string name="widget_progress_title">Learning Progress</string>
@@ -920,6 +966,17 @@
     <string name="cd_error">Error</string>
     <string name="cd_delete_model">Delete model</string>
     <string name="cd_download_model">Download model</string>
+
+    <!-- GLM-ASR On-Device STT Settings (additional) -->
+    <string name="settings_on_device_stt">On-Device Speech-to-Text</string>
+    <string name="settings_glm_asr_desc">Fully private speech recognition that never leaves your device</string>
+    <string name="settings_glm_asr_features">Zero cost • Complete privacy • Works offline</string>
+    <string name="settings_glm_asr_not_supported">Your device does not meet the requirements for on-device STT (8GB+ RAM, Android 12+)</string>
+    <string name="settings_glm_asr_total_size">Total download: ~2.4GB</string>
+    <string name="settings_glm_asr_download_all">Download All Models</string>
+    <string name="settings_glm_asr_delete_all">Delete All Models</string>
+    <string name="settings_glm_asr_ready">On-device STT ready</string>
+    <string name="settings_glm_asr_partial">Partial download (%1$d/%2$d models)</string>
 
     <!-- Recording Mode options -->
     <string name="settings_recording_mode_vad">Auto (VAD)</string>

@@ -20,6 +20,7 @@ import java.io.File
  * @property useGPU Whether to use GPU acceleration for ONNX inference
  * @property gpuLayers Number of GPU layers for llama.cpp decoder (0 = CPU only)
  * @property numThreads Number of CPU threads for inference
+ * @property contextSize Context window size for llama.cpp decoder
  * @property language Language hint for recognition ("auto", "en", "zh", "yue")
  */
 data class GLMASROnDeviceConfig(
@@ -28,6 +29,7 @@ data class GLMASROnDeviceConfig(
     val useGPU: Boolean = true,
     val gpuLayers: Int = 99,
     val numThreads: Int = 4,
+    val contextSize: Int = 4096,
     val language: String = "auto",
 ) {
     /**
