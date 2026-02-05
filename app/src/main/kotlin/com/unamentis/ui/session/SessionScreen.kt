@@ -120,9 +120,6 @@ fun SessionScreen(
     // Help sheet state
     var showHelp by remember { mutableStateOf(false) }
 
-    // Mute/pause state for curriculum controls
-    var isMuted by remember { mutableStateOf(false) }
-
     Box(
         modifier = Modifier.fillMaxSize(),
     ) {
@@ -259,13 +256,13 @@ fun SessionScreen(
                 if (uiState.isCurriculumMode) {
                     CurriculumSessionControlBar(
                         isPaused = uiState.sessionState == SessionState.PAUSED,
-                        isMuted = isMuted,
+                        isMuted = uiState.isMuted,
                         currentSegmentIndex = uiState.currentSegmentIndex,
                         hasNextTopic = uiState.hasNextTopic,
                         onPauseChanged = { paused ->
                             if (paused) viewModel.pauseSession() else viewModel.resumeSession()
                         },
-                        onMuteChanged = { muted -> isMuted = muted },
+                        onMuteChanged = { muted -> viewModel.setMuted(muted) },
                         onStop = { viewModel.stopSession() },
                         onGoBack = { viewModel.goBackSegment() },
                         onReplay = { viewModel.replayTopic() },
@@ -275,11 +272,11 @@ fun SessionScreen(
                     // Freeform mode controls
                     FreeformSessionControlBar(
                         isPaused = uiState.sessionState == SessionState.PAUSED,
-                        isMuted = isMuted,
+                        isMuted = uiState.isMuted,
                         onPauseChanged = { paused ->
                             if (paused) viewModel.pauseSession() else viewModel.resumeSession()
                         },
-                        onMuteChanged = { muted -> isMuted = muted },
+                        onMuteChanged = { muted -> viewModel.setMuted(muted) },
                         onStop = { viewModel.stopSession() },
                     )
                 }

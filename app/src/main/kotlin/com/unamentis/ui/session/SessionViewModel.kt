@@ -131,6 +131,25 @@ class SessionViewModel
                 )
 
         /**
+         * Whether the microphone is currently muted.
+         */
+        private val isMuted: StateFlow<Boolean> =
+            sessionManager.isMuted
+                .stateIn(
+                    scope = viewModelScope,
+                    started = SharingStarted.WhileSubscribed(5000),
+                    initialValue = false,
+                )
+
+        /**
+         * Set the microphone muted state.
+         * When muted, the user can hear AI but won't trigger speech detection.
+         */
+        fun setMuted(muted: Boolean) {
+            sessionManager.setMuted(muted)
+        }
+
+        /**
          * Whether a curriculum is loaded.
          */
         private val isCurriculumMode: StateFlow<Boolean> =
@@ -193,8 +212,8 @@ class SessionViewModel
                 combine(sessionState, currentSession, transcript) { state, session, transcriptList ->
                     SessionCoreState(state, session, transcriptList)
                 },
-                combine(metrics, recordingMode, isManuallyRecording) { m, rm, imr ->
-                    RecordingState(m, rm, imr)
+                combine(metrics, recordingMode, isManuallyRecording, isMuted) { m, rm, imr, muted ->
+                    RecordingState(m, rm, imr, muted)
                 },
                 combine(isCurriculumMode, currentSegmentIndex, totalSegments, hasNextTopic) { icm, csi, ts, hnt ->
                     CurriculumUiState(icm, csi, ts, hnt)
@@ -228,6 +247,7 @@ class SessionViewModel
                         ),
                     recordingMode = recording.mode,
                     isManuallyRecording = recording.isManuallyRecording,
+                    isMuted = recording.isMuted,
                     isCurriculumMode = curriculum.isCurriculumMode,
                     currentSegmentIndex = curriculum.currentSegmentIndex,
                     totalSegments = curriculum.totalSegments,
@@ -437,6 +457,7 @@ data class SessionUiState(
     @StringRes val statusMessageResId: Int = R.string.session_status_ready,
     val recordingMode: RecordingMode = RecordingMode.VAD,
     val isManuallyRecording: Boolean = false,
+    val isMuted: Boolean = false,
     // Curriculum mode fields
     val isCurriculumMode: Boolean = false,
     val currentSegmentIndex: Int = 0,
@@ -462,6 +483,7 @@ private data class RecordingState(
     val metrics: SessionMetrics,
     val mode: RecordingMode,
     val isManuallyRecording: Boolean,
+    val isMuted: Boolean,
 )
 
 /**

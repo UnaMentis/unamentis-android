@@ -88,6 +88,26 @@ class SessionManager(
     private val _isManuallyRecording = MutableStateFlow(false)
     val isManuallyRecording: StateFlow<Boolean> = _isManuallyRecording.asStateFlow()
 
+    // Mute state - when true, microphone input is ignored (no VAD/STT processing)
+    private val _isMuted = MutableStateFlow(false)
+    val isMuted: StateFlow<Boolean> = _isMuted.asStateFlow()
+
+    /**
+     * Set the microphone muted state.
+     *
+     * When muted:
+     * - VAD does not trigger speech detection
+     * - STT is not started for new utterances
+     * - User can still hear AI responses
+     * - Barge-in is disabled
+     *
+     * @param muted true to mute, false to unmute
+     */
+    fun setMuted(muted: Boolean) {
+        _isMuted.value = muted
+        Log.i("SessionManager", "Microphone muted: $muted")
+    }
+
     // ==========================================================================
     // CURRICULUM STATE FLOWS (exposed for UI)
     // ==========================================================================
@@ -168,6 +188,10 @@ class SessionManager(
 
     // Configuration
     private val silenceThresholdMs = 1500L // 1.5 seconds of silence to finalize utterance
+
+    // Speech debouncing - prevent false triggers from brief noise
+    private val minimumSpeechFrames = 3 // ~36ms at 12ms frames
+    private var consecutiveSpeechFrames = 0
 
     // Audio capture resume configuration
     private val audioResumeDelayMs = 100L // Delay to allow STT microphone release
@@ -511,6 +535,11 @@ class SessionManager(
     private suspend fun processAudioFrame(audioSamples: FloatArray) {
         audioFrameCount++
 
+        // Skip all audio processing when muted - user can still hear AI responses
+        if (_isMuted.value) {
+            return
+        }
+
         // DEBUG: Log every 500 frames at ERROR level to ensure visibility
         if (audioFrameCount % 500 == 1) {
             Log.e(
@@ -592,8 +621,8 @@ class SessionManager(
                 }
             }
             SessionState.AI_SPEAKING -> {
-                // Check for barge-in (works in all modes)
-                if (vadResult.isSpeech && canBargeIn()) {
+                // Check for barge-in (works in all modes, but NOT when muted)
+                if (!_isMuted.value && vadResult.isSpeech && canBargeIn()) {
                     handleBargeIn()
                 }
             }
@@ -608,11 +637,25 @@ class SessionManager(
      */
     private suspend fun handleSpeechDetected() {
         lastSpeechDetectedTime = System.currentTimeMillis()
+        consecutiveSpeechFrames++
 
         if (_sessionState.value == SessionState.IDLE) {
+            // Require minimum consecutive speech frames before triggering STT
+            // This prevents false triggers from brief noise spikes
+            if (consecutiveSpeechFrames < minimumSpeechFrames) {
+                Log.d(
+                    "SessionManager",
+                    "Speech below threshold: $consecutiveSpeechFrames/$minimumSpeechFrames frames",
+                )
+                return
+            }
+
             // Start of user utterance
             userSpeechStartTime = System.currentTimeMillis()
-            Log.i("SessionManager", "Transitioning from IDLE to USER_SPEAKING")
+            Log.i(
+                "SessionManager",
+                "Transitioning from IDLE to USER_SPEAKING (after $consecutiveSpeechFrames frames)",
+            )
             _sessionState.value = SessionState.USER_SPEAKING
 
             // Start STT streaming
@@ -627,6 +670,9 @@ class SessionManager(
      * Handle silence detected by VAD.
      */
     private suspend fun handleSilenceDetected() {
+        // Reset consecutive speech counter on silence
+        consecutiveSpeechFrames = 0
+
         if (_sessionState.value == SessionState.USER_SPEAKING) {
             val silenceDuration = System.currentTimeMillis() - lastSpeechDetectedTime
 
@@ -797,15 +843,28 @@ class SessionManager(
         sttJob?.cancel()
         sttService.stopStreaming()
 
-        if (text.isBlank()) {
-            // No speech detected, return to idle and resume listening
-            Log.i("SessionManager", "No speech detected, returning to IDLE")
+        val trimmedText = text.trim()
+        val speechDuration = System.currentTimeMillis() - userSpeechStartTime
+
+        // Filter out empty or very short transcriptions (likely noise)
+        if (trimmedText.isBlank() || trimmedText.length < 2) {
+            Log.i(
+                "SessionManager",
+                "Empty/short transcription ('$trimmedText') after ${speechDuration}ms of speech, returning to IDLE",
+            )
+
+            // Brief delay to prevent rapid state cycling visible in UI
+            delay(100)
+
             val audioResumed = resumeAudioCapture()
             _sessionState.value = if (audioResumed) SessionState.IDLE else SessionState.ERROR
+
+            // Reset turn timing for next attempt
+            currentTurnStartTime = System.currentTimeMillis()
             return
         }
 
-        Log.i("SessionManager", "Final transcription: $text")
+        Log.i("SessionManager", "Final transcription: $trimmedText (${speechDuration}ms speech)")
 
         // Add to transcript
         val userEntry =
@@ -813,13 +872,13 @@ class SessionManager(
                 id = UUID.randomUUID().toString(),
                 sessionId = _currentSession.value?.id ?: "",
                 role = "user",
-                text = text,
+                text = trimmedText,
                 timestamp = System.currentTimeMillis(),
             )
         addToTranscript(userEntry)
 
         // Add to conversation history
-        conversationHistory.add(LLMMessage(role = "user", content = text))
+        conversationHistory.add(LLMMessage(role = "user", content = trimmedText))
 
         // Process with LLM
         processLLMResponse()
@@ -897,14 +956,20 @@ class SessionManager(
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    Log.e("SessionManager", "LLM error", e)
+                    Log.e("SessionManager", "LLM error: ${e.message}", e)
+
+                    // Show ERROR state briefly so UI can display error feedback
+                    _sessionState.value = SessionState.ERROR
+                    delay(1500) // Give UI time to show error state
+
                     // Resume audio capture so user can continue speaking
                     val audioResumed = resumeAudioCapture()
                     if (audioResumed) {
                         _sessionState.value = SessionState.IDLE
+                        currentTurnStartTime = System.currentTimeMillis()
                         Log.i("SessionManager", "Recovered from LLM error, returning to IDLE")
                     } else {
-                        _sessionState.value = SessionState.ERROR
+                        // Stay in ERROR if can't recover audio
                         Log.e("SessionManager", "Failed to recover from LLM error - audio capture failed")
                     }
                 }
