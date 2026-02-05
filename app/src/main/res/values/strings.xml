@@ -464,7 +464,7 @@
     <string name="kb_timeouts">Timeouts</string>
     <string name="kb_conference_rules">%1$s Conference Rules</string>
     <string name="kb_time_limit">Time Limit</string>
-    <string name="kb_seconds_format">%1$d seconds</string>
+    <string name="kb_seconds_format">%1$s s</string>
     <string name="kb_communication">Communication</string>
     <string name="kb_hand_signals_only">Hand signals only</string>
     <string name="kb_verbal_allowed">Verbal allowed</string>
