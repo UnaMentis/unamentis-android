@@ -14,6 +14,9 @@ local.properties
 # Claude Code settings (contains machine-specific paths)
 .claude/settings.json
 
+# Kotlin compiler sessions
+.kotlin/
+
 # Android Studio
 *.iml
 .idea/

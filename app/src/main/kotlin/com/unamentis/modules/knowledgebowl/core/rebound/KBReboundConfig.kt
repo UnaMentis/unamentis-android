@@ -1,5 +1,6 @@
 package com.unamentis.modules.knowledgebowl.core.rebound
 
+import androidx.annotation.StringRes
 import com.unamentis.R
 import com.unamentis.modules.knowledgebowl.data.model.KBDomain
 import com.unamentis.modules.knowledgebowl.data.model.KBQuestion
@@ -161,6 +162,18 @@ data class KBReboundStats(
 }
 
 /**
+ * Recommendation type from rebound training, backed by string resources.
+ */
+enum class ReboundRecommendation(
+    @StringRes val stringResId: Int,
+) {
+    EXCELLENT(R.string.kb_rebound_rec_excellent),
+    MORE_AGGRESSIVE(R.string.kb_rebound_rec_more_aggressive),
+    FOCUS_CONFIDENCE(R.string.kb_rebound_rec_focus_confidence),
+    GOOD_BALANCE(R.string.kb_rebound_rec_good_balance),
+}
+
+/**
  * Result of a rebound training session.
  */
 data class KBReboundTrainingResult(
@@ -169,30 +182,53 @@ data class KBReboundTrainingResult(
     val startTime: Long,
     val endTime: Long,
     val stats: KBReboundStats,
-    val recommendation: String,
+    val recommendation: ReboundRecommendation,
 ) {
     companion object {
-        fun generateRecommendation(stats: KBReboundStats): String {
+        fun generateRecommendation(stats: KBReboundStats): ReboundRecommendation {
             return when {
                 stats.reboundAccuracy >= 0.8 ->
-                    "Excellent rebound instincts! You're capitalizing on opponent mistakes effectively."
+                    ReboundRecommendation.EXCELLENT
                 stats.missedOpportunities > stats.reboundsTaken ->
-                    "Try to be more aggressive on rebounds. You're missing opportunities to score."
+                    ReboundRecommendation.MORE_AGGRESSIVE
                 stats.reboundAccuracy < 0.5 ->
-                    "Focus on only buzzing when confident. A wrong rebound costs points."
+                    ReboundRecommendation.FOCUS_CONFIDENCE
                 else ->
-                    "Good balance between aggression and caution. Keep practicing!"
+                    ReboundRecommendation.GOOD_BALANCE
             }
         }
     }
 }
 
 /**
- * Feedback model for rebound attempts.
+ * Feedback model for rebound attempts, using string resource IDs.
  */
 data class ReboundFeedback(
-    val title: String,
-    val message: String,
+    @StringRes val titleResId: Int,
+    val titleArgs: Array<Any> = emptyArray(),
+    @StringRes val messageResId: Int,
+    val messageArgs: Array<Any> = emptyArray(),
     val isPositive: Boolean,
     val points: Int,
-)
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is ReboundFeedback) return false
+        return titleResId == other.titleResId &&
+            titleArgs.contentEquals(other.titleArgs) &&
+            messageResId == other.messageResId &&
+            messageArgs.contentEquals(other.messageArgs) &&
+            isPositive == other.isPositive &&
+            points == other.points
+    }
+
+    override fun hashCode(): Int {
+        var result = titleResId
+        result = 31 * result + titleArgs.contentHashCode()
+        result = 31 * result + messageResId
+        result = 31 * result + messageArgs.contentHashCode()
+        result = 31 * result + isPositive.hashCode()
+        result = 31 * result + points
+        return result
+    }
+}

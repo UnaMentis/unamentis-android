@@ -162,7 +162,7 @@ class ExecuTorchLLMService
          * Unload model and release resources.
          */
         override fun unloadModel() {
-            val ptr = nativeModulePtr.get()
+            val ptr = nativeModulePtr.getAndSet(0)
             if (ptr != 0L) {
                 try {
                     nativeFreeModel(ptr)
@@ -170,7 +170,6 @@ class ExecuTorchLLMService
                     Log.w(TAG, "Error freeing ExecuTorch model", e)
                 }
             }
-            nativeModulePtr.set(0)
             isModelLoadedAtomic.set(false)
             currentModelPath = null
             Log.i(TAG, "ExecuTorch model unloaded")

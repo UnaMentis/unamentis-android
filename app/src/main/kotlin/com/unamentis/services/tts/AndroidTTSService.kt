@@ -39,8 +39,13 @@ class AndroidTTSService(
 ) : TTSService {
     override val providerName: String = "Android TTS"
 
+    @Volatile
     private var tts: TextToSpeech? = null
+
+    @Volatile
     private var isInitialized = false
+
+    @Volatile
     private var initializationInProgress = false
     private val initLock = Object()
     private val initCallbacks = mutableListOf<() -> Unit>()
@@ -126,12 +131,18 @@ class AndroidTTSService(
                 android.util.Log.i("AndroidTTS", "TTS auto-initialized successfully")
             }
 
+            val engine =
+                tts ?: run {
+                    close(IllegalStateException("TTS engine not available"))
+                    return@callbackFlow
+                }
+
             val utteranceId = UUID.randomUUID().toString()
             val audioFile = File(context.cacheDir, "tts_$utteranceId.wav")
             val startTime = System.currentTimeMillis()
             var isFirstChunk = true
 
-            tts?.setOnUtteranceProgressListener(
+            engine.setOnUtteranceProgressListener(
                 object : UtteranceProgressListener() {
                     override fun onStart(utteranceId: String) {
                         android.util.Log.i("AndroidTTS", "Synthesis started")
@@ -199,7 +210,7 @@ class AndroidTTSService(
             )
 
             // Start synthesis to file
-            val result = tts?.synthesizeToFile(text, null, audioFile, utteranceId)
+            val result = engine.synthesizeToFile(text, null, audioFile, utteranceId)
             if (result != TextToSpeech.SUCCESS) {
                 android.util.Log.e("AndroidTTS", "Failed to start synthesis")
                 close(Exception("Failed to start TTS synthesis"))

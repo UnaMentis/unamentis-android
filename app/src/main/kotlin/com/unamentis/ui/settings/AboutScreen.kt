@@ -1,5 +1,6 @@
 package com.unamentis.ui.settings
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
@@ -148,7 +149,11 @@ fun AboutScreen(onNavigateBack: () -> Unit) {
                                         Intent.ACTION_VIEW,
                                         Uri.parse("https://unamentis.com/docs"),
                                     )
-                                context.startActivity(intent)
+                                try {
+                                    context.startActivity(intent)
+                                } catch (_: ActivityNotFoundException) {
+                                    // No browser available
+                                }
                             },
                         )
                         HorizontalDivider(modifier = Modifier.padding(horizontal = Dimensions.CardPadding))
@@ -161,7 +166,11 @@ fun AboutScreen(onNavigateBack: () -> Unit) {
                                         Intent.ACTION_VIEW,
                                         Uri.parse("https://unamentis.com/privacy"),
                                     )
-                                context.startActivity(intent)
+                                try {
+                                    context.startActivity(intent)
+                                } catch (_: ActivityNotFoundException) {
+                                    // No browser available
+                                }
                             },
                         )
                         HorizontalDivider(modifier = Modifier.padding(horizontal = Dimensions.CardPadding))
@@ -174,7 +183,11 @@ fun AboutScreen(onNavigateBack: () -> Unit) {
                                         Intent.ACTION_VIEW,
                                         Uri.parse("https://unamentis.com/terms"),
                                     )
-                                context.startActivity(intent)
+                                try {
+                                    context.startActivity(intent)
+                                } catch (_: ActivityNotFoundException) {
+                                    // No browser available
+                                }
                             },
                         )
                         HorizontalDivider(modifier = Modifier.padding(horizontal = Dimensions.CardPadding))
@@ -187,7 +200,11 @@ fun AboutScreen(onNavigateBack: () -> Unit) {
                                         Intent.ACTION_VIEW,
                                         Uri.parse("https://unamentis.com/licenses"),
                                     )
-                                context.startActivity(intent)
+                                try {
+                                    context.startActivity(intent)
+                                } catch (_: ActivityNotFoundException) {
+                                    // No browser available
+                                }
                             },
                         )
                     }
@@ -218,7 +235,11 @@ fun AboutScreen(onNavigateBack: () -> Unit) {
                                         "UnaMentis Android Support (v${BuildConfig.VERSION_NAME})",
                                     )
                                 }
-                            context.startActivity(intent)
+                            try {
+                                context.startActivity(intent)
+                            } catch (_: ActivityNotFoundException) {
+                                // No email client available
+                            }
                         },
                     )
                 }

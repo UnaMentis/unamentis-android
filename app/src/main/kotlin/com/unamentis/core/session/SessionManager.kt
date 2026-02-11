@@ -8,6 +8,7 @@ import com.unamentis.data.model.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import java.util.*
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Dependencies for SessionManager.
@@ -191,7 +192,7 @@ class SessionManager(
 
     // Speech debouncing - prevent false triggers from brief noise
     private val minimumSpeechFrames = 3 // ~36ms at 12ms frames
-    private var consecutiveSpeechFrames = 0
+    private val consecutiveSpeechFrames = AtomicInteger(0)
 
     // Audio capture resume configuration
     private val audioResumeDelayMs = 100L // Delay to allow STT microphone release
@@ -637,15 +638,15 @@ class SessionManager(
      */
     private suspend fun handleSpeechDetected() {
         lastSpeechDetectedTime = System.currentTimeMillis()
-        consecutiveSpeechFrames++
+        val frameCount = consecutiveSpeechFrames.incrementAndGet()
 
         if (_sessionState.value == SessionState.IDLE) {
             // Require minimum consecutive speech frames before triggering STT
             // This prevents false triggers from brief noise spikes
-            if (consecutiveSpeechFrames < minimumSpeechFrames) {
+            if (frameCount < minimumSpeechFrames) {
                 Log.d(
                     "SessionManager",
-                    "Speech below threshold: $consecutiveSpeechFrames/$minimumSpeechFrames frames",
+                    "Speech below threshold: $frameCount/$minimumSpeechFrames frames",
                 )
                 return
             }
@@ -654,7 +655,7 @@ class SessionManager(
             userSpeechStartTime = System.currentTimeMillis()
             Log.i(
                 "SessionManager",
-                "Transitioning from IDLE to USER_SPEAKING (after $consecutiveSpeechFrames frames)",
+                "Transitioning from IDLE to USER_SPEAKING (after $frameCount frames)",
             )
             _sessionState.value = SessionState.USER_SPEAKING
 
@@ -671,7 +672,7 @@ class SessionManager(
      */
     private suspend fun handleSilenceDetected() {
         // Reset consecutive speech counter on silence
-        consecutiveSpeechFrames = 0
+        consecutiveSpeechFrames.set(0)
 
         if (_sessionState.value == SessionState.USER_SPEAKING) {
             val silenceDuration = System.currentTimeMillis() - lastSpeechDetectedTime

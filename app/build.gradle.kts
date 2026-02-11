@@ -168,7 +168,7 @@ dependencies {
     implementation(libs.oboe)
 
     // MediaPipe LLM Inference (GPU acceleration)
-    implementation("com.google.mediapipe:tasks-genai:0.10.21")
+    implementation(libs.mediapipe.tasks.genai)
 
     // ExecuTorch (Qualcomm NPU acceleration)
     // Note: ExecuTorch AAR may need to be built from source or obtained from PyTorch releases

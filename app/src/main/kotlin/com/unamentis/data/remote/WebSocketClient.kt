@@ -20,6 +20,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.decodeFromJsonElement
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -210,6 +211,7 @@ class WebSocketClient(
         private const val PING_INTERVAL_MS = 30_000L
         private const val MAX_RECONNECT_DELAY_MS = 60_000L
         private const val INITIAL_RECONNECT_DELAY_MS = 1_000L
+        private const val MAX_RECONNECT_ATTEMPTS = 10
         private const val DEFAULT_WS_URL = "ws://10.0.2.2:8766"
     }
 
@@ -475,6 +477,16 @@ class WebSocketClient(
             return
         }
 
+        if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+            _state.value = WebSocketState.FAILED
+            scope.launch {
+                _messages.emit(
+                    WebSocketMessage.Error("Max reconnect attempts reached", null),
+                )
+            }
+            return
+        }
+
         _state.value = WebSocketState.RECONNECTING
         reconnectAttempts++
 
@@ -533,7 +545,7 @@ class WebSocketClient(
         timestamp: String,
     ): WebSocketMessage.Log? =
         data?.let {
-            val logData = json.decodeFromString<LogData>(it.toString())
+            val logData = json.decodeFromJsonElement<LogData>(it)
             WebSocketMessage.Log(
                 level = logData.level,
                 message = logData.message,
@@ -547,7 +559,7 @@ class WebSocketClient(
         timestamp: String,
     ): WebSocketMessage.Metric? =
         data?.let {
-            val metricData = json.decodeFromString<MetricData>(it.toString())
+            val metricData = json.decodeFromJsonElement<MetricData>(it)
             WebSocketMessage.Metric(
                 cpuPercent = metricData.cpuPercent,
                 memoryPercent = metricData.memoryPercent,
@@ -561,7 +573,7 @@ class WebSocketClient(
         timestamp: String,
     ): WebSocketMessage.SessionUpdate? =
         data?.let {
-            val sessionData = json.decodeFromString<SessionUpdateData>(it.toString())
+            val sessionData = json.decodeFromJsonElement<SessionUpdateData>(it)
             WebSocketMessage.SessionUpdate(
                 sessionId = sessionData.sessionId,
                 status = sessionData.status,
@@ -575,7 +587,7 @@ class WebSocketClient(
         timestamp: String,
     ): WebSocketMessage.ServiceStatus? =
         data?.let {
-            val serviceData = json.decodeFromString<ServiceStatusData>(it.toString())
+            val serviceData = json.decodeFromJsonElement<ServiceStatusData>(it)
             WebSocketMessage.ServiceStatus(
                 serviceId = serviceData.serviceId,
                 status = serviceData.status,
@@ -589,7 +601,7 @@ class WebSocketClient(
         timestamp: String,
     ): WebSocketMessage.ImportProgress? =
         data?.let {
-            val importData = json.decodeFromString<ImportProgressData>(it.toString())
+            val importData = json.decodeFromJsonElement<ImportProgressData>(it)
             WebSocketMessage.ImportProgress(
                 jobId = importData.jobId,
                 progress = importData.progress,

@@ -66,11 +66,16 @@ class KBConferenceManager
         private val mutex = Mutex()
 
         // Session state
+        @Volatile
         private var config: KBConferenceConfig? = null
-        private val attempts = mutableListOf<KBConferenceAttempt>()
+        private val attempts = java.util.concurrent.CopyOnWriteArrayList<KBConferenceAttempt>()
+
+        @Volatile
         private var currentDifficultyLevel = 0
         private var consecutiveCorrect = 0
         private var sessionStartTime: Long = 0L
+
+        @Volatile
         private var isActive = false
 
         // Observable state

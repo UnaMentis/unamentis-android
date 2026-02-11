@@ -401,7 +401,7 @@ private fun ServerRow(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
-                        text = server.type.displayName(),
+                        text = stringResource(server.type.displayNameResId),
                         style = IOSTypography.caption,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -577,7 +577,7 @@ private fun AddServerDialog(
                     onExpandedChange = { expanded = !expanded },
                 ) {
                     OutlinedTextField(
-                        value = selectedType.displayName(),
+                        value = stringResource(selectedType.displayNameResId),
                         onValueChange = {},
                         readOnly = true,
                         label = { Text(stringResource(R.string.server_settings_type)) },
@@ -593,7 +593,7 @@ private fun AddServerDialog(
                     ) {
                         ServerType.entries.forEach { type ->
                             DropdownMenuItem(
-                                text = { Text(type.displayName()) },
+                                text = { Text(stringResource(type.displayNameResId)) },
                                 onClick = {
                                     selectedType = type
                                     updatePortForType(type)
@@ -606,13 +606,14 @@ private fun AddServerDialog(
             }
         },
         confirmButton = {
+            val selectedTypeDisplayName = stringResource(selectedType.displayNameResId)
             TextButton(
                 onClick = {
                     val config =
                         ServerConfig(
                             name =
                                 name.ifBlank {
-                                    "${selectedType.displayName()} ($host)"
+                                    "$selectedTypeDisplayName ($host)"
                                 },
                             host = host,
                             port = port.toIntOrNull() ?: selectedType.defaultPort(),
@@ -684,7 +685,7 @@ private fun EditServerDialog(
                     onExpandedChange = { expanded = !expanded },
                 ) {
                     OutlinedTextField(
-                        value = selectedType.displayName(),
+                        value = stringResource(selectedType.displayNameResId),
                         onValueChange = {},
                         readOnly = true,
                         label = { Text(stringResource(R.string.server_settings_type)) },
@@ -700,7 +701,7 @@ private fun EditServerDialog(
                     ) {
                         ServerType.entries.forEach { type ->
                             DropdownMenuItem(
-                                text = { Text(type.displayName()) },
+                                text = { Text(stringResource(type.displayNameResId)) },
                                 onClick = {
                                     selectedType = type
                                     expanded = false
@@ -712,11 +713,12 @@ private fun EditServerDialog(
             }
         },
         confirmButton = {
+            val selectedTypeDisplayName = stringResource(selectedType.displayNameResId)
             TextButton(
                 onClick = {
                     val updatedConfig =
                         server.copy(
-                            name = name.ifBlank { "${selectedType.displayName()} ($host)" },
+                            name = name.ifBlank { "$selectedTypeDisplayName ($host)" },
                             host = host,
                             port = port.toIntOrNull() ?: selectedType.defaultPort(),
                             type = selectedType,

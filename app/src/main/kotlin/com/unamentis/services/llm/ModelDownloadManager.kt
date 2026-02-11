@@ -696,7 +696,7 @@ class ModelDownloadManager
             return when {
                 // Flagship Qualcomm with NPU: Use ExecuTorch
                 capabilities.hasQualcommNPU && capabilities.totalRamMB >= 8192 ->
-                    ExtendedModelSpec.LLAMA_1B_PTE
+                    ExtendedModelSpec.LLAMA_3B_PTE
                 capabilities.hasQualcommNPU && capabilities.totalRamMB >= 4096 ->
                     ExtendedModelSpec.LLAMA_1B_PTE
                 // High-end with GPU: Use MediaPipe
@@ -1035,6 +1035,17 @@ class ModelDownloadManager
                             return@withContext Result.failure(IOException(error))
                         }
 
+                        // If server doesn't support Range and returns 200 instead of 206,
+                        // reset to download from scratch
+                        val effectiveStartByte =
+                            if (startByte > 0 && resp.code == 200) {
+                                Log.w(TAG, "Server doesn't support Range requests, restarting download")
+                                tempFile.delete()
+                                0L
+                            } else {
+                                startByte
+                            }
+
                         val body =
                             resp.body
                                 ?: run {
@@ -1042,11 +1053,11 @@ class ModelDownloadManager
                                     return@withContext Result.failure(IOException("Empty response"))
                                 }
 
-                        val totalBytes = body.contentLength() + startByte
-                        var downloadedBytes = startByte
+                        val totalBytes = body.contentLength() + effectiveStartByte
+                        var downloadedBytes = effectiveStartByte
                         var lastReportedProgress = -1
 
-                        FileOutputStream(tempFile, startByte > 0).use { output ->
+                        FileOutputStream(tempFile, effectiveStartByte > 0).use { output ->
                             val buffer = ByteArray(BUFFER_SIZE)
                             body.byteStream().use { input ->
                                 var bytesRead: Int

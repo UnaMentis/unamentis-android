@@ -2,6 +2,7 @@ package com.unamentis.modules.knowledgebowl.ui.rebound
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.unamentis.R
 import com.unamentis.modules.knowledgebowl.core.engine.KBQuestionEngine
 import com.unamentis.modules.knowledgebowl.core.rebound.KBReboundConfig
 import com.unamentis.modules.knowledgebowl.core.rebound.KBReboundScenario
@@ -218,8 +219,9 @@ class KBReboundTrainingViewModel
                 val answer = scenario.question.answer.primary
                 val feedback =
                     ReboundFeedback(
-                        title = "Strategic Hold",
-                        message = "Good decision to hold when unsure. Correct answer: $answer",
+                        titleResId = R.string.kb_rebound_feedback_strategic_hold,
+                        messageResId = R.string.kb_rebound_feedback_hold_message,
+                        messageArgs = arrayOf(answer),
                         isPositive = true,
                         points = points,
                     )
@@ -254,20 +256,21 @@ class KBReboundTrainingViewModel
                 val feedback =
                     if (wasCorrect) {
                         ReboundFeedback(
-                            title = "Correct!",
-                            message =
+                            titleResId = R.string.kb_rebound_feedback_correct,
+                            messageResId =
                                 if (scenario.isReboundOpportunity) {
-                                    "Great rebound! You capitalized on their mistake."
+                                    R.string.kb_rebound_feedback_great_rebound
                                 } else {
-                                    "Nice answer!"
+                                    R.string.kb_rebound_feedback_nice_answer
                                 },
                             isPositive = true,
                             points = points,
                         )
                     } else {
                         ReboundFeedback(
-                            title = "Incorrect",
-                            message = "The answer was: ${scenario.question.answer.primary}",
+                            titleResId = R.string.kb_rebound_feedback_incorrect,
+                            messageResId = R.string.kb_rebound_feedback_answer_was,
+                            messageArgs = arrayOf(scenario.question.answer.primary),
                             isPositive = false,
                             points = points,
                         )
@@ -338,8 +341,10 @@ class KBReboundTrainingViewModel
                 val points = 1
                 val feedback =
                     ReboundFeedback(
-                        title = "${state.opponentName} Got It!",
-                        message = "No rebound opportunity. Answer: ${scenario.question.answer.primary}",
+                        titleResId = R.string.kb_rebound_feedback_opponent_got_it,
+                        titleArgs = arrayOf(state.opponentName),
+                        messageResId = R.string.kb_rebound_feedback_no_rebound,
+                        messageArgs = arrayOf(scenario.question.answer.primary),
                         isPositive = true,
                         points = points,
                     )
@@ -394,8 +399,9 @@ class KBReboundTrainingViewModel
                 val points = -2
                 val feedback =
                     ReboundFeedback(
-                        title = "Missed Opportunity",
-                        message = "Time ran out! Correct answer: ${scenario.question.answer.primary}",
+                        titleResId = R.string.kb_rebound_feedback_missed,
+                        messageResId = R.string.kb_rebound_feedback_time_ran_out,
+                        messageArgs = arrayOf(scenario.question.answer.primary),
                         isPositive = false,
                         points = points,
                     )

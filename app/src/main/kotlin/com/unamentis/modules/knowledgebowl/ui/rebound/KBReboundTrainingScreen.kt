@@ -893,14 +893,14 @@ private fun FeedbackView(
             }
 
             Text(
-                text = feedback.title,
+                text = stringResource(feedback.titleResId, *feedback.titleArgs),
                 style = IOSTypography.title2,
                 fontWeight = FontWeight.Bold,
                 color = KBTheme.textPrimary(),
             )
 
             Text(
-                text = feedback.message,
+                text = stringResource(feedback.messageResId, *feedback.messageArgs),
                 style = IOSTypography.body,
                 color = KBTheme.textSecondary(),
                 textAlign = TextAlign.Center,
@@ -1054,7 +1054,7 @@ private fun ResultsView(
             ) {
                 Text(text = "\uD83D\uDCA1", style = IOSTypography.title2) // 💡
                 Text(
-                    text = result.recommendation,
+                    text = stringResource(result.recommendation.stringResId),
                     style = IOSTypography.subheadline,
                     color = KBTheme.textPrimary(),
                 )
@@ -1164,7 +1164,7 @@ private fun PracticeScenariosSheet(onDismiss: () -> Unit) {
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.height(400.dp),
             ) {
-                items(scenarios) { (scenario, tip) ->
+                items(scenarios) { (scenarioResId, tipResId) ->
                     Card(
                         colors = CardDefaults.cardColors(containerColor = KBTheme.bgSecondary()),
                         shape = RoundedCornerShape(12.dp),
@@ -1174,7 +1174,7 @@ private fun PracticeScenariosSheet(onDismiss: () -> Unit) {
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             Text(
-                                text = scenario,
+                                text = stringResource(scenarioResId),
                                 style = IOSTypography.body,
                                 color = KBTheme.textPrimary(),
                             )
@@ -1183,7 +1183,7 @@ private fun PracticeScenariosSheet(onDismiss: () -> Unit) {
                             ) {
                                 Text(text = "\uD83D\uDCA1", style = IOSTypography.caption) // 💡
                                 Text(
-                                    text = tip,
+                                    text = stringResource(tipResId),
                                     style = IOSTypography.caption,
                                     color = KBTheme.textSecondary(),
                                 )

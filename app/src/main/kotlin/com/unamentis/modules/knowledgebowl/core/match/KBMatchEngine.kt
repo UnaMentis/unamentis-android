@@ -259,7 +259,7 @@ class KBMatchEngine
                     phase = phase,
                     answeringTeamId = answeringTeamId,
                     wasCorrect = wasCorrect,
-                    pointsAwarded = if (wasCorrect) points else 0,
+                    pointsAwarded = points,
                     responseTime = responseTime,
                 )
             results.add(result)

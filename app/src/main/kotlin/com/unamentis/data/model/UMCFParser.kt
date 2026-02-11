@@ -108,7 +108,7 @@ object UMCFParser {
             Log.d(TAG, "Extracted topic: ${node.title} with ${topic.transcript.size} segments")
         }
 
-        currentIndex = processChildNodes(node, topics, currentIndex, selectedTopicIds)
+        currentIndex = processChildNodes(node, topics, currentIndex, selectedTopicIds, parentObjectives)
         return currentIndex
     }
 
@@ -185,10 +185,12 @@ object UMCFParser {
         topics: MutableList<Topic>,
         startingIndex: Int,
         selectedTopicIds: Set<String>,
+        inheritedObjectives: List<String>,
     ): Int {
         var currentIndex = startingIndex
         node.children?.forEach { child ->
-            val nodeObjectives = node.learningObjectives?.map { it.statement } ?: emptyList()
+            val nodeObjectives =
+                inheritedObjectives + (node.learningObjectives?.map { it.statement } ?: emptyList())
             currentIndex =
                 extractTopicsFromNode(
                     node = child,

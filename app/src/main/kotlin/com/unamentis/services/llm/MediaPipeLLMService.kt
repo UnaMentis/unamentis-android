@@ -253,16 +253,17 @@ class MediaPipeLLMService
          */
         private fun formatPrompt(messages: List<LLMMessage>): String {
             val sb = StringBuilder()
+            var systemPrefix = ""
 
             for (message in messages) {
                 when (message.role) {
                     "system" -> {
-                        // Gemma uses <start_of_turn> format
-                        // System messages are prepended to the first user message
-                        sb.append("<start_of_turn>user\n${message.content}\n")
+                        // Accumulate system content to prepend to first user message
+                        systemPrefix += message.content + "\n\n"
                     }
                     "user" -> {
-                        sb.append("<start_of_turn>user\n${message.content}<end_of_turn>\n")
+                        sb.append("<start_of_turn>user\n$systemPrefix${message.content}<end_of_turn>\n")
+                        systemPrefix = ""
                     }
                     "assistant" -> {
                         sb.append("<start_of_turn>model\n${message.content}<end_of_turn>\n")

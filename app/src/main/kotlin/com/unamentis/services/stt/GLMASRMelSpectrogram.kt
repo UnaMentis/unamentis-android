@@ -48,6 +48,9 @@ class GLMASRMelSpectrogram(
             (0.5 * (1.0 - cos(2.0 * PI * i / (nFFT - 1)))).toFloat()
         }
 
+    // Actual FFT size (next power of 2 of nFFT)
+    private val fftSize: Int = nextPowerOf2(nFFT)
+
     // Precomputed mel filterbank
     private val melFilterbank: Array<FloatArray> = createMelFilterbank()
 
@@ -94,7 +97,7 @@ class GLMASRMelSpectrogram(
 
             // Compute power spectrum (magnitude squared)
             val powerSpectrum =
-                FloatArray(nFFT / 2 + 1) { i ->
+                FloatArray(fftSize / 2 + 1) { i ->
                     val real = fftResult[i * 2]
                     val imag = fftResult[i * 2 + 1]
                     real * real + imag * imag
@@ -233,7 +236,7 @@ class GLMASRMelSpectrogram(
      * @return Array of mel filters, each filter has nFFT/2+1 coefficients
      */
     private fun createMelFilterbank(): Array<FloatArray> {
-        val nFreqs = nFFT / 2 + 1
+        val nFreqs = fftSize / 2 + 1
 
         // Mel scale conversion functions
         fun hzToMel(hz: Double): Double = 2595.0 * kotlin.math.log10(1.0 + hz / 700.0)
@@ -254,7 +257,7 @@ class GLMASRMelSpectrogram(
         // Convert Hz to FFT bin
         val binPoints =
             hzPoints.map { hz ->
-                ((nFFT + 1) * hz / sampleRate).toInt()
+                ((fftSize + 1) * hz / sampleRate).toInt()
             }
 
         // Create filterbank

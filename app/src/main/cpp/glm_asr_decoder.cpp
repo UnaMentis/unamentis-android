@@ -52,7 +52,7 @@ bool GLMASRDecoder::loadModel(const std::string& model_path, const GLMASRDecoder
 
     if (is_loaded_.load()) {
         LOGW("Model already loaded, unloading first");
-        unloadModel();
+        unloadModelLocked();
     }
 
     LOGI("Loading GLM-ASR decoder from: %s", model_path.c_str());
@@ -106,7 +106,10 @@ void GLMASRDecoder::unloadModel() {
     }
 
     std::lock_guard<std::mutex> lock(generation_mutex_);
+    unloadModelLocked();
+}
 
+void GLMASRDecoder::unloadModelLocked() {
     if (context_ != nullptr) {
         llama_free(context_);
         context_ = nullptr;
@@ -139,10 +142,26 @@ bool GLMASRDecoder::injectEmbeddings(
         return false;
     }
 
+    if (num_tokens <= 0) {
+        LOGE("Invalid num_tokens: %d (must be > 0)", num_tokens);
+        return false;
+    }
+
+    if (embeddings == nullptr) {
+        LOGE("Cannot inject embeddings: embeddings pointer is null");
+        return false;
+    }
+
     // Verify embedding dimension matches model
     int32_t model_embd = llama_model_n_embd(model_);
     if (embedding_dim != model_embd) {
         LOGE("Embedding dimension mismatch: got %d, expected %d", embedding_dim, model_embd);
+        return false;
+    }
+
+    // Validate num_tokens does not exceed the context size
+    if (num_tokens > config_.context_size) {
+        LOGE("num_tokens (%d) exceeds context size (%d)", num_tokens, config_.context_size);
         return false;
     }
 

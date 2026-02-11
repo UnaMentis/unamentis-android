@@ -7,16 +7,19 @@ import com.unamentis.data.model.STTResult
 import com.unamentis.data.model.STTService
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.ProducerScope
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
@@ -110,6 +113,7 @@ class GLMASROnDeviceSTTService
         private val audioBuffer = mutableListOf<Float>()
         private val bufferMutex = Mutex()
         private var sessionStartTime = 0L
+        private var streamScope: ProducerScope<STTResult>? = null
 
         // ONNX Runtime inference manager
         private var onnxInference: GLMASRONNXInference? = null
@@ -123,8 +127,8 @@ class GLMASROnDeviceSTTService
         // Mel spectrogram processor
         private val melSpectrogram = GLMASRMelSpectrogram()
 
-        // Metrics
-        private val latencyMeasurements = mutableListOf<Long>()
+        // Metrics (thread-safe: written from Dispatchers.Default, read from main thread)
+        private val latencyMeasurements = CopyOnWriteArrayList<Long>()
 
         /**
          * Check if on-device GLM-ASR is supported on this device.
@@ -239,6 +243,7 @@ class GLMASROnDeviceSTTService
                     Log.w(TAG, "Already streaming, closing existing stream")
                 }
 
+                streamScope = this@callbackFlow
                 sessionStartTime = System.currentTimeMillis()
                 audioBuffer.clear()
                 latencyMeasurements.clear()
@@ -246,6 +251,7 @@ class GLMASROnDeviceSTTService
                 Log.i(TAG, "Started on-device streaming")
 
                 awaitClose {
+                    streamScope = null
                     doStopStreaming()
                 }
             }.flowOn(Dispatchers.IO)
@@ -263,17 +269,18 @@ class GLMASROnDeviceSTTService
                 return
             }
 
+            var chunkToProcess: FloatArray? = null
             bufferMutex.withLock {
                 audioBuffer.addAll(samples.toList())
 
                 // Process when we have enough samples
                 if (audioBuffer.size >= CHUNK_SAMPLES) {
-                    val chunk = audioBuffer.take(CHUNK_SAMPLES).toFloatArray()
+                    chunkToProcess = audioBuffer.take(CHUNK_SAMPLES).toFloatArray()
                     audioBuffer.subList(0, CHUNK_SAMPLES).clear()
-
-                    processAudioChunk(chunk)
                 }
             }
+
+            chunkToProcess?.let { processAudioChunk(it) }
         }
 
         /**
@@ -298,13 +305,17 @@ class GLMASROnDeviceSTTService
 
             Log.i(TAG, "Stopping on-device streaming")
 
-            // Process any remaining audio
-            val remainingAudio = audioBuffer.toFloatArray()
-            audioBuffer.clear()
+            // Acquire bufferMutex to get a consistent snapshot of remaining audio
+            val remainingAudio =
+                runBlocking {
+                    bufferMutex.withLock {
+                        val snapshot = audioBuffer.toFloatArray()
+                        audioBuffer.clear()
+                        snapshot
+                    }
+                }
 
             if (remainingAudio.isNotEmpty()) {
-                // Process synchronously before stopping
-                // In a real implementation, we'd emit the final result
                 processAudioChunkSync(remainingAudio)
             }
 
@@ -339,12 +350,22 @@ class GLMASROnDeviceSTTService
                 Log.d(TAG, "Processed chunk: \"$transcript\" (${latency}ms)")
 
                 // On-device doesn't provide confidence, use default value
-                STTResult(
-                    text = transcript,
-                    isFinal = true,
-                    confidence = 0.9f,
-                    latencyMs = latency,
-                )
+                val result =
+                    STTResult(
+                        text = transcript,
+                        isFinal = true,
+                        confidence = 0.9f,
+                        latencyMs = latency,
+                    )
+
+                // Emit result via the callbackFlow's ProducerScope
+                streamScope?.trySend(result)?.let { sendResult ->
+                    if (!sendResult.isSuccess) {
+                        Log.w(TAG, "Failed to emit STT result: ${sendResult.isFailure}")
+                    }
+                }
+
+                result
             } catch (e: Exception) {
                 Log.e(TAG, "Error processing audio chunk", e)
                 null

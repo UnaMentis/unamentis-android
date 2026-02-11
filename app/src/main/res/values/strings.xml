@@ -117,6 +117,12 @@
     <string name="debug_device_tier">Device Tier</string>
     <string name="debug_available_memory">Available Memory</string>
     <string name="debug_app_version">App Version</string>
+    <string name="debug_build_information">Build Information</string>
+    <string name="debug_build_type">Build Type</string>
+    <string name="debug_application_id">Application ID</string>
+    <string name="debug_mode">Debug Mode</string>
+    <string name="debug_enabled">Enabled</string>
+    <string name="debug_disabled">Disabled</string>
     <string name="settings_version">Version</string>
     <string name="settings_configured">Configured</string>
     <string name="settings_not_configured">Not configured</string>
@@ -545,6 +551,37 @@
     <string name="kb_rebound_strategic_hold">Strategic Hold</string>
     <string name="kb_rebound_missed_opportunity">Missed Opportunity</string>
     <string name="kb_rebound_correctly_ignored">Correctly Ignored</string>
+
+    <!-- Knowledge Bowl Rebound Recommendations -->
+    <string name="kb_rebound_rec_excellent">Excellent rebound instincts! You\'re capitalizing on opponent mistakes effectively.</string>
+    <string name="kb_rebound_rec_more_aggressive">Try to be more aggressive on rebounds. You\'re missing opportunities to score.</string>
+    <string name="kb_rebound_rec_focus_confidence">Focus on only buzzing when confident. A wrong rebound costs points.</string>
+    <string name="kb_rebound_rec_good_balance">Good balance between aggression and caution. Keep practicing!</string>
+
+    <!-- Knowledge Bowl Rebound Feedback -->
+    <string name="kb_rebound_feedback_strategic_hold">Strategic Hold</string>
+    <string name="kb_rebound_feedback_hold_message">Good decision to hold when unsure. Correct answer: %1$s</string>
+    <string name="kb_rebound_feedback_correct">Correct!</string>
+    <string name="kb_rebound_feedback_great_rebound">Great rebound! You capitalized on their mistake.</string>
+    <string name="kb_rebound_feedback_nice_answer">Nice answer!</string>
+    <string name="kb_rebound_feedback_incorrect">Incorrect</string>
+    <string name="kb_rebound_feedback_answer_was">The answer was: %1$s</string>
+    <string name="kb_rebound_feedback_opponent_got_it">%1$s Got It!</string>
+    <string name="kb_rebound_feedback_no_rebound">No rebound opportunity. Answer: %1$s</string>
+    <string name="kb_rebound_feedback_missed">Missed Opportunity</string>
+    <string name="kb_rebound_feedback_time_ran_out">Time ran out! Correct answer: %1$s</string>
+
+    <!-- Knowledge Bowl Rebound Practice Scenarios -->
+    <string name="kb_practice_scenario_1_situation">Opponent answered \'Great Gatsby\' for a Hemingway novel question.</string>
+    <string name="kb_practice_scenario_1_tip">Clear rebound opportunity. Their answer reveals the category.</string>
+    <string name="kb_practice_scenario_2_situation">Opponent buzzed immediately and got it correct.</string>
+    <string name="kb_practice_scenario_2_tip">No rebound here. Process the question for future reference.</string>
+    <string name="kb_practice_scenario_3_situation">State capitals: Opponent said \'Sacramento\' for Nevada.</string>
+    <string name="kb_practice_scenario_3_tip">Strong rebound opportunity. Geography mix-ups are common!</string>
+    <string name="kb_practice_scenario_4_situation">Math question. Opponent answered \'12\' but you calculated \'16\'.</string>
+    <string name="kb_practice_scenario_4_tip">Be confident in your calculation. Take the rebound if sure.</string>
+    <string name="kb_practice_scenario_5_situation">Opponent hesitated before answering incorrectly.</string>
+    <string name="kb_practice_scenario_5_tip">Hesitation signals uncertainty. Good rebound opportunity.</string>
 
     <!-- Knowledge Bowl Domain Drill -->
     <string name="kb_domain_drill">Domain Drill</string>

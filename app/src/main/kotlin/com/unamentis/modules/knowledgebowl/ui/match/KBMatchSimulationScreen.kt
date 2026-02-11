@@ -751,6 +751,8 @@ private fun OralRoundView(
                         OutlinedButton(onClick = onSkipRebound) {
                             Text(stringResource(R.string.kb_signal_pass))
                         }
+                        // TODO: This auto-submits the correct answer on buzz. Should show an
+                        //  answer input field instead, so the user actually has to answer.
                         Button(onClick = { onSubmitAnswer(question.answer.primary) }) {
                             Text(stringResource(R.string.kb_buzz))
                         }
@@ -771,6 +773,8 @@ private fun OralRoundView(
                             color = KBTheme.mastered(),
                         )
                         Spacer(modifier = Modifier.height(16.dp))
+                        // TODO: This auto-submits the correct answer on buzz. Should show an
+                        //  answer input field instead, so the user actually has to answer.
                         Button(onClick = { onSubmitAnswer(question.answer.primary) }) {
                             Text(stringResource(R.string.kb_submit_answer))
                         }

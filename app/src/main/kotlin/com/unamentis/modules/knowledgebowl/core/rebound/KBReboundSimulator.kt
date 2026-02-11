@@ -1,6 +1,7 @@
 package com.unamentis.modules.knowledgebowl.core.rebound
 
 import android.util.Log
+import com.unamentis.R
 import com.unamentis.modules.knowledgebowl.data.model.KBDomain
 import com.unamentis.modules.knowledgebowl.data.model.KBQuestion
 import com.unamentis.modules.knowledgebowl.data.model.KBRegion
@@ -26,18 +27,13 @@ class KBReboundSimulator
             private const val TAG = "KBReboundSimulator"
 
             /** Generate practice scenarios for demonstration */
-            fun generatePracticeScenarios(): List<Pair<String, String>> =
+            fun generatePracticeScenarios(): List<Pair<Int, Int>> =
                 listOf(
-                    "Opponent answered 'Great Gatsby' for a Hemingway novel question." to
-                        "Clear rebound opportunity. Their answer reveals the category.",
-                    "Opponent buzzed immediately and got it correct." to
-                        "No rebound here. Process the question for future reference.",
-                    "State capitals: Opponent said 'Sacramento' for Nevada." to
-                        "Strong rebound opportunity. Geography mix-ups are common!",
-                    "Math question. Opponent answered '12' but you calculated '16'." to
-                        "Be confident in your calculation. Take the rebound if sure.",
-                    "Opponent hesitated before answering incorrectly." to
-                        "Hesitation signals uncertainty. Good rebound opportunity.",
+                    R.string.kb_practice_scenario_1_situation to R.string.kb_practice_scenario_1_tip,
+                    R.string.kb_practice_scenario_2_situation to R.string.kb_practice_scenario_2_tip,
+                    R.string.kb_practice_scenario_3_situation to R.string.kb_practice_scenario_3_tip,
+                    R.string.kb_practice_scenario_4_situation to R.string.kb_practice_scenario_4_tip,
+                    R.string.kb_practice_scenario_5_situation to R.string.kb_practice_scenario_5_tip,
                 )
 
             /** Wrong answers by domain for simulation */

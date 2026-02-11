@@ -265,6 +265,7 @@ class AudioWebSocketClient(
         private const val PING_INTERVAL_MS = 30_000L
         private const val MAX_RECONNECT_DELAY_MS = 10_000L
         private const val INITIAL_RECONNECT_DELAY_MS = 500L
+        private const val MAX_RECONNECT_ATTEMPTS = 10
         private const val DEFAULT_WS_URL = "ws://10.0.2.2:8766"
     }
 
@@ -589,6 +590,16 @@ class AudioWebSocketClient(
 
     private fun scheduleReconnect() {
         if (_state.value == AudioWebSocketState.FAILED || currentSessionId == null) {
+            return
+        }
+
+        if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+            _state.value = AudioWebSocketState.FAILED
+            scope.launch {
+                _messages.emit(
+                    AudioWebSocketMessage.ConnectionError("Max reconnect attempts reached", null),
+                )
+            }
             return
         }
 

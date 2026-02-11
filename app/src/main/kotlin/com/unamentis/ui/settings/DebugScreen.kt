@@ -30,6 +30,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,7 +49,9 @@ import com.unamentis.R
 import com.unamentis.ui.components.IOSCard
 import com.unamentis.ui.theme.Dimensions
 import com.unamentis.ui.theme.IOSTypography
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 
 /**
@@ -71,8 +74,13 @@ fun DebugScreen(onNavigateBack: () -> Unit) {
     val backDescription = stringResource(R.string.cd_go_back)
 
     // Cache state
-    var cacheSize by remember { mutableStateOf(getCacheSize(context)) }
+    var cacheSize by remember { mutableStateOf("") }
     var isClearing by remember { mutableStateOf(false) }
+
+    // Load cache size off the main thread
+    LaunchedEffect(Unit) {
+        cacheSize = withContext(Dispatchers.IO) { getCacheSize(context) }
+    }
 
     Scaffold(
         topBar = {
@@ -189,8 +197,8 @@ fun DebugScreen(onNavigateBack: () -> Unit) {
                                 onClick = {
                                     scope.launch {
                                         isClearing = true
-                                        clearCache(context)
-                                        cacheSize = getCacheSize(context)
+                                        withContext(Dispatchers.IO) { clearCache(context) }
+                                        cacheSize = withContext(Dispatchers.IO) { getCacheSize(context) }
                                         isClearing = false
                                         snackbarHostState.showSnackbar(
                                             context.getString(R.string.debug_cache_cleared),
@@ -222,7 +230,7 @@ fun DebugScreen(onNavigateBack: () -> Unit) {
             // Build Information Section
             item {
                 Text(
-                    text = "Build Information",
+                    text = stringResource(R.string.debug_build_information),
                     style = IOSTypography.headline,
                     modifier = Modifier.padding(top = Dimensions.SpacingMedium),
                 )
@@ -232,22 +240,25 @@ fun DebugScreen(onNavigateBack: () -> Unit) {
                 IOSCard {
                     Column(modifier = Modifier.padding(Dimensions.CardPadding)) {
                         DebugInfoRow(
-                            label = "Build Type",
+                            label = stringResource(R.string.debug_build_type),
                             value = BuildConfig.BUILD_TYPE,
                         )
                         HorizontalDivider(
                             modifier = Modifier.padding(vertical = Dimensions.SpacingSmall),
                         )
                         DebugInfoRow(
-                            label = "Application ID",
+                            label = stringResource(R.string.debug_application_id),
                             value = BuildConfig.APPLICATION_ID,
                         )
                         HorizontalDivider(
                             modifier = Modifier.padding(vertical = Dimensions.SpacingSmall),
                         )
                         DebugInfoRow(
-                            label = "Debug Mode",
-                            value = if (BuildConfig.DEBUG) "Enabled" else "Disabled",
+                            label = stringResource(R.string.debug_mode),
+                            value =
+                                stringResource(
+                                    if (BuildConfig.DEBUG) R.string.debug_enabled else R.string.debug_disabled,
+                                ),
                         )
                     }
                 }

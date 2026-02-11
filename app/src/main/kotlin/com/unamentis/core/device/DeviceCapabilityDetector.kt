@@ -81,6 +81,9 @@ class DeviceCapabilityDetector
 
         private val activityManager: ActivityManager? = context.getSystemService()
 
+        // Cache device capabilities (hardware doesn't change at runtime)
+        private val cachedCapabilities: DeviceCapabilities by lazy { detectInternal() }
+
         /**
          * Device tier classification.
          */
@@ -155,8 +158,14 @@ class DeviceCapabilityDetector
 
         /**
          * Detect and classify device capabilities.
+         * Results are cached since hardware doesn't change at runtime.
          */
-        fun detect(): DeviceCapabilities {
+        fun detect(): DeviceCapabilities = cachedCapabilities
+
+        /**
+         * Internal detection logic (called once via lazy initialization).
+         */
+        private fun detectInternal(): DeviceCapabilities {
             val totalRamMB = getTotalRamMB()
             val availableRamMB = getAvailableRamMB()
             val cpuCores = Runtime.getRuntime().availableProcessors()
@@ -422,7 +431,7 @@ class DeviceCapabilityDetector
             val sources =
                 listOf(
                     // API 31+
-                    { Build.SOC_MODEL },
+                    { if (Build.VERSION.SDK_INT >= 31) Build.SOC_MODEL else null },
                     { getSystemProperty("ro.board.platform") },
                     { getSystemProperty("ro.hardware") },
                     { Build.HARDWARE },
@@ -481,14 +490,12 @@ class DeviceCapabilityDetector
                 return true
             }
 
-            // Try to load OpenCL library as fallback check
+            // Check if libOpenCL.so exists without loading it to avoid side effects
             return try {
-                System.loadLibrary("OpenCL")
-                true
-            } catch (e: UnsatisfiedLinkError) {
-                // OpenCL not available
-                false
-            } catch (e: Exception) {
+                val lib = java.io.File("/system/vendor/lib64/libOpenCL.so")
+                val libAlt = java.io.File("/system/lib64/libOpenCL.so")
+                lib.exists() || libAlt.exists()
+            } catch (e: SecurityException) {
                 false
             }
         }
@@ -615,7 +622,8 @@ class DeviceCapabilityDetector
          * @return true if all required model files exist
          */
         fun areGLMASRModelsPresent(): Boolean {
-            val modelDir = context.filesDir.resolve("models/glm-asr-nano")
+            val baseDir = context.getExternalFilesDir(null) ?: context.filesDir
+            val modelDir = baseDir.resolve("models/glm-asr-nano")
             if (!modelDir.exists()) {
                 return false
             }
@@ -637,7 +645,8 @@ class DeviceCapabilityDetector
          * @return File pointing to the GLM-ASR model directory
          */
         fun getGLMASRModelDirectory(): java.io.File {
-            return context.filesDir.resolve("models/glm-asr-nano")
+            val baseDir = context.getExternalFilesDir(null) ?: context.filesDir
+            return baseDir.resolve("models/glm-asr-nano")
         }
 
         /**

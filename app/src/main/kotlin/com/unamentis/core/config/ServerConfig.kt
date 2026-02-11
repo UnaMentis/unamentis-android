@@ -1,37 +1,41 @@
 package com.unamentis.core.config
 
+import androidx.annotation.StringRes
+import com.unamentis.R
 import java.util.UUID
 
 /**
  * Type of self-hosted server.
  */
-enum class ServerType {
+enum class ServerType(
+    @StringRes val displayNameResId: Int,
+) {
     /** UnaMentis Gateway (unified gateway for all services) */
-    UNAMENTIS_GATEWAY,
+    UNAMENTIS_GATEWAY(R.string.server_type_unamentis_gateway),
 
     /** Ollama server for LLM */
-    OLLAMA,
+    OLLAMA(R.string.server_type_ollama),
 
     /** Whisper server for STT */
-    WHISPER,
+    WHISPER(R.string.server_type_whisper),
 
     /** Piper server for TTS */
-    PIPER,
+    PIPER(R.string.server_type_piper),
 
     /** VibeVoice server for TTS */
-    VIBE_VOICE,
+    VIBE_VOICE(R.string.server_type_vibevoice),
 
     /** Chatterbox server for TTS */
-    CHATTERBOX,
+    CHATTERBOX(R.string.server_type_chatterbox),
 
     /** llama.cpp server for LLM */
-    LLAMA_CPP,
+    LLAMA_CPP(R.string.server_type_llama_cpp),
 
     /** vLLM server for LLM */
-    VLLM,
+    VLLM(R.string.server_type_vllm),
 
     /** Custom OpenAI-compatible server */
-    CUSTOM,
+    CUSTOM(R.string.server_type_custom),
     ;
 
     /**

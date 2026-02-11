@@ -71,6 +71,7 @@ class GLMASRONNXInference(
      * @param embedHeadPath Path to embed head ONNX model
      * @return true if all models loaded successfully
      */
+    @Suppress("ReturnCount") // Sequential model loading with early returns on each failure
     fun loadModels(
         whisperEncoderPath: File,
         audioAdapterPath: File,
@@ -81,18 +82,18 @@ class GLMASRONNXInference(
             return true
         }
 
+        // Get ONNX Runtime environment
+        ortEnvironment = OrtEnvironment.getEnvironment()
+        val env = ortEnvironment ?: return false
+
+        // Create session options
+        val sessionOptions = createSessionOptions()
         try {
-            // Get ONNX Runtime environment
-            ortEnvironment = OrtEnvironment.getEnvironment()
-            val env = ortEnvironment ?: return false
-
-            // Create session options
-            val sessionOptions = createSessionOptions()
-
             // Load Whisper encoder
             Log.i(TAG, "Loading Whisper encoder from ${whisperEncoderPath.absolutePath}")
             if (!whisperEncoderPath.exists()) {
                 Log.e(TAG, "Whisper encoder not found: ${whisperEncoderPath.absolutePath}")
+                release()
                 return false
             }
             val encoderBytes = whisperEncoderPath.readBytes()
@@ -128,6 +129,8 @@ class GLMASRONNXInference(
             Log.e(TAG, "Failed to load ONNX models", e)
             release()
             return false
+        } finally {
+            sessionOptions.close()
         }
     }
 
@@ -162,36 +165,40 @@ class GLMASRONNXInference(
                     inputShape,
                 )
 
-            // Log tensor info periodically
-            if (inferenceCount % 10 == 0) {
-                Log.d(TAG, "Whisper encoder input shape: ${inputShape.contentToString()}")
+            try {
+                // Log tensor info periodically
+                if (inferenceCount % 10 == 0) {
+                    Log.d(TAG, "Whisper encoder input shape: ${inputShape.contentToString()}")
+                }
+
+                // Run inference
+                val inputs = mapOf("input" to inputTensor)
+                val results = session.run(inputs)
+
+                try {
+                    // Extract output
+                    val outputTensor = results.iterator().next().value as OnnxTensor
+                    val outputBuffer = outputTensor.floatBuffer
+                    val outputSize = outputBuffer.remaining()
+                    val output = FloatArray(outputSize)
+                    outputBuffer.get(output)
+
+                    // Log output info periodically
+                    if (inferenceCount % 10 == 0) {
+                        Log.d(
+                            TAG,
+                            "Whisper encoder output: shape=${outputTensor.info.shape.contentToString()}, " +
+                                "size=$outputSize",
+                        )
+                    }
+
+                    output
+                } finally {
+                    results.close()
+                }
+            } finally {
+                inputTensor.close()
             }
-
-            // Run inference
-            val inputs = mapOf("input" to inputTensor)
-            val results = session.run(inputs)
-
-            // Extract output
-            val outputTensor = results.iterator().next().value as OnnxTensor
-            val outputBuffer = outputTensor.floatBuffer
-            val outputSize = outputBuffer.remaining()
-            val output = FloatArray(outputSize)
-            outputBuffer.get(output)
-
-            // Log output info periodically
-            if (inferenceCount % 10 == 0) {
-                Log.d(
-                    TAG,
-                    "Whisper encoder output: shape=${outputTensor.info.shape.contentToString()}, " +
-                        "size=$outputSize",
-                )
-            }
-
-            // Clean up
-            inputTensor.close()
-            results.close()
-
-            output
         } catch (e: Exception) {
             Log.e(TAG, "Whisper encoder inference failed", e)
             null
@@ -228,31 +235,35 @@ class GLMASRONNXInference(
                     inputShape,
                 )
 
-            // Run inference
-            val inputs = mapOf("input" to inputTensor)
-            val results = session.run(inputs)
+            try {
+                // Run inference
+                val inputs = mapOf("input" to inputTensor)
+                val results = session.run(inputs)
 
-            // Extract output
-            val outputTensor = results.iterator().next().value as OnnxTensor
-            val outputBuffer = outputTensor.floatBuffer
-            val outputSize = outputBuffer.remaining()
-            val output = FloatArray(outputSize)
-            outputBuffer.get(output)
+                try {
+                    // Extract output
+                    val outputTensor = results.iterator().next().value as OnnxTensor
+                    val outputBuffer = outputTensor.floatBuffer
+                    val outputSize = outputBuffer.remaining()
+                    val output = FloatArray(outputSize)
+                    outputBuffer.get(output)
 
-            // Log output info periodically
-            if (inferenceCount % 10 == 0) {
-                Log.d(
-                    TAG,
-                    "Audio adapter output: shape=${outputTensor.info.shape.contentToString()}, " +
-                        "size=$outputSize",
-                )
+                    // Log output info periodically
+                    if (inferenceCount % 10 == 0) {
+                        Log.d(
+                            TAG,
+                            "Audio adapter output: shape=${outputTensor.info.shape.contentToString()}, " +
+                                "size=$outputSize",
+                        )
+                    }
+
+                    output
+                } finally {
+                    results.close()
+                }
+            } finally {
+                inputTensor.close()
             }
-
-            // Clean up
-            inputTensor.close()
-            results.close()
-
-            output
         } catch (e: Exception) {
             Log.e(TAG, "Audio adapter inference failed", e)
             null
@@ -289,33 +300,37 @@ class GLMASRONNXInference(
                     inputShape,
                 )
 
-            // Run inference
-            val inputs = mapOf("input" to inputTensor)
-            val results = session.run(inputs)
+            try {
+                // Run inference
+                val inputs = mapOf("input" to inputTensor)
+                val results = session.run(inputs)
 
-            // Extract output
-            val outputTensor = results.iterator().next().value as OnnxTensor
-            val outputBuffer = outputTensor.floatBuffer
-            val outputSize = outputBuffer.remaining()
-            val output = FloatArray(outputSize)
-            outputBuffer.get(output)
+                try {
+                    // Extract output
+                    val outputTensor = results.iterator().next().value as OnnxTensor
+                    val outputBuffer = outputTensor.floatBuffer
+                    val outputSize = outputBuffer.remaining()
+                    val output = FloatArray(outputSize)
+                    outputBuffer.get(output)
 
-            // Log output info periodically
-            if (inferenceCount % 10 == 0) {
-                Log.d(
-                    TAG,
-                    "Embed head output: shape=${outputTensor.info.shape.contentToString()}, " +
-                        "size=$outputSize",
-                )
+                    // Log output info periodically
+                    if (inferenceCount % 10 == 0) {
+                        Log.d(
+                            TAG,
+                            "Embed head output: shape=${outputTensor.info.shape.contentToString()}, " +
+                                "size=$outputSize",
+                        )
+                    }
+
+                    inferenceCount++
+
+                    output
+                } finally {
+                    results.close()
+                }
+            } finally {
+                inputTensor.close()
             }
-
-            inferenceCount++
-
-            // Clean up
-            inputTensor.close()
-            results.close()
-
-            output
         } catch (e: Exception) {
             Log.e(TAG, "Embed head inference failed", e)
             null
@@ -364,26 +379,28 @@ class GLMASRONNXInference(
      * Release all ONNX resources.
      */
     fun release() {
-        try {
-            whisperEncoderSession?.close()
-            whisperEncoderSession = null
-
-            audioAdapterSession?.close()
-            audioAdapterSession = null
-
-            embedHeadSession?.close()
-            embedHeadSession = null
-
-            // Note: OrtEnvironment is a singleton and should not be closed
-            ortEnvironment = null
-
-            isLoaded.set(false)
-            inferenceCount = 0
-
-            Log.i(TAG, "ONNX resources released")
-        } catch (e: Exception) {
-            Log.e(TAG, "Error releasing ONNX resources", e)
+        listOf(
+            "WhisperEncoder" to whisperEncoderSession,
+            "AudioAdapter" to audioAdapterSession,
+            "EmbedHead" to embedHeadSession,
+        ).forEach { (name, session) ->
+            try {
+                session?.close()
+            } catch (e: Exception) {
+                Log.e(TAG, "Error closing $name session", e)
+            }
         }
+        whisperEncoderSession = null
+        audioAdapterSession = null
+        embedHeadSession = null
+
+        // Note: OrtEnvironment is a singleton and should not be closed
+        ortEnvironment = null
+
+        isLoaded.set(false)
+        inferenceCount = 0
+
+        Log.i(TAG, "ONNX resources released")
     }
 
     /**

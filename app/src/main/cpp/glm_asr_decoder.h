@@ -156,6 +156,7 @@ private:
     // Helper methods
     std::string detokenize(llama_token token);
     void resetContext();
+    void unloadModelLocked();
 
     /**
      * Inject embeddings directly into the model context.
