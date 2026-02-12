@@ -165,12 +165,17 @@ class CurriculumRepository
          * Download a curriculum from the server.
          *
          * Fetches the full curriculum content including all topics and assets
-         * from the management console, then saves it to local storage.
+         * from the management console using the UMCF 2.0 format, then saves
+         * it to local storage.
          *
          * @param curriculumId The curriculum ID to download
+         * @param selectedTopicIds Optional set of topic IDs to download. If empty, downloads all topics.
          * @return Flow emitting download progress (0.0 to 1.0)
          */
-        fun downloadCurriculum(curriculumId: String): Flow<Float> =
+        fun downloadCurriculum(
+            curriculumId: String,
+            selectedTopicIds: Set<String> = emptySet(),
+        ): Flow<Float> =
             flow {
                 emit(0.0f)
                 _lastError.value = null
@@ -178,33 +183,24 @@ class CurriculumRepository
                 Log.d(TAG, "Starting download for curriculum: $curriculumId")
                 emit(0.1f)
 
-                // Fetch full curriculum with assets from server
-                when (val result = apiClient.getCurriculumFullWithAssets(curriculumId)) {
-                    is ApiResult.Success<*> -> {
-                        val curriculum = result.data as Curriculum
-                        emit(0.5f)
+                try {
+                    // Fetch full curriculum with assets from server (UMCF 2.0 format)
+                    val curriculum = apiClient.getCurriculumFullWithAssets(curriculumId, selectedTopicIds)
+                    emit(0.5f)
 
-                        Log.d(TAG, "Downloaded curriculum: ${curriculum.title} with ${curriculum.topics.size} topics")
+                    Log.d(TAG, "Downloaded curriculum: ${curriculum.title} with ${curriculum.topics.size} topics")
 
-                        // Save to local storage
-                        saveCurriculum(curriculum)
-                        emit(0.9f)
+                    // Save to local storage
+                    saveCurriculum(curriculum)
+                    emit(0.9f)
 
-                        Log.i(TAG, "Successfully saved curriculum ${curriculum.id} to local storage")
-                        emit(1.0f)
-                    }
-                    is ApiResult.Error -> {
-                        val errorMsg = "Download failed: ${result.error.error}"
-                        Log.e(TAG, errorMsg)
-                        _lastError.value = errorMsg
-                        emit(1.0f)
-                    }
-                    is ApiResult.NetworkError -> {
-                        val errorMsg = "Download failed: ${result.message}"
-                        Log.e(TAG, errorMsg, result.cause)
-                        _lastError.value = errorMsg
-                        emit(1.0f)
-                    }
+                    Log.i(TAG, "Successfully saved curriculum ${curriculum.id} to local storage")
+                    emit(1.0f)
+                } catch (e: Exception) {
+                    val errorMsg = "Download failed: ${e.message}"
+                    Log.e(TAG, errorMsg, e)
+                    _lastError.value = errorMsg
+                    emit(1.0f)
                 }
             }
 

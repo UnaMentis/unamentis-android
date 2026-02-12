@@ -124,8 +124,8 @@ app/build/outputs/apk/debug/app-debug.apk
 # Install the APK
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 
-# Launch the app
-adb shell am start -n com.unamentis/.MainActivity
+# Launch the app (debug build)
+adb shell monkey -p com.unamentis.debug -c android.intent.category.LAUNCHER 1
 ```
 
 ### Option B: Via File Transfer
@@ -516,8 +516,8 @@ Configure in the app:
 # Install
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 
-# Launch
-adb shell am start -n com.unamentis/.MainActivity
+# Launch (debug build)
+adb shell monkey -p com.unamentis.debug -c android.intent.category.LAUNCHER 1
 ```
 
 ### Log Server

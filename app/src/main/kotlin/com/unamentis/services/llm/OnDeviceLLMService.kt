@@ -2,6 +2,7 @@ package com.unamentis.services.llm
 
 import android.content.Context
 import android.util.Log
+import com.unamentis.R
 import com.unamentis.data.model.LLMMessage
 import com.unamentis.data.model.LLMService
 import com.unamentis.data.model.LLMToken
@@ -45,9 +46,22 @@ class OnDeviceLLMService
         companion object {
             private const val TAG = "OnDeviceLLM"
 
-            // Model specifications
+            // Model specifications - all supported GGUF models
             const val MINISTRAL_3B_FILENAME = "ministral-3b-instruct-q4_k_m.gguf"
             const val TINYLLAMA_1B_FILENAME = "tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf"
+            const val LLAMA_3_2_1B_FILENAME = "llama-3.2-1b-instruct-q4_k_m.gguf"
+
+            // Model priority for selection (lower index = higher priority)
+            // Fast 1B models are preferred for interactive voice sessions
+            private val MODEL_PRIORITY =
+                listOf(
+                    // Llama 3.2 1B - fast, modern, good quality
+                    LLAMA_3_2_1B_FILENAME,
+                    // TinyLlama 1.1B - fast fallback
+                    TINYLLAMA_1B_FILENAME,
+                    // Ministral 3B - slow but highest quality
+                    MINISTRAL_3B_FILENAME,
+                )
 
             // Default configuration
             private const val DEFAULT_CONTEXT_SIZE = 4096
@@ -74,7 +88,7 @@ class OnDeviceLLMService
             val gpuLayers: Int = DEFAULT_GPU_LAYERS,
         )
 
-        override val providerName: String = "OnDevice"
+        override val providerName: String = context.getString(R.string.provider_on_device_llm)
 
         // Native context pointer (0 = not loaded) - accessed from multiple threads
         private val nativeContextPtr = AtomicLong(0)
@@ -157,23 +171,37 @@ class OnDeviceLLMService
         fun isLoaded(): Boolean = isModelLoaded.get() && nativeContextPtr.get() != 0L
 
         /**
-         * Get available model path (Ministral first, then TinyLlama).
+         * Get available model path.
+         *
+         * Selection priority:
+         * 1. Check known models in priority order (fast 1B models first)
+         * 2. Fall back to any .gguf file found in the models directory
          */
         fun getAvailableModelPath(): String? {
             val modelsDir = getModelsDirectory()
 
-            // Try Ministral first (primary)
-            val ministral = File(modelsDir, MINISTRAL_3B_FILENAME)
-            if (ministral.exists()) {
-                Log.d(TAG, "Found Ministral model: ${ministral.absolutePath}")
-                return ministral.absolutePath
+            // Check known models in priority order
+            for (modelFilename in MODEL_PRIORITY) {
+                val modelFile = File(modelsDir, modelFilename)
+                if (modelFile.exists()) {
+                    Log.i(TAG, "Found model: ${modelFile.absolutePath}")
+                    return modelFile.absolutePath
+                }
             }
 
-            // Fall back to TinyLlama
-            val tinyllama = File(modelsDir, TINYLLAMA_1B_FILENAME)
-            if (tinyllama.exists()) {
-                Log.d(TAG, "Found TinyLlama model: ${tinyllama.absolutePath}")
-                return tinyllama.absolutePath
+            // Fall back: scan for any GGUF file in the models directory
+            val ggufFiles =
+                modelsDir.listFiles { file ->
+                    file.isFile && file.name.endsWith(".gguf", ignoreCase = true)
+                }
+
+            if (!ggufFiles.isNullOrEmpty()) {
+                // Sort by size (smaller = faster) and pick the first one
+                val selectedModel = ggufFiles.minByOrNull { it.length() }
+                if (selectedModel != null) {
+                    Log.i(TAG, "Found GGUF model (fallback scan): ${selectedModel.absolutePath}")
+                    return selectedModel.absolutePath
+                }
             }
 
             Log.w(TAG, "No models found in: ${modelsDir.absolutePath}")
@@ -184,7 +212,8 @@ class OnDeviceLLMService
          * Get the models directory.
          */
         fun getModelsDirectory(): File {
-            val modelsDir = File(context.getExternalFilesDir(null), "models")
+            val baseDir = context.getExternalFilesDir(null) ?: context.filesDir
+            val modelsDir = File(baseDir, "models")
             if (!modelsDir.exists()) {
                 modelsDir.mkdirs()
             }

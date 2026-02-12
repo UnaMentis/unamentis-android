@@ -1,6 +1,8 @@
 package com.unamentis.ui.onboarding
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -78,10 +80,15 @@ data class OnboardingPage(
  * Displays a series of pages introducing the app's key features.
  *
  * @param onComplete Called when user completes or skips onboarding
+ * @param reduceMotion When true, animations are disabled for accessibility
+ *                     (users with vestibular disorders, motion sensitivity)
  */
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
-fun OnboardingScreen(onComplete: () -> Unit) {
+fun OnboardingScreen(
+    onComplete: () -> Unit,
+    reduceMotion: Boolean = false,
+) {
     var currentPage by remember { mutableIntStateOf(0) }
 
     val pages =
@@ -179,11 +186,14 @@ fun OnboardingScreen(onComplete: () -> Unit) {
 
             Spacer(modifier = Modifier.height(Dimensions.SpacingXLarge))
 
-            // Page content
+            // Page content - motion-aware animations for accessibility
             AnimatedContent(
                 targetState = currentPage,
                 transitionSpec = {
-                    if (targetState > initialState) {
+                    if (reduceMotion) {
+                        // No animation for users who prefer reduced motion
+                        EnterTransition.None togetherWith ExitTransition.None
+                    } else if (targetState > initialState) {
                         (slideInHorizontally { it } + fadeIn()) togetherWith
                             (slideOutHorizontally { -it } + fadeOut())
                     } else {

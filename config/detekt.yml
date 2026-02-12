@@ -22,6 +22,11 @@ output-reports:
 
 complexity:
   active: true
+  LargeClass:
+    active: true
+    threshold: 600
+    excludes:
+      - '**/core/session/SessionManager.kt'  # Central orchestrator with many responsibilities
   LongMethod:
     active: true
     threshold: 60
@@ -63,6 +68,10 @@ complexity:
       - '**/data/remote/AudioWebSocketClient.kt'
       - '**/data/remote/WebSocketClient.kt'
       - '**/data/remote/ApiClient.kt'
+      # LLM service classes - legitimately complex with multiple inference methods
+      - '**/services/llm/ExecuTorchLLMService.kt'
+      - '**/services/llm/ModelDownloadManager.kt'
+      - '**/core/device/DeviceCapabilityDetector.kt'
   NestedBlockDepth:
     active: true
     threshold: 5

@@ -12,7 +12,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import com.unamentis.core.accessibility.AccessibilityChecker
 import com.unamentis.core.network.ConnectivityMonitor
+import com.unamentis.data.local.OnboardingPreferences
 import com.unamentis.navigation.DeepLinkDestination
 import com.unamentis.navigation.DeepLinkHandler
 import com.unamentis.ui.UnaMentisNavHost
@@ -38,6 +40,12 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var sessionActivityState: SessionActivityState
 
+    @Inject
+    lateinit var onboardingPreferences: OnboardingPreferences
+
+    @Inject
+    lateinit var accessibilityChecker: AccessibilityChecker
+
     private var pendingDeepLink by mutableStateOf<DeepLinkDestination?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -46,6 +54,9 @@ class MainActivity : ComponentActivity() {
 
         // Handle deep link from launch intent
         handleDeepLinkIntent(intent)
+
+        // Update accessibility state (in case settings changed while app was closed)
+        accessibilityChecker.updateAccessibilityState()
 
         setContent {
             UnaMentisTheme {
@@ -56,12 +67,21 @@ class MainActivity : ComponentActivity() {
                     UnaMentisNavHost(
                         connectivityMonitor = connectivityMonitor,
                         sessionActivityState = sessionActivityState,
+                        onboardingPreferences = onboardingPreferences,
+                        accessibilityChecker = accessibilityChecker,
                         initialDeepLink = pendingDeepLink,
                         onDeepLinkConsumed = { pendingDeepLink = null },
                     )
                 }
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Refresh accessibility state when returning to app
+        // (user may have changed system accessibility settings)
+        accessibilityChecker.updateAccessibilityState()
     }
 
     override fun onNewIntent(intent: Intent) {

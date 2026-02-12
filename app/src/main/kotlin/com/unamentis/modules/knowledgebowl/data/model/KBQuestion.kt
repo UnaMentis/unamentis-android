@@ -1,6 +1,5 @@
 package com.unamentis.modules.knowledgebowl.data.model
 
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
@@ -14,7 +13,7 @@ import kotlinx.serialization.Serializable
  * @property difficulty Difficulty level (Overview to Research)
  * @property gradeLevel Target grade level
  * @property suitability Which round types this question is suitable for
- * @property estimatedReadTimeSeconds Estimated time to read the question aloud
+ * @property estimatedReadTime Estimated time to read the question aloud
  * @property audioAssetId Reference to pre-recorded audio file (optional)
  * @property mcqOptions MCQ options for written round (A, B, C, D)
  * @property source Source attribution for CC-licensed content
@@ -29,25 +28,20 @@ data class KBQuestion(
     val domain: KBDomain,
     val subdomain: String? = null,
     val difficulty: KBDifficulty = KBDifficulty.VARSITY,
-    @SerialName("grade_level")
     val gradeLevel: KBGradeLevel = KBGradeLevel.HIGH_SCHOOL,
     val suitability: KBSuitability = KBSuitability(),
-    @SerialName("estimated_read_time_seconds")
-    val estimatedReadTimeSeconds: Float? = null,
-    @SerialName("audio_asset_id")
+    val estimatedReadTime: Float? = null,
     val audioAssetId: String? = null,
-    @SerialName("mcq_options")
     val mcqOptions: List<String>? = null,
     val source: String? = null,
-    @SerialName("source_attribution")
     val sourceAttribution: String? = null,
     val tags: List<String>? = null,
 ) {
     /**
      * Get the estimated read time, computing from word count if not provided.
      */
-    val estimatedReadTime: Float
-        get() = estimatedReadTimeSeconds ?: computeReadTime()
+    val estimatedReadTimeOrComputed: Float
+        get() = estimatedReadTime ?: computeReadTime()
 
     /**
      * Compute read time based on word count.
@@ -81,13 +75,16 @@ data class KBQuestion(
  * Container for bundled questions (loaded from JSON).
  *
  * @property version Bundle version string
- * @property generatedAt Timestamp when the bundle was generated
+ * @property generatedAt ISO8601 timestamp when the bundle was generated
+ * @property sources List of source datasets used to generate this bundle
+ * @property totalQuestions Total count of questions in the full dataset
  * @property questions List of questions in the bundle
  */
 @Serializable
 data class KBQuestionBundle(
     val version: String = "1.0.0",
-    @SerialName("generated_at")
-    val generatedAt: Long? = null,
+    val generatedAt: String? = null,
+    val sources: List<String>? = null,
+    val totalQuestions: Int? = null,
     val questions: List<KBQuestion>,
 )

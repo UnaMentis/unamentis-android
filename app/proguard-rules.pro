@@ -250,4 +250,11 @@
 -dontwarn com.google.errorprone.annotations.**
 -keep class com.google.errorprone.annotations.** { *; }
 
+
+# ===== GOOGLE MEDIAPIPE / AUTOVALUE =====
+# MediaPipe LLM Inference uses @AutoValue annotations at compile time.
+# These classes are not needed at runtime - safe to suppress R8 warnings.
+-dontwarn com.google.auto.value.AutoValue
+-dontwarn com.google.auto.value.AutoValue$Builder
+-dontwarn com.google.auto.value.**
 # ===== END OF PROGUARD RULES =====

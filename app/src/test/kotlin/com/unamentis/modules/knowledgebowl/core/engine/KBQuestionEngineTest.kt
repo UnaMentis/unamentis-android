@@ -24,45 +24,45 @@ class KBQuestionEngineTest {
         """
         {
           "version": "1.0.0",
-          "generated_at": 1700000000000,
+          "generatedAt": "2023-11-14T00:00:00Z",
           "questions": [
             {
               "id": "q1",
               "text": "What is the chemical symbol for gold?",
-              "answer": {"primary": "Au", "acceptable": ["AU"], "answer_type": "scientific"},
+              "answer": {"primary": "Au", "acceptable": ["AU"], "answerType": "scientific"},
               "domain": "science",
               "difficulty": "varsity",
-              "grade_level": "high_school",
-              "suitability": {"for_written": true, "for_oral": true},
-              "mcq_options": ["Au", "Ag", "Fe", "Cu"]
+              "gradeLevel": "highSchool",
+              "suitability": {"forWritten": true, "forOral": true},
+              "mcqOptions": ["Au", "Ag", "Fe", "Cu"]
             },
             {
               "id": "q2",
               "text": "What is the square root of 144?",
-              "answer": {"primary": "12", "acceptable": ["twelve"], "answer_type": "number"},
+              "answer": {"primary": "12", "acceptable": ["twelve"], "answerType": "number"},
               "domain": "mathematics",
               "difficulty": "foundational",
-              "grade_level": "middle_school",
-              "suitability": {"for_written": true, "for_oral": false},
-              "mcq_options": ["12", "11", "13", "14"]
+              "gradeLevel": "middleSchool",
+              "suitability": {"forWritten": true, "forOral": false},
+              "mcqOptions": ["12", "11", "13", "14"]
             },
             {
               "id": "q3",
               "text": "Who wrote Romeo and Juliet?",
-              "answer": {"primary": "William Shakespeare", "acceptable": ["Shakespeare"], "answer_type": "person"},
+              "answer": {"primary": "William Shakespeare", "acceptable": ["Shakespeare"], "answerType": "person"},
               "domain": "literature",
               "difficulty": "intermediate",
-              "grade_level": "high_school",
-              "suitability": {"for_written": true, "for_oral": true}
+              "gradeLevel": "highSchool",
+              "suitability": {"forWritten": true, "forOral": true}
             },
             {
               "id": "q4",
               "text": "What is the capital of France?",
-              "answer": {"primary": "Paris", "answer_type": "place"},
-              "domain": "social_studies",
+              "answer": {"primary": "Paris", "answerType": "place"},
+              "domain": "socialStudies",
               "difficulty": "foundational",
-              "grade_level": "middle_school",
-              "suitability": {"for_written": true, "for_oral": true}
+              "gradeLevel": "middleSchool",
+              "suitability": {"forWritten": true, "forOral": true}
             }
           ]
         }

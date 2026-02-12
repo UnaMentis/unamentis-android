@@ -11,6 +11,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.unamentis.MainActivity
+import com.unamentis.SkipOnboardingRule
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import org.junit.Before
@@ -33,6 +34,9 @@ class SettingsScreenTest {
     val hiltRule = HiltAndroidRule(this)
 
     @get:Rule(order = 1)
+    val skipOnboardingRule = SkipOnboardingRule()
+
+    @get:Rule(order = 2)
     val composeTestRule = createAndroidComposeRule<MainActivity>()
 
     companion object {
@@ -169,12 +173,13 @@ class SettingsScreenTest {
                 .fetchSemanticsNodes().isNotEmpty()
         }
 
-        // Scroll to Device RAM info
+        // Scroll to Device RAM info using testTag to avoid ambiguity
+        // (both On-Device LLM and GLM-ASR sections display "Device RAM")
         composeTestRule.onNodeWithTag("SettingsLazyColumn")
-            .performScrollToNode(hasText("Device RAM"))
+            .performScrollToNode(hasTestTag("device_ram_info"))
 
         // Verify Device RAM info is displayed
-        composeTestRule.onNodeWithText("Device RAM").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("device_ram_info").assertIsDisplayed()
     }
 
     @Test

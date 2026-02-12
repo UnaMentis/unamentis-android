@@ -5,6 +5,8 @@ import android.os.Build
 import android.util.Log
 import com.unamentis.BuildConfig
 import com.unamentis.data.model.Curriculum
+import com.unamentis.data.model.UMCFDocument
+import com.unamentis.data.model.UMCFParser
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
@@ -24,15 +26,23 @@ import kotlin.math.min
  *
  * @property tokenProvider Function to get current access token (null if not logged in)
  * @property onTokenExpired Callback when token is expired (401 response)
- * @property logServerUrl Log server base URL
- * @property managementUrl Management console base URL
+ * @property logServerUrlProvider Provider function for log server base URL
+ * @property managementUrlProvider Provider function for management console base URL
  */
 data class ApiClientConfig(
     val tokenProvider: (suspend () -> String?)? = null,
     val onTokenExpired: (suspend () -> Unit)? = null,
-    val logServerUrl: String = "http://10.0.2.2:8765",
-    val managementUrl: String = "http://10.0.2.2:8766",
-)
+    val logServerUrlProvider: () -> String = { DEFAULT_LOG_SERVER_URL },
+    val managementUrlProvider: () -> String = { DEFAULT_MANAGEMENT_URL },
+) {
+    companion object {
+        /** Default management URL for Android emulator */
+        const val DEFAULT_MANAGEMENT_URL = "http://10.0.2.2:8766"
+
+        /** Default log server URL for Android emulator */
+        const val DEFAULT_LOG_SERVER_URL = "http://10.0.2.2:8765"
+    }
+}
 
 /**
  * API client for communicating with the UnaMentis management console.
@@ -72,8 +82,8 @@ class ApiClient(
 
     private val tokenProvider get() = config.tokenProvider
     private val onTokenExpired get() = config.onTokenExpired
-    private val logServerUrl get() = config.logServerUrl
-    private val managementUrl get() = config.managementUrl
+    private val logServerUrl get() = config.logServerUrlProvider()
+    private val managementUrl get() = config.managementUrlProvider()
 
     private val deviceId: String by lazy {
         UUID.randomUUID().toString()
@@ -199,7 +209,14 @@ class ApiClient(
      *
      * @return List of curriculum summaries
      */
-    suspend fun getCurricula(): ApiResult<List<CurriculumSummary>> = get("/api/curricula")
+    suspend fun getCurricula(): ApiResult<List<CurriculumSummary>> {
+        // Server returns {"curricula": [...]} wrapper, not a direct array
+        return when (val result = get<CurriculaResponse>("/api/curricula")) {
+            is ApiResult.Success -> ApiResult.Success(result.data.curricula)
+            is ApiResult.Error -> result
+            is ApiResult.NetworkError -> result
+        }
+    }
 
     /**
      * Get list of archived curricula.
@@ -225,10 +242,17 @@ class ApiClient(
      *
      * GET /api/curricula/{id}/full-with-assets
      *
+     * The server returns UMCF 2.0 format which is converted to the internal
+     * Curriculum model using UMCFParser.
+     *
      * @param id Curriculum ID
+     * @param selectedTopicIds Optional set of topic IDs to include. If empty, includes all topics.
      * @return Complete curriculum with assets
      */
-    suspend fun getCurriculumFullWithAssets(id: String): Curriculum =
+    suspend fun getCurriculumFullWithAssets(
+        id: String,
+        selectedTopicIds: Set<String> = emptySet(),
+    ): Curriculum =
         withContext(Dispatchers.IO) {
             val request =
                 Request.Builder()
@@ -242,10 +266,10 @@ class ApiClient(
                     throw IOException("API error: ${response.code} ${response.message}")
                 }
                 val body = response.body?.string() ?: throw IOException("Empty response body")
-                // The response has "curriculum" and "assets" fields, we extract curriculum
-                val fullResponse = json.decodeFromString<Map<String, kotlinx.serialization.json.JsonElement>>(body)
-                val curriculumJson = json.encodeToString(fullResponse["curriculum"])
-                json.decodeFromString<Curriculum>(curriculumJson)
+
+                // Parse as UMCF 2.0 document and convert to internal model
+                val umcfDocument = json.decodeFromString<UMCFDocument>(body)
+                UMCFParser.convertToCurriculum(umcfDocument, selectedTopicIds)
             }
         }
 

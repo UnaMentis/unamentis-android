@@ -27,7 +27,6 @@ import okhttp3.WebSocketListener
 import okio.ByteString
 import okio.ByteString.Companion.toByteString
 import java.util.concurrent.TimeUnit
-import javax.inject.Inject
 
 /**
  * Audio WebSocket message types for voice sessions.
@@ -254,231 +253,243 @@ private data class ControlMessage(
  * client.disconnect()
  * ```
  */
-class AudioWebSocketClient
-    @Inject
-    constructor(
-        private val okHttpClient: OkHttpClient,
-        private val json: Json,
-        private val tokenProvider: suspend () -> String?,
-    ) {
-        companion object {
-            private const val TAG = "AudioWebSocketClient"
-            private const val BASE_URL = "ws://10.0.2.2:8766"
-            private const val WS_PATH = "/ws/audio"
-            private const val PING_INTERVAL_MS = 30_000L
-            private const val MAX_RECONNECT_DELAY_MS = 10_000L
-            private const val INITIAL_RECONNECT_DELAY_MS = 500L
+class AudioWebSocketClient(
+    private val okHttpClient: OkHttpClient,
+    private val json: Json,
+    private val tokenProvider: suspend () -> String?,
+    private val baseUrlProvider: () -> String = { DEFAULT_WS_URL },
+) {
+    companion object {
+        private const val TAG = "AudioWebSocketClient"
+        private const val WS_PATH = "/ws/audio"
+        private const val PING_INTERVAL_MS = 30_000L
+        private const val MAX_RECONNECT_DELAY_MS = 10_000L
+        private const val INITIAL_RECONNECT_DELAY_MS = 500L
+        private const val MAX_RECONNECT_ATTEMPTS = 10
+        private const val DEFAULT_WS_URL = "ws://10.0.2.2:8766"
+    }
+
+    private val baseUrl: String
+        get() = baseUrlProvider().takeIf { it.isNotBlank() } ?: DEFAULT_WS_URL
+
+    private var webSocket: WebSocket? = null
+    private var pingJob: Job? = null
+    private var reconnectJob: Job? = null
+    private var reconnectAttempts = 0
+    private var currentSessionId: String? = null
+    private var currentConfig: AudioConfig? = null
+
+    private val _state = MutableStateFlow(AudioWebSocketState.DISCONNECTED)
+    val state: StateFlow<AudioWebSocketState> = _state.asStateFlow()
+
+    private val _messages =
+        MutableSharedFlow<AudioWebSocketMessage>(
+            replay = 0,
+            extraBufferCapacity = 256,
+        )
+    val messages: SharedFlow<AudioWebSocketMessage> = _messages.asSharedFlow()
+
+    private val scope = CoroutineScope(Dispatchers.IO.limitedParallelism(1) + SupervisorJob())
+
+    /**
+     * Connect to the audio WebSocket for a specific session.
+     *
+     * @param sessionId The session ID to connect to
+     */
+    suspend fun connect(sessionId: String) {
+        if (_state.value == AudioWebSocketState.CONNECTED && currentSessionId == sessionId) {
+            Log.d(TAG, "Already connected to session $sessionId")
+            return
         }
 
-        private var webSocket: WebSocket? = null
-        private var pingJob: Job? = null
-        private var reconnectJob: Job? = null
-        private var reconnectAttempts = 0
-        private var currentSessionId: String? = null
-        private var currentConfig: AudioConfig? = null
+        // Cancel any pending reconnect/ping before starting a new connection
+        reconnectJob?.cancel()
+        reconnectJob = null
+        pingJob?.cancel()
+        pingJob = null
 
-        private val _state = MutableStateFlow(AudioWebSocketState.DISCONNECTED)
-        val state: StateFlow<AudioWebSocketState> = _state.asStateFlow()
+        // Disconnect from any existing session
+        if (webSocket != null) {
+            disconnect()
+        }
 
-        private val _messages =
-            MutableSharedFlow<AudioWebSocketMessage>(
-                replay = 0,
-                extraBufferCapacity = 256,
+        currentSessionId = sessionId
+        _state.value = AudioWebSocketState.CONNECTING
+        reconnectAttempts = 0
+
+        performConnect()
+    }
+
+    private suspend fun performConnect() {
+        val sessionId =
+            currentSessionId ?: run {
+                Log.e(TAG, "No session ID set")
+                _state.value = AudioWebSocketState.FAILED
+                return
+            }
+
+        val token = tokenProvider()
+        val currentBaseUrl = baseUrl
+
+        val urlBuilder = StringBuilder("$currentBaseUrl$WS_PATH?session=$sessionId")
+        if (token != null) {
+            urlBuilder.append("&token=$token")
+        }
+
+        Log.d(TAG, "Connecting to audio WebSocket for session: $sessionId (URL: $currentBaseUrl)")
+
+        val request =
+            Request.Builder()
+                .url(urlBuilder.toString())
+                .build()
+
+        // Create a dedicated client with WebSocket timeouts
+        val wsClient =
+            okHttpClient.newBuilder()
+                .pingInterval(PING_INTERVAL_MS, TimeUnit.MILLISECONDS)
+                .build()
+
+        webSocket = wsClient.newWebSocket(request, createWebSocketListener())
+    }
+
+    /**
+     * Disconnect from the audio WebSocket.
+     */
+    fun disconnect() {
+        Log.d(TAG, "Disconnecting audio WebSocket")
+        reconnectJob?.cancel()
+        pingJob?.cancel()
+        webSocket?.close(1000, "Client disconnect")
+        webSocket = null
+        _state.value = AudioWebSocketState.DISCONNECTED
+        currentSessionId = null
+        currentConfig = null
+    }
+
+    /**
+     * Configure audio settings.
+     *
+     * Should be called after connecting and before sending audio.
+     *
+     * @param config Audio configuration
+     */
+    fun configure(config: AudioConfig) {
+        currentConfig = config
+
+        val message =
+            json.encodeToString(
+                ConfigMessage(
+                    sampleRate = config.sampleRate,
+                    channels = config.channels,
+                    format = config.format,
+                    vadEnabled = config.vadEnabled,
+                    vadThreshold = config.vadThreshold,
+                ),
             )
-        val messages: SharedFlow<AudioWebSocketMessage> = _messages.asSharedFlow()
+        sendText(message)
+    }
 
-        private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    /**
+     * Start recording audio.
+     */
+    fun startRecording() {
+        if (_state.value != AudioWebSocketState.CONNECTED) {
+            Log.w(TAG, "Cannot start recording, not connected")
+            return
+        }
 
-        /**
-         * Connect to the audio WebSocket for a specific session.
-         *
-         * @param sessionId The session ID to connect to
-         */
-        suspend fun connect(sessionId: String) {
-            if (_state.value == AudioWebSocketState.CONNECTED && currentSessionId == sessionId) {
-                Log.d(TAG, "Already connected to session $sessionId")
-                return
+        _state.value = AudioWebSocketState.RECORDING
+        sendText("""{"type": "start_recording"}""")
+    }
+
+    /**
+     * Stop recording and trigger processing.
+     */
+    fun stopRecording() {
+        if (_state.value != AudioWebSocketState.RECORDING) {
+            Log.w(TAG, "Not currently recording")
+            return
+        }
+
+        _state.value = AudioWebSocketState.PROCESSING
+        sendText("""{"type": "stop_recording"}""")
+    }
+
+    /**
+     * Cancel current processing.
+     */
+    fun cancel() {
+        sendText("""{"type": "cancel"}""")
+
+        if (_state.value == AudioWebSocketState.PROCESSING ||
+            _state.value == AudioWebSocketState.PLAYING
+        ) {
+            _state.value = AudioWebSocketState.CONNECTED
+        }
+    }
+
+    /**
+     * Change current topic.
+     *
+     * @param topicId The new topic ID
+     */
+    fun setTopic(topicId: String) {
+        val message =
+            json.encodeToString(
+                ControlMessage(type = "set_topic", topicId = topicId),
+            )
+        sendText(message)
+    }
+
+    /**
+     * Send raw audio data.
+     *
+     * @param data PCM audio data (16-bit, mono, 16kHz)
+     */
+    fun sendAudio(data: ByteArray) {
+        val ws = webSocket
+        if (ws != null && _state.value == AudioWebSocketState.RECORDING) {
+            val sent = ws.send(data.toByteString())
+            if (!sent) {
+                Log.w(TAG, "Failed to send audio data")
             }
+        }
+    }
 
-            // Disconnect from any existing session
-            if (webSocket != null) {
-                disconnect()
+    /**
+     * Send a ping to keep the connection alive.
+     */
+    fun sendPing() {
+        sendText("""{"type": "ping"}""")
+    }
+
+    // Messages are intentionally dropped when disconnected rather than queued,
+    // because audio control messages are time-sensitive and replaying stale messages
+    // after reconnection could cause incorrect state. Critical config is re-sent
+    // via configure() in onOpen.
+    private fun sendText(message: String) {
+        val ws = webSocket
+        if (ws != null) {
+            val sent = ws.send(message)
+            if (!sent) {
+                Log.w(TAG, "Failed to send WebSocket message")
             }
-
-            currentSessionId = sessionId
-            _state.value = AudioWebSocketState.CONNECTING
-            reconnectAttempts = 0
-
-            performConnect()
+        } else {
+            Log.w(TAG, "WebSocket not connected, cannot send message")
         }
+    }
 
-        private suspend fun performConnect() {
-            val sessionId =
-                currentSessionId ?: run {
-                    Log.e(TAG, "No session ID set")
-                    _state.value = AudioWebSocketState.FAILED
-                    return
-                }
-
-            val token = tokenProvider()
-
-            val urlBuilder = StringBuilder("$BASE_URL$WS_PATH?session=$sessionId")
-            if (token != null) {
-                urlBuilder.append("&token=$token")
-            }
-
-            Log.d(TAG, "Connecting to audio WebSocket for session: $sessionId")
-
-            val request =
-                Request.Builder()
-                    .url(urlBuilder.toString())
-                    .build()
-
-            // Create a dedicated client with WebSocket timeouts
-            val wsClient =
-                okHttpClient.newBuilder()
-                    .pingInterval(PING_INTERVAL_MS, TimeUnit.MILLISECONDS)
-                    .build()
-
-            webSocket = wsClient.newWebSocket(request, createWebSocketListener())
-        }
-
-        /**
-         * Disconnect from the audio WebSocket.
-         */
-        fun disconnect() {
-            Log.d(TAG, "Disconnecting audio WebSocket")
-            reconnectJob?.cancel()
-            pingJob?.cancel()
-            webSocket?.close(1000, "Client disconnect")
-            webSocket = null
-            _state.value = AudioWebSocketState.DISCONNECTED
-            currentSessionId = null
-            currentConfig = null
-        }
-
-        /**
-         * Configure audio settings.
-         *
-         * Should be called after connecting and before sending audio.
-         *
-         * @param config Audio configuration
-         */
-        fun configure(config: AudioConfig) {
-            currentConfig = config
-
-            val message =
-                json.encodeToString(
-                    ConfigMessage(
-                        sampleRate = config.sampleRate,
-                        channels = config.channels,
-                        format = config.format,
-                        vadEnabled = config.vadEnabled,
-                        vadThreshold = config.vadThreshold,
-                    ),
-                )
-            sendText(message)
-        }
-
-        /**
-         * Start recording audio.
-         */
-        fun startRecording() {
-            if (_state.value != AudioWebSocketState.CONNECTED) {
-                Log.w(TAG, "Cannot start recording, not connected")
-                return
-            }
-
-            _state.value = AudioWebSocketState.RECORDING
-            sendText("""{"type": "start_recording"}""")
-        }
-
-        /**
-         * Stop recording and trigger processing.
-         */
-        fun stopRecording() {
-            if (_state.value != AudioWebSocketState.RECORDING) {
-                Log.w(TAG, "Not currently recording")
-                return
-            }
-
-            _state.value = AudioWebSocketState.PROCESSING
-            sendText("""{"type": "stop_recording"}""")
-        }
-
-        /**
-         * Cancel current processing.
-         */
-        fun cancel() {
-            sendText("""{"type": "cancel"}""")
-
-            if (_state.value == AudioWebSocketState.PROCESSING ||
-                _state.value == AudioWebSocketState.PLAYING
+    private fun createWebSocketListener(): WebSocketListener {
+        return object : WebSocketListener() {
+            override fun onOpen(
+                webSocket: WebSocket,
+                response: Response,
             ) {
-                _state.value = AudioWebSocketState.CONNECTED
-            }
-        }
-
-        /**
-         * Change current topic.
-         *
-         * @param topicId The new topic ID
-         */
-        fun setTopic(topicId: String) {
-            val message =
-                json.encodeToString(
-                    ControlMessage(type = "set_topic", topicId = topicId),
-                )
-            sendText(message)
-        }
-
-        /**
-         * Send raw audio data.
-         *
-         * @param data PCM audio data (16-bit, mono, 16kHz)
-         */
-        fun sendAudio(data: ByteArray) {
-            val ws = webSocket
-            if (ws != null && _state.value == AudioWebSocketState.RECORDING) {
-                val sent = ws.send(data.toByteString())
-                if (!sent) {
-                    Log.w(TAG, "Failed to send audio data")
-                }
-            }
-        }
-
-        /**
-         * Send a ping to keep the connection alive.
-         */
-        fun sendPing() {
-            sendText("""{"type": "ping"}""")
-        }
-
-        private fun sendText(message: String) {
-            val ws = webSocket
-            if (ws != null) {
-                val sent = ws.send(message)
-                if (!sent) {
-                    Log.w(TAG, "Failed to send message: $message")
-                }
-            } else {
-                Log.w(TAG, "WebSocket not connected, cannot send: $message")
-            }
-        }
-
-        private fun createWebSocketListener(): WebSocketListener {
-            return object : WebSocketListener() {
-                override fun onOpen(
-                    webSocket: WebSocket,
-                    response: Response,
-                ) {
-                    Log.i(TAG, "Audio WebSocket connected")
+                Log.i(TAG, "Audio WebSocket connected")
+                scope.launch {
                     _state.value = AudioWebSocketState.CONNECTED
                     reconnectAttempts = 0
-
-                    scope.launch {
-                        _messages.emit(AudioWebSocketMessage.Connected)
-                    }
+                    _messages.emit(AudioWebSocketMessage.Connected)
 
                     // Re-apply configuration if we have one
                     currentConfig?.let { configure(it) }
@@ -486,230 +497,248 @@ class AudioWebSocketClient
                     // Start ping job
                     startPingJob()
                 }
+            }
 
-                override fun onMessage(
-                    webSocket: WebSocket,
-                    text: String,
-                ) {
-                    Log.v(TAG, "Received text: $text")
-                    scope.launch {
-                        parseAndEmitTextMessage(text)
-                    }
+            override fun onMessage(
+                webSocket: WebSocket,
+                text: String,
+            ) {
+                Log.v(TAG, "Received text: $text")
+                scope.launch {
+                    parseAndEmitTextMessage(text)
                 }
+            }
 
-                override fun onMessage(
-                    webSocket: WebSocket,
-                    bytes: ByteString,
-                ) {
-                    Log.v(TAG, "Received binary: ${bytes.size} bytes")
-                    scope.launch {
-                        _messages.emit(AudioWebSocketMessage.Audio(bytes.toByteArray()))
-                    }
+            override fun onMessage(
+                webSocket: WebSocket,
+                bytes: ByteString,
+            ) {
+                Log.v(TAG, "Received binary: ${bytes.size} bytes")
+                scope.launch {
+                    _messages.emit(AudioWebSocketMessage.Audio(bytes.toByteArray()))
 
                     // If we receive audio, we're in playing state
                     if (_state.value == AudioWebSocketState.PROCESSING) {
                         _state.value = AudioWebSocketState.PLAYING
                     }
                 }
-
-                override fun onClosing(
-                    webSocket: WebSocket,
-                    code: Int,
-                    reason: String,
-                ) {
-                    Log.d(TAG, "Audio WebSocket closing: $code $reason")
-                }
-
-                override fun onClosed(
-                    webSocket: WebSocket,
-                    code: Int,
-                    reason: String,
-                ) {
-                    Log.i(TAG, "Audio WebSocket closed: $code $reason")
-                    handleDisconnect(code, reason)
-                }
-
-                override fun onFailure(
-                    webSocket: WebSocket,
-                    t: Throwable,
-                    response: Response?,
-                ) {
-                    Log.e(TAG, "Audio WebSocket failure: ${t.message}", t)
-                    handleFailure(t)
-                }
-            }
-        }
-
-        private fun handleDisconnect(
-            code: Int,
-            reason: String,
-        ) {
-            pingJob?.cancel()
-            webSocket = null
-
-            scope.launch {
-                _messages.emit(AudioWebSocketMessage.Disconnected(code, reason))
             }
 
-            // Handle close codes
-            when (code) {
-                1000, 4000 -> {
-                    // Normal closure or session ended
-                    _state.value = AudioWebSocketState.DISCONNECTED
-                    currentSessionId = null
-                }
-                4001 -> {
-                    // Session not found
-                    _state.value = AudioWebSocketState.FAILED
-                    currentSessionId = null
-                }
-                4002 -> {
-                    // Rate limited, wait longer before reconnect
-                    reconnectAttempts = 5 // Force longer delay
-                    scheduleReconnect()
-                }
-                else -> {
-                    scheduleReconnect()
-                }
-            }
-        }
-
-        private fun handleFailure(t: Throwable) {
-            pingJob?.cancel()
-            webSocket = null
-
-            scope.launch {
-                _messages.emit(AudioWebSocketMessage.ConnectionError(t.message ?: "Unknown error", t))
+            override fun onClosing(
+                webSocket: WebSocket,
+                code: Int,
+                reason: String,
+            ) {
+                Log.d(TAG, "Audio WebSocket closing: $code $reason")
             }
 
-            scheduleReconnect()
-        }
-
-        private fun scheduleReconnect() {
-            if (_state.value == AudioWebSocketState.FAILED || currentSessionId == null) {
-                return
+            override fun onClosed(
+                webSocket: WebSocket,
+                code: Int,
+                reason: String,
+            ) {
+                Log.i(TAG, "Audio WebSocket closed: $code $reason")
+                scope.launch { handleDisconnect(code, reason) }
             }
 
-            _state.value = AudioWebSocketState.RECONNECTING
-            reconnectAttempts++
-
-            val delay =
-                (INITIAL_RECONNECT_DELAY_MS * (1 shl minOf(reconnectAttempts - 1, 4)))
-                    .coerceAtMost(MAX_RECONNECT_DELAY_MS)
-
-            Log.d(TAG, "Scheduling audio reconnect in ${delay}ms (attempt $reconnectAttempts)")
-
-            reconnectJob =
-                scope.launch {
-                    delay(delay)
-                    performConnect()
-                }
-        }
-
-        private fun startPingJob() {
-            pingJob?.cancel()
-            pingJob =
-                scope.launch {
-                    while (isActive && _state.value != AudioWebSocketState.DISCONNECTED) {
-                        delay(PING_INTERVAL_MS)
-                        sendPing()
-                    }
-                }
-        }
-
-        private suspend fun parseAndEmitTextMessage(text: String) {
-            try {
-                val raw = json.decodeFromString<RawAudioMessage>(text)
-                val message = parseRawAudioMessage(raw)
-                message?.let { _messages.emit(it) }
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to parse audio message: $text", e)
+            override fun onFailure(
+                webSocket: WebSocket,
+                t: Throwable,
+                response: Response?,
+            ) {
+                Log.e(TAG, "Audio WebSocket failure: ${t.message}", t)
+                scope.launch { handleFailure(t) }
             }
-        }
-
-        private fun parseRawAudioMessage(raw: RawAudioMessage): AudioWebSocketMessage? =
-            when (raw.type) {
-                "pong" -> null
-                "vad_start" -> AudioWebSocketMessage.VadStart(raw.timestamp ?: "")
-                "vad_end" -> parseVadEnd(raw)
-                "transcript" -> parseTranscript(raw)
-                "llm_start" -> AudioWebSocketMessage.LlmStart(raw.timestamp ?: "")
-                "llm_token" -> AudioWebSocketMessage.LlmToken(raw.token ?: "")
-                "llm_complete" -> parseLlmComplete(raw)
-                "tts_start" -> AudioWebSocketMessage.TtsStart(raw.textLength ?: 0)
-                "tts_complete" -> parseTtsComplete(raw)
-                "turn_complete" -> parseTurnComplete(raw)
-                "visual_asset" -> parseVisualAsset(raw)
-                "error" -> parseError(raw)
-                else -> {
-                    Log.w(TAG, "Unknown audio message type: ${raw.type}")
-                    null
-                }
-            }
-
-        private fun parseVadEnd(raw: RawAudioMessage) =
-            AudioWebSocketMessage.VadEnd(
-                timestamp = raw.timestamp ?: "",
-                durationMs = raw.durationMs ?: 0,
-            )
-
-        private fun parseTranscript(raw: RawAudioMessage) =
-            AudioWebSocketMessage.Transcript(
-                text = raw.text ?: "",
-                confidence = raw.confidence ?: 0.0,
-                latencyMs = raw.latencyMs ?: 0,
-            )
-
-        private fun parseLlmComplete(raw: RawAudioMessage) =
-            AudioWebSocketMessage.LlmComplete(
-                text = raw.text ?: "",
-                latencyMs = raw.latencyMs ?: 0,
-            )
-
-        private fun parseTtsComplete(raw: RawAudioMessage) =
-            AudioWebSocketMessage.TtsComplete(
-                durationMs = raw.durationMs ?: 0,
-                latencyMs = raw.latencyMs ?: 0,
-            )
-
-        private fun parseTurnComplete(raw: RawAudioMessage): AudioWebSocketMessage {
-            val metrics = raw.metrics
-            _state.value = AudioWebSocketState.CONNECTED
-            return AudioWebSocketMessage.TurnComplete(
-                turnId = raw.turnId ?: "",
-                sttMs = metrics?.sttMs ?: 0,
-                llmMs = metrics?.llmMs ?: 0,
-                ttsMs = metrics?.ttsMs ?: 0,
-                totalMs = metrics?.totalMs ?: 0,
-            )
-        }
-
-        private fun parseVisualAsset(raw: RawAudioMessage): AudioWebSocketMessage? =
-            raw.asset?.let { asset ->
-                AudioWebSocketMessage.VisualAsset(
-                    id = asset.id,
-                    type = asset.type,
-                    url = asset.url,
-                    caption = asset.caption,
-                )
-            }
-
-        private fun parseError(raw: RawAudioMessage): AudioWebSocketMessage {
-            if (raw.recoverable != true && _state.value != AudioWebSocketState.DISCONNECTED) {
-                _state.value = AudioWebSocketState.CONNECTED
-            }
-            return AudioWebSocketMessage.Error(
-                code = raw.code ?: "UNKNOWN",
-                message = raw.message ?: "Unknown error",
-                recoverable = raw.recoverable ?: false,
-            )
-        }
-
-        /**
-         * Clean up resources.
-         */
-        fun destroy() {
-            disconnect()
-            scope.cancel()
         }
     }
+
+    private fun handleDisconnect(
+        code: Int,
+        reason: String,
+    ) {
+        pingJob?.cancel()
+        webSocket = null
+
+        scope.launch {
+            _messages.emit(AudioWebSocketMessage.Disconnected(code, reason))
+        }
+
+        // Handle close codes
+        when (code) {
+            1000, 4000 -> {
+                // Normal closure or session ended
+                _state.value = AudioWebSocketState.DISCONNECTED
+                currentSessionId = null
+            }
+            4001 -> {
+                // Session not found
+                _state.value = AudioWebSocketState.FAILED
+                currentSessionId = null
+            }
+            4002 -> {
+                // Rate limited, wait longer before reconnect
+                reconnectAttempts = 5 // Force longer delay
+                scheduleReconnect()
+            }
+            else -> {
+                scheduleReconnect()
+            }
+        }
+    }
+
+    private fun handleFailure(t: Throwable) {
+        pingJob?.cancel()
+        webSocket = null
+
+        scope.launch {
+            _messages.emit(AudioWebSocketMessage.ConnectionError(t.message ?: "Unknown error", t))
+        }
+
+        scheduleReconnect()
+    }
+
+    private fun scheduleReconnect() {
+        if (_state.value == AudioWebSocketState.FAILED || currentSessionId == null) {
+            return
+        }
+
+        if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+            _state.value = AudioWebSocketState.FAILED
+            scope.launch {
+                _messages.emit(
+                    AudioWebSocketMessage.ConnectionError("Max reconnect attempts reached", null),
+                )
+            }
+            return
+        }
+
+        _state.value = AudioWebSocketState.RECONNECTING
+        reconnectAttempts++
+
+        val delay =
+            (INITIAL_RECONNECT_DELAY_MS * (1 shl minOf(reconnectAttempts - 1, 4)))
+                .coerceAtMost(MAX_RECONNECT_DELAY_MS)
+
+        Log.d(TAG, "Scheduling audio reconnect in ${delay}ms (attempt $reconnectAttempts)")
+
+        reconnectJob =
+            scope.launch {
+                delay(delay)
+                performConnect()
+            }
+    }
+
+    private fun startPingJob() {
+        pingJob?.cancel()
+        pingJob =
+            scope.launch {
+                val activeStates =
+                    setOf(
+                        AudioWebSocketState.CONNECTED,
+                        AudioWebSocketState.RECORDING,
+                        AudioWebSocketState.PROCESSING,
+                        AudioWebSocketState.PLAYING,
+                    )
+                while (isActive && _state.value in activeStates) {
+                    delay(PING_INTERVAL_MS)
+                    sendPing()
+                }
+            }
+    }
+
+    private suspend fun parseAndEmitTextMessage(text: String) {
+        try {
+            val raw = json.decodeFromString<RawAudioMessage>(text)
+            val message = parseRawAudioMessage(raw)
+            message?.let { _messages.emit(it) }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to parse audio message: $text", e)
+        }
+    }
+
+    private fun parseRawAudioMessage(raw: RawAudioMessage): AudioWebSocketMessage? =
+        when (raw.type) {
+            "pong" -> null
+            "vad_start" -> AudioWebSocketMessage.VadStart(raw.timestamp ?: "")
+            "vad_end" -> parseVadEnd(raw)
+            "transcript" -> parseTranscript(raw)
+            "llm_start" -> AudioWebSocketMessage.LlmStart(raw.timestamp ?: "")
+            "llm_token" -> AudioWebSocketMessage.LlmToken(raw.token ?: "")
+            "llm_complete" -> parseLlmComplete(raw)
+            "tts_start" -> AudioWebSocketMessage.TtsStart(raw.textLength ?: 0)
+            "tts_complete" -> parseTtsComplete(raw)
+            "turn_complete" -> parseTurnComplete(raw)
+            "visual_asset" -> parseVisualAsset(raw)
+            "error" -> parseError(raw)
+            else -> {
+                Log.w(TAG, "Unknown audio message type: ${raw.type}")
+                null
+            }
+        }
+
+    private fun parseVadEnd(raw: RawAudioMessage) =
+        AudioWebSocketMessage.VadEnd(
+            timestamp = raw.timestamp ?: "",
+            durationMs = raw.durationMs ?: 0,
+        )
+
+    private fun parseTranscript(raw: RawAudioMessage) =
+        AudioWebSocketMessage.Transcript(
+            text = raw.text ?: "",
+            confidence = raw.confidence ?: 0.0,
+            latencyMs = raw.latencyMs ?: 0,
+        )
+
+    private fun parseLlmComplete(raw: RawAudioMessage) =
+        AudioWebSocketMessage.LlmComplete(
+            text = raw.text ?: "",
+            latencyMs = raw.latencyMs ?: 0,
+        )
+
+    private fun parseTtsComplete(raw: RawAudioMessage) =
+        AudioWebSocketMessage.TtsComplete(
+            durationMs = raw.durationMs ?: 0,
+            latencyMs = raw.latencyMs ?: 0,
+        )
+
+    private fun parseTurnComplete(raw: RawAudioMessage): AudioWebSocketMessage {
+        val metrics = raw.metrics
+        _state.value = AudioWebSocketState.CONNECTED
+        return AudioWebSocketMessage.TurnComplete(
+            turnId = raw.turnId ?: "",
+            sttMs = metrics?.sttMs ?: 0,
+            llmMs = metrics?.llmMs ?: 0,
+            ttsMs = metrics?.ttsMs ?: 0,
+            totalMs = metrics?.totalMs ?: 0,
+        )
+    }
+
+    private fun parseVisualAsset(raw: RawAudioMessage): AudioWebSocketMessage? =
+        raw.asset?.let { asset ->
+            AudioWebSocketMessage.VisualAsset(
+                id = asset.id,
+                type = asset.type,
+                url = asset.url,
+                caption = asset.caption,
+            )
+        }
+
+    private fun parseError(raw: RawAudioMessage): AudioWebSocketMessage {
+        if (raw.recoverable != true && _state.value != AudioWebSocketState.DISCONNECTED) {
+            _state.value = AudioWebSocketState.CONNECTED
+        }
+        return AudioWebSocketMessage.Error(
+            code = raw.code ?: "UNKNOWN",
+            message = raw.message ?: "Unknown error",
+            recoverable = raw.recoverable ?: false,
+        )
+    }
+
+    /**
+     * Clean up resources.
+     */
+    fun destroy() {
+        disconnect()
+        scope.cancel()
+    }
+}

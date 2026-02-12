@@ -12,11 +12,11 @@ enum class KBGradeLevel(
     val gradeRange: IntRange,
 ) {
     /** Middle school level (grades 6-8) */
-    @SerialName("middle_school")
+    @SerialName("middleSchool")
     MIDDLE_SCHOOL("Middle School (6-8)", 6..8),
 
     /** High school level (grades 9-12) */
-    @SerialName("high_school")
+    @SerialName("highSchool")
     HIGH_SCHOOL("High School (9-12)", 9..12),
 
     /** Advanced/college-prep level */

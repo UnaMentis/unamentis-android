@@ -10,6 +10,7 @@ import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -43,7 +44,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
@@ -112,23 +112,15 @@ fun SlideToStopButton(
         label = "shadowElevation",
     )
 
+    // Track container - fixed size, contains all track elements
     Box(
         modifier =
             modifier
-                .fillMaxWidth()
-                .height(thumbSize + trackPadding * 2)
+                .size(width = maxTrackWidth, height = thumbSize + trackPadding * 2)
+                .clip(RoundedCornerShape(50))
+                .background(iOSRed.copy(alpha = 0.15f))
                 .semantics { contentDescription = "Slide to stop session" },
     ) {
-        // Track background
-        Box(
-            modifier =
-                Modifier
-                    .align(Alignment.CenterStart)
-                    .size(width = maxTrackWidth, height = thumbSize + trackPadding * 2)
-                    .clip(RoundedCornerShape(50))
-                    .background(iOSRed.copy(alpha = 0.15f)),
-        )
-
         // Progress fill
         Box(
             modifier =
@@ -142,7 +134,7 @@ fun SlideToStopButton(
                     .background(iOSRed.copy(alpha = 0.3f)),
         )
 
-        // Instruction text (fades as user slides)
+        // Instruction text (fades as user slides) - centered in the area after the thumb
         Text(
             text = stringResource(R.string.slide_to_stop),
             style = IOSTypography.subheadline,
@@ -151,18 +143,18 @@ fun SlideToStopButton(
             modifier =
                 Modifier
                     .align(Alignment.Center)
-                    .graphicsLayer { translationX = maxTrackWidth.toPx() / 4 },
+                    .padding(start = thumbSize / 2),
         )
 
-        // Thumb
+        // Thumb with shadow - shadow applied first, then scale for proper visual alignment
         Surface(
             modifier =
                 Modifier
                     .align(Alignment.CenterStart)
                     .offset { IntOffset((trackPaddingPx + dragOffset).roundToInt(), 0) }
                     .size(thumbSize)
-                    .scale(thumbScale)
                     .shadow(shadowElevation, CircleShape)
+                    .scale(thumbScale)
                     .pointerInput(Unit) {
                         detectHorizontalDragGestures(
                             onDragStart = {
@@ -170,7 +162,16 @@ fun SlideToStopButton(
                             },
                             onDragEnd = {
                                 isDragging = false
-                                if (completionProgress >= completionThreshold) {
+                                // Calculate completion progress fresh here instead of using
+                                // captured value - the captured val would be stale since
+                                // pointerInput(Unit) doesn't re-execute on state changes
+                                val currentProgress =
+                                    if (maxDragDistance > 0) {
+                                        (dragOffset / maxDragDistance).coerceIn(0f, 1f)
+                                    } else {
+                                        0f
+                                    }
+                                if (currentProgress >= completionThreshold) {
                                     // Trigger haptic feedback and complete
                                     view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
                                     onStop()
@@ -191,7 +192,7 @@ fun SlideToStopButton(
             color = iOSRed,
         ) {
             Box(
-                modifier = Modifier.size(thumbSize),
+                modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(

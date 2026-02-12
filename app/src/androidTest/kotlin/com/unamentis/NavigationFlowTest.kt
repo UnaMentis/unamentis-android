@@ -36,6 +36,9 @@ class NavigationFlowTest {
     val hiltRule = HiltAndroidRule(this)
 
     @get:Rule(order = 1)
+    val skipOnboardingRule = SkipOnboardingRule()
+
+    @get:Rule(order = 2)
     val composeTestRule = createAndroidComposeRule<MainActivity>()
 
     companion object {

@@ -78,6 +78,52 @@
     <string name="settings_api_keys">API Keys</string>
     <string name="settings_help">Help</string>
     <string name="settings_about">About</string>
+    <string name="settings_about_desc">Version info, licenses, and support</string>
+    <string name="settings_debug_tools">Debug Tools</string>
+    <string name="settings_debug_desc">Diagnostics and troubleshooting</string>
+    <string name="settings_info_section">Information</string>
+
+    <!-- About Screen -->
+    <string name="about_tagline">Your AI-powered learning companion</string>
+    <string name="about_version">Version</string>
+    <string name="about_build">Build</string>
+    <string name="about_links_section">Links</string>
+    <string name="about_documentation">Documentation</string>
+    <string name="about_privacy_policy">Privacy Policy</string>
+    <string name="about_terms_of_service">Terms of Service</string>
+    <string name="about_open_source_licenses">Open Source Licenses</string>
+    <string name="about_support_section">Support</string>
+    <string name="about_contact_support">Contact Support</string>
+    <string name="about_support_email">support@unamentis.com</string>
+    <string name="about_copyright">2024 UnaMentis. All rights reserved.</string>
+    <string name="about_support_email_subject">UnaMentis Android Support (v%1$s)</string>
+
+    <!-- Debug Screen -->
+    <string name="debug_provider_connectivity">Provider Connectivity</string>
+    <string name="debug_audio_diagnostics">Audio Diagnostics</string>
+    <string name="debug_latency_test">Latency Test</string>
+    <string name="debug_cache_management">Cache Management</string>
+    <string name="debug_cache_size">Cache Size</string>
+    <string name="debug_device_info">Device Information</string>
+    <string name="debug_clear_cache">Clear Cache</string>
+    <string name="debug_cache_cleared">Cache cleared</string>
+    <string name="debug_test_connection">Test Connection</string>
+    <string name="debug_testing">Testing…</string>
+    <string name="debug_connected">Connected</string>
+    <string name="debug_disconnected">Disconnected</string>
+    <string name="debug_error">Error</string>
+    <string name="debug_device_model">Device Model</string>
+    <string name="debug_android_version">Android Version</string>
+    <string name="debug_sdk_version">SDK Version</string>
+    <string name="debug_device_tier">Device Tier</string>
+    <string name="debug_available_memory">Available Memory</string>
+    <string name="debug_app_version">App Version</string>
+    <string name="debug_build_information">Build Information</string>
+    <string name="debug_build_type">Build Type</string>
+    <string name="debug_application_id">Application ID</string>
+    <string name="debug_mode">Debug Mode</string>
+    <string name="debug_enabled">Enabled</string>
+    <string name="debug_disabled">Disabled</string>
     <string name="settings_version">Version</string>
     <string name="settings_configured">Configured</string>
     <string name="settings_not_configured">Not configured</string>
@@ -108,6 +154,22 @@
     <string name="search_curricula">Search curricula…</string>
     <string name="refresh">Refresh</string>
     <string name="cancel_download">Cancel Download</string>
+    <string name="curriculum_modules">Modules</string>
+
+    <!-- Modules Section -->
+    <string name="modules_section_title">Training Modules</string>
+    <string name="modules_section_subtitle">Specialized practice for competitions and exams</string>
+    <string name="module_knowledge_bowl_title">Knowledge Bowl</string>
+    <string name="module_knowledge_bowl_description">Academic competition prep across 12 subject domains</string>
+    <string name="module_kb_feature_domains">12 knowledge domains (Science, Math, Literature, History, and more)</string>
+    <string name="module_kb_feature_practice">Written and oral practice modes</string>
+    <string name="module_kb_feature_competition">Competition simulation with regional rules</string>
+    <string name="tap_to_start_practicing">Tap to start practicing</string>
+    <string name="coming_soon">Coming Soon</string>
+    <string name="coming_soon_badge">Soon</string>
+    <string name="module_sat_prep_title">SAT Preparation</string>
+    <string name="module_sat_prep_description">Comprehensive SAT practice and strategies</string>
+    <string name="cd_module_card">%1$s module. Double tap to open.</string>
 
     <!-- History Screen -->
     <string name="history_no_sessions">No sessions yet</string>
@@ -163,6 +225,14 @@
     <string name="shortcut_progress_long">View your learning progress</string>
     <string name="shortcut_todos_short">To-Dos</string>
     <string name="shortcut_todos_long">View your to-do list</string>
+
+    <!-- Google Assistant App Actions -->
+    <string name="assistant_feature_progress">progress</string>
+    <string name="assistant_feature_curriculum">curriculum</string>
+    <string name="assistant_feature_history">history</string>
+    <string name="assistant_feature_todo">to-do list</string>
+    <string name="assistant_feature_settings">settings</string>
+    <string name="assistant_status_progress">my progress</string>
 
     <!-- Widgets -->
     <string name="widget_progress_title">Learning Progress</string>
@@ -307,6 +377,8 @@
     </plurals>
 
     <!-- Knowledge Bowl Error Messages -->
+    <string name="kb_error_no_questions">No questions available</string>
+    <string name="kb_error_match_start_failed">Failed to start match</string>
     <string name="kb_error_failed_to_load_questions">Failed to load questions</string>
     <string name="kb_error_server_not_configured">Self-hosted server not configured</string>
     <string name="kb_error_server_returned">Server returned %1$d</string>
@@ -337,6 +409,220 @@
     <string name="cd_kb_speaking">Speaking</string>
     <string name="cd_kb_listening">Listening</string>
     <string name="cd_kb_tap_to_speak">Tap to speak</string>
+
+    <!-- Knowledge Bowl Match Simulation -->
+    <string name="kb_match_format_quick">Quick Match</string>
+    <string name="kb_match_format_half">Half Match</string>
+    <string name="kb_match_format_full">Full Match</string>
+    <string name="kb_opponent_beginner">Beginner</string>
+    <string name="kb_opponent_intermediate">Intermediate</string>
+    <string name="kb_opponent_advanced">Advanced</string>
+    <string name="kb_opponent_expert">Expert</string>
+    <string name="kb_match_simulation">Match Simulation</string>
+    <string name="kb_match_simulation_description">Compete against AI opponents in a full match</string>
+    <string name="kb_setup_match">Set Up Match</string>
+    <string name="kb_match_format">Match Format</string>
+    <string name="kb_opponent_strength">Opponent Strength</string>
+    <string name="kb_your_team">Your Team</string>
+    <string name="kb_start_match">Start Match</string>
+    <string name="kb_written_round">Written Round</string>
+    <string name="kb_oral_round">Oral Round</string>
+    <string name="kb_oral_round_n">Oral Round %d</string>
+    <string name="kb_round_review">Round Review</string>
+    <string name="kb_match_results">Match Results</string>
+    <string name="kb_scoreboard">Scoreboard</string>
+    <string name="kb_your_rank">Your Rank</string>
+    <string name="kb_rank_format">#%d</string>
+    <string name="kb_you_won">You Won!</string>
+    <string name="kb_your_performance">Your Performance</string>
+    <string name="kb_written_accuracy">Written Accuracy</string>
+    <string name="kb_oral_accuracy">Oral Accuracy</string>
+    <string name="kb_start_oral_rounds">Start Oral Rounds</string>
+    <string name="kb_next_round">Next Round</string>
+    <string name="kb_finish_match">Finish Match</string>
+    <string name="kb_buzz">Buzz!</string>
+    <string name="kb_buzzed_first">%s buzzed first!</string>
+    <string name="kb_you_buzzed_first">You buzzed first!</string>
+    <string name="kb_waiting_for_buzz">Waiting for buzz…</string>
+    <string name="kb_answer_question">Answer the question</string>
+    <string name="kb_opponent_answered">%s answered</string>
+    <string name="kb_rebound_opportunity">Rebound opportunity!</string>
+    <string name="kb_opponent_fallback">Opponent</string>
+    <string name="kb_format_description">%1$d written + %2$d oral rounds</string>
+    <string name="kb_points_display">%d pts</string>
+
+    <!-- Knowledge Bowl Conference Training -->
+    <string name="kb_conference_training">Conference Training</string>
+    <string name="kb_conference_training_description">Practice team discussion with time limits</string>
+    <string name="kb_hand_signals">Hand Signals</string>
+    <string name="kb_signal_confident">Confident</string>
+    <string name="kb_signal_unsure">Unsure</string>
+    <string name="kb_signal_pass">Pass</string>
+    <string name="kb_signal_wait">Wait</string>
+    <string name="kb_signal_answer">Answer</string>
+    <string name="kb_signal_agree">Agree</string>
+    <string name="kb_signal_disagree">Disagree</string>
+    <string name="kb_signal_confident_gesture">Thumbs up</string>
+    <string name="kb_signal_unsure_gesture">Flat hand wobble</string>
+    <string name="kb_signal_pass_gesture">Wave off</string>
+    <string name="kb_signal_wait_gesture">Raised finger</string>
+    <string name="kb_signal_answer_gesture">Point to self</string>
+    <string name="kb_signal_agree_gesture">Nod or thumbs sideways</string>
+    <string name="kb_signal_disagree_gesture">Subtle head shake</string>
+    <string name="kb_conference_efficiency">Conference Efficiency</string>
+    <string name="kb_fastest_time">Fastest Time</string>
+    <string name="kb_slowest_time">Slowest Time</string>
+    <string name="kb_timeouts">Timeouts</string>
+    <string name="kb_conference_rules">%1$s Conference Rules</string>
+    <string name="kb_time_limit">Time Limit</string>
+    <string name="kb_seconds_format">%1$s s</string>
+    <string name="kb_communication">Communication</string>
+    <string name="kb_hand_signals_only">Hand signals only</string>
+    <string name="kb_verbal_allowed">Verbal allowed</string>
+    <string name="kb_no_talking_warning">No talking during conference!</string>
+    <string name="kb_training_options">Training Options</string>
+    <string name="kb_progressive_difficulty">Progressive Difficulty</string>
+    <string name="kb_progressive_levels">Time limits: 15s → 12s → 10s → 8s</string>
+    <string name="kb_questions_count">Questions: %1$d</string>
+    <string name="kb_start_training">Start Training</string>
+    <string name="kb_practice_hand_signals">Practice Hand Signals</string>
+    <string name="kb_level_format">Level %1$d</string>
+    <string name="kb_time_limit_format">Time Limit: %1$ds</string>
+    <string name="kb_use_hand_signals">Use hand signals to confer</string>
+    <string name="kb_team_agreed_answer">Team Agreed - Answer</string>
+    <string name="kb_need_more_time">More Time</string>
+    <string name="kb_skip_question">Skip Question</string>
+    <string name="kb_signal_practice">Hand Signal Practice</string>
+    <string name="kb_learn_kb_signals">Learn the standard KB hand signals</string>
+    <string name="kb_scenario">Scenario:</string>
+    <string name="kb_what_signal">What signal would you use?</string>
+    <string name="kb_scenario_confident">You know the answer is \'Paris\' for certain</string>
+    <string name="kb_scenario_unsure">You think it might be \'Rome\' but aren\'t sure</string>
+    <string name="kb_scenario_pass">You have no idea and want to skip</string>
+    <string name="kb_scenario_wait">You\'re still processing the question</string>
+    <string name="kb_scenario_answer">You want to be the one to buzz in</string>
+    <string name="kb_scenario_agree">Your teammate suggests \'London\' and you agree</string>
+    <string name="kb_scenario_disagree">Your teammate suggests \'Berlin\' but you think it\'s wrong</string>
+    <string name="kb_back_to_training">Back to Training</string>
+    <string name="kb_back">Back</string>
+    <string name="kb_done">Done</string>
+    <string name="kb_training_settings">Training Settings</string>
+    <string name="kb_train_again">Train Again</string>
+    <string name="kb_final_level">Final Level</string>
+    <string name="kb_excellent">Excellent!</string>
+    <string name="kb_good_progress">Good Progress!</string>
+    <string name="kb_keep_practicing">Keep Practicing!</string>
+    <string name="kb_correct_of_total">%1$d/%2$d correct</string>
+    <string name="kb_practice_quick_team_decisions">Practice quick team decisions within the time limit</string>
+
+    <!-- Knowledge Bowl Rebound Training -->
+    <string name="kb_rebound_training">Rebound Training</string>
+    <string name="kb_rebound_training_subtitle">Capitalize on mistakes</string>
+    <string name="kb_rebound_training_description">Practice answering after opponent mistakes</string>
+    <string name="kb_rebound_description">Practice capitalizing on opponent misses</string>
+    <string name="kb_how_rebounds_work">How Rebounds Work</string>
+    <string name="kb_rebound_step_1">Opponent buzzes and answers</string>
+    <string name="kb_rebound_step_2">If wrong, it\'s a rebound opportunity</string>
+    <string name="kb_rebound_step_3">Decide: buzz for points or hold strategically</string>
+    <string name="kb_rebound_key_strategy">Key Strategy: Don\'t buzz unless you\'re confident. A wrong rebound costs points!</string>
+    <string name="kb_opponent_accuracy_value">Opponent Accuracy: %1$s</string>
+    <string name="kb_lower_more_rebounds">Lower = more rebound opportunities</string>
+    <string name="kb_rebound_probability_value">Rebound Probability: %1$s</string>
+    <string name="kb_chance_opponent_buzzes">Chance opponent buzzes first</string>
+    <string name="kb_show_opponent_answer">Show Opponent\'s Answer</string>
+    <string name="kb_questions_count_label">Questions: %1$d</string>
+    <string name="kb_view_practice_scenarios">View Practice Scenarios</string>
+    <string name="kb_practice_scenarios">Practice Scenarios</string>
+    <string name="kb_vs_opponent">vs %1$s</string>
+    <string name="kb_question_progress">%1$d/%2$d</string>
+    <string name="kb_opponent_buzzed">%1$s BUZZED!</string>
+    <string name="kb_their_answer">Their answer:</string>
+    <string name="kb_opponent_incorrect">Opponent answered incorrectly!</string>
+    <string name="kb_opponent_got_wrong">%1$s got it WRONG</string>
+    <string name="kb_rebound_opportunity_alert">REBOUND OPPORTUNITY!</string>
+    <string name="kb_rebound_buzz">BUZZ!</string>
+    <string name="kb_hold_dont_know">Hold (Don\'t know)</string>
+    <string name="kb_rebound_time_remaining">Time remaining: %1$ss</string>
+    <string name="kb_rebound_your_turn">Your turn to answer!</string>
+    <string name="kb_i_got_it_right">I Got It Right</string>
+    <string name="kb_i_got_it_wrong">I Got It Wrong</string>
+    <string name="kb_correct_answer_label">Correct answer:</string>
+    <string name="kb_rebound_success">Rebound Success</string>
+    <string name="kb_rebound_master">Rebound Master!</string>
+    <string name="kb_good_instincts">Good Instincts!</string>
+    <string name="kb_rebounds_correct_of_taken">%1$d/%2$d rebounds correct</string>
+    <string name="kb_total_points">Total Points</string>
+    <string name="kb_rebound_accuracy">Rebound Accuracy</string>
+    <string name="kb_opportunities">Opportunities</string>
+    <string name="kb_rebounds_taken">Rebounds Taken</string>
+    <string name="kb_strategic_decisions">Strategic Decisions</string>
+    <string name="kb_strategic_holds">Strategic Holds</string>
+    <string name="kb_avg_response">Avg Response</string>
+    <string name="kb_rebound_buzzed_correctly">Buzzed &amp; Correct</string>
+    <string name="kb_rebound_buzzed_incorrectly">Buzzed &amp; Wrong</string>
+    <string name="kb_rebound_strategic_hold">Strategic Hold</string>
+    <string name="kb_rebound_missed_opportunity">Missed Opportunity</string>
+    <string name="kb_rebound_correctly_ignored">Correctly Ignored</string>
+
+    <!-- Knowledge Bowl Rebound Recommendations -->
+    <string name="kb_rebound_rec_excellent">Excellent rebound instincts! You\'re capitalizing on opponent mistakes effectively.</string>
+    <string name="kb_rebound_rec_more_aggressive">Try to be more aggressive on rebounds. You\'re missing opportunities to score.</string>
+    <string name="kb_rebound_rec_focus_confidence">Focus on only buzzing when confident. A wrong rebound costs points.</string>
+    <string name="kb_rebound_rec_good_balance">Good balance between aggression and caution. Keep practicing!</string>
+
+    <!-- Knowledge Bowl Rebound Feedback -->
+    <string name="kb_rebound_feedback_strategic_hold">Strategic Hold</string>
+    <string name="kb_rebound_feedback_hold_message">Good decision to hold when unsure. Correct answer: %1$s</string>
+    <string name="kb_rebound_feedback_correct">Correct!</string>
+    <string name="kb_rebound_feedback_great_rebound">Great rebound! You capitalized on their mistake.</string>
+    <string name="kb_rebound_feedback_nice_answer">Nice answer!</string>
+    <string name="kb_rebound_feedback_incorrect">Incorrect</string>
+    <string name="kb_rebound_feedback_answer_was">The answer was: %1$s</string>
+    <string name="kb_rebound_feedback_opponent_got_it">%1$s Got It!</string>
+    <string name="kb_rebound_feedback_no_rebound">No rebound opportunity. Answer: %1$s</string>
+    <string name="kb_rebound_feedback_missed">Missed Opportunity</string>
+    <string name="kb_rebound_feedback_time_ran_out">Time ran out! Correct answer: %1$s</string>
+
+    <!-- Knowledge Bowl Rebound Practice Scenarios -->
+    <string name="kb_practice_scenario_1_situation">Opponent answered \'Great Gatsby\' for a Hemingway novel question.</string>
+    <string name="kb_practice_scenario_1_tip">Clear rebound opportunity. Their answer reveals the category.</string>
+    <string name="kb_practice_scenario_2_situation">Opponent buzzed immediately and got it correct.</string>
+    <string name="kb_practice_scenario_2_tip">No rebound here. Process the question for future reference.</string>
+    <string name="kb_practice_scenario_3_situation">State capitals: Opponent said \'Sacramento\' for Nevada.</string>
+    <string name="kb_practice_scenario_3_tip">Strong rebound opportunity. Geography mix-ups are common!</string>
+    <string name="kb_practice_scenario_4_situation">Math question. Opponent answered \'12\' but you calculated \'16\'.</string>
+    <string name="kb_practice_scenario_4_tip">Be confident in your calculation. Take the rebound if sure.</string>
+    <string name="kb_practice_scenario_5_situation">Opponent hesitated before answering incorrectly.</string>
+    <string name="kb_practice_scenario_5_tip">Hesitation signals uncertainty. Good rebound opportunity.</string>
+
+    <!-- Knowledge Bowl Domain Drill -->
+    <string name="kb_domain_drill">Domain Drill</string>
+    <string name="kb_domain_drill_description">Focus on specific knowledge domains</string>
+    <string name="kb_select_domain">Select Domain</string>
+    <string name="kb_difficulty_range">Difficulty Range</string>
+    <string name="kb_start_drill">Start Drill</string>
+    <string name="kb_weak_areas">Weak Areas</string>
+    <string name="kb_practice_weak_areas">Practice your weak areas</string>
+    <string name="kb_end_drill">End</string>
+    <string name="kb_time_pressure_mode">Time Pressure Mode</string>
+    <string name="kb_seconds_per_question">%1$d seconds per question</string>
+    <string name="kb_type_your_answer">Type your answer…</string>
+    <string name="kb_press_enter_to_submit">Press Enter to submit</string>
+    <string name="kb_source_label">Source: %1$s</string>
+    <string name="kb_drill_complete">Drill Complete!</string>
+    <string name="kb_best_streak">Best Streak</string>
+    <string name="kb_drill_difficulty">Difficulty</string>
+    <string name="kb_seconds_value">%.1fs</string>
+    <string name="kb_question_breakdown">Question Breakdown</string>
+    <string name="kb_drill_again">Drill Again</string>
+    <string name="kb_choose_different_domain">Choose Different Domain</string>
+
+    <!-- Knowledge Bowl Competition Training Section -->
+    <string name="kb_competition_training">Competition Training</string>
+    <string name="kb_competition_training_subtitle">Advanced training modes</string>
+    <string name="kb_match_simulation_subtitle">vs AI opponents</string>
+    <string name="kb_conference_training_subtitle">Team discussion</string>
+    <string name="cd_competition_training_button">%1$s, %2$s</string>
 
     <!-- Analytics Screen -->
     <string name="analytics_title">Analytics</string>
@@ -369,6 +655,37 @@
     <string name="analytics_label_tts_ttfb">TTS TTFB</string>
     <string name="analytics_label_e2e">E2E</string>
     <string name="analytics_cost_legend_format">%1$s: %2$s</string>
+
+    <!-- GLM-ASR On-Device STT -->
+    <string name="settings_glm_asr_on_device">GLM-ASR On-Device</string>
+    <string name="settings_glm_asr_on_device_desc">High-quality on-device speech recognition using GLM-ASR-Nano</string>
+    <string name="settings_glm_asr_models">GLM-ASR Models</string>
+    <string name="settings_glm_asr_models_desc">On-device speech recognition models (~2.4GB)</string>
+    <string name="settings_glm_asr_status_ready">Ready</string>
+    <string name="settings_glm_asr_status_not_downloaded">Not Downloaded</string>
+    <string name="settings_glm_asr_status_downloading">Downloading…</string>
+    <string name="settings_glm_asr_status_loading">Loading…</string>
+    <string name="settings_glm_asr_status_error">Error</string>
+    <string name="settings_glm_asr_download_models">Download Models</string>
+    <string name="settings_glm_asr_delete_models">Delete Models</string>
+    <string name="settings_glm_asr_delete_models_title">Delete GLM-ASR Models?</string>
+    <string name="settings_glm_asr_delete_models_message">This will delete all GLM-ASR model files (~2.4GB). You can re-download them later.</string>
+    <string name="settings_glm_asr_model_whisper_encoder">Whisper Encoder</string>
+    <string name="settings_glm_asr_model_audio_adapter">Audio Adapter</string>
+    <string name="settings_glm_asr_model_embed_head">Embed Head</string>
+    <string name="settings_glm_asr_model_decoder">Text Decoder</string>
+    <string name="settings_glm_asr_download_progress">Downloading %1$s: %2$d%%</string>
+    <string name="settings_glm_asr_device_not_supported">Your device doesn\'t support GLM-ASR on-device (requires 8GB+ RAM and Android 12+)</string>
+    <string name="settings_glm_asr_features_title">Features</string>
+    <string name="settings_glm_asr_feature_zero_cost">Zero cost - no API fees</string>
+    <string name="settings_glm_asr_feature_privacy">Complete privacy - audio never leaves device</string>
+    <string name="settings_glm_asr_feature_offline">Works offline</string>
+    <string name="settings_glm_asr_feature_high_quality">High-quality transcription</string>
+    <string name="settings_glm_asr_requirements_title">Requirements</string>
+    <string name="settings_glm_asr_requirement_ram">8GB+ RAM (12GB recommended)</string>
+    <string name="settings_glm_asr_requirement_android">Android 12 or later</string>
+    <string name="settings_glm_asr_requirement_storage">~2.4GB storage for models</string>
+    <string name="provider_glm_asr_on_device">GLM-ASR On-Device</string>
 
     <!-- On-Device LLM Settings -->
     <string name="settings_on_device_ai">On-Device AI</string>
@@ -598,7 +915,6 @@
     <string name="kb_points_format">+%1$d</string>
     <string name="kb_domain_mastery_format">%1$s: %2$s</string>
     <string name="kb_correct_total_format">%1$s/%2$s</string>
-    <string name="kb_seconds_format">%1$ss</string>
     <string name="kb_domain_separator"> • </string>
     <string name="cd_response_time">Response time</string>
 
@@ -617,7 +933,7 @@
     <string name="viewer_page_indicator">%1$d / %2$d</string>
 
     <!-- KBSettingsScreen unit strings -->
-    <string name="kb_questions_count">%1$d questions</string>
+    <string name="kb_questions_count_settings">%1$d questions</string>
     <string name="kb_minutes_count">%1$d minutes</string>
     <string name="kb_points_per_correct">%1$d per correct</string>
     <string name="kb_seconds_count">%1$d seconds</string>
@@ -687,10 +1003,40 @@
     <string name="settings_error_label">Error: %1$s</string>
     <string name="settings_not_supported_message">Your device doesn\'t meet the minimum requirements for on-device AI. Cloud-based AI will be used instead.</string>
     <string name="settings_models_storage_hint">Models are stored locally and can be deleted anytime to free space.</string>
+
+    <!-- LLM Backend type labels -->
+    <string name="settings_backend_npu">NPU</string>
+    <string name="settings_backend_gpu">GPU</string>
+    <string name="settings_backend_cpu">CPU</string>
+    <string name="settings_high_performance_models">High-Performance Models</string>
+    <string name="settings_high_performance_models_desc">Optimized models using hardware acceleration (NPU/GPU)</string>
+    <string name="settings_legacy_models">Legacy Models</string>
+    <string name="settings_backend_speed">%1$d tok/sec</string>
     <string name="cd_success">Success</string>
     <string name="cd_error">Error</string>
     <string name="cd_delete_model">Delete model</string>
     <string name="cd_download_model">Download model</string>
+
+    <!-- GLM-ASR On-Device STT Settings (additional) -->
+    <string name="settings_on_device_stt">On-Device Speech-to-Text</string>
+    <string name="settings_glm_asr_desc">Fully private speech recognition that never leaves your device</string>
+    <string name="settings_glm_asr_features">Zero cost • Complete privacy • Works offline</string>
+    <string name="settings_glm_asr_not_supported">Your device does not meet the requirements for on-device STT (8GB+ RAM, Android 12+)</string>
+    <string name="settings_glm_asr_total_size">Total download: ~2.4GB</string>
+    <string name="settings_glm_asr_download_all">Download All Models</string>
+    <string name="settings_glm_asr_delete_all">Delete All Models</string>
+    <string name="settings_glm_asr_ready">On-device STT ready</string>
+    <string name="settings_glm_asr_partial">Partial download (%1$d/%2$d models)</string>
+
+    <!-- Model display names -->
+    <string name="model_name_llama_1b_gguf">Llama 3.2 1B (Fast)</string>
+    <string name="model_name_gemma_2b_task">Gemma 2B (GPU)</string>
+    <string name="model_name_llama_1b_pte">Llama 3.2 1B (NPU)</string>
+    <string name="model_name_llama_3b_pte">Llama 3.2 3B (NPU)</string>
+    <string name="model_name_whisper_encoder">Whisper Encoder</string>
+    <string name="model_name_audio_adapter">Audio Adapter</string>
+    <string name="model_name_embed_head">Embed Head</string>
+    <string name="model_name_text_decoder">Text Decoder</string>
 
     <!-- Recording Mode options -->
     <string name="settings_recording_mode_vad">Auto (VAD)</string>
@@ -717,6 +1063,19 @@
     <string name="provider_anthropic">Anthropic</string>
     <string name="provider_android">Android</string>
     <string name="provider_patchpanel">PatchPanel</string>
+    <string name="provider_android_tts">Android TTS</string>
+    <string name="provider_android_stt">Android STT</string>
+    <string name="provider_chatterbox">Chatterbox</string>
+    <string name="provider_deepgram_aura">DeepgramAura</string>
+    <string name="provider_assemblyai">AssemblyAI</string>
+    <string name="provider_groq_whisper">GroqWhisper</string>
+    <string name="provider_glm_asr">GLMASR</string>
+    <string name="provider_on_device_llm">OnDevice</string>
+    <string name="provider_mediapipe">MediaPipe</string>
+    <string name="provider_executorch">ExecuTorch</string>
+
+    <!-- LLM Backend display names -->
+    <string name="backend_mediapipe_gpu">MediaPipe (GPU)</string>
 
     <!-- Onboarding accessibility -->
     <string name="cd_skip_onboarding">Skip onboarding</string>
@@ -772,4 +1131,71 @@
     <!-- Export share intent -->
     <string name="export_share_subject">UnaMentis Session Export</string>
     <string name="export_share_chooser_title">Share Session Export</string>
+
+    <!-- Server Settings Screen -->
+    <string name="settings_self_hosted_desc">Configure local servers for LLM, STT, and TTS</string>
+    <string name="server_settings_title">Self-Hosted Servers</string>
+    <string name="server_settings_self_hosted_mode">Self-Hosted Mode</string>
+    <string name="server_settings_servers">Servers</string>
+    <string name="server_settings_add">Add</string>
+    <string name="server_settings_no_servers">No servers configured</string>
+    <string name="server_settings_servers_footer">Servers are checked automatically every 30 seconds.</string>
+    <string name="server_settings_quick_setup">Quick Setup</string>
+    <string name="server_settings_discover">Discover Local Servers</string>
+    <string name="server_settings_scan">Scan</string>
+    <string name="server_settings_add_local_mac">Add Local Mac Server</string>
+    <string name="server_settings_quick_setup_footer">Run the setup script on your Mac to set up the UnaMentis server stack.</string>
+    <string name="server_settings_refresh">Refresh</string>
+    <string name="server_settings_test_connection">Test connection</string>
+    <string name="server_settings_delete">Delete</string>
+    <string name="server_settings_status_healthy">Healthy</string>
+    <string name="server_settings_status_degraded">Degraded</string>
+    <string name="server_settings_status_unhealthy">Unhealthy</string>
+    <string name="server_settings_status_checking">Checking</string>
+    <string name="server_settings_status_unknown">Unknown</string>
+    <string name="server_settings_add_server">Add Server</string>
+    <string name="server_settings_edit_server">Edit Server</string>
+    <string name="server_settings_name">Name</string>
+    <string name="server_settings_name_hint">e.g., My Mac Server</string>
+    <string name="server_settings_host">Host</string>
+    <string name="server_settings_host_hint">e.g., 192.168.1.100 or macbook.local</string>
+    <string name="server_settings_port">Port</string>
+    <string name="server_settings_type">Server Type</string>
+    <string name="server_settings_delete_server_title">Delete Server?</string>
+    <string name="server_settings_delete_server_message">Remove %1$s from your server list?</string>
+    <string name="server_settings_discovered_servers">Discovered Servers</string>
+    <string name="server_settings_discovered_message">Found %1$d server(s). Add them to your configuration?</string>
+    <string name="server_settings_add_all">Add All</string>
+
+    <!-- Server Types -->
+    <string name="server_type_unamentis_gateway">UnaMentis Gateway</string>
+    <string name="server_type_ollama">Ollama</string>
+    <string name="server_type_whisper">Whisper STT</string>
+    <string name="server_type_piper">Piper TTS</string>
+    <string name="server_type_vibevoice">VibeVoice TTS</string>
+    <string name="server_type_chatterbox">Chatterbox TTS</string>
+    <string name="server_type_llama_cpp">llama.cpp</string>
+    <string name="server_type_vllm">vLLM</string>
+    <string name="server_type_custom">Custom</string>
+
+    <!-- Error Messages -->
+    <string name="error_tts_init_failed">TTS initialization failed. Please try again.</string>
+    <string name="error_no_questions_available">No questions available</string>
+    <string name="error_failed_start_training">Failed to start training</string>
+
+    <!-- Accessibility: external links and loading -->
+    <string name="cd_open_external_link">Opens in external app</string>
+    <string name="cd_loading">Loading</string>
+    <string name="error_no_app_available">No app available to handle this action</string>
+
+    <!-- Match progress -->
+    <string name="kb_progress_format">%1$d / %2$d</string>
+
+    <!-- Opponent Team Names -->
+    <string name="kb_team_alpha">Team Alpha</string>
+    <string name="kb_team_beta">Team Beta</string>
+    <string name="kb_team_gamma">Team Gamma</string>
+
+    <!-- STT Service -->
+    <string name="stt_stub_transcript">[Stub: Audio transcription would appear here]</string>
 </resources>

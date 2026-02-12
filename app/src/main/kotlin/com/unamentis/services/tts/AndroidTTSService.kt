@@ -3,6 +3,7 @@ package com.unamentis.services.tts
 import android.content.Context
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import com.unamentis.R
 import com.unamentis.data.model.TTSAudioChunk
 import com.unamentis.data.model.TTSService
 import kotlinx.coroutines.channels.awaitClose
@@ -37,33 +38,60 @@ class AndroidTTSService(
     private val context: Context,
     private val language: Locale = Locale.US,
 ) : TTSService {
-    override val providerName: String = "Android TTS"
+    override val providerName: String = context.getString(R.string.provider_android_tts)
 
+    @Volatile
     private var tts: TextToSpeech? = null
+
+    @Volatile
     private var isInitialized = false
+
+    @Volatile
+    private var initializationInProgress = false
+    private val initLock = Object()
+    private val initCallbacks = mutableListOf<() -> Unit>()
 
     /**
      * Initialize TTS engine.
      * Should be called before synthesize().
      */
     fun initialize(onReady: (() -> Unit)? = null) {
+        synchronized(initLock) {
+            if (isInitialized) {
+                onReady?.invoke()
+                return
+            }
+            if (onReady != null) {
+                initCallbacks.add(onReady)
+            }
+            if (initializationInProgress) {
+                return
+            }
+            initializationInProgress = true
+        }
+
         tts =
             TextToSpeech(context) { status ->
-                if (status == TextToSpeech.SUCCESS) {
-                    val result = tts?.setLanguage(language)
-                    if (result == TextToSpeech.LANG_MISSING_DATA ||
-                        result == TextToSpeech.LANG_NOT_SUPPORTED
-                    ) {
-                        android.util.Log.e("AndroidTTS", "Language not supported: $language")
-                        isInitialized = false
+                synchronized(initLock) {
+                    initializationInProgress = false
+                    if (status == TextToSpeech.SUCCESS) {
+                        val result = tts?.setLanguage(language)
+                        if (result == TextToSpeech.LANG_MISSING_DATA ||
+                            result == TextToSpeech.LANG_NOT_SUPPORTED
+                        ) {
+                            android.util.Log.e("AndroidTTS", "Language not supported: $language")
+                            isInitialized = false
+                        } else {
+                            isInitialized = true
+                            android.util.Log.i("AndroidTTS", "TTS initialized successfully")
+                        }
                     } else {
-                        isInitialized = true
-                        android.util.Log.i("AndroidTTS", "TTS initialized successfully")
-                        onReady?.invoke()
+                        android.util.Log.e("AndroidTTS", "TTS initialization failed")
+                        isInitialized = false
                     }
-                } else {
-                    android.util.Log.e("AndroidTTS", "TTS initialization failed")
-                    isInitialized = false
+                    // Notify all waiting callbacks
+                    initCallbacks.forEach { it.invoke() }
+                    initCallbacks.clear()
                 }
             }
     }
@@ -74,23 +102,48 @@ class AndroidTTSService(
      * Note: Android TTS doesn't support true streaming. This implementation
      * synthesizes to a file first, then reads it back as chunks.
      *
+     * Auto-initializes if not already initialized.
+     *
      * @param text Text to synthesize
      * @return Flow of audio chunks
      */
     override fun synthesize(text: String): Flow<TTSAudioChunk> =
         callbackFlow {
+            // Auto-initialize if needed
             if (!isInitialized || tts == null) {
-                android.util.Log.e("AndroidTTS", "TTS not initialized")
-                close(IllegalStateException("TTS not initialized. Call initialize() first."))
-                return@callbackFlow
+                android.util.Log.i("AndroidTTS", "Auto-initializing TTS...")
+                val initComplete = kotlinx.coroutines.CompletableDeferred<Boolean>()
+
+                initialize {
+                    initComplete.complete(isInitialized)
+                }
+
+                // Wait for initialization (with timeout)
+                val initialized =
+                    kotlinx.coroutines.withTimeoutOrNull(5000L) {
+                        initComplete.await()
+                    } ?: false
+
+                if (!initialized) {
+                    android.util.Log.e("AndroidTTS", "TTS initialization failed or timed out")
+                    close(IllegalStateException(context.getString(R.string.error_tts_init_failed)))
+                    return@callbackFlow
+                }
+                android.util.Log.i("AndroidTTS", "TTS auto-initialized successfully")
             }
+
+            val engine =
+                tts ?: run {
+                    close(IllegalStateException(context.getString(R.string.error_tts_init_failed)))
+                    return@callbackFlow
+                }
 
             val utteranceId = UUID.randomUUID().toString()
             val audioFile = File(context.cacheDir, "tts_$utteranceId.wav")
             val startTime = System.currentTimeMillis()
             var isFirstChunk = true
 
-            tts?.setOnUtteranceProgressListener(
+            engine.setOnUtteranceProgressListener(
                 object : UtteranceProgressListener() {
                     override fun onStart(utteranceId: String) {
                         android.util.Log.i("AndroidTTS", "Synthesis started")
@@ -158,7 +211,7 @@ class AndroidTTSService(
             )
 
             // Start synthesis to file
-            val result = tts?.synthesizeToFile(text, null, audioFile, utteranceId)
+            val result = engine.synthesizeToFile(text, null, audioFile, utteranceId)
             if (result != TextToSpeech.SUCCESS) {
                 android.util.Log.e("AndroidTTS", "Failed to start synthesis")
                 close(Exception("Failed to start TTS synthesis"))

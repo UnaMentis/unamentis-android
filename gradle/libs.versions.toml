@@ -35,6 +35,9 @@ tensorflowLite = "2.16.1"
 tensorflowLiteGpu = "2.16.1"
 onnxRuntime = "1.17.0"
 
+# MediaPipe
+mediapipe = "0.10.32"
+
 # Audio
 oboe = "1.8.0"
 
@@ -116,6 +119,9 @@ tensorflow-lite-gpu = { group = "org.tensorflow", name = "tensorflow-lite-gpu", 
 
 # ONNX Runtime (Silero VAD)
 onnxruntime-android = { group = "com.microsoft.onnxruntime", name = "onnxruntime-android", version.ref = "onnxRuntime" }
+
+# MediaPipe LLM Inference (GPU acceleration)
+mediapipe-tasks-genai = { group = "com.google.mediapipe", name = "tasks-genai", version.ref = "mediapipe" }
 
 # Audio (Oboe - low-latency native audio)
 oboe = { group = "com.google.oboe", name = "oboe", version.ref = "oboe" }

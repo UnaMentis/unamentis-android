@@ -128,6 +128,15 @@ data class UserSession(
 // =============================================================================
 
 /**
+ * Response wrapper for GET /api/curricula.
+ * The server returns {"curricula": [...]} instead of a direct array.
+ */
+@Serializable
+data class CurriculaResponse(
+    val curricula: List<CurriculumSummary>,
+)
+
+/**
  * Summary of a curriculum (returned by GET /api/curricula).
  */
 @Serializable

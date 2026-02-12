@@ -63,26 +63,6 @@ class ServerConfigManager
         @ApplicationContext private val context: Context,
         private val client: OkHttpClient,
     ) {
-        companion object {
-            private const val TAG = "ServerConfigManager"
-            private const val PREFS_NAME = "unamentis_server_configs"
-            private const val KEY_CONFIGS = "server_configs"
-            private const val HEALTH_CHECK_INTERVAL_MS = 30_000L
-            private const val HEALTH_CHECK_TIMEOUT_MS = 5_000L
-
-            // Common ports to probe during auto-discovery
-            private val DISCOVERY_PORTS =
-                listOf(
-                    8000 to ServerType.UNAMENTIS_GATEWAY,
-                    11434 to ServerType.OLLAMA,
-                    9000 to ServerType.WHISPER,
-                    5002 to ServerType.PIPER,
-                    8880 to ServerType.VIBE_VOICE,
-                    8001 to ServerType.CHATTERBOX,
-                    8080 to ServerType.LLAMA_CPP,
-                )
-        }
-
         private val json =
             Json {
                 ignoreUnknownKeys = true
@@ -197,6 +177,63 @@ class ServerConfigManager
                 .filter { it.isUsable() }
                 .minByOrNull { it.healthStatus.ordinal }
                 ?.let { "${it.baseUrl}/v1/audio/speech" }
+
+        /**
+         * Get the management server (UnaMentis Gateway) base URL.
+         *
+         * Returns the base URL of the first healthy UnaMentis Gateway server,
+         * or the default emulator URL (10.0.2.2:8766) if none configured.
+         */
+        fun getManagementServerUrl(): String {
+            val gatewayServers =
+                _servers.value.filter {
+                    it.type == ServerType.UNAMENTIS_GATEWAY && it.enabled
+                }
+            // Prefer healthy servers, fall back to any enabled gateway
+            val usableServer =
+                gatewayServers
+                    .filter { it.healthStatus.isUsable() }
+                    .minByOrNull { it.healthStatus.ordinal }
+                    ?: gatewayServers.firstOrNull()
+
+            return usableServer?.baseUrl ?: DEFAULT_MANAGEMENT_URL
+        }
+
+        /**
+         * Get the WebSocket URL for the management server.
+         *
+         * Converts the HTTP URL to a WebSocket URL (ws://).
+         */
+        fun getManagementWebSocketUrl(): String {
+            val httpUrl = getManagementServerUrl()
+            return httpUrl.replace("http://", "ws://")
+        }
+
+        companion object {
+            private const val TAG = "ServerConfigManager"
+            private const val PREFS_NAME = "unamentis_server_configs"
+            private const val KEY_CONFIGS = "server_configs"
+            private const val HEALTH_CHECK_INTERVAL_MS = 30_000L
+            private const val HEALTH_CHECK_TIMEOUT_MS = 5_000L
+
+            /** Default management URL for Android emulator */
+            const val DEFAULT_MANAGEMENT_URL = "http://10.0.2.2:8766"
+
+            /** Default log server URL for Android emulator */
+            const val DEFAULT_LOG_SERVER_URL = "http://10.0.2.2:8765"
+
+            // Common ports to probe during auto-discovery
+            private val DISCOVERY_PORTS =
+                listOf(
+                    8766 to ServerType.UNAMENTIS_GATEWAY,
+                    11434 to ServerType.OLLAMA,
+                    9000 to ServerType.WHISPER,
+                    5002 to ServerType.PIPER,
+                    8880 to ServerType.VIBE_VOICE,
+                    8001 to ServerType.CHATTERBOX,
+                    8080 to ServerType.LLAMA_CPP,
+                )
+        }
 
         /**
          * Start periodic health monitoring.

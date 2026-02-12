@@ -1,6 +1,5 @@
 package com.unamentis.modules.knowledgebowl.data.model
 
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
@@ -14,7 +13,6 @@ import kotlinx.serialization.Serializable
 data class KBAnswer(
     val primary: String,
     val acceptable: List<String>? = null,
-    @SerialName("answer_type")
     val answerType: KBAnswerType = KBAnswerType.TEXT,
 ) {
     /**

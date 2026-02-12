@@ -14,6 +14,9 @@ local.properties
 # Claude Code settings (contains machine-specific paths)
 .claude/settings.json
 
+# Kotlin compiler sessions
+.kotlin/
+
 # Android Studio
 *.iml
 .idea/
@@ -82,6 +85,10 @@ docs/*COMPLETION*.md
 # Internal status tracking (compliance reviews, implementation tracking)
 docs/SPECIFICATION_COMPLIANCE_REVIEW.md
 docs/IMPLEMENTATION_STATUS.md
+
+# Business strategy and confidential documents
+docs/REVENUE_ANALYSIS.md
+docs/BUSINESS_*.md
 
 # Internal Claude skills (team-specific tooling)
 .claude/skills/comms/

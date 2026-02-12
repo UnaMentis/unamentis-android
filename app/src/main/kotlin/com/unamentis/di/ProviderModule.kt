@@ -1,10 +1,12 @@
 package com.unamentis.di
 
 import android.content.Context
+import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import com.unamentis.core.config.ProviderConfig
 import com.unamentis.core.config.ProviderDataStore
+import com.unamentis.core.config.ServerConfigManager
 import com.unamentis.core.device.DeviceCapabilityDetector
 import com.unamentis.core.health.HealthMonitorConfig
 import com.unamentis.core.health.ProviderHealthMonitor
@@ -12,12 +14,18 @@ import com.unamentis.data.model.LLMService
 import com.unamentis.data.model.STTService
 import com.unamentis.data.model.TTSService
 import com.unamentis.services.llm.AnthropicLLMService
+import com.unamentis.services.llm.ExecuTorchLLMService
+import com.unamentis.services.llm.LLMBackend
+import com.unamentis.services.llm.LLMBackendSelector
+import com.unamentis.services.llm.MediaPipeLLMService
 import com.unamentis.services.llm.ModelDownloadManager
 import com.unamentis.services.llm.OnDeviceLLMService
 import com.unamentis.services.llm.OpenAILLMService
 import com.unamentis.services.llm.PatchPanelService
+import com.unamentis.services.llm.SelfHostedLLMService
 import com.unamentis.services.stt.AndroidSTTService
 import com.unamentis.services.stt.DeepgramSTTService
+import com.unamentis.services.stt.GLMASROnDeviceSTTService
 import com.unamentis.services.stt.STTProviderPriority
 import com.unamentis.services.stt.STTProviderRegistration
 import com.unamentis.services.stt.STTProviderRouter
@@ -128,6 +136,30 @@ object ProviderModule {
         return AndroidSTTService(context)
     }
 
+    /**
+     * Provide GLM-ASR On-Device STT service.
+     *
+     * Uses GLM-ASR-Nano-2512 for fully on-device speech recognition.
+     * Features:
+     * - Zero cost (no API fees)
+     * - Complete privacy (audio never leaves device)
+     * - Works offline
+     *
+     * Requirements:
+     * - 8GB+ RAM (12GB recommended)
+     * - Android 12+ (API 31+)
+     * - ~2.4GB storage for models
+     */
+    @Provides
+    @Singleton
+    @Named("GLMASROnDeviceSTT")
+    fun provideGLMASROnDeviceSTTService(
+        @ApplicationContext context: Context,
+        deviceCapabilityDetector: DeviceCapabilityDetector,
+    ): GLMASROnDeviceSTTService {
+        return GLMASROnDeviceSTTService(context, deviceCapabilityDetector)
+    }
+
     // TTS Service Providers
 
     /**
@@ -187,6 +219,49 @@ object ProviderModule {
     }
 
     /**
+     * Provide Ollama/Self-Hosted LLM service.
+     *
+     * This is an optional provider that returns an LLMService if:
+     * 1. Self-hosted mode is enabled in settings
+     * 2. A server IP is configured
+     * 3. An LLM-capable server is discovered and healthy
+     *
+     * Returns null if not configured or unavailable.
+     * The service connects to Ollama (port 11434) or UnaMentis Gateway (port 8766).
+     */
+    @Provides
+    @Singleton
+    @Named("OllamaLLM")
+    fun provideOllamaLLMService(
+        serverConfigManager: ServerConfigManager,
+        config: ProviderConfig,
+        client: OkHttpClient,
+    ): LLMService? {
+        // Only enable if self-hosted is enabled in settings
+        if (!config.isSelfHostedEnabled()) {
+            Log.i("ProviderModule", "Self-hosted LLM disabled in settings")
+            return null
+        }
+
+        // Try auto-discovery from ServerConfigManager
+        val model = config.getSelectedOllamaModel()
+        val service =
+            SelfHostedLLMService.autoDiscover(
+                serverConfigManager = serverConfigManager,
+                model = model,
+                client = client,
+            )
+
+        if (service != null) {
+            Log.i("ProviderModule", "Ollama provider discovered: $model")
+        } else {
+            Log.i("ProviderModule", "No Ollama server available")
+        }
+
+        return service
+    }
+
+    /**
      * Provide OnDevice LLM service using llama.cpp.
      *
      * This provides fully offline LLM inference using:
@@ -204,16 +279,92 @@ object ProviderModule {
         return OnDeviceLLMService(context)
     }
 
+    // ==========================================
+    // High-Performance LLM Backends
+    // ==========================================
+
+    /**
+     * Provide MediaPipe LLM service for GPU-accelerated inference.
+     *
+     * Uses Google's MediaPipe LLM Inference API with OpenCL GPU acceleration.
+     * Performance: 20-50 tok/sec on high-end devices.
+     */
+    @Provides
+    @Singleton
+    fun provideMediaPipeLLMService(
+        @ApplicationContext context: Context,
+    ): MediaPipeLLMService {
+        return MediaPipeLLMService(context)
+    }
+
+    /**
+     * Provide ExecuTorch LLM service for Qualcomm NPU acceleration.
+     *
+     * Uses PyTorch ExecuTorch with Qualcomm AI Engine Direct (QNN) backend.
+     * Performance: 50+ tok/sec on Snapdragon 8 Gen2+ devices.
+     */
+    @Provides
+    @Singleton
+    fun provideExecuTorchLLMService(
+        @ApplicationContext context: Context,
+    ): ExecuTorchLLMService {
+        return ExecuTorchLLMService(context)
+    }
+
+    /**
+     * Provide LLM Backend Selector for automatic backend selection.
+     *
+     * Selects the optimal backend based on device capabilities:
+     * 1. ExecuTorch + QNN (Snapdragon 8 Gen2+): 50+ tok/sec
+     * 2. MediaPipe (OpenCL GPU): 20-30 tok/sec
+     * 3. llama.cpp CPU fallback: 5-10 tok/sec
+     */
+    @Provides
+    @Singleton
+    fun provideLLMBackendSelector(
+        deviceCapabilityDetector: DeviceCapabilityDetector,
+        execuTorchProvider: Provider<ExecuTorchLLMService>,
+        mediaPipeProvider: Provider<MediaPipeLLMService>,
+        @Named("OnDeviceLLM") llamaCppProvider: Provider<LLMService>,
+    ): LLMBackendSelector {
+        return LLMBackendSelector(
+            deviceCapabilityDetector = deviceCapabilityDetector,
+            execuTorchProvider = execuTorchProvider,
+            mediaPipeProvider = mediaPipeProvider,
+            llamaCppProvider =
+                Provider {
+                    llamaCppProvider.get() as OnDeviceLLMService
+                },
+        )
+    }
+
+    /**
+     * Provide the best available LLM backend for this device.
+     *
+     * Uses LLMBackendSelector to automatically choose:
+     * - ExecuTorch (NPU) on flagship Qualcomm devices
+     * - MediaPipe (GPU) on devices with OpenCL support
+     * - llama.cpp (CPU) as fallback
+     */
+    @Provides
+    @Singleton
+    fun provideOptimalLLMBackend(selector: LLMBackendSelector): LLMBackend {
+        return selector.getSelectedBackend()
+    }
+
     /**
      * Provide PatchPanel LLM routing service.
      *
      * Routes to multiple LLM providers based on configuration:
      * - OpenAI (cloud, requires API key)
      * - Anthropic (cloud, requires API key)
-     * - OnDevice (offline, uses llama.cpp with GGUF models)
+     * - Ollama (self-hosted, free if enabled and server available)
+     * - OnDevice (offline, uses optimal backend via LLMBackendSelector):
+     *   - ExecuTorch (NPU) on Snapdragon 8 Gen2+ devices
+     *   - MediaPipe (GPU) on devices with OpenCL support
+     *   - llama.cpp (CPU) as fallback
      *
-     * Note: OnDevice uses Provider<LLMService> to defer construction until needed,
-     * avoiding expensive System.loadLibrary calls on devices that don't support it.
+     * Note: OnDevice uses LLMBackendSelector to choose the fastest available backend.
      */
     @Provides
     @Singleton
@@ -221,7 +372,8 @@ object ProviderModule {
     fun providePatchPanelService(
         @Named("OpenAILLM") openai: LLMService,
         @Named("AnthropicLLM") anthropic: LLMService,
-        @Named("OnDeviceLLM") onDeviceProvider: Provider<LLMService>,
+        @Named("OllamaLLM") ollama: LLMService?,
+        backendSelector: LLMBackendSelector,
         deviceCapabilityDetector: DeviceCapabilityDetector,
     ): LLMService {
         val providers =
@@ -229,11 +381,21 @@ object ProviderModule {
                 put("OpenAI", openai)
                 put("Anthropic", anthropic)
 
+                // Add Ollama if discovered and healthy (self-hosted, free)
+                if (ollama != null) {
+                    Log.i("ProviderModule", "PatchPanel adding Ollama provider")
+                    put("Ollama", ollama)
+                }
+
                 // Add OnDevice provider only if device supports it
-                // Using Provider.get() defers OnDeviceLLMService construction
-                // (including System.loadLibrary) until this point
+                // Uses LLMBackendSelector to choose optimal backend (ExecuTorch > MediaPipe > llama.cpp)
                 if (deviceCapabilityDetector.supportsOnDeviceLLM()) {
-                    put("OnDevice", onDeviceProvider.get())
+                    val backend = backendSelector.getSelectedBackend()
+                    Log.i(
+                        "ProviderModule",
+                        "PatchPanel OnDevice backend: ${backend.backendName}",
+                    )
+                    put("OnDevice", backend)
                 }
             }
         return PatchPanelService(providers)
@@ -288,9 +450,10 @@ object ProviderModule {
     /**
      * Provide STT provider router with automatic failover.
      *
-     * Priority order:
-     * 1. Android STT (on-device, free) - always available
-     * 2. Deepgram (cloud, paid) - if API key configured and healthy
+     * Priority order (lower value = higher priority):
+     * 1. GLM-ASR On-Device (on-device, highest quality) - if device supports and models downloaded
+     * 2. Android STT (on-device, fallback) - always available
+     * 3. Deepgram (cloud, paid) - if API key configured and healthy
      */
     @Provides
     @Singleton
@@ -298,17 +461,52 @@ object ProviderModule {
     fun provideSTTProviderRouter(
         @Named("DeepgramSTT") deepgram: STTService,
         @Named("AndroidSTT") android: STTService,
+        @Named("GLMASROnDeviceSTT") glmAsrOnDevice: GLMASROnDeviceSTTService,
         @Named("DeepgramHealthMonitor") deepgramHealthMonitor: ProviderHealthMonitor,
         config: ProviderConfig,
     ): STTProviderRouter {
         val router = STTProviderRouter()
 
-        // Register Android STT (on-device, always available)
+        // Register GLM-ASR On-Device (highest quality on-device, if supported and models present)
+        // This provides the best on-device STT with GLM-ASR-Nano-2512
+        if (glmAsrOnDevice.isSupported() && glmAsrOnDevice.areModelsReady()) {
+            Log.i(
+                "ProviderModule",
+                "Registering GLM-ASR On-Device STT (models ready)",
+            )
+            router.registerProvider(
+                STTProviderRegistration(
+                    service = glmAsrOnDevice,
+                    priority = STTProviderPriority.ON_DEVICE,
+                    healthMonitor = null,
+                    requiresApiKey = false,
+                    isOnDevice = true,
+                ),
+            )
+        } else if (glmAsrOnDevice.isSupported()) {
+            Log.i(
+                "ProviderModule",
+                "GLM-ASR On-Device STT supported but models not downloaded",
+            )
+        } else {
+            Log.i(
+                "ProviderModule",
+                "GLM-ASR On-Device STT not supported on this device",
+            )
+        }
+
+        // Register Android STT (on-device fallback, always available)
         // On-device doesn't need health monitoring
         router.registerProvider(
             STTProviderRegistration(
                 service = android,
-                priority = STTProviderPriority.ON_DEVICE,
+                // Use SELF_HOSTED priority if GLM-ASR is available, otherwise ON_DEVICE
+                priority =
+                    if (glmAsrOnDevice.isSupported() && glmAsrOnDevice.areModelsReady()) {
+                        STTProviderPriority.SELF_HOSTED
+                    } else {
+                        STTProviderPriority.ON_DEVICE
+                    },
                 healthMonitor = null,
                 requiresApiKey = false,
                 isOnDevice = true,
@@ -419,17 +617,67 @@ object ProviderModule {
 
     /**
      * Provide default LLM service based on configuration.
+     *
+     * Reads the user's selected LLM provider from ProviderConfig and returns
+     * the appropriate service:
+     * - "OnDevice": Uses LLMBackendSelector to choose the best backend:
+     *   - ExecuTorch (NPU) on Snapdragon 8 Gen2+ devices (50+ tok/sec)
+     *   - MediaPipe (GPU) on devices with OpenCL support (20-30 tok/sec)
+     *   - llama.cpp (CPU) as fallback (5-10 tok/sec)
+     * - "OpenAI": Uses OpenAI API (requires API key)
+     * - "Anthropic": Uses Anthropic API (requires API key)
+     * - "Ollama": Uses self-hosted Ollama server (requires server configured)
+     * - "PatchPanel" (default): Intelligent routing based on task type
+     *
+     * Note: Changes take effect on app restart since Hilt provides singletons.
      */
     @Provides
     @Singleton
     fun provideDefaultLLMService(
         @Named("PatchPanelLLM") patchPanel: LLMService,
-        @Named("OpenAILLM") _openai: LLMService,
-        @Named("AnthropicLLM") _anthropic: LLMService,
-        _config: ProviderConfig,
+        @Named("OpenAILLM") openai: LLMService,
+        @Named("AnthropicLLM") anthropic: LLMService,
+        @Named("OllamaLLM") ollama: LLMService?,
+        backendSelector: LLMBackendSelector,
+        config: ProviderConfig,
     ): LLMService {
-        // TODO: Read from config.selectedLLMProvider flow
-        // For now, default to PatchPanel
-        return patchPanel
+        val selectedProvider = config.getLLMProvider()
+        Log.i("ProviderModule", "Selected LLM provider: $selectedProvider")
+
+        return when (selectedProvider) {
+            "OnDevice" -> {
+                // Use the backend selector to choose the optimal backend
+                // (ExecuTorch > MediaPipe > llama.cpp based on device capabilities)
+                val backend = backendSelector.getSelectedBackend()
+                Log.i(
+                    "ProviderModule",
+                    "Using OnDevice LLM: ${backend.backendName} (${backend.expectedToksPerSec} tok/sec expected)",
+                )
+                backend
+            }
+            "OpenAI" -> {
+                Log.i("ProviderModule", "Using OpenAI LLM")
+                openai
+            }
+            "Anthropic" -> {
+                Log.i("ProviderModule", "Using Anthropic LLM")
+                anthropic
+            }
+            "Ollama" -> {
+                if (ollama != null) {
+                    Log.i("ProviderModule", "Using Ollama LLM (self-hosted)")
+                    ollama
+                } else {
+                    // Fall back to PatchPanel if Ollama not available
+                    Log.w("ProviderModule", "Ollama selected but not available, falling back to PatchPanel")
+                    patchPanel
+                }
+            }
+            else -> {
+                // Default to PatchPanel for intelligent routing
+                Log.i("ProviderModule", "Using PatchPanel LLM (intelligent routing)")
+                patchPanel
+            }
+        }
     }
 }

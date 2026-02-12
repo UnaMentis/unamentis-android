@@ -167,6 +167,16 @@ dependencies {
     // Oboe (Low-latency audio)
     implementation(libs.oboe)
 
+    // MediaPipe LLM Inference (GPU acceleration)
+    implementation(libs.mediapipe.tasks.genai)
+
+    // ExecuTorch (Qualcomm NPU acceleration)
+    // Note: ExecuTorch AAR may need to be built from source or obtained from PyTorch releases
+    // The official PyTorch Maven repo provides pre-built AARs for select configurations
+    // implementation("org.pytorch:executorch-android:1.0.0")
+    // implementation("org.pytorch:executorch-llama-android:1.0.0")
+    // For now, we'll use a placeholder - uncomment when official AARs are available
+
     // DataStore (Preferences)
     implementation(libs.androidx.datastore.preferences)
 

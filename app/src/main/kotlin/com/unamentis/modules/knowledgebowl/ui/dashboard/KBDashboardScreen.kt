@@ -72,6 +72,10 @@ fun KBDashboardScreen(
     onNavigateToOralSession: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToPracticeSession: (KBStudyMode, List<KBQuestion>) -> Unit,
+    onNavigateToMatchSimulation: () -> Unit = {},
+    onNavigateToConferenceTraining: () -> Unit = {},
+    onNavigateToReboundTraining: () -> Unit = {},
+    onNavigateToDomainDrill: () -> Unit = {},
     viewModel: KBDashboardViewModel = hiltViewModel(),
 ) {
     val selectedRegion by viewModel.selectedRegion.collectAsState()
@@ -139,6 +143,14 @@ fun KBDashboardScreen(
                 totalQuestionsAnswered = totalQuestionsAnswered,
                 averageResponseTime = averageResponseTime,
                 accuracy = overallAccuracy,
+            )
+
+            // Competition Training section
+            CompetitionTrainingSection(
+                onMatchSimulationClick = onNavigateToMatchSimulation,
+                onConferenceTrainingClick = onNavigateToConferenceTraining,
+                onReboundTrainingClick = onNavigateToReboundTraining,
+                onDomainDrillClick = onNavigateToDomainDrill,
             )
 
             // Domain mastery section
@@ -660,3 +672,126 @@ private fun conferringRuleDescription(config: KBRegionalConfig): String =
         config.handSignalsAllowed -> stringResource(R.string.kb_conferring_hand_signals)
         else -> stringResource(R.string.kb_conferring_none)
     }
+
+/**
+ * Competition Training section - provides access to advanced training modes
+ * for competition preparation.
+ */
+@Composable
+private fun CompetitionTrainingSection(
+    onMatchSimulationClick: () -> Unit,
+    onConferenceTrainingClick: () -> Unit,
+    onReboundTrainingClick: () -> Unit,
+    onDomainDrillClick: () -> Unit,
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.kb_competition_training),
+            style = IOSTypography.headline,
+            color = KBTheme.textPrimary(),
+        )
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            // Trophy emoji for match simulation
+            CompetitionTrainingButton(
+                modifier = Modifier.weight(1f),
+                icon = "\uD83C\uDFC6",
+                title = stringResource(R.string.kb_match_simulation),
+                subtitle = stringResource(R.string.kb_match_simulation_subtitle),
+                accentColor = KBTheme.mathematics(),
+                onClick = onMatchSimulationClick,
+            )
+
+            // Handshake emoji for conference training
+            CompetitionTrainingButton(
+                modifier = Modifier.weight(1f),
+                icon = "\uD83E\uDD1D",
+                title = stringResource(R.string.kb_conference_training),
+                subtitle = stringResource(R.string.kb_conference_training_subtitle),
+                accentColor = KBTheme.history(),
+                onClick = onConferenceTrainingClick,
+            )
+        }
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            // Rebound/return emoji for rebound training
+            CompetitionTrainingButton(
+                modifier = Modifier.weight(1f),
+                icon = "\u21A9\uFE0F",
+                title = stringResource(R.string.kb_rebound_training),
+                subtitle = stringResource(R.string.kb_rebound_training_subtitle),
+                accentColor = KBTheme.science(),
+                onClick = onReboundTrainingClick,
+            )
+
+            // Target emoji for domain drill
+            CompetitionTrainingButton(
+                modifier = Modifier.weight(1f),
+                icon = "\uD83C\uDFAF",
+                title = stringResource(R.string.kb_domain_drill),
+                subtitle = stringResource(R.string.kb_domain_drill_description),
+                accentColor = KBTheme.literature(),
+                onClick = onDomainDrillClick,
+            )
+        }
+    }
+}
+
+@Composable
+private fun CompetitionTrainingButton(
+    modifier: Modifier = Modifier,
+    icon: String,
+    title: String,
+    subtitle: String,
+    accentColor: Color,
+    onClick: () -> Unit,
+) {
+    val buttonDescription = stringResource(R.string.cd_competition_training_button, title, subtitle)
+    Card(
+        modifier =
+            modifier
+                .clip(RoundedCornerShape(12.dp))
+                .semantics { contentDescription = buttonDescription }
+                .clickable(onClick = onClick)
+                .border(
+                    width = 2.dp,
+                    color = accentColor.copy(alpha = 0.3f),
+                    shape = RoundedCornerShape(12.dp),
+                ),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = KBTheme.bgSecondary(),
+            ),
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = icon,
+                style = IOSTypography.title2,
+            )
+            Text(
+                text = title,
+                style = IOSTypography.subheadline,
+                color = KBTheme.textPrimary(),
+            )
+            Text(
+                text = subtitle,
+                style = IOSTypography.caption,
+                color = KBTheme.textSecondary(),
+                textAlign = TextAlign.Center,
+            )
+        }
+    }
+}

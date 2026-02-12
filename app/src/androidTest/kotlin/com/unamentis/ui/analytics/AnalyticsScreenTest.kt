@@ -11,6 +11,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.unamentis.MainActivity
+import com.unamentis.SkipOnboardingRule
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import org.junit.Before
@@ -33,6 +34,9 @@ class AnalyticsScreenTest {
     val hiltRule = HiltAndroidRule(this)
 
     @get:Rule(order = 1)
+    val skipOnboardingRule = SkipOnboardingRule()
+
+    @get:Rule(order = 2)
     val composeTestRule = createAndroidComposeRule<MainActivity>()
 
     companion object {

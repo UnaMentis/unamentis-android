@@ -43,15 +43,21 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
 import com.unamentis.R
+import com.unamentis.core.accessibility.AccessibilityChecker
 import com.unamentis.core.network.ConnectivityMonitor
+import com.unamentis.data.local.OnboardingPreferences
 import com.unamentis.navigation.DeepLinkDestination
 import com.unamentis.navigation.DeepLinkRoutes
 import com.unamentis.ui.analytics.AnalyticsScreen
 import com.unamentis.ui.components.OfflineBanner
 import com.unamentis.ui.curriculum.CurriculumScreen
 import com.unamentis.ui.history.HistoryScreen
+import com.unamentis.ui.onboarding.OnboardingScreen
 import com.unamentis.ui.session.SessionActivityState
 import com.unamentis.ui.session.SessionScreen
+import com.unamentis.ui.settings.AboutScreen
+import com.unamentis.ui.settings.DebugScreen
+import com.unamentis.ui.settings.ServerSettingsScreen
 import com.unamentis.ui.settings.SettingsScreen
 import com.unamentis.ui.todo.TodoScreen
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -87,6 +93,7 @@ sealed class Screen(
  * Extended routes for deep linking with parameters.
  */
 object Routes {
+    const val ONBOARDING = "onboarding"
     const val SESSION = "session"
     const val SESSION_START = "session/start?curriculum_id={curriculum_id}&topic_id={topic_id}"
     const val CURRICULUM = "curriculum"
@@ -96,6 +103,9 @@ object Routes {
     const val HISTORY_DETAIL = "history/{id}"
     const val ANALYTICS = "analytics"
     const val SETTINGS = "settings?section={section}"
+    const val SERVER_SETTINGS = "settings/servers"
+    const val ABOUT = "settings/about"
+    const val DEBUG = "settings/debug"
 }
 
 /**
@@ -130,9 +140,12 @@ val LocalScrollToTopHandler = compositionLocalOf { ScrollToTopHandler() }
  *
  * Shows all 6 tabs in the bottom navigation, matching iOS layout.
  * Tab bar hides during active sessions (when not paused) for immersive experience.
+ * On first launch, shows onboarding screens before the main app.
  *
  * @param connectivityMonitor Monitor for network connectivity state
  * @param sessionActivityState State tracking session activity for tab bar visibility
+ * @param onboardingPreferences Preferences to track onboarding completion state
+ * @param accessibilityChecker Checker for accessibility preferences like reduce motion
  * @param initialDeepLink Optional deep link destination to navigate to on launch
  * @param onDeepLinkConsumed Callback when the deep link has been handled
  */
@@ -140,12 +153,24 @@ val LocalScrollToTopHandler = compositionLocalOf { ScrollToTopHandler() }
 fun UnaMentisNavHost(
     connectivityMonitor: ConnectivityMonitor,
     sessionActivityState: SessionActivityState,
+    onboardingPreferences: OnboardingPreferences,
+    accessibilityChecker: AccessibilityChecker,
     initialDeepLink: DeepLinkDestination? = null,
     onDeepLinkConsumed: () -> Unit = {},
 ) {
     val navController = rememberNavController()
     val scrollToTopHandler = remember { ScrollToTopHandler() }
     val shouldHideTabBar by sessionActivityState.shouldHideTabBar.collectAsState()
+
+    // Determine start destination based on onboarding completion
+    val startDestination =
+        remember {
+            if (onboardingPreferences.hasCompletedOnboarding()) {
+                Screen.Session.route
+            } else {
+                Routes.ONBOARDING
+            }
+        }
 
     // All 6 tabs shown in the bottom navigation (matching iOS)
     val allTabs =
@@ -173,12 +198,16 @@ fun UnaMentisNavHost(
         }
     }
 
+    // Track current route to hide tab bar during onboarding
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val isOnOnboarding = navBackStackEntry?.destination?.route == Routes.ONBOARDING
+
     CompositionLocalProvider(LocalScrollToTopHandler provides scrollToTopHandler) {
         Scaffold(
             bottomBar = {
-                // Tab bar hides during active sessions (matching iOS behavior)
+                // Tab bar hides during onboarding and active sessions (matching iOS behavior)
                 AnimatedVisibility(
-                    visible = !shouldHideTabBar,
+                    visible = !shouldHideTabBar && !isOnOnboarding,
                     enter = slideInVertically(initialOffsetY = { it }),
                     exit = slideOutVertically(targetOffsetY = { it }),
                 ) {
@@ -201,9 +230,22 @@ fun UnaMentisNavHost(
 
                 NavHost(
                     navController = navController,
-                    startDestination = Screen.Session.route,
+                    startDestination = startDestination,
                     modifier = Modifier.weight(1f),
                 ) {
+                    // Onboarding (shown on first launch)
+                    composable(route = Routes.ONBOARDING) {
+                        OnboardingScreen(
+                            onComplete = {
+                                onboardingPreferences.setOnboardingCompleted()
+                                navController.navigate(Screen.Session.route) {
+                                    popUpTo(Routes.ONBOARDING) { inclusive = true }
+                                }
+                            },
+                            reduceMotion = accessibilityChecker.shouldReduceMotion(),
+                        )
+                    }
+
                     // Session tab with deep link support
                     composable(
                         route = Routes.SESSION,
@@ -256,7 +298,14 @@ fun UnaMentisNavHost(
                                 navDeepLink { uriPattern = DeepLinkRoutes.URI_CURRICULUM },
                             ),
                     ) {
-                        CurriculumScreen()
+                        CurriculumScreen(
+                            onNavigateToSession = { curriculumId, topicId ->
+                                val route =
+                                    "session/start?curriculum_id=$curriculumId" +
+                                        (topicId?.let { "&topic_id=$it" } ?: "")
+                                navController.navigate(route)
+                            },
+                        )
                     }
 
                     // Curriculum detail
@@ -272,7 +321,15 @@ fun UnaMentisNavHost(
                             ),
                     ) { backStackEntry ->
                         val curriculumId = backStackEntry.arguments?.getString("id")
-                        CurriculumScreen(initialCurriculumId = curriculumId)
+                        CurriculumScreen(
+                            initialCurriculumId = curriculumId,
+                            onNavigateToSession = { navCurriculumId, topicId ->
+                                val route =
+                                    "session/start?curriculum_id=$navCurriculumId" +
+                                        (topicId?.let { "&topic_id=$it" } ?: "")
+                                navController.navigate(route)
+                            },
+                        )
                     }
 
                     // To-Do tab with deep link support
@@ -345,7 +402,39 @@ fun UnaMentisNavHost(
                             ),
                     ) { backStackEntry ->
                         val section = backStackEntry.arguments?.getString("section")
-                        SettingsScreen(initialSection = section)
+                        SettingsScreen(
+                            initialSection = section,
+                            onNavigateToServerSettings = {
+                                navController.navigate(Routes.SERVER_SETTINGS)
+                            },
+                            onNavigateToAbout = {
+                                navController.navigate(Routes.ABOUT)
+                            },
+                            onNavigateToDebug = {
+                                navController.navigate(Routes.DEBUG)
+                            },
+                        )
+                    }
+
+                    // Server Settings (sub-screen of Settings)
+                    composable(route = Routes.SERVER_SETTINGS) {
+                        ServerSettingsScreen(
+                            onNavigateBack = { navController.popBackStack() },
+                        )
+                    }
+
+                    // About (sub-screen of Settings)
+                    composable(route = Routes.ABOUT) {
+                        AboutScreen(
+                            onNavigateBack = { navController.popBackStack() },
+                        )
+                    }
+
+                    // Debug Tools (sub-screen of Settings, debug builds only)
+                    composable(route = Routes.DEBUG) {
+                        DebugScreen(
+                            onNavigateBack = { navController.popBackStack() },
+                        )
                     }
                 }
             }
