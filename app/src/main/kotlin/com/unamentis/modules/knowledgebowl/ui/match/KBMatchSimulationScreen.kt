@@ -43,6 +43,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -751,10 +754,27 @@ private fun OralRoundView(
                         OutlinedButton(onClick = onSkipRebound) {
                             Text(stringResource(R.string.kb_signal_pass))
                         }
-                        // TODO: This auto-submits the correct answer on buzz. Should show an
-                        //  answer input field instead, so the user actually has to answer.
-                        Button(onClick = { onSubmitAnswer(question.answer.primary) }) {
-                            Text(stringResource(R.string.kb_buzz))
+                        var reboundAnswer by remember { mutableStateOf("") }
+                        var showReboundInput by remember { mutableStateOf(false) }
+                        if (showReboundInput) {
+                            OutlinedTextField(
+                                value = reboundAnswer,
+                                onValueChange = { reboundAnswer = it },
+                                label = { Text(stringResource(R.string.kb_your_answer)) },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Button(
+                                onClick = { onSubmitAnswer(reboundAnswer) },
+                                enabled = reboundAnswer.isNotBlank(),
+                            ) {
+                                Text(stringResource(R.string.kb_submit_answer))
+                            }
+                        } else {
+                            Button(onClick = { showReboundInput = true }) {
+                                Text(stringResource(R.string.kb_buzz))
+                            }
                         }
                     }
                 }
@@ -773,9 +793,19 @@ private fun OralRoundView(
                             color = KBTheme.mastered(),
                         )
                         Spacer(modifier = Modifier.height(16.dp))
-                        // TODO: This auto-submits the correct answer on buzz. Should show an
-                        //  answer input field instead, so the user actually has to answer.
-                        Button(onClick = { onSubmitAnswer(question.answer.primary) }) {
+                        var playerAnswer by remember { mutableStateOf("") }
+                        OutlinedTextField(
+                            value = playerAnswer,
+                            onValueChange = { playerAnswer = it },
+                            label = { Text(stringResource(R.string.kb_your_answer)) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(
+                            onClick = { onSubmitAnswer(playerAnswer) },
+                            enabled = playerAnswer.isNotBlank(),
+                        ) {
                             Text(stringResource(R.string.kb_submit_answer))
                         }
                     }
