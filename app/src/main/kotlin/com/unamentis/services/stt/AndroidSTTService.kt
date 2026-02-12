@@ -8,6 +8,7 @@ import android.os.Looper
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
+import com.unamentis.R
 import com.unamentis.data.model.STTResult
 import com.unamentis.data.model.STTService
 import kotlinx.coroutines.channels.awaitClose
@@ -38,7 +39,7 @@ class AndroidSTTService(
     private val context: Context,
     private val language: String = "en-US",
 ) : STTService {
-    override val providerName: String = "Android STT"
+    override val providerName: String = context.getString(R.string.provider_android_stt)
 
     private var speechRecognizer: SpeechRecognizer? = null
     private val mainHandler = Handler(Looper.getMainLooper())

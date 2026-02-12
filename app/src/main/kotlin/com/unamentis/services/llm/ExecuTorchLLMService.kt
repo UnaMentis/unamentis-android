@@ -3,6 +3,7 @@ package com.unamentis.services.llm
 import android.annotation.SuppressLint
 import android.content.Context
 import android.util.Log
+import com.unamentis.R
 import com.unamentis.data.model.LLMMessage
 import com.unamentis.data.model.LLMToken
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -87,7 +88,7 @@ class ExecuTorchLLMService
             }
         }
 
-        override val providerName: String = "ExecuTorch"
+        override val providerName: String = context.getString(R.string.provider_executorch)
         override val backendName: String = "ExecuTorch (QNN NPU)"
         override val expectedToksPerSec: Int = 50
 
@@ -219,18 +220,21 @@ class ExecuTorchLLMService
             maxTokens: Int,
         ): Flow<LLMToken> =
             callbackFlow {
-                val modulePtr = ensureModelReady() ?: return@callbackFlow
-                val prompt = formatPrompt(messages)
-                val context = GenerationContext(System.currentTimeMillis())
+                val modulePtr = ensureModelReady()
 
-                Log.d(TAG, "Starting ExecuTorch generation with ${prompt.length} char prompt")
-                totalInputTokens.addAndGet(prompt.length / 4)
+                if (modulePtr != null) {
+                    val prompt = formatPrompt(messages)
+                    val context = GenerationContext(System.currentTimeMillis())
 
-                try {
-                    runGeneration(modulePtr, prompt, maxTokens, temperature, context)
-                } catch (e: Exception) {
-                    Log.e(TAG, "ExecuTorch generation error", e)
-                    close(e)
+                    Log.d(TAG, "Starting ExecuTorch generation with ${prompt.length} char prompt")
+                    totalInputTokens.addAndGet(prompt.length / 4)
+
+                    try {
+                        runGeneration(modulePtr, prompt, maxTokens, temperature, context)
+                    } catch (e: Exception) {
+                        Log.e(TAG, "ExecuTorch generation error", e)
+                        close(e)
+                    }
                 }
 
                 awaitClose {

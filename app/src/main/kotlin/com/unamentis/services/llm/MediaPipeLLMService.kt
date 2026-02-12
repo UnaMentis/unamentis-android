@@ -3,6 +3,7 @@ package com.unamentis.services.llm
 import android.content.Context
 import android.util.Log
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
+import com.unamentis.R
 import com.unamentis.data.model.LLMMessage
 import com.unamentis.data.model.LLMToken
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -56,7 +57,7 @@ class MediaPipeLLMService
             private const val MAX_TTFT_MEASUREMENTS = 100
         }
 
-        override val providerName: String = "MediaPipe"
+        override val providerName: String = context.getString(R.string.provider_mediapipe)
         override val backendName: String = "MediaPipe (GPU)"
         override val expectedToksPerSec: Int = 25
 
@@ -186,55 +187,52 @@ class MediaPipeLLMService
 
                 val prompt = formatPrompt(messages)
                 val startTime = System.currentTimeMillis()
+                var firstTokenEmitted = false
                 var generatedTokens = 0
 
-                Log.d(TAG, "Starting MediaPipe generation with ${prompt.length} char prompt")
+                Log.d(TAG, "Starting MediaPipe async generation with ${prompt.length} char prompt")
 
                 // Estimate input tokens (~4 chars per token)
                 totalInputTokens.addAndGet(prompt.length / 4)
 
                 try {
-                    // MediaPipe's generateResponseAsync doesn't take a callback directly
-                    // It returns results via a listener set on the options
-                    // For now, use synchronous generation in a coroutine
-                    val result = inference.generateResponse(prompt)
-
-                    // Record generation latency (reported as TTFT for metric compatibility,
-                    // but since MediaPipe uses synchronous generation this is total latency,
-                    // not true time-to-first-token)
-                    val ttft = System.currentTimeMillis() - startTime
-                    if (ttftMeasurements.size >= MAX_TTFT_MEASUREMENTS) {
-                        ttftMeasurements.removeAt(0)
-                    }
-                    ttftMeasurements.add(ttft)
-                    Log.i(TAG, "Generation latency (sync): ${ttft}ms")
-
-                    // Send the result as a single token
-                    if (result != null && result.isNotEmpty()) {
-                        // Estimate token count (~4 chars per token)
-                        generatedTokens = result.length / 4
-
-                        // Send the full response
-                        trySend(LLMToken(content = result, isDone = false))
-
-                        // Calculate tokens per second
-                        val elapsedSec = (System.currentTimeMillis() - startTime) / 1000f
-                        if (elapsedSec > 0 && generatedTokens > 0) {
-                            val toksPerSec = generatedTokens / elapsedSec
-                            if (toksPerSecMeasurements.size >= MAX_TTFT_MEASUREMENTS) {
-                                toksPerSecMeasurements.removeAt(0)
+                    inference.generateResponseAsync(prompt) { partialResult, done ->
+                        // Record TTFT on first non-empty partial result
+                        if (!firstTokenEmitted && partialResult.isNotEmpty()) {
+                            firstTokenEmitted = true
+                            val ttft = System.currentTimeMillis() - startTime
+                            if (ttftMeasurements.size >= MAX_TTFT_MEASUREMENTS) {
+                                ttftMeasurements.removeAt(0)
                             }
-                            toksPerSecMeasurements.add(toksPerSec)
-                            Log.i(TAG, "Generation speed: ${toksPerSec.toInt()} tok/sec")
+                            ttftMeasurements.add(ttft)
+                            Log.i(TAG, "TTFT: ${ttft}ms")
                         }
 
-                        totalOutputTokens.addAndGet(generatedTokens)
-                    }
+                        if (partialResult.isNotEmpty()) {
+                            // Estimate token count (~4 chars per token)
+                            val chunkTokens = partialResult.length / 4
+                            generatedTokens += chunkTokens
+                            totalOutputTokens.addAndGet(chunkTokens)
+                            trySend(LLMToken(content = partialResult, isDone = false))
+                        }
 
-                    // Send completion token
-                    trySend(LLMToken(content = "", isDone = true))
-                    Log.i(TAG, "Generation complete: $generatedTokens tokens")
-                    close()
+                        if (done) {
+                            // Calculate tokens per second
+                            val elapsedSec = (System.currentTimeMillis() - startTime) / 1000f
+                            if (elapsedSec > 0 && generatedTokens > 0) {
+                                val toksPerSec = generatedTokens / elapsedSec
+                                if (toksPerSecMeasurements.size >= MAX_TTFT_MEASUREMENTS) {
+                                    toksPerSecMeasurements.removeAt(0)
+                                }
+                                toksPerSecMeasurements.add(toksPerSec)
+                                Log.i(TAG, "Generation speed: ${toksPerSec.toInt()} tok/sec")
+                            }
+
+                            trySend(LLMToken(content = "", isDone = true))
+                            Log.i(TAG, "Generation complete: $generatedTokens tokens")
+                            close()
+                        }
+                    }
                 } catch (e: Exception) {
                     Log.e(TAG, "MediaPipe generation error", e)
                     close(e)
@@ -333,23 +331,12 @@ class MediaPipeLLMService
         /**
          * Check if MediaPipe LLM Inference is available on this device.
          *
-         * Requires:
-         * 1. MediaPipe LLM library in classpath
-         * 2. A compatible model file (.task format) downloaded
+         * Note: Classpath availability of the MediaPipe LLM library is checked by
+         * [LLMBackendSelector.isMediaPipeAvailable] via reflection before this class is
+         * instantiated, avoiding classloading failures from the direct LlmInference import.
+         * This method only checks whether a compatible model file exists.
          */
         fun isAvailable(): Boolean {
-            // Check if the MediaPipe LLM class is available
-            val hasLibrary =
-                try {
-                    Class.forName("com.google.mediapipe.tasks.genai.llminference.LlmInference")
-                    true
-                } catch (e: ClassNotFoundException) {
-                    Log.w(TAG, "MediaPipe LLM Inference library not available")
-                    false
-                }
-
-            if (!hasLibrary) return false
-
             // Check if a model file exists
             val modelPath = getAvailableModelPath()
             if (modelPath == null) {

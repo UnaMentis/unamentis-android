@@ -410,13 +410,17 @@ class ModelDownloadManager
 
         /**
          * Get total storage used by models.
+         *
+         * Walks the models directory recursively to include all model types:
+         * .gguf (llama.cpp), .pte (ExecuTorch), .task (MediaPipe), .onnx (GLM-ASR).
          */
         fun getTotalStorageUsed(): Long {
             val modelsDir = getModelsDirectory()
-            return modelsDir.listFiles()
-                ?.filter { it.isFile && it.name.endsWith(".gguf") }
-                ?.sumOf { it.length() }
-                ?: 0L
+            if (!modelsDir.exists()) return 0L
+            val modelExtensions = setOf(".gguf", ".pte", ".task", ".onnx")
+            return modelsDir.walk()
+                .filter { it.isFile && modelExtensions.any { ext -> it.name.endsWith(ext) } }
+                .sumOf { it.length() }
         }
 
         /**
@@ -723,16 +727,54 @@ class ModelDownloadManager
             }
         }
 
+        // Cache for URL availability checks to avoid repeated network requests
+        private val urlAvailabilityCache = mutableMapOf<String, Boolean>()
+
+        /**
+         * Check if a model download URL is reachable (HEAD request).
+         *
+         * Results are cached to avoid repeated network checks.
+         *
+         * @param url The URL to check
+         * @return true if the URL returns a successful response
+         */
+        suspend fun isModelUrlAvailable(url: String): Boolean =
+            withContext(Dispatchers.IO) {
+                urlAvailabilityCache[url]?.let { return@withContext it }
+
+                val available =
+                    try {
+                        val request = Request.Builder().url(url).head().build()
+                        val response = downloadClient.newCall(request).execute()
+                        response.use { it.isSuccessful }
+                    } catch (e: Exception) {
+                        Log.w(TAG, "URL availability check failed for $url: ${e.message}")
+                        false
+                    }
+
+                urlAvailabilityCache[url] = available
+                available
+            }
+
         /**
          * Download an extended model specification.
+         *
+         * Pre-validates placeholder URLs before starting the download.
          */
-        suspend fun downloadExtendedModel(spec: ExtendedModelSpec): Result<String> =
-            downloadFile(
+        suspend fun downloadExtendedModel(spec: ExtendedModelSpec): Result<String> {
+            if (!isModelUrlAvailable(spec.downloadUrl)) {
+                val error = "Model download URL is not available: ${spec.filename}"
+                Log.e(TAG, error)
+                _downloadState.value = DownloadState.Error(error)
+                return Result.failure(IOException(error))
+            }
+            return downloadFile(
                 url = spec.downloadUrl,
                 targetDir = getModelsDirectory(),
                 filename = spec.filename,
                 expectedSize = spec.sizeBytes,
             )
+        }
 
         /**
          * Download the recommended extended model for this device.

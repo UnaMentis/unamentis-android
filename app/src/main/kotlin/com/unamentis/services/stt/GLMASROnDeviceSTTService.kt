@@ -2,6 +2,7 @@ package com.unamentis.services.stt
 
 import android.content.Context
 import android.util.Log
+import com.unamentis.R
 import com.unamentis.core.device.DeviceCapabilityDetector
 import com.unamentis.data.model.STTResult
 import com.unamentis.data.model.STTService
@@ -99,7 +100,7 @@ class GLMASROnDeviceSTTService
             }
         }
 
-        override val providerName: String = "GLMASROnDevice"
+        override val providerName: String = context.getString(R.string.provider_glm_asr_on_device)
 
         // Configuration
         private var config: GLMASROnDeviceConfig? = null

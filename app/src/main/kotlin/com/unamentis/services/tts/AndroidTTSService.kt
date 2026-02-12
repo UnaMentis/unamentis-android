@@ -38,7 +38,7 @@ class AndroidTTSService(
     private val context: Context,
     private val language: Locale = Locale.US,
 ) : TTSService {
-    override val providerName: String = "Android TTS"
+    override val providerName: String = context.getString(R.string.provider_android_tts)
 
     @Volatile
     private var tts: TextToSpeech? = null

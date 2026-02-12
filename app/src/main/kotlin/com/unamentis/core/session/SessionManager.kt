@@ -520,7 +520,7 @@ class SessionManager(
     }
 
     // Counter for periodic logging
-    private var audioFrameCount = 0
+    private val audioFrameCount = AtomicInteger(0)
 
     // Audio gain for amplifying weak microphone signal
     // Oboe with VoiceRecognition preset often produces very quiet audio (~0.001 RMS)
@@ -534,7 +534,7 @@ class SessionManager(
      */
     @Suppress("CyclomaticComplexMethod", "LongMethod")
     private suspend fun processAudioFrame(audioSamples: FloatArray) {
-        audioFrameCount++
+        val frameNum = audioFrameCount.incrementAndGet()
 
         // Skip all audio processing when muted - user can still hear AI responses
         if (_isMuted.value) {
@@ -542,10 +542,10 @@ class SessionManager(
         }
 
         // DEBUG: Log every 500 frames at ERROR level to ensure visibility
-        if (audioFrameCount % 500 == 1) {
+        if (frameNum % 500 == 1) {
             Log.e(
                 "SessionManager",
-                "AUDIO_DEBUG: Frame #$audioFrameCount, " +
+                "AUDIO_DEBUG: Frame #$frameNum, " +
                     "samples=${audioSamples.size}, state=${_sessionState.value}",
             )
         }
@@ -561,7 +561,7 @@ class SessionManager(
         val vadResult = vadService.processAudio(amplifiedSamples)
 
         // DEBUG: Log VAD result at ERROR level periodically
-        if (audioFrameCount % 500 == 1) {
+        if (frameNum % 500 == 1) {
             var sumSquares = 0f
             for (sample in amplifiedSamples) {
                 sumSquares += sample * sample
@@ -575,7 +575,7 @@ class SessionManager(
         }
 
         // Log periodically to avoid spam (every 100 frames = ~1.2 seconds at 12ms frames)
-        if (audioFrameCount % 100 == 0) {
+        if (frameNum % 100 == 0) {
             // Calculate RMS amplitude for debugging (on amplified samples)
             var sumSquares = 0f
             var maxAbs = 0f
@@ -588,7 +588,7 @@ class SessionManager(
 
             Log.d(
                 "SessionManager",
-                "Audio frame #$audioFrameCount: state=${_sessionState.value}, " +
+                "Audio frame #$frameNum: state=${_sessionState.value}, " +
                     "mode=${_recordingMode.value}, VAD(isSpeech=${vadResult.isSpeech}, " +
                     "confidence=${"%.3f".format(vadResult.confidence)}), " +
                     "amplified(rms=${"%.4f".format(rms)}, peak=${"%.4f".format(maxAbs)}, gain=$audioGain)",

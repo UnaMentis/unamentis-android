@@ -353,21 +353,25 @@ class KBMatchSimulationViewModel
         }
 
         fun finishMatch() {
-            val summary = matchEngine.getMatchSummary()
-            _uiState.update { it.copy(matchSummary = summary) }
+            viewModelScope.launch {
+                val summary = matchEngine.getMatchSummary()
+                _uiState.update { it.copy(matchSummary = summary) }
+            }
         }
 
         // MARK: - Private Helpers
 
         private fun updateCurrentQuestion() {
-            val phase = _uiState.value.phase
-            val question =
-                when (phase) {
-                    is MatchPhase.WrittenRound -> matchEngine.getCurrentWrittenQuestion()
-                    is MatchPhase.OralRound -> matchEngine.getCurrentOralQuestion()
-                    else -> null
-                }
-            _uiState.update { it.copy(currentQuestion = question) }
+            viewModelScope.launch {
+                val phase = _uiState.value.phase
+                val question =
+                    when (phase) {
+                        is MatchPhase.WrittenRound -> matchEngine.getCurrentWrittenQuestion()
+                        is MatchPhase.OralRound -> matchEngine.getCurrentOralQuestion()
+                        else -> null
+                    }
+                _uiState.update { it.copy(currentQuestion = question) }
+            }
         }
 
         private fun updateProgress() {

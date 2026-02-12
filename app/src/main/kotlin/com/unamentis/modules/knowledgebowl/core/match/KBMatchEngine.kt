@@ -134,7 +134,10 @@ class KBMatchEngine
         /**
          * Get the current written question.
          */
-        fun getCurrentWrittenQuestion(): KBQuestion? {
+        suspend fun getCurrentWrittenQuestion(): KBQuestion? = mutex.withLock { getCurrentWrittenQuestionUnsafe() }
+
+        /** Internal unsynchronized read for use within existing mutex blocks. */
+        private fun getCurrentWrittenQuestionUnsafe(): KBQuestion? {
             if (_currentPhase.value !is MatchPhase.WrittenRound) return null
             return writtenQuestions.getOrNull(currentQuestionIndex)
         }
@@ -198,7 +201,10 @@ class KBMatchEngine
         /**
          * Get the current oral question.
          */
-        fun getCurrentOralQuestion(): KBQuestion? {
+        suspend fun getCurrentOralQuestion(): KBQuestion? = mutex.withLock { getCurrentOralQuestionUnsafe() }
+
+        /** Internal unsynchronized read for use within existing mutex blocks. */
+        private fun getCurrentOralQuestionUnsafe(): KBQuestion? {
             if (_currentPhase.value !is MatchPhase.OralRound) return null
             return oralQuestions.getOrNull(currentOralRound)?.getOrNull(currentQuestionIndex)
         }
@@ -210,7 +216,7 @@ class KBMatchEngine
          */
         suspend fun simulateBuzz(): BuzzResult? =
             mutex.withLock {
-                val question = getCurrentOralQuestion() ?: return@withLock null
+                val question = getCurrentOralQuestionUnsafe() ?: return@withLock null
 
                 val buzzAttempts = mutableListOf<BuzzResult>()
 
@@ -249,7 +255,7 @@ class KBMatchEngine
             val phase = _currentPhase.value
             if (phase !is MatchPhase.OralRound) return@withLock
 
-            val question = getCurrentOralQuestion() ?: return@withLock
+            val question = getCurrentOralQuestionUnsafe() ?: return@withLock
 
             val points =
                 if (wasCorrect) {
@@ -301,16 +307,23 @@ class KBMatchEngine
         /**
          * Get the match summary (only available when match is complete).
          */
-        fun getMatchSummary(): KBMatchSummary? {
-            if (_currentPhase.value !is MatchPhase.FinalResults) return null
-            val cfg = config ?: return null
-            val start = startTime ?: return null
+        suspend fun getMatchSummary(): KBMatchSummary? {
+            // Capture immutable snapshot under the lock
+            val snapshot =
+                mutex.withLock {
+                    val cfg = config
+                    val start = startTime
+                    if (_currentPhase.value !is MatchPhase.FinalResults || cfg == null || start == null) {
+                        return@withLock null
+                    }
+                    MatchSummarySnapshot(results.toList(), cfg, start, _teams.value)
+                } ?: return null
 
-            val sortedTeams = _teams.value.sortedByDescending { it.totalScore }
+            val sortedTeams = snapshot.teams.sortedByDescending { it.totalScore }
             val playerRank = sortedTeams.indexOfFirst { it.isPlayer } + 1
 
-            val playerTeamId = _teams.value.find { it.isPlayer }?.id
-            val playerResults = results.filter { it.answeringTeamId == playerTeamId }
+            val playerTeamId = snapshot.teams.find { it.isPlayer }?.id
+            val playerResults = snapshot.results.filter { it.answeringTeamId == playerTeamId }
 
             val writtenResults = playerResults.filter { it.phase is MatchPhase.WrittenRound }
             val oralResults = playerResults.filter { it.phase is MatchPhase.OralRound }
@@ -350,15 +363,23 @@ class KBMatchEngine
                 )
 
             return KBMatchSummary(
-                config = cfg,
+                config = snapshot.config,
                 teams = sortedTeams,
-                results = results.toList(),
-                startTime = start,
+                results = snapshot.results,
+                startTime = snapshot.startTime,
                 endTime = Date(),
                 playerRank = playerRank,
                 playerStats = stats,
             )
         }
+
+        /** Internal snapshot for getMatchSummary to capture state under lock. */
+        private data class MatchSummarySnapshot(
+            val results: List<KBMatchQuestionResult>,
+            val config: KBMatchConfig,
+            val startTime: Date,
+            val teams: List<KBTeam>,
+        )
 
         /**
          * Get written round progress.

@@ -188,6 +188,8 @@ data class KBReboundTrainingResult(
     companion object {
         fun generateRecommendation(stats: KBReboundStats): ReboundRecommendation {
             return when {
+                stats.reboundsTaken == 0 && stats.missedOpportunities == 0 ->
+                    ReboundRecommendation.GOOD_BALANCE
                 stats.reboundAccuracy >= 0.8 ->
                     ReboundRecommendation.EXCELLENT
                 stats.missedOpportunities > stats.reboundsTaken ->

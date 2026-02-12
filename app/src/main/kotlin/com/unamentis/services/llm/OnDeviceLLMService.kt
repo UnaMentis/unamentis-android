@@ -2,6 +2,7 @@ package com.unamentis.services.llm
 
 import android.content.Context
 import android.util.Log
+import com.unamentis.R
 import com.unamentis.data.model.LLMMessage
 import com.unamentis.data.model.LLMService
 import com.unamentis.data.model.LLMToken
@@ -87,7 +88,7 @@ class OnDeviceLLMService
             val gpuLayers: Int = DEFAULT_GPU_LAYERS,
         )
 
-        override val providerName: String = "OnDevice"
+        override val providerName: String = context.getString(R.string.provider_on_device_llm)
 
         // Native context pointer (0 = not loaded) - accessed from multiple threads
         private val nativeContextPtr = AtomicLong(0)

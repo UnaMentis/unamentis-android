@@ -273,13 +273,17 @@ private fun SetupView(
 
         Spacer(modifier = Modifier.weight(1f))
 
-        // Start button
+        // Start button - require user to customize team name
+        val isSetupValid =
+            uiState.playerTeamName.isNotBlank() &&
+                uiState.playerTeamName != "Your Team"
         Button(
             onClick = onStartMatch,
             modifier =
                 Modifier
                     .fillMaxWidth()
                     .height(56.dp),
+            enabled = isSetupValid,
             colors =
                 ButtonDefaults.buttonColors(
                     containerColor = KBTheme.mastered(),
@@ -761,8 +765,8 @@ private fun OralRoundView(
                         color = KBTheme.mastered(),
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    var reboundAnswer by remember { mutableStateOf("") }
-                    var showReboundInput by remember { mutableStateOf(false) }
+                    var reboundAnswer by remember(question.id) { mutableStateOf("") }
+                    var showReboundInput by remember(question.id) { mutableStateOf(false) }
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         OutlinedButton(onClick = onSkipRebound) {
                             Text(stringResource(R.string.kb_signal_pass))
@@ -806,7 +810,7 @@ private fun OralRoundView(
                             color = KBTheme.mastered(),
                         )
                         Spacer(modifier = Modifier.height(16.dp))
-                        var playerAnswer by remember { mutableStateOf("") }
+                        var playerAnswer by remember(question.id) { mutableStateOf("") }
                         OutlinedTextField(
                             value = playerAnswer,
                             onValueChange = { playerAnswer = it },

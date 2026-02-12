@@ -1061,6 +1061,16 @@
     <string name="provider_anthropic">Anthropic</string>
     <string name="provider_android">Android</string>
     <string name="provider_patchpanel">PatchPanel</string>
+    <string name="provider_android_tts">Android TTS</string>
+    <string name="provider_android_stt">Android STT</string>
+    <string name="provider_chatterbox">Chatterbox</string>
+    <string name="provider_deepgram_aura">DeepgramAura</string>
+    <string name="provider_assemblyai">AssemblyAI</string>
+    <string name="provider_groq_whisper">GroqWhisper</string>
+    <string name="provider_glm_asr">GLMASR</string>
+    <string name="provider_on_device_llm">OnDevice</string>
+    <string name="provider_mediapipe">MediaPipe</string>
+    <string name="provider_executorch">ExecuTorch</string>
 
     <!-- Onboarding accessibility -->
     <string name="cd_skip_onboarding">Skip onboarding</string>

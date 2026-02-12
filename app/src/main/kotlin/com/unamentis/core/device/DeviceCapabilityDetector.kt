@@ -525,7 +525,11 @@ class DeviceCapabilityDetector
             return try {
                 System.loadLibrary("OpenCL")
                 true
-            } catch (_: UnsatisfiedLinkError) {
+            } catch (e: UnsatisfiedLinkError) {
+                Log.d(TAG, "OpenCL library not available: ${e.message}")
+                false
+            } catch (e: SecurityException) {
+                Log.d(TAG, "OpenCL library loading denied: ${e.message}")
                 false
             }
         }
@@ -651,8 +655,7 @@ class DeviceCapabilityDetector
          * @return true if all required model files exist
          */
         fun areGLMASRModelsPresent(): Boolean {
-            val baseDir = context.getExternalFilesDir(null) ?: context.filesDir
-            val modelDir = baseDir.resolve("models/glm-asr-nano")
+            val modelDir = getGLMASRModelDirectory()
             if (!modelDir.exists()) {
                 return false
             }
