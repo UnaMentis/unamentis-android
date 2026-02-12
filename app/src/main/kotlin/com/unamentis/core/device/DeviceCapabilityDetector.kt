@@ -677,8 +677,7 @@ class DeviceCapabilityDetector
          * @return File pointing to the GLM-ASR model directory
          */
         fun getGLMASRModelDirectory(): java.io.File {
-            val baseDir = context.getExternalFilesDir(null) ?: context.filesDir
-            return baseDir.resolve("models/glm-asr-nano")
+            return com.unamentis.services.stt.GLMASROnDeviceConfig.getModelDirectory(context)
         }
 
         /**

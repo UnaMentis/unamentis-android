@@ -133,9 +133,9 @@ fun KBMatchSimulationScreen(
                     }
                 }
 
-                uiState.error != null -> {
+                uiState.errorRes != null -> {
                     ErrorView(
-                        error = uiState.error!!,
+                        error = stringResource(uiState.errorRes!!),
                         onDismiss = { viewModel.clearError() },
                     )
                 }
@@ -274,9 +274,7 @@ private fun SetupView(
         Spacer(modifier = Modifier.weight(1f))
 
         // Start button - require user to customize team name
-        val isSetupValid =
-            uiState.playerTeamName.isNotBlank() &&
-                uiState.playerTeamName != "Your Team"
+        val isSetupValid = uiState.playerTeamName.isNotBlank()
         Button(
             onClick = onStartMatch,
             modifier =
@@ -879,7 +877,12 @@ private fun OpponentAnswerCard(
             )
             Icon(
                 imageVector = if (isCorrect) Icons.Default.CheckCircle else Icons.Default.Close,
-                contentDescription = null,
+                contentDescription =
+                    if (isCorrect) {
+                        stringResource(R.string.cd_kb_correct_answer)
+                    } else {
+                        stringResource(R.string.cd_kb_incorrect_answer)
+                    },
                 tint = if (isCorrect) iOSGreen else iOSRed,
             )
         }
@@ -901,7 +904,12 @@ private fun FeedbackCard(isCorrect: Boolean) {
         ) {
             Icon(
                 imageVector = if (isCorrect) Icons.Default.CheckCircle else Icons.Default.Close,
-                contentDescription = null,
+                contentDescription =
+                    if (isCorrect) {
+                        stringResource(R.string.cd_kb_correct_answer)
+                    } else {
+                        stringResource(R.string.cd_kb_incorrect_answer)
+                    },
                 tint = if (isCorrect) iOSGreen else iOSRed,
             )
             Text(

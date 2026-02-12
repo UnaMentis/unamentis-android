@@ -155,8 +155,9 @@ object ProviderModule {
     @Named("GLMASROnDeviceSTT")
     fun provideGLMASROnDeviceSTTService(
         @ApplicationContext context: Context,
+        deviceCapabilityDetector: DeviceCapabilityDetector,
     ): GLMASROnDeviceSTTService {
-        return GLMASROnDeviceSTTService(context)
+        return GLMASROnDeviceSTTService(context, deviceCapabilityDetector)
     }
 
     // TTS Service Providers

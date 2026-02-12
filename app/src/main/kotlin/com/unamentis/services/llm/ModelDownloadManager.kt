@@ -107,6 +107,8 @@ class ModelDownloadManager
             const val GLM_ASR_DECODER_FILENAME = "glm_asr_decoder_q4km.gguf"
 
             // SHA256 checksums for verification (from HuggingFace LFS OIDs)
+            // TODO: Populate all empty checksums before production release.
+            //  Downloads without integrity verification are a supply-chain risk.
             private val MODEL_CHECKSUMS =
                 mapOf(
                     OnDeviceLLMService.MINISTRAL_3B_FILENAME to
@@ -455,6 +457,7 @@ class ModelDownloadManager
             targetDir: File,
             filename: String,
             expectedSize: Long,
+            retryCount: Int = 0,
         ): Result<String> =
             withContext(Dispatchers.IO) {
                 currentDownloadJob = currentCoroutineContext()[Job]
@@ -505,10 +508,18 @@ class ModelDownloadManager
                         // Handle server ignoring Range header (got 200 instead of 206)
                         val actualStartByte: Long
                         if (startByte > 0 && resp.code != 206) {
+                            if (retryCount >= 1) {
+                                currentCall = null
+                                currentDownloadJob = null
+                                val error = "Server repeatedly ignored Range header, aborting download"
+                                Log.e(TAG, error)
+                                _downloadState.value = DownloadState.Error(error)
+                                return@withContext Result.failure(IOException(error))
+                            }
                             Log.w(TAG, "Server ignored Range header. Restarting download.")
                             currentCall = null
                             tempFile.delete()
-                            return@withContext downloadFile(url, targetDir, filename, expectedSize)
+                            return@withContext downloadFile(url, targetDir, filename, expectedSize, retryCount + 1)
                         } else {
                             actualStartByte = startByte
                         }
@@ -728,7 +739,7 @@ class ModelDownloadManager
         }
 
         // Cache for URL availability checks to avoid repeated network requests
-        private val urlAvailabilityCache = mutableMapOf<String, Boolean>()
+        private val urlAvailabilityCache = java.util.concurrent.ConcurrentHashMap<String, Boolean>()
 
         /**
          * Check if a model download URL is reachable (HEAD request).

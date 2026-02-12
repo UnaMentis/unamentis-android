@@ -377,6 +377,8 @@
     </plurals>
 
     <!-- Knowledge Bowl Error Messages -->
+    <string name="kb_error_no_questions">No questions available</string>
+    <string name="kb_error_match_start_failed">Failed to start match</string>
     <string name="kb_error_failed_to_load_questions">Failed to load questions</string>
     <string name="kb_error_server_not_configured">Self-hosted server not configured</string>
     <string name="kb_error_server_returned">Server returned %1$d</string>
@@ -1072,6 +1074,9 @@
     <string name="provider_mediapipe">MediaPipe</string>
     <string name="provider_executorch">ExecuTorch</string>
 
+    <!-- LLM Backend display names -->
+    <string name="backend_mediapipe_gpu">MediaPipe (GPU)</string>
+
     <!-- Onboarding accessibility -->
     <string name="cd_skip_onboarding">Skip onboarding</string>
     <string name="cd_go_back">Go back</string>
@@ -1190,4 +1195,7 @@
     <string name="kb_team_alpha">Team Alpha</string>
     <string name="kb_team_beta">Team Beta</string>
     <string name="kb_team_gamma">Team Gamma</string>
+
+    <!-- STT Service -->
+    <string name="stt_stub_transcript">[Stub: Audio transcription would appear here]</string>
 </resources>

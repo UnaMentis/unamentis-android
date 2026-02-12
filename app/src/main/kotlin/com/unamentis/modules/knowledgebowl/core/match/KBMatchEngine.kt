@@ -384,28 +384,31 @@ class KBMatchEngine
         /**
          * Get written round progress.
          */
-        fun getWrittenProgress(): Pair<Int, Int> {
-            return currentQuestionIndex to writtenQuestions.size
-        }
+        suspend fun getWrittenProgress(): Pair<Int, Int> =
+            mutex.withLock {
+                currentQuestionIndex to writtenQuestions.size
+            }
 
         /**
          * Get oral round progress.
          */
-        fun getOralProgress(): OralProgress {
-            return OralProgress(
-                currentRound = currentOralRound + 1,
-                totalRounds = oralQuestions.size,
-                currentQuestion = currentQuestionIndex,
-                questionsPerRound = oralQuestions.getOrNull(currentOralRound)?.size ?: 0,
-            )
-        }
+        suspend fun getOralProgress(): OralProgress =
+            mutex.withLock {
+                OralProgress(
+                    currentRound = currentOralRound + 1,
+                    totalRounds = oralQuestions.size,
+                    currentQuestion = currentQuestionIndex,
+                    questionsPerRound = oralQuestions.getOrNull(currentOralRound)?.size ?: 0,
+                )
+            }
 
         /**
          * Get an opponent simulator by team ID.
          */
-        fun getOpponentSimulator(teamId: String): KBOpponentSimulator? {
-            return opponentSimulators.find { it.teamId == teamId }
-        }
+        suspend fun getOpponentSimulator(teamId: String): KBOpponentSimulator? =
+            mutex.withLock {
+                opponentSimulators.find { it.teamId == teamId }
+            }
 
         /**
          * Check if a team is the player's team.

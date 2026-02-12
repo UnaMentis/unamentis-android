@@ -1,5 +1,6 @@
 package com.unamentis.services.stt
 
+import android.content.Context
 import java.io.File
 
 /**
@@ -121,6 +122,21 @@ data class GLMASROnDeviceConfig(
          * Hugging Face model repository URL.
          */
         const val MODEL_REPO_URL = "https://huggingface.co/zai-org/GLM-ASR-Nano-2512"
+
+        /**
+         * Resolve the canonical GLM-ASR model directory for the given context.
+         *
+         * Prefers external files dir (more space) with internal files dir as fallback.
+         * All code that needs the GLM-ASR model path should use this single method
+         * to ensure consistent directory resolution.
+         *
+         * @param context Application context
+         * @return File pointing to the GLM-ASR model directory
+         */
+        fun getModelDirectory(context: Context): File {
+            val baseDir = context.getExternalFilesDir(null) ?: context.filesDir
+            return baseDir.resolve("models/glm-asr-nano")
+        }
 
         /**
          * Create configuration with default model directory.

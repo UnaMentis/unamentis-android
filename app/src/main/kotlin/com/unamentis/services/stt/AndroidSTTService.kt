@@ -11,9 +11,11 @@ import android.speech.SpeechRecognizer
 import com.unamentis.R
 import com.unamentis.data.model.STTResult
 import com.unamentis.data.model.STTService
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.withContext
 
 /**
  * Android native Speech-to-Text service implementation.
@@ -66,6 +68,12 @@ class AndroidSTTService(
 
             // SpeechRecognizer MUST be created and operated on the main thread
             mainHandler.post {
+                // Guard: if the flow was cancelled before this post executes, bail out
+                if (channel.isClosedForSend) {
+                    android.util.Log.w("AndroidSTT", "Flow already closed, skipping SpeechRecognizer creation")
+                    return@post
+                }
+
                 try {
                     speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context)
                     android.util.Log.i("AndroidSTT", "SpeechRecognizer created on main thread")
@@ -214,10 +222,12 @@ class AndroidSTTService(
         }
 
     /**
-     * Stop streaming and release recognizer (suspend version).
+     * Stop streaming and release recognizer.
+     *
+     * Suspends until the recognizer is stopped and destroyed on the main thread.
      */
     override suspend fun stopStreaming() {
-        mainHandler.post {
+        withContext(Dispatchers.Main) {
             doStopStreaming()
         }
     }

@@ -20,11 +20,10 @@ data class KBReboundConfig(
     val showOpponentAnswer: Boolean = true,
     val useProgressiveDifficulty: Boolean = true,
 ) {
-    init {
-        require(reboundProbability in 0.3..0.8) { "Rebound probability must be between 0.3 and 0.8" }
-        require(opponentAccuracy in 0.3..0.9) { "Opponent accuracy must be between 0.3 and 0.9" }
-        require(questionCount in 5..30) { "Question count must be between 5 and 30" }
-    }
+    // Validated/coerced values for safe deserialization of out-of-range data
+    val effectiveReboundProbability: Double = reboundProbability.coerceIn(0.3, 0.8)
+    val effectiveOpponentAccuracy: Double = opponentAccuracy.coerceIn(0.3, 0.9)
+    val effectiveQuestionCount: Int = questionCount.coerceIn(5, 30)
 
     companion object {
         /** Default configuration for a region */

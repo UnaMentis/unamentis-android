@@ -129,9 +129,9 @@ class KBReboundSimulator
 
                 val effectiveProbability =
                     if (cfg.useProgressiveDifficulty) {
-                        cfg.reboundProbability * currentDifficultyModifier
+                        cfg.effectiveReboundProbability * currentDifficultyModifier
                     } else {
-                        cfg.reboundProbability
+                        cfg.effectiveReboundProbability
                     }
 
                 val opponentBuzzed = Random.nextDouble() < effectiveProbability
@@ -141,7 +141,7 @@ class KBReboundSimulator
                 var timeAfterAnswer = 0.0
 
                 if (opponentBuzzed) {
-                    opponentWasCorrect = Random.nextDouble() < cfg.opponentAccuracy
+                    opponentWasCorrect = Random.nextDouble() < cfg.effectiveOpponentAccuracy
                     isReboundOpportunity = !opponentWasCorrect
 
                     opponentAnswer =

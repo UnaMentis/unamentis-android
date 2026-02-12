@@ -13,7 +13,6 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -23,6 +22,7 @@ import java.nio.ByteOrder
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.locks.ReentrantLock
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -59,6 +59,7 @@ class GLMASROnDeviceSTTService
     @Inject
     constructor(
         @ApplicationContext private val context: Context,
+        private val deviceCapabilityDetector: DeviceCapabilityDetector,
     ) : STTService {
         companion object {
             private const val TAG = "GLMASROnDevice"
@@ -68,8 +69,8 @@ class GLMASROnDeviceSTTService
             private const val CHUNK_DURATION_MS = 3000 // Process 3 seconds at a time
             private const val CHUNK_SAMPLES = SAMPLE_RATE * CHUNK_DURATION_MS / 1000
 
-            // Stub transcript for testing when ONNX Runtime is not available
-            private const val STUB_TRANSCRIPT = "[Stub: Audio transcription would appear here]"
+            // Stub transcript resource for testing when ONNX Runtime is not available
+            private val STUB_TRANSCRIPT_RES = R.string.stt_stub_transcript
 
             // Native library for ONNX Runtime (optional)
             private var onnxAvailable = false
@@ -112,7 +113,7 @@ class GLMASROnDeviceSTTService
         // Streaming state
         private val isStreaming = AtomicBoolean(false)
         private val audioBuffer = mutableListOf<Float>()
-        private val bufferMutex = Mutex()
+        private val bufferLock = ReentrantLock()
         private var sessionStartTime = 0L
         private var streamScope: ProducerScope<STTResult>? = null
 
@@ -140,8 +141,7 @@ class GLMASROnDeviceSTTService
                 return false
             }
 
-            val detector = DeviceCapabilityDetector(context)
-            return detector.supportsGLMASROnDevice(checkModels = false)
+            return deviceCapabilityDetector.supportsGLMASROnDevice(checkModels = false)
         }
 
         /**
@@ -241,19 +241,26 @@ class GLMASROnDeviceSTTService
                 }
 
                 if (isStreaming.getAndSet(true)) {
-                    Log.w(TAG, "Already streaming, closing existing stream")
+                    Log.w(TAG, "Already streaming, cancelling previous stream")
+                    // Close the previous producer so it terminates cleanly
+                    streamScope?.channel?.close()
                 }
 
                 streamScope = this@callbackFlow
                 sessionStartTime = System.currentTimeMillis()
-                audioBuffer.clear()
+                bufferLock.lock()
+                try {
+                    audioBuffer.clear()
+                } finally {
+                    bufferLock.unlock()
+                }
                 latencyMeasurements.clear()
 
                 Log.i(TAG, "Started on-device streaming")
 
                 awaitClose {
-                    streamScope = null
                     doStopStreaming()
+                    streamScope = null
                 }
             }.flowOn(Dispatchers.IO)
 
@@ -271,7 +278,8 @@ class GLMASROnDeviceSTTService
             }
 
             var chunkToProcess: FloatArray? = null
-            bufferMutex.withLock {
+            bufferLock.lock()
+            try {
                 audioBuffer.addAll(samples.toList())
 
                 // Process when we have enough samples
@@ -279,6 +287,8 @@ class GLMASROnDeviceSTTService
                     chunkToProcess = audioBuffer.take(CHUNK_SAMPLES).toFloatArray()
                     audioBuffer.subList(0, CHUNK_SAMPLES).clear()
                 }
+            } finally {
+                bufferLock.unlock()
             }
 
             chunkToProcess?.let { processAudioChunk(it) }
@@ -306,15 +316,15 @@ class GLMASROnDeviceSTTService
 
             Log.i(TAG, "Stopping on-device streaming")
 
-            // Acquire bufferMutex to get a consistent snapshot of remaining audio
-            val remainingAudio =
-                runBlocking {
-                    bufferMutex.withLock {
-                        val snapshot = audioBuffer.toFloatArray()
-                        audioBuffer.clear()
-                        snapshot
-                    }
-                }
+            // Acquire bufferLock to get a consistent snapshot of remaining audio
+            val remainingAudio: FloatArray
+            bufferLock.lock()
+            try {
+                remainingAudio = audioBuffer.toFloatArray()
+                audioBuffer.clear()
+            } finally {
+                bufferLock.unlock()
+            }
 
             if (remainingAudio.isNotEmpty()) {
                 processAudioChunkSync(remainingAudio)
@@ -380,7 +390,7 @@ class GLMASROnDeviceSTTService
         private fun runPipeline(samples: FloatArray): String? {
             // Step 1: Compute mel spectrogram
             val melSpec2D = melSpectrogram.compute(samples)
-            if (melSpec2D[0].isEmpty()) {
+            if (melSpec2D.isEmpty() || melSpec2D[0].isEmpty()) {
                 Log.w(TAG, "Empty mel spectrogram")
                 return null
             }
@@ -546,7 +556,7 @@ class GLMASROnDeviceSTTService
 
             if (ptr == 0L || !decoderAvailable) {
                 // Fallback to stub when decoder not available
-                return STUB_TRANSCRIPT
+                return context.getString(STUB_TRANSCRIPT_RES)
             }
 
             return try {
@@ -558,10 +568,10 @@ class GLMASROnDeviceSTTService
                         embeddingDim,
                         maxOutputTokens,
                     )
-                result.ifEmpty { STUB_TRANSCRIPT }
+                result.ifEmpty { context.getString(STUB_TRANSCRIPT_RES) }
             } catch (e: Exception) {
                 Log.e(TAG, "Error decoding embeddings", e)
-                STUB_TRANSCRIPT
+                context.getString(STUB_TRANSCRIPT_RES)
             }
         }
 
@@ -667,7 +677,7 @@ class GLMASROnDeviceSTTService
             val buffer = ByteBuffer.wrap(audioData).order(ByteOrder.LITTLE_ENDIAN)
             for (i in 0 until numSamples) {
                 val sample = buffer.getShort()
-                samples[i] = sample.toFloat() / Short.MAX_VALUE
+                samples[i] = sample.toFloat() / 32768.0f
             }
 
             return samples
@@ -694,7 +704,7 @@ class GLMASROnDeviceSTTService
          * Get model directory.
          */
         fun getModelDirectory(): File {
-            return config?.modelDirectory ?: context.filesDir.resolve("models/glm-asr-nano")
+            return config?.modelDirectory ?: GLMASROnDeviceConfig.getModelDirectory(context)
         }
 
         /**

@@ -58,7 +58,7 @@ class MediaPipeLLMService
         }
 
         override val providerName: String = context.getString(R.string.provider_mediapipe)
-        override val backendName: String = "MediaPipe (GPU)"
+        override val backendName: String = context.getString(R.string.backend_mediapipe_gpu)
         override val expectedToksPerSec: Int = 25
 
         // MediaPipe LLM Inference instance
@@ -164,78 +164,83 @@ class MediaPipeLLMService
             return modelsDir
         }
 
+        /**
+         * Ensure model is loaded and return the inference instance.
+         */
+        private suspend fun ensureInferenceReady(): Result<LlmInference> {
+            if (!isLoaded) {
+                val loadResult = loadModel()
+                if (loadResult.isFailure) {
+                    return Result.failure(
+                        loadResult.exceptionOrNull() ?: IllegalStateException("Failed to load model"),
+                    )
+                }
+            }
+            val inference =
+                llmInference
+                    ?: return Result.failure(IllegalStateException("MediaPipe inference not initialized"))
+            return Result.success(inference)
+        }
+
+        @Suppress("LongMethod")
         override fun streamCompletion(
             messages: List<LLMMessage>,
             temperature: Float,
             maxTokens: Int,
         ): Flow<LLMToken> =
             callbackFlow {
-                // Auto-load model if not loaded
-                if (!isLoaded) {
-                    val result = loadModel()
-                    if (result.isFailure) {
-                        close(result.exceptionOrNull() ?: IllegalStateException("Failed to load model"))
-                        return@callbackFlow
-                    }
-                }
+                val readyResult = ensureInferenceReady()
+                if (readyResult.isFailure) {
+                    close(readyResult.exceptionOrNull())
+                } else {
+                    val inference = readyResult.getOrThrow()
+                    val prompt = formatPrompt(messages)
+                    val startTime = System.currentTimeMillis()
+                    var firstTokenEmitted = false
+                    var generatedTokens = 0
 
-                val inference = llmInference
-                if (inference == null) {
-                    close(IllegalStateException("MediaPipe inference not initialized"))
-                    return@callbackFlow
-                }
+                    Log.d(TAG, "Starting MediaPipe async generation with ${prompt.length} char prompt")
+                    totalInputTokens.addAndGet(prompt.length / 4)
 
-                val prompt = formatPrompt(messages)
-                val startTime = System.currentTimeMillis()
-                var firstTokenEmitted = false
-                var generatedTokens = 0
-
-                Log.d(TAG, "Starting MediaPipe async generation with ${prompt.length} char prompt")
-
-                // Estimate input tokens (~4 chars per token)
-                totalInputTokens.addAndGet(prompt.length / 4)
-
-                try {
-                    inference.generateResponseAsync(prompt) { partialResult, done ->
-                        // Record TTFT on first non-empty partial result
-                        if (!firstTokenEmitted && partialResult.isNotEmpty()) {
-                            firstTokenEmitted = true
-                            val ttft = System.currentTimeMillis() - startTime
-                            if (ttftMeasurements.size >= MAX_TTFT_MEASUREMENTS) {
-                                ttftMeasurements.removeAt(0)
-                            }
-                            ttftMeasurements.add(ttft)
-                            Log.i(TAG, "TTFT: ${ttft}ms")
-                        }
-
-                        if (partialResult.isNotEmpty()) {
-                            // Estimate token count (~4 chars per token)
-                            val chunkTokens = partialResult.length / 4
-                            generatedTokens += chunkTokens
-                            totalOutputTokens.addAndGet(chunkTokens)
-                            trySend(LLMToken(content = partialResult, isDone = false))
-                        }
-
-                        if (done) {
-                            // Calculate tokens per second
-                            val elapsedSec = (System.currentTimeMillis() - startTime) / 1000f
-                            if (elapsedSec > 0 && generatedTokens > 0) {
-                                val toksPerSec = generatedTokens / elapsedSec
-                                if (toksPerSecMeasurements.size >= MAX_TTFT_MEASUREMENTS) {
-                                    toksPerSecMeasurements.removeAt(0)
+                    try {
+                        inference.generateResponseAsync(prompt) { partialResult, done ->
+                            if (!firstTokenEmitted && partialResult.isNotEmpty()) {
+                                firstTokenEmitted = true
+                                val ttft = System.currentTimeMillis() - startTime
+                                if (ttftMeasurements.size >= MAX_TTFT_MEASUREMENTS) {
+                                    ttftMeasurements.removeAt(0)
                                 }
-                                toksPerSecMeasurements.add(toksPerSec)
-                                Log.i(TAG, "Generation speed: ${toksPerSec.toInt()} tok/sec")
+                                ttftMeasurements.add(ttft)
+                                Log.i(TAG, "TTFT: ${ttft}ms")
                             }
 
-                            trySend(LLMToken(content = "", isDone = true))
-                            Log.i(TAG, "Generation complete: $generatedTokens tokens")
-                            close()
+                            if (partialResult.isNotEmpty()) {
+                                val chunkTokens = partialResult.length / 4
+                                generatedTokens += chunkTokens
+                                totalOutputTokens.addAndGet(chunkTokens)
+                                trySend(LLMToken(content = partialResult, isDone = false))
+                            }
+
+                            if (done) {
+                                val elapsedSec = (System.currentTimeMillis() - startTime) / 1000f
+                                if (elapsedSec > 0 && generatedTokens > 0) {
+                                    val toksPerSec = generatedTokens / elapsedSec
+                                    if (toksPerSecMeasurements.size >= MAX_TTFT_MEASUREMENTS) {
+                                        toksPerSecMeasurements.removeAt(0)
+                                    }
+                                    toksPerSecMeasurements.add(toksPerSec)
+                                    Log.i(TAG, "Generation speed: ${toksPerSec.toInt()} tok/sec")
+                                }
+
+                                trySend(LLMToken(content = "", isDone = true))
+                                Log.i(TAG, "Generation complete: $generatedTokens tokens")
+                                close()
+                            }
                         }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "MediaPipe generation error", e)
+                        close(e)
                     }
-                } catch (e: Exception) {
-                    Log.e(TAG, "MediaPipe generation error", e)
-                    close(e)
                 }
 
                 awaitClose {

@@ -1,7 +1,9 @@
 package com.unamentis.modules.knowledgebowl.ui.match
 
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.unamentis.R
 import com.unamentis.modules.knowledgebowl.core.engine.KBQuestionEngine
 import com.unamentis.modules.knowledgebowl.core.match.BuzzResult
 import com.unamentis.modules.knowledgebowl.core.match.KBMatchConfig
@@ -33,7 +35,7 @@ data class MatchSimulationUiState(
     val selectedRegion: KBRegion = KBRegion.DEFAULT,
     val selectedFormat: MatchFormat = MatchFormat.QUICK_MATCH,
     val selectedOpponentStrength: OpponentStrength = OpponentStrength.INTERMEDIATE,
-    val playerTeamName: String = "Your Team",
+    val playerTeamName: String = "",
     // Match state
     val phase: MatchPhase = MatchPhase.NotStarted,
     val teams: List<KBTeam> = emptyList(),
@@ -56,7 +58,7 @@ data class MatchSimulationUiState(
     val matchSummary: KBMatchSummary? = null,
     // Loading/error
     val isLoading: Boolean = false,
-    val error: String? = null,
+    @StringRes val errorRes: Int? = null,
 )
 
 /**
@@ -109,7 +111,7 @@ class KBMatchSimulationViewModel
 
         fun startMatch() {
             viewModelScope.launch {
-                _uiState.update { it.copy(isLoading = true, error = null) }
+                _uiState.update { it.copy(isLoading = true, errorRes = null) }
 
                 try {
                     // Load questions
@@ -118,7 +120,7 @@ class KBMatchSimulationViewModel
 
                     if (questions.isEmpty()) {
                         _uiState.update {
-                            it.copy(isLoading = false, error = "No questions available")
+                            it.copy(isLoading = false, errorRes = R.string.kb_error_no_questions)
                         }
                         return@launch
                     }
@@ -154,7 +156,7 @@ class KBMatchSimulationViewModel
                     updateProgress()
                 } catch (e: Exception) {
                     _uiState.update {
-                        it.copy(isLoading = false, error = e.message ?: "Failed to start match")
+                        it.copy(isLoading = false, errorRes = R.string.kb_error_match_start_failed)
                     }
                 }
             }
@@ -169,6 +171,7 @@ class KBMatchSimulationViewModel
         fun submitWrittenAnswer() {
             viewModelScope.launch {
                 val state = _uiState.value
+                if (state.showFeedback) return@launch
                 val question = state.currentQuestion ?: return@launch
                 val selectedIndex = state.selectedAnswer ?: return@launch
 
@@ -283,6 +286,7 @@ class KBMatchSimulationViewModel
         fun submitOralAnswer(answer: String) {
             viewModelScope.launch {
                 val state = _uiState.value
+                if (state.showFeedback) return@launch
                 val question = state.currentQuestion ?: return@launch
 
                 val validationResult = answerValidator.validate(answer, question)
@@ -316,7 +320,7 @@ class KBMatchSimulationViewModel
             }
         }
 
-        private fun proceedToNextOralQuestion() {
+        private suspend fun proceedToNextOralQuestion() {
             _uiState.update {
                 it.copy(
                     showFeedback = false,
@@ -333,8 +337,9 @@ class KBMatchSimulationViewModel
             updateProgress()
             updateCurrentQuestion()
 
-            // If still in oral round, start next buzz
-            if (_uiState.value.phase is MatchPhase.OralRound) {
+            // Query the engine's authoritative phase instead of potentially stale UI state
+            val currentPhase = matchEngine.currentPhase.value
+            if (currentPhase is MatchPhase.OralRound) {
                 startBuzzSimulation()
             }
         }
@@ -346,7 +351,9 @@ class KBMatchSimulationViewModel
                 updateProgress()
                 updateCurrentQuestion()
 
-                if (_uiState.value.phase is MatchPhase.OralRound) {
+                // Query the engine's authoritative phase instead of potentially stale UI state
+                val currentPhase = matchEngine.currentPhase.value
+                if (currentPhase is MatchPhase.OralRound) {
                     startBuzzSimulation()
                 }
             }
@@ -374,7 +381,7 @@ class KBMatchSimulationViewModel
             }
         }
 
-        private fun updateProgress() {
+        private suspend fun updateProgress() {
             val writtenProgress = matchEngine.getWrittenProgress()
             val oralProgress = matchEngine.getOralProgress()
             _uiState.update {
@@ -393,6 +400,6 @@ class KBMatchSimulationViewModel
         }
 
         fun clearError() {
-            _uiState.update { it.copy(error = null) }
+            _uiState.update { it.copy(errorRes = null) }
         }
     }
