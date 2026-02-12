@@ -211,15 +211,15 @@ class KBReboundTrainingViewModel
                 val state = _uiState.value
                 val scenario = state.currentScenario ?: return@launch
 
-                reboundSimulator.recordAttempt(
-                    buzzedOnRebound = false,
-                    userAnswer = null,
-                    wasCorrect = false,
-                    responseTime = (5.0 - state.reboundTimeRemaining).toDouble(),
-                    knewAnswer = false,
-                )
+                val points =
+                    reboundSimulator.recordAttempt(
+                        buzzedOnRebound = false,
+                        userAnswer = null,
+                        wasCorrect = false,
+                        responseTime = (5.0 - state.reboundTimeRemaining).toDouble(),
+                        knewAnswer = false,
+                    )
 
-                val points = 2
                 val answer = scenario.question.answer.primary
                 val feedback =
                     ReboundFeedback(
@@ -247,15 +247,14 @@ class KBReboundTrainingViewModel
 
                 val responseTime = (System.currentTimeMillis() - turnStartTime) / 1000.0
 
-                reboundSimulator.recordAttempt(
-                    buzzedOnRebound = scenario.isReboundOpportunity,
-                    userAnswer = if (wasCorrect) scenario.question.answer.primary else "wrong",
-                    wasCorrect = wasCorrect,
-                    responseTime = responseTime,
-                    knewAnswer = true,
-                )
-
-                val points = if (wasCorrect) 10 else -5
+                val points =
+                    reboundSimulator.recordAttempt(
+                        buzzedOnRebound = scenario.isReboundOpportunity,
+                        userAnswer = if (wasCorrect) scenario.question.answer.primary else "wrong",
+                        wasCorrect = wasCorrect,
+                        responseTime = responseTime,
+                        knewAnswer = true,
+                    )
 
                 val feedback =
                     if (wasCorrect) {
@@ -334,15 +333,14 @@ class KBReboundTrainingViewModel
                 val state = _uiState.value
                 val scenario = state.currentScenario ?: return@launch
 
-                reboundSimulator.recordAttempt(
-                    buzzedOnRebound = false,
-                    userAnswer = null,
-                    wasCorrect = false,
-                    responseTime = 0.0,
-                    knewAnswer = false,
-                )
-
-                val points = 1
+                val points =
+                    reboundSimulator.recordAttempt(
+                        buzzedOnRebound = false,
+                        userAnswer = null,
+                        wasCorrect = false,
+                        responseTime = 0.0,
+                        knewAnswer = false,
+                    )
                 val feedback =
                     ReboundFeedback(
                         titleResId = R.string.kb_rebound_feedback_opponent_got_it,
@@ -392,15 +390,14 @@ class KBReboundTrainingViewModel
                 val state = _uiState.value
                 val scenario = state.currentScenario ?: return@launch
 
-                reboundSimulator.recordAttempt(
-                    buzzedOnRebound = false,
-                    userAnswer = null,
-                    wasCorrect = false,
-                    responseTime = 5.0,
-                    knewAnswer = false,
-                )
-
-                val points = -2
+                val points =
+                    reboundSimulator.recordAttempt(
+                        buzzedOnRebound = false,
+                        userAnswer = null,
+                        wasCorrect = false,
+                        responseTime = 5.0,
+                        knewAnswer = false,
+                    )
                 val feedback =
                     ReboundFeedback(
                         titleResId = R.string.kb_rebound_feedback_missed,

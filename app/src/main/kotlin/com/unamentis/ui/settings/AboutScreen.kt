@@ -3,6 +3,7 @@ package com.unamentis.ui.settings
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -62,6 +63,7 @@ import com.unamentis.ui.theme.IOSTypography
 fun AboutScreen(onNavigateBack: () -> Unit) {
     val context = LocalContext.current
     val backDescription = stringResource(R.string.cd_go_back)
+    val noAppMessage = stringResource(R.string.error_no_app_available)
 
     Scaffold(
         topBar = {
@@ -152,7 +154,7 @@ fun AboutScreen(onNavigateBack: () -> Unit) {
                                 try {
                                     context.startActivity(intent)
                                 } catch (_: ActivityNotFoundException) {
-                                    // No browser available
+                                    Toast.makeText(context, noAppMessage, Toast.LENGTH_SHORT).show()
                                 }
                             },
                         )
@@ -169,7 +171,7 @@ fun AboutScreen(onNavigateBack: () -> Unit) {
                                 try {
                                     context.startActivity(intent)
                                 } catch (_: ActivityNotFoundException) {
-                                    // No browser available
+                                    Toast.makeText(context, noAppMessage, Toast.LENGTH_SHORT).show()
                                 }
                             },
                         )
@@ -186,7 +188,7 @@ fun AboutScreen(onNavigateBack: () -> Unit) {
                                 try {
                                     context.startActivity(intent)
                                 } catch (_: ActivityNotFoundException) {
-                                    // No browser available
+                                    Toast.makeText(context, noAppMessage, Toast.LENGTH_SHORT).show()
                                 }
                             },
                         )
@@ -203,7 +205,7 @@ fun AboutScreen(onNavigateBack: () -> Unit) {
                                 try {
                                     context.startActivity(intent)
                                 } catch (_: ActivityNotFoundException) {
-                                    // No browser available
+                                    Toast.makeText(context, noAppMessage, Toast.LENGTH_SHORT).show()
                                 }
                             },
                         )
@@ -239,7 +241,7 @@ fun AboutScreen(onNavigateBack: () -> Unit) {
                             try {
                                 context.startActivity(intent)
                             } catch (_: ActivityNotFoundException) {
-                                // No email client available
+                                Toast.makeText(context, noAppMessage, Toast.LENGTH_SHORT).show()
                             }
                         },
                     )
@@ -313,7 +315,7 @@ private fun AboutLinkRow(
             ) {
                 Icon(
                     imageVector = icon,
-                    contentDescription = null,
+                    contentDescription = title,
                     tint = MaterialTheme.colorScheme.primary,
                 )
                 Column(modifier = Modifier.padding(start = Dimensions.SpacingMedium)) {
@@ -333,7 +335,7 @@ private fun AboutLinkRow(
             }
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.OpenInNew,
-                contentDescription = null,
+                contentDescription = stringResource(R.string.cd_open_external_link),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }

@@ -54,6 +54,17 @@ class DeviceCapabilityDetector
                     "pineapple",
                 )
 
+            // Flagship Qualcomm SoCs (Snapdragon 8 Gen2+) for hardware classification
+            private val FLAGSHIP_QUALCOMM_SOCS =
+                setOf(
+                    "sm8550",
+                    "sm8650",
+                    "sm8750",
+                    "sm8750-ab",
+                    "kalama",
+                    "pineapple",
+                )
+
             // SoCs known to have good OpenCL GPU support
             private val OPENCL_GPU_SOCS =
                 setOf(
@@ -543,9 +554,8 @@ class DeviceCapabilityDetector
          * @return true if device has Snapdragon 8 Gen2 or newer
          */
         fun isSnapdragon8Gen2OrNewer(): Boolean {
-            val socPlatform = detectSoCPlatform().lowercase()
-            val flagshipSocs = setOf("sm8550", "sm8650", "sm8750", "kalama", "pineapple")
-            return flagshipSocs.any { socPlatform.contains(it) }
+            val socPlatform = detect().socPlatform.lowercase()
+            return FLAGSHIP_QUALCOMM_SOCS.any { socPlatform.contains(it) }
         }
 
         /**

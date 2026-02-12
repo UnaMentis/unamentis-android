@@ -289,7 +289,7 @@ class AudioWebSocketClient(
         )
     val messages: SharedFlow<AudioWebSocketMessage> = _messages.asSharedFlow()
 
-    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private val scope = CoroutineScope(Dispatchers.IO.limitedParallelism(1) + SupervisorJob())
 
     /**
      * Connect to the audio WebSocket for a specific session.
@@ -301,6 +301,12 @@ class AudioWebSocketClient(
             Log.d(TAG, "Already connected to session $sessionId")
             return
         }
+
+        // Cancel any pending reconnect/ping before starting a new connection
+        reconnectJob?.cancel()
+        reconnectJob = null
+        pingJob?.cancel()
+        pingJob = null
 
         // Disconnect from any existing session
         if (webSocket != null) {
@@ -457,6 +463,10 @@ class AudioWebSocketClient(
         sendText("""{"type": "ping"}""")
     }
 
+    // Messages are intentionally dropped when disconnected rather than queued,
+    // because audio control messages are time-sensitive and replaying stale messages
+    // after reconnection could cause incorrect state. Critical config is re-sent
+    // via configure() in onOpen.
     private fun sendText(message: String) {
         val ws = webSocket
         if (ws != null) {
@@ -476,18 +486,17 @@ class AudioWebSocketClient(
                 response: Response,
             ) {
                 Log.i(TAG, "Audio WebSocket connected")
-                _state.value = AudioWebSocketState.CONNECTED
-                reconnectAttempts = 0
-
                 scope.launch {
+                    _state.value = AudioWebSocketState.CONNECTED
+                    reconnectAttempts = 0
                     _messages.emit(AudioWebSocketMessage.Connected)
+
+                    // Re-apply configuration if we have one
+                    currentConfig?.let { configure(it) }
+
+                    // Start ping job
+                    startPingJob()
                 }
-
-                // Re-apply configuration if we have one
-                currentConfig?.let { configure(it) }
-
-                // Start ping job
-                startPingJob()
             }
 
             override fun onMessage(
@@ -507,11 +516,11 @@ class AudioWebSocketClient(
                 Log.v(TAG, "Received binary: ${bytes.size} bytes")
                 scope.launch {
                     _messages.emit(AudioWebSocketMessage.Audio(bytes.toByteArray()))
-                }
 
-                // If we receive audio, we're in playing state
-                if (_state.value == AudioWebSocketState.PROCESSING) {
-                    _state.value = AudioWebSocketState.PLAYING
+                    // If we receive audio, we're in playing state
+                    if (_state.value == AudioWebSocketState.PROCESSING) {
+                        _state.value = AudioWebSocketState.PLAYING
+                    }
                 }
             }
 
@@ -529,7 +538,7 @@ class AudioWebSocketClient(
                 reason: String,
             ) {
                 Log.i(TAG, "Audio WebSocket closed: $code $reason")
-                handleDisconnect(code, reason)
+                scope.launch { handleDisconnect(code, reason) }
             }
 
             override fun onFailure(
@@ -538,7 +547,7 @@ class AudioWebSocketClient(
                 response: Response?,
             ) {
                 Log.e(TAG, "Audio WebSocket failure: ${t.message}", t)
-                handleFailure(t)
+                scope.launch { handleFailure(t) }
             }
         }
     }
@@ -623,7 +632,14 @@ class AudioWebSocketClient(
         pingJob?.cancel()
         pingJob =
             scope.launch {
-                while (isActive && _state.value != AudioWebSocketState.DISCONNECTED) {
+                val activeStates =
+                    setOf(
+                        AudioWebSocketState.CONNECTED,
+                        AudioWebSocketState.RECORDING,
+                        AudioWebSocketState.PROCESSING,
+                        AudioWebSocketState.PLAYING,
+                    )
+                while (isActive && _state.value in activeStates) {
                     delay(PING_INTERVAL_MS)
                     sendPing()
                 }

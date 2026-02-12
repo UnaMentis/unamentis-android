@@ -23,6 +23,7 @@ data class KBReboundConfig(
     init {
         require(reboundProbability in 0.3..0.8) { "Rebound probability must be between 0.3 and 0.8" }
         require(opponentAccuracy in 0.3..0.9) { "Opponent accuracy must be between 0.3 and 0.9" }
+        require(questionCount in 5..30) { "Question count must be between 5 and 30" }
     }
 
     companion object {

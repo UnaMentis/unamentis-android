@@ -205,7 +205,8 @@ class ExecuTorchLLMService
          * Get models directory.
          */
         fun getModelsDirectory(): File {
-            val modelsDir = File(context.getExternalFilesDir(null), "models")
+            val baseDir = context.getExternalFilesDir(null) ?: context.filesDir
+            val modelsDir = File(baseDir, "models")
             if (!modelsDir.exists()) {
                 modelsDir.mkdirs()
             }
@@ -234,7 +235,10 @@ class ExecuTorchLLMService
 
                 awaitClose {
                     Log.d(TAG, "Flow closed, stopping generation")
-                    nativeStopGeneration(modulePtr)
+                    val ptr = nativeModulePtr.get()
+                    if (ptr != 0L) {
+                        nativeStopGeneration(ptr)
+                    }
                 }
             }.flowOn(Dispatchers.IO)
 

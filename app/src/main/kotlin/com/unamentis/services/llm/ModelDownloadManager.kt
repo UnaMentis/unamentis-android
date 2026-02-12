@@ -375,200 +375,13 @@ class ModelDownloadManager
          * @param spec The model specification
          * @return Result containing the model path on success
          */
-        @Suppress("LongMethod", "CyclomaticComplexMethod")
         suspend fun downloadModel(spec: DeviceCapabilityDetector.OnDeviceModelSpec): Result<String> =
-            withContext(Dispatchers.IO) {
-                // Track the current coroutine job so cancelDownload() can cancel it
-                currentDownloadJob = currentCoroutineContext()[Job]
-                isCancelled.set(false)
-                _downloadState.value = DownloadState.Downloading(0f, 0, spec.sizeBytes)
-
-                val modelsDir = getModelsDirectory()
-                val targetFile = File(modelsDir, spec.filename)
-                val tempFile = File(modelsDir, "${spec.filename}.download")
-
-                try {
-                    // Check if already downloaded
-                    if (targetFile.exists() && targetFile.length() > 0) {
-                        currentDownloadJob = null
-                        Log.i(TAG, "Model already exists: ${targetFile.absolutePath}")
-                        _downloadState.value = DownloadState.Complete(targetFile.absolutePath)
-                        return@withContext Result.success(targetFile.absolutePath)
-                    }
-
-                    val downloadUrl = getDownloadUrl(spec)
-                    Log.i(TAG, "Starting download: $downloadUrl")
-
-                    // Build request (with resume support)
-                    val requestBuilder = Request.Builder().url(downloadUrl)
-
-                    // Resume from existing partial download
-                    val startByte =
-                        if (tempFile.exists()) {
-                            val existingSize = tempFile.length()
-                            requestBuilder.header("Range", "bytes=$existingSize-")
-                            Log.i(TAG, "Resuming from byte $existingSize")
-                            existingSize
-                        } else {
-                            0L
-                        }
-
-                    val request = requestBuilder.build()
-                    val call = downloadClient.newCall(request)
-                    currentCall = call
-                    val response = call.execute()
-
-                    // Use response.use to guarantee the response is closed on all paths
-                    // (success, error, early return, or exception). The finally block in
-                    // use() ensures closure even with non-local returns.
-                    response.use { resp ->
-                        if (!resp.isSuccessful && resp.code != 206) {
-                            currentCall = null
-                            currentDownloadJob = null
-                            val error = "Download failed: HTTP ${resp.code}"
-                            Log.e(TAG, error)
-                            _downloadState.value = DownloadState.Error(error)
-                            return@withContext Result.failure(IOException(error))
-                        }
-
-                        // Handle server ignoring Range header: if we requested a resume
-                        // (startByte > 0) but got a 200 instead of 206, the server is sending
-                        // the full file. We must restart the download to avoid corruption.
-                        val actualStartByte: Long
-                        if (startByte > 0 && resp.code != 206) {
-                            Log.w(
-                                TAG,
-                                "Server ignored Range header (got 200 instead of 206). " +
-                                    "Restarting download from beginning.",
-                            )
-                            currentCall = null
-                            // Don't clear currentDownloadJob - recursive call will set it
-                            // Delete the partial file and restart
-                            tempFile.delete()
-                            // Recursive call to restart without resume
-                            // (response.use will close the response as we exit)
-                            return@withContext downloadModel(spec)
-                        } else {
-                            actualStartByte = startByte
-                        }
-
-                        val body =
-                            resp.body ?: run {
-                                currentCall = null
-                                currentDownloadJob = null
-                                val error = "Empty response body"
-                                Log.e(TAG, error)
-                                _downloadState.value = DownloadState.Error(error)
-                                return@withContext Result.failure(IOException(error))
-                            }
-
-                        // Get total size (handle Content-Range for resumed downloads)
-                        val contentLength = body.contentLength()
-                        val totalBytes =
-                            if (resp.code == 206) {
-                                // Parse Content-Range header: bytes 0-999/1000
-                                val contentRange = resp.header("Content-Range")
-                                contentRange?.substringAfter("/")?.toLongOrNull()
-                                    ?: (actualStartByte + contentLength)
-                            } else {
-                                contentLength
-                            }
-
-                        Log.i(TAG, "Total size: $totalBytes bytes")
-
-                        // Write to temp file
-                        val outputStream =
-                            FileOutputStream(tempFile, actualStartByte > 0) // append if resuming
-                        val inputStream = body.byteStream()
-                        val buffer = ByteArray(BUFFER_SIZE)
-                        var downloadedBytes = actualStartByte
-                        var bytesRead: Int
-                        var lastReportedProgress = -1 // Track last reported % to throttle updates
-
-                        outputStream.use { output ->
-                            inputStream.use { input ->
-                                while (input.read(buffer).also { bytesRead = it } != -1) {
-                                    if (isCancelled.get()) {
-                                        currentCall = null
-                                        currentDownloadJob = null
-                                        Log.i(TAG, "Download cancelled")
-                                        _downloadState.value = DownloadState.Cancelled
-                                        return@withContext Result.failure(
-                                            IOException("Download cancelled"),
-                                        )
-                                    }
-
-                                    output.write(buffer, 0, bytesRead)
-                                    downloadedBytes += bytesRead
-
-                                    // Throttle progress updates to ~1% increments to reduce UI churn
-                                    val progress = downloadedBytes.toFloat() / totalBytes
-                                    val currentPercent = (progress * 100).toInt()
-                                    if (currentPercent > lastReportedProgress) {
-                                        lastReportedProgress = currentPercent
-                                        _downloadState.value =
-                                            DownloadState.Downloading(
-                                                progress = progress,
-                                                downloadedBytes = downloadedBytes,
-                                                totalBytes = totalBytes,
-                                            )
-                                    }
-                                }
-                            }
-                        }
-                    } // response.use closes the response here
-
-                    Log.i(TAG, "Download complete, verifying...")
-                    _downloadState.value = DownloadState.Verifying(spec.filename)
-
-                    // Verify checksum (if available)
-                    val expectedChecksum = MODEL_CHECKSUMS[spec.filename]
-                    if (expectedChecksum != null) {
-                        val actualChecksum = calculateSha256(tempFile)
-                        if (actualChecksum != expectedChecksum) {
-                            currentCall = null
-                            currentDownloadJob = null
-                            tempFile.delete()
-                            val error = "Checksum verification failed"
-                            Log.e(TAG, "$error: expected $expectedChecksum, got $actualChecksum")
-                            _downloadState.value = DownloadState.Error(error)
-                            return@withContext Result.failure(IOException(error))
-                        }
-                        Log.i(TAG, "Checksum verified")
-                    } else {
-                        Log.w(TAG, "No checksum available for ${spec.filename}, skipping verification")
-                    }
-
-                    // Rename temp file to final
-                    if (!tempFile.renameTo(targetFile)) {
-                        currentCall = null
-                        currentDownloadJob = null
-                        val error = "Failed to rename temp file"
-                        Log.e(TAG, error)
-                        _downloadState.value = DownloadState.Error(error)
-                        return@withContext Result.failure(IOException(error))
-                    }
-
-                    currentCall = null
-                    currentDownloadJob = null
-                    Log.i(TAG, "Model ready: ${targetFile.absolutePath}")
-                    _downloadState.value = DownloadState.Complete(targetFile.absolutePath)
-                    Result.success(targetFile.absolutePath)
-                } catch (e: Exception) {
-                    currentCall = null
-                    currentDownloadJob = null
-                    // Check if the exception was due to cancellation
-                    if (isCancelled.get()) {
-                        Log.i(TAG, "Download cancelled")
-                        _downloadState.value = DownloadState.Cancelled
-                        Result.failure(IOException("Download cancelled"))
-                    } else {
-                        Log.e(TAG, "Download failed", e)
-                        _downloadState.value = DownloadState.Error(e.message ?: "Unknown error")
-                        Result.failure(e)
-                    }
-                }
-            }
+            downloadFile(
+                url = getDownloadUrl(spec),
+                targetDir = getModelsDirectory(),
+                filename = spec.filename,
+                expectedSize = spec.sizeBytes,
+            )
 
         /**
          * Cancel the current download.
@@ -592,19 +405,7 @@ class ModelDownloadManager
          * @return true if deleted successfully
          */
         fun deleteModel(spec: DeviceCapabilityDetector.OnDeviceModelSpec): Boolean {
-            val file = File(getModelsDirectory(), spec.filename)
-            val tempFile = File(getModelsDirectory(), "${spec.filename}.download")
-
-            var deleted = false
-            if (file.exists()) {
-                deleted = file.delete()
-                Log.i(TAG, "Deleted model: ${spec.filename}, success: $deleted")
-            }
-            if (tempFile.exists()) {
-                tempFile.delete()
-            }
-
-            return deleted
+            return deleteModelFile(getModelsDirectory(), spec.filename)
         }
 
         /**
@@ -636,6 +437,217 @@ class ModelDownloadManager
                 DeviceCapabilityDetector.OnDeviceModelSpec.TINYLLAMA_1B ->
                     TINYLLAMA_1B_URL_BASE + TINYLLAMA_1B_FILE
             }
+        }
+
+        /**
+         * Shared download helper used by all public download methods.
+         *
+         * Handles resume (Range header), Content-Range parsing for 206 responses,
+         * progress reporting, cancellation, checksum verification, and temp-file rename.
+         */
+        @Suppress("LongMethod", "CyclomaticComplexMethod")
+        private suspend fun downloadFile(
+            url: String,
+            targetDir: File,
+            filename: String,
+            expectedSize: Long,
+        ): Result<String> =
+            withContext(Dispatchers.IO) {
+                currentDownloadJob = currentCoroutineContext()[Job]
+                isCancelled.set(false)
+                _downloadState.value = DownloadState.Downloading(0f, 0, expectedSize)
+
+                val targetFile = File(targetDir, filename)
+                val tempFile = File(targetDir, "$filename.download")
+
+                try {
+                    // Check if already downloaded
+                    if (targetFile.exists() && targetFile.length() > 0) {
+                        currentDownloadJob = null
+                        Log.i(TAG, "Model already exists: ${targetFile.absolutePath}")
+                        _downloadState.value = DownloadState.Complete(targetFile.absolutePath)
+                        return@withContext Result.success(targetFile.absolutePath)
+                    }
+
+                    Log.i(TAG, "Starting download: $url")
+
+                    // Build request with resume support
+                    val requestBuilder = Request.Builder().url(url)
+                    val startByte =
+                        if (tempFile.exists()) {
+                            val existingSize = tempFile.length()
+                            requestBuilder.header("Range", "bytes=$existingSize-")
+                            Log.i(TAG, "Resuming from byte $existingSize")
+                            existingSize
+                        } else {
+                            0L
+                        }
+
+                    val request = requestBuilder.build()
+                    val call = downloadClient.newCall(request)
+                    currentCall = call
+                    val response = call.execute()
+
+                    response.use { resp ->
+                        if (!resp.isSuccessful && resp.code != 206) {
+                            currentCall = null
+                            currentDownloadJob = null
+                            val error = "Download failed: HTTP ${resp.code}"
+                            Log.e(TAG, error)
+                            _downloadState.value = DownloadState.Error(error)
+                            return@withContext Result.failure(IOException(error))
+                        }
+
+                        // Handle server ignoring Range header (got 200 instead of 206)
+                        val actualStartByte: Long
+                        if (startByte > 0 && resp.code != 206) {
+                            Log.w(TAG, "Server ignored Range header. Restarting download.")
+                            currentCall = null
+                            tempFile.delete()
+                            return@withContext downloadFile(url, targetDir, filename, expectedSize)
+                        } else {
+                            actualStartByte = startByte
+                        }
+
+                        val body =
+                            resp.body ?: run {
+                                currentCall = null
+                                currentDownloadJob = null
+                                val error = "Empty response body"
+                                Log.e(TAG, error)
+                                _downloadState.value = DownloadState.Error(error)
+                                return@withContext Result.failure(IOException(error))
+                            }
+
+                        // Compute total size, handling Content-Range for 206 and chunked transfers
+                        val contentLength = body.contentLength()
+                        val totalBytes =
+                            if (resp.code == 206) {
+                                // Parse Content-Range header: "bytes 0-999/1000"
+                                val contentRange = resp.header("Content-Range")
+                                val parsedTotal = contentRange?.substringAfter("/")?.toLongOrNull()
+                                when {
+                                    parsedTotal != null && parsedTotal > 0 -> parsedTotal
+                                    contentLength >= 0 -> actualStartByte + contentLength
+                                    else -> expectedSize // fallback to declared size
+                                }
+                            } else if (contentLength >= 0) {
+                                contentLength
+                            } else {
+                                expectedSize // fallback for chunked transfer
+                            }
+
+                        Log.i(TAG, "Total size: $totalBytes bytes")
+
+                        val outputStream = FileOutputStream(tempFile, actualStartByte > 0)
+                        val buffer = ByteArray(BUFFER_SIZE)
+                        var downloadedBytes = actualStartByte
+                        var bytesRead: Int
+                        var lastReportedProgress = -1
+
+                        outputStream.use { output ->
+                            body.byteStream().use { input ->
+                                while (input.read(buffer).also { bytesRead = it } != -1) {
+                                    if (isCancelled.get()) {
+                                        currentCall = null
+                                        currentDownloadJob = null
+                                        Log.i(TAG, "Download cancelled")
+                                        _downloadState.value = DownloadState.Cancelled
+                                        return@withContext Result.failure(
+                                            IOException("Download cancelled"),
+                                        )
+                                    }
+
+                                    output.write(buffer, 0, bytesRead)
+                                    downloadedBytes += bytesRead
+
+                                    val progress = downloadedBytes.toFloat() / totalBytes
+                                    val currentPercent = (progress * 100).toInt()
+                                    if (currentPercent > lastReportedProgress) {
+                                        lastReportedProgress = currentPercent
+                                        _downloadState.value =
+                                            DownloadState.Downloading(
+                                                progress = progress,
+                                                downloadedBytes = downloadedBytes,
+                                                totalBytes = totalBytes,
+                                            )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Log.i(TAG, "Download complete, verifying...")
+                    _downloadState.value = DownloadState.Verifying(filename)
+
+                    // Verify checksum if available and non-blank
+                    val expectedChecksum = MODEL_CHECKSUMS[filename]
+                    if (!expectedChecksum.isNullOrBlank()) {
+                        val actualChecksum = calculateSha256(tempFile)
+                        if (actualChecksum != expectedChecksum) {
+                            currentCall = null
+                            currentDownloadJob = null
+                            tempFile.delete()
+                            val error = "Checksum verification failed"
+                            Log.e(TAG, "$error: expected $expectedChecksum, got $actualChecksum")
+                            _downloadState.value = DownloadState.Error(error)
+                            return@withContext Result.failure(IOException(error))
+                        }
+                        Log.i(TAG, "Checksum verified")
+                    } else {
+                        Log.w(TAG, "No checksum available for $filename, skipping verification")
+                    }
+
+                    // Rename temp file to final
+                    if (!tempFile.renameTo(targetFile)) {
+                        currentCall = null
+                        currentDownloadJob = null
+                        val error = "Failed to rename temp file"
+                        Log.e(TAG, error)
+                        _downloadState.value = DownloadState.Error(error)
+                        return@withContext Result.failure(IOException(error))
+                    }
+
+                    currentCall = null
+                    currentDownloadJob = null
+                    Log.i(TAG, "Model ready: ${targetFile.absolutePath}")
+                    _downloadState.value = DownloadState.Complete(targetFile.absolutePath)
+                    Result.success(targetFile.absolutePath)
+                } catch (e: Exception) {
+                    currentCall = null
+                    currentDownloadJob = null
+                    if (isCancelled.get()) {
+                        Log.i(TAG, "Download cancelled")
+                        _downloadState.value = DownloadState.Cancelled
+                        Result.failure(IOException("Download cancelled"))
+                    } else {
+                        Log.e(TAG, "Download failed", e)
+                        _downloadState.value = DownloadState.Error(e.message ?: "Unknown error")
+                        Result.failure(e)
+                    }
+                }
+            }
+
+        /**
+         * Shared delete helper used by all public delete methods.
+         */
+        private fun deleteModelFile(
+            dir: File,
+            filename: String,
+        ): Boolean {
+            val file = File(dir, filename)
+            val tempFile = File(dir, "$filename.download")
+
+            var deleted = false
+            if (file.exists()) {
+                deleted = file.delete()
+                Log.i(TAG, "Deleted model: $filename, success: $deleted")
+            }
+            if (tempFile.exists()) {
+                tempFile.delete()
+            }
+
+            return deleted
         }
 
         /**
@@ -714,179 +726,13 @@ class ModelDownloadManager
         /**
          * Download an extended model specification.
          */
-        @Suppress("LongMethod", "CyclomaticComplexMethod")
         suspend fun downloadExtendedModel(spec: ExtendedModelSpec): Result<String> =
-            withContext(Dispatchers.IO) {
-                currentDownloadJob = currentCoroutineContext()[Job]
-                isCancelled.set(false)
-                _downloadState.value = DownloadState.Downloading(0f, 0, spec.sizeBytes)
-
-                val modelsDir = getModelsDirectory()
-                val targetFile = File(modelsDir, spec.filename)
-                val tempFile = File(modelsDir, "${spec.filename}.download")
-
-                try {
-                    // Check if already downloaded
-                    if (targetFile.exists() && targetFile.length() > 0) {
-                        currentDownloadJob = null
-                        Log.i(TAG, "Extended model already exists: ${targetFile.absolutePath}")
-                        _downloadState.value = DownloadState.Complete(targetFile.absolutePath)
-                        return@withContext Result.success(targetFile.absolutePath)
-                    }
-
-                    Log.i(TAG, "Starting extended model download: ${spec.downloadUrl}")
-
-                    // Build request (with resume support)
-                    val requestBuilder = Request.Builder().url(spec.downloadUrl)
-
-                    // Resume from existing partial download
-                    val startByte =
-                        if (tempFile.exists()) {
-                            val existingSize = tempFile.length()
-                            requestBuilder.header("Range", "bytes=$existingSize-")
-                            Log.i(TAG, "Resuming from byte $existingSize")
-                            existingSize
-                        } else {
-                            0L
-                        }
-
-                    val request = requestBuilder.build()
-                    val call = downloadClient.newCall(request)
-                    currentCall = call
-                    val response = call.execute()
-
-                    response.use { resp ->
-                        if (!resp.isSuccessful && resp.code != 206) {
-                            currentCall = null
-                            currentDownloadJob = null
-                            val error = "Download failed: HTTP ${resp.code}"
-                            Log.e(TAG, error)
-                            _downloadState.value = DownloadState.Error(error)
-                            return@withContext Result.failure(IOException(error))
-                        }
-
-                        // Handle server ignoring Range header
-                        val actualStartByte: Long
-                        if (startByte > 0 && resp.code != 206) {
-                            Log.w(TAG, "Server ignored Range header. Restarting download.")
-                            currentCall = null
-                            tempFile.delete()
-                            return@withContext downloadExtendedModel(spec)
-                        } else {
-                            actualStartByte = startByte
-                        }
-
-                        val body =
-                            resp.body ?: run {
-                                currentCall = null
-                                currentDownloadJob = null
-                                val error = "Empty response body"
-                                Log.e(TAG, error)
-                                _downloadState.value = DownloadState.Error(error)
-                                return@withContext Result.failure(IOException(error))
-                            }
-
-                        val contentLength = body.contentLength()
-                        val totalBytes =
-                            if (resp.code == 206) {
-                                val contentRange = resp.header("Content-Range")
-                                contentRange?.substringAfter("/")?.toLongOrNull()
-                                    ?: (actualStartByte + contentLength)
-                            } else {
-                                contentLength
-                            }
-
-                        Log.i(TAG, "Total size: $totalBytes bytes")
-
-                        val outputStream = FileOutputStream(tempFile, actualStartByte > 0)
-                        val inputStream = body.byteStream()
-                        val buffer = ByteArray(BUFFER_SIZE)
-                        var downloadedBytes = actualStartByte
-                        var bytesRead: Int
-                        var lastReportedProgress = -1
-
-                        outputStream.use { output ->
-                            inputStream.use { input ->
-                                while (input.read(buffer).also { bytesRead = it } != -1) {
-                                    if (isCancelled.get()) {
-                                        currentCall = null
-                                        currentDownloadJob = null
-                                        Log.i(TAG, "Download cancelled")
-                                        _downloadState.value = DownloadState.Cancelled
-                                        return@withContext Result.failure(
-                                            IOException("Download cancelled"),
-                                        )
-                                    }
-
-                                    output.write(buffer, 0, bytesRead)
-                                    downloadedBytes += bytesRead
-
-                                    val progress = downloadedBytes.toFloat() / totalBytes
-                                    val currentPercent = (progress * 100).toInt()
-                                    if (currentPercent > lastReportedProgress) {
-                                        lastReportedProgress = currentPercent
-                                        _downloadState.value =
-                                            DownloadState.Downloading(
-                                                progress = progress,
-                                                downloadedBytes = downloadedBytes,
-                                                totalBytes = totalBytes,
-                                            )
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    Log.i(TAG, "Download complete, verifying...")
-                    _downloadState.value = DownloadState.Verifying(spec.filename)
-
-                    // Verify checksum (if available)
-                    val expectedChecksum = MODEL_CHECKSUMS[spec.filename]
-                    if (!expectedChecksum.isNullOrBlank()) {
-                        val actualChecksum = calculateSha256(tempFile)
-                        if (actualChecksum != expectedChecksum) {
-                            currentCall = null
-                            currentDownloadJob = null
-                            tempFile.delete()
-                            val error = "Checksum verification failed"
-                            Log.e(TAG, "$error: expected $expectedChecksum, got $actualChecksum")
-                            _downloadState.value = DownloadState.Error(error)
-                            return@withContext Result.failure(IOException(error))
-                        }
-                        Log.i(TAG, "Checksum verified")
-                    } else {
-                        Log.w(TAG, "No checksum available for ${spec.filename}, skipping verification")
-                    }
-
-                    // Rename temp file to final
-                    if (!tempFile.renameTo(targetFile)) {
-                        currentCall = null
-                        currentDownloadJob = null
-                        val error = "Failed to rename temp file"
-                        Log.e(TAG, error)
-                        _downloadState.value = DownloadState.Error(error)
-                        return@withContext Result.failure(IOException(error))
-                    }
-
-                    currentCall = null
-                    currentDownloadJob = null
-                    Log.i(TAG, "Extended model ready: ${targetFile.absolutePath}")
-                    _downloadState.value = DownloadState.Complete(targetFile.absolutePath)
-                    Result.success(targetFile.absolutePath)
-                } catch (e: Exception) {
-                    currentCall = null
-                    currentDownloadJob = null
-                    if (isCancelled.get()) {
-                        Log.i(TAG, "Download cancelled")
-                        _downloadState.value = DownloadState.Cancelled
-                        Result.failure(IOException("Download cancelled"))
-                    } else {
-                        Log.e(TAG, "Download failed", e)
-                        _downloadState.value = DownloadState.Error(e.message ?: "Unknown error")
-                        Result.failure(e)
-                    }
-                }
-            }
+            downloadFile(
+                url = spec.downloadUrl,
+                targetDir = getModelsDirectory(),
+                filename = spec.filename,
+                expectedSize = spec.sizeBytes,
+            )
 
         /**
          * Download the recommended extended model for this device.
@@ -914,19 +760,7 @@ class ModelDownloadManager
          * Delete an extended model.
          */
         fun deleteExtendedModel(spec: ExtendedModelSpec): Boolean {
-            val file = File(getModelsDirectory(), spec.filename)
-            val tempFile = File(getModelsDirectory(), "${spec.filename}.download")
-
-            var deleted = false
-            if (file.exists()) {
-                deleted = file.delete()
-                Log.i(TAG, "Deleted extended model: ${spec.filename}, success: $deleted")
-            }
-            if (tempFile.exists()) {
-                tempFile.delete()
-            }
-
-            return deleted
+            return deleteModelFile(getModelsDirectory(), spec.filename)
         }
 
         // ==========================================
@@ -988,133 +822,13 @@ class ModelDownloadManager
         /**
          * Download a specific GLM-ASR model.
          */
-        @Suppress("LongMethod", "CyclomaticComplexMethod")
         suspend fun downloadGLMASRModel(spec: GLMASRModelSpec): Result<String> =
-            withContext(Dispatchers.IO) {
-                currentDownloadJob = currentCoroutineContext()[Job]
-                isCancelled.set(false)
-                _downloadState.value = DownloadState.Downloading(0f, 0, spec.sizeBytes)
-
-                val modelsDir = getGLMASRModelsDirectory()
-                val targetFile = File(modelsDir, spec.filename)
-                val tempFile = File(modelsDir, "${spec.filename}.download")
-
-                try {
-                    // Check if already downloaded
-                    if (targetFile.exists() && targetFile.length() > 0) {
-                        currentDownloadJob = null
-                        Log.i(TAG, "GLM-ASR model already exists: ${targetFile.absolutePath}")
-                        _downloadState.value = DownloadState.Complete(targetFile.absolutePath)
-                        return@withContext Result.success(targetFile.absolutePath)
-                    }
-
-                    Log.i(TAG, "Starting GLM-ASR download: ${spec.downloadUrl}")
-
-                    // Build request with resume support
-                    val requestBuilder = Request.Builder().url(spec.downloadUrl)
-                    val startByte =
-                        if (tempFile.exists()) {
-                            val existingSize = tempFile.length()
-                            requestBuilder.header("Range", "bytes=$existingSize-")
-                            Log.i(TAG, "Resuming from byte $existingSize")
-                            existingSize
-                        } else {
-                            0L
-                        }
-
-                    val request = requestBuilder.build()
-                    val call = downloadClient.newCall(request)
-                    currentCall = call
-                    val response = call.execute()
-
-                    response.use { resp ->
-                        if (!resp.isSuccessful && resp.code != 206) {
-                            currentCall = null
-                            currentDownloadJob = null
-                            val error = "GLM-ASR download failed: HTTP ${resp.code}"
-                            Log.e(TAG, error)
-                            _downloadState.value = DownloadState.Error(error)
-                            return@withContext Result.failure(IOException(error))
-                        }
-
-                        // If server doesn't support Range and returns 200 instead of 206,
-                        // reset to download from scratch
-                        val effectiveStartByte =
-                            if (startByte > 0 && resp.code == 200) {
-                                Log.w(TAG, "Server doesn't support Range requests, restarting download")
-                                tempFile.delete()
-                                0L
-                            } else {
-                                startByte
-                            }
-
-                        val body =
-                            resp.body
-                                ?: run {
-                                    _downloadState.value = DownloadState.Error("Empty response")
-                                    return@withContext Result.failure(IOException("Empty response"))
-                                }
-
-                        val totalBytes = body.contentLength() + effectiveStartByte
-                        var downloadedBytes = effectiveStartByte
-                        var lastReportedProgress = -1
-
-                        FileOutputStream(tempFile, effectiveStartByte > 0).use { output ->
-                            val buffer = ByteArray(BUFFER_SIZE)
-                            body.byteStream().use { input ->
-                                var bytesRead: Int
-                                while (input.read(buffer).also { bytesRead = it } != -1) {
-                                    if (isCancelled.get()) {
-                                        currentCall = null
-                                        currentDownloadJob = null
-                                        _downloadState.value = DownloadState.Cancelled
-                                        return@withContext Result.failure(
-                                            IOException("Download cancelled"),
-                                        )
-                                    }
-
-                                    output.write(buffer, 0, bytesRead)
-                                    downloadedBytes += bytesRead
-
-                                    // Update progress (throttled)
-                                    val progress = downloadedBytes.toFloat() / totalBytes
-                                    val currentPercent = (progress * 100).toInt()
-                                    if (currentPercent > lastReportedProgress) {
-                                        _downloadState.value =
-                                            DownloadState.Downloading(
-                                                progress = progress,
-                                                downloadedBytes = downloadedBytes,
-                                                totalBytes = totalBytes,
-                                            )
-                                        lastReportedProgress = currentPercent
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    currentCall = null
-
-                    // Rename temp file to final
-                    if (!tempFile.renameTo(targetFile)) {
-                        val error = "Failed to rename temp file"
-                        Log.e(TAG, error)
-                        _downloadState.value = DownloadState.Error(error)
-                        return@withContext Result.failure(IOException(error))
-                    }
-
-                    currentDownloadJob = null
-                    Log.i(TAG, "GLM-ASR model downloaded: ${targetFile.absolutePath}")
-                    _downloadState.value = DownloadState.Complete(targetFile.absolutePath)
-                    Result.success(targetFile.absolutePath)
-                } catch (e: Exception) {
-                    currentCall = null
-                    currentDownloadJob = null
-                    Log.e(TAG, "GLM-ASR download failed", e)
-                    _downloadState.value = DownloadState.Error(e.message ?: "Download failed")
-                    Result.failure(e)
-                }
-            }
+            downloadFile(
+                url = spec.downloadUrl,
+                targetDir = getGLMASRModelsDirectory(),
+                filename = spec.filename,
+                expectedSize = spec.sizeBytes,
+            )
 
         /**
          * Download all GLM-ASR models sequentially.
@@ -1135,19 +849,7 @@ class ModelDownloadManager
          * Delete a specific GLM-ASR model.
          */
         fun deleteGLMASRModel(spec: GLMASRModelSpec): Boolean {
-            val file = File(getGLMASRModelsDirectory(), spec.filename)
-            val tempFile = File(getGLMASRModelsDirectory(), "${spec.filename}.download")
-
-            var deleted = false
-            if (file.exists()) {
-                deleted = file.delete()
-                Log.i(TAG, "Deleted GLM-ASR model: ${spec.filename}, success: $deleted")
-            }
-            if (tempFile.exists()) {
-                tempFile.delete()
-            }
-
-            return deleted
+            return deleteModelFile(getGLMASRModelsDirectory(), spec.filename)
         }
 
         /**

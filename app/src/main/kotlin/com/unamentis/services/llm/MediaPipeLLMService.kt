@@ -155,7 +155,8 @@ class MediaPipeLLMService
          * Get models directory.
          */
         fun getModelsDirectory(): File {
-            val modelsDir = File(context.getExternalFilesDir(null), "models")
+            val baseDir = context.getExternalFilesDir(null) ?: context.filesDir
+            val modelsDir = File(baseDir, "models")
             if (!modelsDir.exists()) {
                 modelsDir.mkdirs()
             }
@@ -198,13 +199,15 @@ class MediaPipeLLMService
                     // For now, use synchronous generation in a coroutine
                     val result = inference.generateResponse(prompt)
 
-                    // Record TTFT
+                    // Record generation latency (reported as TTFT for metric compatibility,
+                    // but since MediaPipe uses synchronous generation this is total latency,
+                    // not true time-to-first-token)
                     val ttft = System.currentTimeMillis() - startTime
                     if (ttftMeasurements.size >= MAX_TTFT_MEASUREMENTS) {
                         ttftMeasurements.removeAt(0)
                     }
                     ttftMeasurements.add(ttft)
-                    Log.i(TAG, "TTFT: ${ttft}ms")
+                    Log.i(TAG, "Generation latency (sync): ${ttft}ms")
 
                     // Send the result as a single token
                     if (result != null && result.isNotEmpty()) {
@@ -279,6 +282,10 @@ class MediaPipeLLMService
             return sb.toString()
         }
 
+        /**
+         * Note: TTFT metrics represent total generation latency for MediaPipe since it uses
+         * synchronous generation. Compare with caution against streaming backends.
+         */
         override fun getMetrics(): LLMBackendMetrics {
             val sortedTTFT = ttftMeasurements.toList().sorted()
             val medianTTFT =

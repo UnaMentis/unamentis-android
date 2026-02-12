@@ -847,9 +847,9 @@ class SessionManager(
 
         // Filter out empty or very short transcriptions (likely noise)
         if (trimmedText.isBlank() || trimmedText.length < 2) {
-            Log.i(
+            Log.d(
                 "SessionManager",
-                "Empty/short transcription ('$trimmedText') after ${speechDuration}ms of speech, returning to IDLE",
+                "Empty/short transcription after ${speechDuration}ms of speech, returning to IDLE",
             )
 
             // Brief delay to prevent rapid state cycling visible in UI
@@ -863,7 +863,7 @@ class SessionManager(
             return
         }
 
-        Log.i("SessionManager", "Final transcription: $trimmedText (${speechDuration}ms speech)")
+        Log.d("SessionManager", "Final transcription received (${speechDuration}ms speech)")
 
         // Add to transcript
         val userEntry =

@@ -88,6 +88,11 @@ class KBMatchEngine
             // Shuffle and distribute questions
             val shuffled = questions.shuffled()
 
+            val requiredCount = config.matchFormat.writtenQuestions + config.matchFormat.totalOralQuestions
+            require(shuffled.size >= requiredCount) {
+                "Not enough questions: need $requiredCount, got ${shuffled.size}"
+            }
+
             // Written questions
             val writtenCount = config.matchFormat.writtenQuestions
             writtenQuestions = shuffled.take(writtenCount)
@@ -264,13 +269,9 @@ class KBMatchEngine
                 )
             results.add(result)
 
-            // Update team score
+            // Update team score (points already includes penalty when incorrect)
             answeringTeamId?.let { teamId ->
-                if (wasCorrect) {
-                    updateTeamScore(teamId, oralPoints = points)
-                } else {
-                    updateTeamScore(teamId, oralPoints = points) // Penalty is negative
-                }
+                updateTeamScore(teamId, oralPoints = points)
             }
 
             // Advance to next question
@@ -374,7 +375,7 @@ class KBMatchEngine
                 currentRound = currentOralRound + 1,
                 totalRounds = oralQuestions.size,
                 currentQuestion = currentQuestionIndex,
-                questionsPerRound = oralQuestions.firstOrNull()?.size ?: 0,
+                questionsPerRound = oralQuestions.getOrNull(currentOralRound)?.size ?: 0,
             )
         }
 

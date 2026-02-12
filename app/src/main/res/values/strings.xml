@@ -1168,6 +1168,14 @@
     <string name="error_no_questions_available">No questions available</string>
     <string name="error_failed_start_training">Failed to start training</string>
 
+    <!-- Accessibility: external links and loading -->
+    <string name="cd_open_external_link">Opens in external app</string>
+    <string name="cd_loading">Loading</string>
+    <string name="error_no_app_available">No app available to handle this action</string>
+
+    <!-- Match progress -->
+    <string name="kb_progress_format">%1$d / %2$d</string>
+
     <!-- Opponent Team Names -->
     <string name="kb_team_alpha">Team Alpha</string>
     <string name="kb_team_beta">Team Beta</string>

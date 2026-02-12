@@ -7,6 +7,7 @@ import android.util.Log
 import java.io.File
 import java.nio.FloatBuffer
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * ONNX Runtime inference manager for GLM-ASR models.
@@ -48,15 +49,20 @@ class GLMASRONNXInference(
     private var ortEnvironment: OrtEnvironment? = null
 
     // ONNX sessions for each model
+    @Volatile
     private var whisperEncoderSession: OrtSession? = null
+
+    @Volatile
     private var audioAdapterSession: OrtSession? = null
+
+    @Volatile
     private var embedHeadSession: OrtSession? = null
 
     // Loading state
     private val isLoaded = AtomicBoolean(false)
 
     // Inference counters for logging
-    private var inferenceCount = 0
+    private val inferenceCount = AtomicInteger(0)
 
     /**
      * Check if all models are loaded.
@@ -155,6 +161,12 @@ class GLMASRONNXInference(
             return null
         }
 
+        val expectedSize = nMels * nFrames
+        if (melSpectrogram.size != expectedSize) {
+            Log.e(TAG, "Whisper encoder input size mismatch: got ${melSpectrogram.size}, expected $expectedSize")
+            return null
+        }
+
         return try {
             // Input shape: [1, nMels, nFrames]
             val inputShape = longArrayOf(1, nMels.toLong(), nFrames.toLong())
@@ -167,7 +179,7 @@ class GLMASRONNXInference(
 
             try {
                 // Log tensor info periodically
-                if (inferenceCount % 10 == 0) {
+                if (inferenceCount.get() % 10 == 0) {
                     Log.d(TAG, "Whisper encoder input shape: ${inputShape.contentToString()}")
                 }
 
@@ -184,7 +196,7 @@ class GLMASRONNXInference(
                     outputBuffer.get(output)
 
                     // Log output info periodically
-                    if (inferenceCount % 10 == 0) {
+                    if (inferenceCount.get() % 10 == 0) {
                         Log.d(
                             TAG,
                             "Whisper encoder output: shape=${outputTensor.info.shape.contentToString()}, " +
@@ -255,7 +267,7 @@ class GLMASRONNXInference(
                     outputBuffer.get(output)
 
                     // Log output info periodically
-                    if (inferenceCount % 10 == 0) {
+                    if (inferenceCount.get() % 10 == 0) {
                         Log.d(
                             TAG,
                             "Audio adapter output: shape=${outputTensor.info.shape.contentToString()}, " +
@@ -326,15 +338,13 @@ class GLMASRONNXInference(
                     outputBuffer.get(output)
 
                     // Log output info periodically
-                    if (inferenceCount % 10 == 0) {
+                    if (inferenceCount.get() % 10 == 0) {
                         Log.d(
                             TAG,
                             "Embed head output: shape=${outputTensor.info.shape.contentToString()}, " +
                                 "size=$outputSize",
                         )
                     }
-
-                    inferenceCount++
 
                     output
                 } finally {
@@ -363,6 +373,8 @@ class GLMASRONNXInference(
         nMels: Int,
         nFrames: Int,
     ): FloatArray? {
+        inferenceCount.incrementAndGet()
+
         // Step 1: Whisper encoder
         val encodedAudio = runWhisperEncoder(melSpectrogram, nMels, nFrames)
         if (encodedAudio == null) {
@@ -391,10 +403,19 @@ class GLMASRONNXInference(
      * Release all ONNX resources.
      */
     fun release() {
+        // Capture sessions to local vals before nulling to avoid mid-operation nulling
+        val encoder = whisperEncoderSession
+        val adapter = audioAdapterSession
+        val embed = embedHeadSession
+
+        whisperEncoderSession = null
+        audioAdapterSession = null
+        embedHeadSession = null
+
         listOf(
-            "WhisperEncoder" to whisperEncoderSession,
-            "AudioAdapter" to audioAdapterSession,
-            "EmbedHead" to embedHeadSession,
+            "WhisperEncoder" to encoder,
+            "AudioAdapter" to adapter,
+            "EmbedHead" to embed,
         ).forEach { (name, session) ->
             try {
                 session?.close()
@@ -402,15 +423,12 @@ class GLMASRONNXInference(
                 Log.e(TAG, "Error closing $name session", e)
             }
         }
-        whisperEncoderSession = null
-        audioAdapterSession = null
-        embedHeadSession = null
 
         // Note: OrtEnvironment is a singleton and should not be closed
         ortEnvironment = null
 
         isLoaded.set(false)
-        inferenceCount = 0
+        inferenceCount.set(0)
 
         Log.i(TAG, "ONNX resources released")
     }

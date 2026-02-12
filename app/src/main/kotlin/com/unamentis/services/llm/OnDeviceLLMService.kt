@@ -211,7 +211,8 @@ class OnDeviceLLMService
          * Get the models directory.
          */
         fun getModelsDirectory(): File {
-            val modelsDir = File(context.getExternalFilesDir(null), "models")
+            val baseDir = context.getExternalFilesDir(null) ?: context.filesDir
+            val modelsDir = File(baseDir, "models")
             if (!modelsDir.exists()) {
                 modelsDir.mkdirs()
             }

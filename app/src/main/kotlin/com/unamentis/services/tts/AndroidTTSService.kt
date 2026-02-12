@@ -134,7 +134,7 @@ class AndroidTTSService(
 
             val engine =
                 tts ?: run {
-                    close(IllegalStateException("TTS engine not available"))
+                    close(IllegalStateException(context.getString(R.string.error_tts_init_failed)))
                     return@callbackFlow
                 }
 

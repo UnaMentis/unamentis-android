@@ -121,8 +121,12 @@ fun KBMatchSimulationScreen(
         ) {
             when {
                 uiState.isLoading -> {
+                    val loadingDescription = stringResource(R.string.cd_loading)
                     Box(
-                        modifier = Modifier.fillMaxSize(),
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .semantics { contentDescription = loadingDescription },
                         contentAlignment = Alignment.Center,
                     ) {
                         CircularProgressIndicator()
@@ -208,6 +212,7 @@ private fun SetupView(
                 value = uiState.playerTeamName,
                 onValueChange = onTeamNameChanged,
                 modifier = Modifier.fillMaxWidth(),
+                label = { Text(stringResource(R.string.kb_your_team)) },
                 singleLine = true,
             )
         }
@@ -550,7 +555,7 @@ private fun ProgressHeader(
                 color = KBTheme.textSecondary(),
             )
             Text(
-                text = "$current / $total",
+                text = stringResource(R.string.kb_progress_format, current, total),
                 style = IOSTypography.subheadline,
                 fontWeight = FontWeight.Medium,
             )
@@ -756,31 +761,33 @@ private fun OralRoundView(
                         color = KBTheme.mastered(),
                     )
                     Spacer(modifier = Modifier.height(8.dp))
+                    var reboundAnswer by remember { mutableStateOf("") }
+                    var showReboundInput by remember { mutableStateOf(false) }
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         OutlinedButton(onClick = onSkipRebound) {
                             Text(stringResource(R.string.kb_signal_pass))
                         }
-                        var reboundAnswer by remember { mutableStateOf("") }
-                        var showReboundInput by remember { mutableStateOf(false) }
-                        if (showReboundInput) {
-                            OutlinedTextField(
-                                value = reboundAnswer,
-                                onValueChange = { reboundAnswer = it },
-                                label = { Text(stringResource(R.string.kb_your_answer)) },
-                                singleLine = true,
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Button(
-                                onClick = { onSubmitAnswer(reboundAnswer) },
-                                enabled = reboundAnswer.isNotBlank(),
-                            ) {
-                                Text(stringResource(R.string.kb_submit_answer))
-                            }
-                        } else {
+                        if (!showReboundInput) {
                             Button(onClick = { showReboundInput = true }) {
                                 Text(stringResource(R.string.kb_buzz))
                             }
+                        }
+                    }
+                    if (showReboundInput) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = reboundAnswer,
+                            onValueChange = { reboundAnswer = it },
+                            label = { Text(stringResource(R.string.kb_your_answer)) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(
+                            onClick = { onSubmitAnswer(reboundAnswer) },
+                            enabled = reboundAnswer.isNotBlank(),
+                        ) {
+                            Text(stringResource(R.string.kb_submit_answer))
                         }
                     }
                 }

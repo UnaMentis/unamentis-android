@@ -250,6 +250,12 @@ class WebSocketClient(
             return
         }
 
+        // Cancel any pending reconnect/ping before starting a new connection
+        reconnectJob?.cancel()
+        reconnectJob = null
+        pingJob?.cancel()
+        pingJob = null
+
         _state.value = WebSocketState.CONNECTING
         reconnectAttempts = 0
 

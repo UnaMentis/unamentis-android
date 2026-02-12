@@ -171,6 +171,8 @@ class KBReboundSimulator
 
         /**
          * Record a user's rebound decision.
+         *
+         * @return The points earned/lost for this attempt, or 0 if no scenario was active.
          */
         suspend fun recordAttempt(
             buzzedOnRebound: Boolean,
@@ -178,38 +180,40 @@ class KBReboundSimulator
             wasCorrect: Boolean,
             responseTime: Double,
             knewAnswer: Boolean,
-        ) = mutex.withLock {
-            val scenario = currentScenario ?: return@withLock
+        ): Int =
+            mutex.withLock {
+                val scenario = currentScenario ?: return@withLock 0
 
-            val decision =
-                determineDecision(
-                    scenario = scenario,
-                    buzzed = buzzedOnRebound,
-                    wasCorrect = wasCorrect,
-                    knewAnswer = knewAnswer,
-                )
+                val decision =
+                    determineDecision(
+                        scenario = scenario,
+                        buzzed = buzzedOnRebound,
+                        wasCorrect = wasCorrect,
+                        knewAnswer = knewAnswer,
+                    )
 
-            val points = calculatePoints(decision, wasCorrect)
+                val points = calculatePoints(decision, wasCorrect)
 
-            val attempt =
-                KBReboundAttempt(
-                    scenarioId = scenario.id,
-                    questionId = scenario.question.id,
-                    domain = scenario.question.domain,
-                    wasReboundOpportunity = scenario.isReboundOpportunity,
-                    userBuzzedOnRebound = buzzedOnRebound,
-                    userAnswer = userAnswer,
-                    wasCorrect = wasCorrect,
-                    responseTime = responseTime,
-                    pointsEarned = points,
-                    strategicDecision = decision,
-                )
+                val attempt =
+                    KBReboundAttempt(
+                        scenarioId = scenario.id,
+                        questionId = scenario.question.id,
+                        domain = scenario.question.domain,
+                        wasReboundOpportunity = scenario.isReboundOpportunity,
+                        userBuzzedOnRebound = buzzedOnRebound,
+                        userAnswer = userAnswer,
+                        wasCorrect = wasCorrect,
+                        responseTime = responseTime,
+                        pointsEarned = points,
+                        strategicDecision = decision,
+                    )
 
-            attempts.add(attempt)
-            updateDifficulty(decision)
+                attempts.add(attempt)
+                updateDifficulty(decision)
 
-            Log.d(TAG, "Rebound attempt: decision=${decision.name}, points=$points, correct=$wasCorrect")
-        }
+                Log.d(TAG, "Rebound attempt: decision=${decision.name}, points=$points, correct=$wasCorrect")
+                points
+            }
 
         /**
          * Get all recorded attempts.

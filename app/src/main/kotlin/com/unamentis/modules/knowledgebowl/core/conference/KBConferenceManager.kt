@@ -116,9 +116,9 @@ class KBConferenceManager
             }
 
         /**
-         * Check if session is active.
+         * Check if session is active synchronously.
          */
-        fun isSessionActive(): Boolean = isActive
+        fun getIsSessionActiveSync(): Boolean = isActive
 
         /**
          * Get current time limit for this round.
