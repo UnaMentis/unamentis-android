@@ -1,5 +1,6 @@
 package com.unamentis.services.llm
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.util.Log
 import com.unamentis.data.model.LLMMessage
@@ -271,10 +272,14 @@ class ExecuTorchLLMService
             temperature: Float,
             ctx: GenerationContext,
         ) {
+            val effectiveMaxTokens = maxTokens.coerceAtMost(DEFAULT_MAX_TOKENS)
+            if (effectiveMaxTokens < maxTokens) {
+                Log.w(TAG, "maxTokens capped from $maxTokens to $effectiveMaxTokens (limit: $DEFAULT_MAX_TOKENS)")
+            }
             nativeGenerate(
                 modulePtr,
                 prompt,
-                maxTokens.coerceAtMost(DEFAULT_MAX_TOKENS),
+                effectiveMaxTokens,
                 temperature,
             ) { content, isDone ->
                 handleToken(content, isDone, ctx)
@@ -433,6 +438,7 @@ class ExecuTorchLLMService
         /**
          * Get the SoC model identifier.
          */
+        @SuppressLint("NewApi")
         private fun getSoCModel(): String {
             return try {
                 // Try to get SoC model from system property

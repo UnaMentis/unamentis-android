@@ -490,12 +490,31 @@ class DeviceCapabilityDetector
                 return true
             }
 
-            // Check if libOpenCL.so exists without loading it to avoid side effects
+            // Check if libOpenCL.so exists in known paths (both 64-bit and 32-bit)
+            val openClPaths =
+                listOf(
+                    "/system/vendor/lib64/libOpenCL.so",
+                    "/system/lib64/libOpenCL.so",
+                    "/vendor/lib64/libOpenCL.so",
+                    "/system/vendor/lib/libOpenCL.so",
+                    "/system/lib/libOpenCL.so",
+                    "/vendor/lib/libOpenCL.so",
+                )
+
+            val fileExists =
+                try {
+                    openClPaths.any { java.io.File(it).exists() }
+                } catch (_: SecurityException) {
+                    false
+                }
+
+            if (fileExists) return true
+
+            // Fallback: try loading the library (catches cases where filesystem access is restricted)
             return try {
-                val lib = java.io.File("/system/vendor/lib64/libOpenCL.so")
-                val libAlt = java.io.File("/system/lib64/libOpenCL.so")
-                lib.exists() || libAlt.exists()
-            } catch (e: SecurityException) {
+                System.loadLibrary("OpenCL")
+                true
+            } catch (_: UnsatisfiedLinkError) {
                 false
             }
         }

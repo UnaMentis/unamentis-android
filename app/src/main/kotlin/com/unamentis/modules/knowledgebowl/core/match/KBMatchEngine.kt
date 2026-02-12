@@ -61,7 +61,7 @@ class KBMatchEngine
         suspend fun setupMatch(
             config: KBMatchConfig,
             questions: List<KBQuestion>,
-            playerTeamName: String = "Your Team",
+            playerTeamName: String,
         ) = mutex.withLock {
             this.config = config
 

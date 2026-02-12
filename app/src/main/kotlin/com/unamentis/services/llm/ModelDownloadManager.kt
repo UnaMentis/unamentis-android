@@ -2,6 +2,8 @@ package com.unamentis.services.llm
 
 import android.content.Context
 import android.util.Log
+import androidx.annotation.StringRes
+import com.unamentis.R
 import com.unamentis.core.device.DeviceCapabilityDetector
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -170,7 +172,7 @@ class ModelDownloadManager
          */
         enum class ExtendedModelSpec(
             val filename: String,
-            val displayName: String,
+            @StringRes val displayNameRes: Int,
             val sizeBytes: Long,
             val minRamMB: Int,
             val backendType: LLMBackendType,
@@ -179,7 +181,7 @@ class ModelDownloadManager
             // llama.cpp models (GGUF format)
             LLAMA_1B_GGUF(
                 filename = LLAMA_1B_GGUF_FILENAME,
-                displayName = "Llama 3.2 1B (Fast)",
+                displayNameRes = R.string.model_name_llama_1b_gguf,
                 // ~900MB
                 sizeBytes = 900_000_000L,
                 minRamMB = 2048,
@@ -190,7 +192,7 @@ class ModelDownloadManager
             // MediaPipe models (.task format)
             GEMMA_2B_TASK(
                 filename = MediaPipeLLMService.GEMMA_2B_FILENAME,
-                displayName = "Gemma 2B (GPU)",
+                displayNameRes = R.string.model_name_gemma_2b_task,
                 // ~1.5GB
                 sizeBytes = 1_500_000_000L,
                 minRamMB = 4096,
@@ -201,7 +203,7 @@ class ModelDownloadManager
             // ExecuTorch models (.pte format)
             LLAMA_1B_PTE(
                 filename = ExecuTorchLLMService.LLAMA_1B_FILENAME,
-                displayName = "Llama 3.2 1B (NPU)",
+                displayNameRes = R.string.model_name_llama_1b_pte,
                 // ~1GB
                 sizeBytes = 1_000_000_000L,
                 minRamMB = 4096,
@@ -210,7 +212,7 @@ class ModelDownloadManager
             ),
             LLAMA_3B_PTE(
                 filename = ExecuTorchLLMService.LLAMA_3B_FILENAME,
-                displayName = "Llama 3.2 3B (NPU)",
+                displayNameRes = R.string.model_name_llama_3b_pte,
                 // ~2.5GB
                 sizeBytes = 2_500_000_000L,
                 minRamMB = 8192,
@@ -230,7 +232,7 @@ class ModelDownloadManager
          */
         enum class GLMASRModelSpec(
             val filename: String,
-            val displayName: String,
+            @StringRes val displayNameRes: Int,
             val sizeBytes: Long,
             val minRamMB: Int,
             val downloadUrl: String,
@@ -238,7 +240,7 @@ class ModelDownloadManager
             /** Whisper encoder for mel spectrogram processing (~1.2GB). */
             WHISPER_ENCODER(
                 filename = GLM_ASR_WHISPER_ENCODER_FILENAME,
-                displayName = "Whisper Encoder",
+                displayNameRes = R.string.model_name_whisper_encoder,
                 sizeBytes = 1_200_000_000L,
                 minRamMB = 8192,
                 downloadUrl = "${GLM_ASR_BASE_URL}whisper_encoder.onnx",
@@ -247,7 +249,7 @@ class ModelDownloadManager
             /** Audio adapter for LLM alignment (~56MB). */
             AUDIO_ADAPTER(
                 filename = GLM_ASR_AUDIO_ADAPTER_FILENAME,
-                displayName = "Audio Adapter",
+                displayNameRes = R.string.model_name_audio_adapter,
                 sizeBytes = 56_000_000L,
                 minRamMB = 8192,
                 downloadUrl = "${GLM_ASR_BASE_URL}audio_adapter.onnx",
@@ -256,7 +258,7 @@ class ModelDownloadManager
             /** Embed head for token embeddings (~232MB). */
             EMBED_HEAD(
                 filename = GLM_ASR_EMBED_HEAD_FILENAME,
-                displayName = "Embed Head",
+                displayNameRes = R.string.model_name_embed_head,
                 sizeBytes = 232_000_000L,
                 minRamMB = 8192,
                 downloadUrl = "${GLM_ASR_BASE_URL}embed_head.onnx",
@@ -265,7 +267,7 @@ class ModelDownloadManager
             /** Text decoder for transcript generation (~935MB). */
             DECODER(
                 filename = GLM_ASR_DECODER_FILENAME,
-                displayName = "Text Decoder",
+                displayNameRes = R.string.model_name_text_decoder,
                 sizeBytes = 935_000_000L,
                 minRamMB = 8192,
                 downloadUrl = "${GLM_ASR_BASE_URL}decoder_q4km.gguf",
@@ -1063,6 +1065,8 @@ class ModelDownloadManager
                                 var bytesRead: Int
                                 while (input.read(buffer).also { bytesRead = it } != -1) {
                                     if (isCancelled.get()) {
+                                        currentCall = null
+                                        currentDownloadJob = null
                                         _downloadState.value = DownloadState.Cancelled
                                         return@withContext Result.failure(
                                             IOException("Download cancelled"),

@@ -74,7 +74,7 @@ data class KBReboundAttempt(
  * Strategic decision on a rebound.
  */
 enum class ReboundDecision(
-    val displayNameResId: Int,
+    @StringRes val displayNameResId: Int,
     val isPositive: Boolean,
 ) {
     BUZZED_CORRECTLY(R.string.kb_rebound_buzzed_correctly, true),

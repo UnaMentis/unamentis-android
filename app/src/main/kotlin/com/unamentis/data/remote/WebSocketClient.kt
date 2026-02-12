@@ -387,12 +387,15 @@ class WebSocketClient(
                     sendSubscribe(subscribedChannels.toList())
                 }
 
-                // Send any pending messages
-                scope.launch {
-                    while (true) {
-                        val message = pendingMessages.tryReceive().getOrNull() ?: break
-                        webSocket.send(message)
-                    }
+                // Drain pending messages before allowing new direct sends.
+                // This runs on the same scope to ensure ordering with subsequent sends.
+                val pending = mutableListOf<String>()
+                while (true) {
+                    val message = pendingMessages.tryReceive().getOrNull() ?: break
+                    pending.add(message)
+                }
+                for (message in pending) {
+                    webSocket.send(message)
                 }
 
                 // Start ping job

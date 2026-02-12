@@ -1,6 +1,7 @@
 package com.unamentis.modules.knowledgebowl.core.rebound
 
 import android.util.Log
+import androidx.annotation.StringRes
 import com.unamentis.R
 import com.unamentis.modules.knowledgebowl.data.model.KBDomain
 import com.unamentis.modules.knowledgebowl.data.model.KBQuestion
@@ -36,7 +37,11 @@ class KBReboundSimulator
                     R.string.kb_practice_scenario_5_situation to R.string.kb_practice_scenario_5_tip,
                 )
 
-            /** Wrong answers by domain for simulation */
+            /**
+             * Wrong answers by domain for simulation.
+             * These are intentionally not in strings.xml because they are game simulation data
+             * (plausible-but-incorrect answers to English trivia questions), not UI labels.
+             */
             private val WRONG_ANSWERS: Map<KBDomain, List<String>> =
                 mapOf(
                     KBDomain.SCIENCE to listOf("Carbon dioxide", "Nitrogen", "Helium", "The sun"),
@@ -64,8 +69,9 @@ class KBReboundSimulator
         private var isActive = false
         private var currentDifficultyModifier = 1.0
 
-        // Opponent simulation state
-        private val opponentNames = listOf("Team Alpha", "Team Beta", "Team Gamma")
+        // Opponent simulation state (names backed by string resources)
+        @StringRes
+        private val opponentNameResIds = listOf(R.string.kb_team_alpha, R.string.kb_team_beta, R.string.kb_team_gamma)
         private var currentOpponentIndex = 0
 
         /**
@@ -79,7 +85,7 @@ class KBReboundSimulator
                 sessionStartTime = System.currentTimeMillis()
                 isActive = true
                 currentDifficultyModifier = 1.0
-                currentOpponentIndex = Random.nextInt(opponentNames.size)
+                currentOpponentIndex = Random.nextInt(opponentNameResIds.size)
                 Log.i(TAG, "Rebound training session started for ${config.region.displayName}")
             }
 
@@ -101,16 +107,17 @@ class KBReboundSimulator
         fun isSessionActive(): Boolean = isActive
 
         /**
-         * Get current opponent team name.
+         * Get current opponent team name resource ID.
          */
-        fun getCurrentOpponent(): String = opponentNames[currentOpponentIndex]
+        @StringRes
+        fun getCurrentOpponentResId(): Int = opponentNameResIds[currentOpponentIndex]
 
         /**
          * Rotate to next opponent.
          */
         suspend fun rotateOpponent() =
             mutex.withLock {
-                currentOpponentIndex = (currentOpponentIndex + 1) % opponentNames.size
+                currentOpponentIndex = (currentOpponentIndex + 1) % opponentNameResIds.size
             }
 
         /**

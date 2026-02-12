@@ -651,13 +651,18 @@ class SessionManager(
                 return
             }
 
+            // Atomically transition from IDLE to USER_SPEAKING to prevent race conditions
+            // when multiple coroutines on Dispatchers.Default see IDLE simultaneously
+            if (!_sessionState.compareAndSet(SessionState.IDLE, SessionState.USER_SPEAKING)) {
+                return
+            }
+
             // Start of user utterance
             userSpeechStartTime = System.currentTimeMillis()
             Log.i(
                 "SessionManager",
                 "Transitioning from IDLE to USER_SPEAKING (after $frameCount frames)",
             )
-            _sessionState.value = SessionState.USER_SPEAKING
 
             // Start STT streaming
             Log.i("SessionManager", "Starting STT streaming...")
@@ -810,13 +815,6 @@ class SessionManager(
 
         if (success) {
             Log.i("SessionManager", "Audio capture resumed successfully")
-
-            // Verify audio is actually flowing by waiting briefly and checking state
-            delay(50) // Wait for first audio callback
-            if (!audioEngine.isCapturing.value) {
-                Log.w("SessionManager", "Audio capture state changed to false after resume")
-                success = false
-            }
         } else {
             Log.e(
                 "SessionManager",

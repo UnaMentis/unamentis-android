@@ -114,7 +114,7 @@ fun AboutScreen(onNavigateBack: () -> Unit) {
             // Version Info
             item {
                 IOSCard {
-                    Column(modifier = Modifier.padding(Dimensions.CardPadding)) {
+                    Column {
                         AboutInfoRow(
                             label = stringResource(R.string.about_version),
                             value = BuildConfig.VERSION_NAME,
@@ -221,6 +221,7 @@ fun AboutScreen(onNavigateBack: () -> Unit) {
             }
 
             item {
+                val supportSubject = stringResource(R.string.about_support_email_subject, BuildConfig.VERSION_NAME)
                 IOSCard {
                     AboutLinkRow(
                         icon = Icons.Default.Email,
@@ -232,7 +233,7 @@ fun AboutScreen(onNavigateBack: () -> Unit) {
                                     data = Uri.parse("mailto:support@unamentis.com")
                                     putExtra(
                                         Intent.EXTRA_SUBJECT,
-                                        "UnaMentis Android Support (v${BuildConfig.VERSION_NAME})",
+                                        supportSubject,
                                     )
                                 }
                             try {

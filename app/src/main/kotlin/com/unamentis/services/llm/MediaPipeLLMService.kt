@@ -242,9 +242,12 @@ class MediaPipeLLMService
                 }
             }.flowOn(Dispatchers.IO)
 
+        /**
+         * Request generation stop. Note: This is a no-op because MediaPipe's synchronous
+         * generation API does not support mid-generation cancellation. The current generation
+         * will run to completion. Callers should not rely on this for immediate cancellation.
+         */
         override suspend fun stop() {
-            // MediaPipe doesn't have a direct stop method
-            // Generation will complete on its own
             Log.d(TAG, "Stop requested (MediaPipe will complete current generation)")
         }
 

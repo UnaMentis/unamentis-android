@@ -3,6 +3,7 @@ package com.unamentis.services.tts
 import android.content.Context
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import com.unamentis.R
 import com.unamentis.data.model.TTSAudioChunk
 import com.unamentis.data.model.TTSService
 import kotlinx.coroutines.channels.awaitClose
@@ -125,7 +126,7 @@ class AndroidTTSService(
 
                 if (!initialized) {
                     android.util.Log.e("AndroidTTS", "TTS initialization failed or timed out")
-                    close(IllegalStateException("TTS initialization failed. Please try again."))
+                    close(IllegalStateException(context.getString(R.string.error_tts_init_failed)))
                     return@callbackFlow
                 }
                 android.util.Log.i("AndroidTTS", "TTS auto-initialized successfully")

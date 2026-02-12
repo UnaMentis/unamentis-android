@@ -220,6 +220,12 @@ class GLMASRONNXInference(
             return null
         }
 
+        val expectedSize = ENCODER_OUTPUT_TOKENS * ENCODER_OUTPUT_DIM
+        if (encodedAudio.size != expectedSize) {
+            Log.e(TAG, "Audio adapter input size mismatch: got ${encodedAudio.size}, expected $expectedSize")
+            return null
+        }
+
         return try {
             // Input shape: [1, 1500, 1280]
             val inputShape =
@@ -282,6 +288,12 @@ class GLMASRONNXInference(
 
         if (session == null || env == null) {
             Log.e(TAG, "Embed head not loaded")
+            return null
+        }
+
+        val expectedSize = ADAPTER_OUTPUT_TOKENS * ADAPTER_OUTPUT_DIM
+        if (adaptedFeatures.size != expectedSize) {
+            Log.e(TAG, "Embed head input size mismatch: got ${adaptedFeatures.size}, expected $expectedSize")
             return null
         }
 

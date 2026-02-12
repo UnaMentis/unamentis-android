@@ -173,12 +173,13 @@ class SettingsScreenTest {
                 .fetchSemanticsNodes().isNotEmpty()
         }
 
-        // Scroll to Device RAM info
+        // Scroll to Device RAM info using testTag to avoid ambiguity
+        // (both On-Device LLM and GLM-ASR sections display "Device RAM")
         composeTestRule.onNodeWithTag("SettingsLazyColumn")
-            .performScrollToNode(hasText("Device RAM"))
+            .performScrollToNode(hasTestTag("device_ram_info"))
 
         // Verify Device RAM info is displayed
-        composeTestRule.onNodeWithText("Device RAM").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("device_ram_info").assertIsDisplayed()
     }
 
     @Test

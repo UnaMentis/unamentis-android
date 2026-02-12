@@ -39,8 +39,10 @@ class GLMASRMelSpectrogram(
         private const val PRE_EMPHASIS = 0.97f
         private const val MEL_FLOOR = 1e-10f
         private const val F_MIN = 0.0
-        private const val F_MAX = 8000.0 // Nyquist for 16kHz
     }
+
+    // Nyquist frequency derived from the actual sample rate
+    private val fMax: Double = sampleRate / 2.0
 
     // Precomputed Hann window
     private val hannWindow: FloatArray =
@@ -245,7 +247,7 @@ class GLMASRMelSpectrogram(
 
         // Mel points
         val melMin = hzToMel(F_MIN)
-        val melMax = hzToMel(F_MAX)
+        val melMax = hzToMel(fMax)
         val melPoints =
             DoubleArray(nMels + 2) { i ->
                 melMin + i * (melMax - melMin) / (nMels + 1)
@@ -292,8 +294,11 @@ class GLMASRMelSpectrogram(
      * @param numSamples Number of audio samples
      * @return Pair of (nMels, nFrames)
      */
-    fun getOutputShape(numSamples: Int): Pair<Int, Int> {
-        val numFrames = max(0, (numSamples - nFFT) / hopLength + 1)
+    fun getOutputShape(
+        numSamples: Int,
+        maxFrames: Int = 3000,
+    ): Pair<Int, Int> {
+        val numFrames = min(maxFrames, max(0, (numSamples - nFFT) / hopLength + 1))
         return Pair(nMels, numFrames)
     }
 
@@ -301,9 +306,10 @@ class GLMASRMelSpectrogram(
      * Get the number of audio samples needed for given number of frames.
      *
      * @param numFrames Desired number of frames
-     * @return Number of audio samples required
+     * @return Number of audio samples required, or 0 if numFrames <= 0
      */
     fun getSamplesForFrames(numFrames: Int): Int {
+        if (numFrames <= 0) return 0
         return (numFrames - 1) * hopLength + nFFT
     }
 

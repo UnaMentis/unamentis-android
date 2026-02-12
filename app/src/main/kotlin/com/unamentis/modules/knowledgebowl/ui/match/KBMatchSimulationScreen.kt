@@ -52,6 +52,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -308,11 +309,14 @@ private fun FormatOptionCard(
     isSelected: Boolean,
     onClick: () -> Unit,
 ) {
+    val formatName = stringResource(format.displayNameResId)
+    val formatDescription = stringResource(R.string.kb_format_description, format.writtenQuestions, format.oralRounds)
     Card(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clickable(onClick = onClick),
+                .clickable(onClickLabel = formatName, onClick = onClick)
+                .semantics { contentDescription = formatName },
         colors =
             CardDefaults.cardColors(
                 containerColor = if (isSelected) KBTheme.mastered().copy(alpha = 0.1f) else KBTheme.bgSecondary(),
@@ -330,12 +334,12 @@ private fun FormatOptionCard(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = stringResource(format.displayNameResId),
+                    text = formatName,
                     style = IOSTypography.subheadline,
                     fontWeight = FontWeight.Medium,
                 )
                 Text(
-                    text = "${format.writtenQuestions} written + ${format.oralRounds} oral rounds",
+                    text = formatDescription,
                     style = IOSTypography.caption,
                     color = KBTheme.textSecondary(),
                 )
@@ -615,12 +619,14 @@ private fun QuestionCard(
                         else -> KBTheme.border()
                     }
 
+                val optionLabel = "${('A' + index)}. $option"
                 Surface(
                     modifier =
                         Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(8.dp))
                             .border(1.dp, borderColor, RoundedCornerShape(8.dp))
+                            .semantics { contentDescription = optionLabel }
                             .clickable(enabled = !showFeedback) { onSelectAnswer(index) },
                     color = backgroundColor,
                 ) {
@@ -739,7 +745,7 @@ private fun OralRoundView(
                     teamName =
                         uiState.buzzResult?.let { buzz ->
                             uiState.teams.find { it.id == buzz.teamId }?.name
-                        } ?: "Opponent",
+                        } ?: stringResource(R.string.kb_opponent_fallback),
                 )
 
                 if (uiState.isReboundOpportunity) {

@@ -462,10 +462,10 @@ class AudioWebSocketClient(
         if (ws != null) {
             val sent = ws.send(message)
             if (!sent) {
-                Log.w(TAG, "Failed to send message: $message")
+                Log.w(TAG, "Failed to send WebSocket message")
             }
         } else {
-            Log.w(TAG, "WebSocket not connected, cannot send: $message")
+            Log.w(TAG, "WebSocket not connected, cannot send message")
         }
     }
 

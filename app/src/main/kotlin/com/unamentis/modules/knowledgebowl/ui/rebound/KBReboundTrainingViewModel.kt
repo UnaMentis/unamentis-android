@@ -1,5 +1,7 @@
 package com.unamentis.modules.knowledgebowl.ui.rebound
 
+import android.content.Context
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.unamentis.R
@@ -12,6 +14,7 @@ import com.unamentis.modules.knowledgebowl.core.rebound.ReboundFeedback
 import com.unamentis.modules.knowledgebowl.data.model.KBQuestion
 import com.unamentis.modules.knowledgebowl.data.model.KBRegion
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -52,13 +55,13 @@ data class ReboundTrainingUiState(
     val currentScenario: KBReboundScenario? = null,
     val totalPoints: Int = 0,
     val reboundTimeRemaining: Float = 5.0f,
-    val opponentName: String = "Team Alpha",
+    val opponentName: String = "",
     val lastFeedback: ReboundFeedback? = null,
     // Results
     val trainingResult: KBReboundTrainingResult? = null,
     // Loading/error
     val isLoading: Boolean = false,
-    val error: String? = null,
+    @StringRes val errorResId: Int? = null,
 )
 
 /**
@@ -68,6 +71,7 @@ data class ReboundTrainingUiState(
 class KBReboundTrainingViewModel
     @Inject
     constructor(
+        @ApplicationContext private val appContext: Context,
         private val reboundSimulator: KBReboundSimulator,
         private val questionEngine: KBQuestionEngine,
     ) : ViewModel() {
@@ -109,7 +113,7 @@ class KBReboundTrainingViewModel
 
         fun startTraining() {
             viewModelScope.launch {
-                _uiState.update { it.copy(isLoading = true, error = null) }
+                _uiState.update { it.copy(isLoading = true, errorResId = null) }
 
                 try {
                     // Load questions
@@ -118,7 +122,7 @@ class KBReboundTrainingViewModel
 
                     if (questions.isEmpty()) {
                         _uiState.update {
-                            it.copy(isLoading = false, error = "No questions available")
+                            it.copy(isLoading = false, errorResId = R.string.error_no_questions_available)
                         }
                         return@launch
                     }
@@ -144,14 +148,14 @@ class KBReboundTrainingViewModel
                             currentQuestionIndex = 0,
                             totalQuestions = minOf(state.questionCount, questions.size),
                             totalPoints = 0,
-                            opponentName = reboundSimulator.getCurrentOpponent(),
+                            opponentName = appContext.getString(reboundSimulator.getCurrentOpponentResId()),
                         )
                     }
 
                     simulateOpponent()
                 } catch (e: Exception) {
                     _uiState.update {
-                        it.copy(isLoading = false, error = e.message ?: "Failed to start training")
+                        it.copy(isLoading = false, errorResId = R.string.error_failed_start_training)
                     }
                 }
             }
@@ -299,7 +303,7 @@ class KBReboundTrainingViewModel
                         it.copy(
                             state = ReboundTrainingState.WAITING_FOR_OPPONENT,
                             currentQuestionIndex = nextIndex,
-                            opponentName = reboundSimulator.getCurrentOpponent(),
+                            opponentName = appContext.getString(reboundSimulator.getCurrentOpponentResId()),
                         )
                     }
                     simulateOpponent()
@@ -320,7 +324,7 @@ class KBReboundTrainingViewModel
         }
 
         fun clearError() {
-            _uiState.update { it.copy(error = null) }
+            _uiState.update { it.copy(errorResId = null) }
         }
 
         // MARK: - Private Helpers

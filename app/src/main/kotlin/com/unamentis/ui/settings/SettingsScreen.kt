@@ -1691,7 +1691,7 @@ private fun OnDeviceLlmSection(
                 Text(
                     stringResource(
                         R.string.settings_delete_model_body,
-                        spec.displayName,
+                        stringResource(spec.displayNameRes),
                         Formatter.formatFileSize(context, spec.sizeBytes),
                     ),
                 )
@@ -1729,7 +1729,10 @@ private fun DeviceCapabilityInfo(
 
     Column(verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingXSmall)) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .testTag("device_ram_info"),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
@@ -2050,7 +2053,7 @@ private fun ExtendedModelCard(
                     horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
                 ) {
                     Text(
-                        text = modelInfo.spec.displayName,
+                        text = stringResource(modelInfo.spec.displayNameRes),
                         style = IOSTypography.body,
                     )
                     // Backend type badge
@@ -2370,7 +2373,7 @@ private fun GLMASRSttSection(
                 Text(
                     stringResource(
                         R.string.settings_delete_model_body,
-                        spec.displayName,
+                        stringResource(spec.displayNameRes),
                         Formatter.formatFileSize(context, spec.sizeBytes),
                     ),
                 )
@@ -2416,7 +2419,7 @@ private fun GLMASRModelCard(
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = modelInfo.spec.displayName,
+                text = stringResource(modelInfo.spec.displayNameRes),
                 style = IOSTypography.body,
             )
             Text(

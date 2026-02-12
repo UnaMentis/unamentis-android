@@ -29,8 +29,7 @@ class KBConferenceManager
             /** Correct answers needed to advance difficulty */
             private const val PROMOTION_THRESHOLD = 3
 
-            /** Timeouts that cause difficulty demotion (reserved for future use) */
-            @Suppress("UnusedPrivateProperty")
+            /** Consecutive timeouts needed to demote difficulty */
             private const val DEMOTION_THRESHOLD = 2
 
             /** Signal practice scenarios */
@@ -73,6 +72,7 @@ class KBConferenceManager
         @Volatile
         private var currentDifficultyLevel = 0
         private var consecutiveCorrect = 0
+        private var consecutiveTimeouts = 0
         private var sessionStartTime: Long = 0L
 
         @Volatile
@@ -94,6 +94,7 @@ class KBConferenceManager
                 attempts.clear()
                 currentDifficultyLevel = 0
                 consecutiveCorrect = 0
+                consecutiveTimeouts = 0
                 sessionStartTime = System.currentTimeMillis()
                 isActive = true
                 _currentLevel.value = 0
@@ -170,6 +171,7 @@ class KBConferenceManager
 
             if (wasCorrect && !timedOut) {
                 consecutiveCorrect++
+                consecutiveTimeouts = 0
 
                 // Promote to harder difficulty
                 if (consecutiveCorrect >= PROMOTION_THRESHOLD) {
@@ -182,16 +184,19 @@ class KBConferenceManager
                     }
                 }
             } else if (timedOut) {
-                // Demote on timeouts
-                if (currentDifficultyLevel > 0) {
+                // Demote on consecutive timeouts
+                consecutiveTimeouts++
+                consecutiveCorrect = 0
+                if (consecutiveTimeouts >= DEMOTION_THRESHOLD && currentDifficultyLevel > 0) {
                     currentDifficultyLevel--
                     _currentLevel.value = currentDifficultyLevel
-                    consecutiveCorrect = 0
+                    consecutiveTimeouts = 0
                     Log.i(TAG, "Dropped to difficulty level $currentDifficultyLevel")
                 }
             } else {
-                // Wrong answer resets consecutive counter
+                // Wrong answer resets consecutive counters
                 consecutiveCorrect = (consecutiveCorrect - 1).coerceAtLeast(0)
+                consecutiveTimeouts = 0
             }
         }
 
@@ -245,6 +250,7 @@ class KBConferenceManager
                 attempts.clear()
                 currentDifficultyLevel = 0
                 consecutiveCorrect = 0
+                consecutiveTimeouts = 0
                 sessionStartTime = 0L
                 isActive = false
                 _currentLevel.value = 0
