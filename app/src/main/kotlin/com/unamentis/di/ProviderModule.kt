@@ -10,9 +10,12 @@ import com.unamentis.core.config.ServerConfigManager
 import com.unamentis.core.device.DeviceCapabilityDetector
 import com.unamentis.core.health.HealthMonitorConfig
 import com.unamentis.core.health.ProviderHealthMonitor
+import com.unamentis.core.telemetry.TelemetryEngine
 import com.unamentis.data.model.LLMService
 import com.unamentis.data.model.STTService
 import com.unamentis.data.model.TTSService
+import com.unamentis.services.embeddings.EmbeddingProvider
+import com.unamentis.services.embeddings.OpenAIEmbeddingService
 import com.unamentis.services.llm.AnthropicLLMService
 import com.unamentis.services.llm.ExecuTorchLLMService
 import com.unamentis.services.llm.LLMBackend
@@ -51,6 +54,7 @@ import javax.inject.Singleton
  * - STT services (Deepgram, Android)
  * - TTS services (ElevenLabs, Android)
  * - LLM services (OpenAI, Anthropic, OnDevice, PatchPanel)
+ * - Embedding services (OpenAI)
  * - ProviderConfig for configuration management
  * - DeviceCapabilityDetector for hardware detection
  *
@@ -399,6 +403,31 @@ object ProviderModule {
                 }
             }
         return PatchPanelService(providers)
+    }
+
+    // Embedding Service Providers
+
+    /**
+     * Provide OpenAI Embedding service.
+     *
+     * Used for semantic search, knowledge base answer validation,
+     * and similarity comparison in curriculum content.
+     *
+     * Uses the OpenAI API key from ProviderConfig.
+     */
+    @Provides
+    @Singleton
+    fun provideEmbeddingProvider(
+        client: OkHttpClient,
+        config: ProviderConfig,
+        telemetryEngine: TelemetryEngine,
+    ): EmbeddingProvider {
+        val apiKey = config.getOpenAIApiKey() ?: ""
+        return OpenAIEmbeddingService(
+            apiKey = apiKey,
+            client = client,
+            telemetryEngine = telemetryEngine,
+        )
     }
 
     // Health Monitors

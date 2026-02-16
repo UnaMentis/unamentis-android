@@ -9,11 +9,18 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.unamentis.data.local.dao.CurriculumDao
 import com.unamentis.data.local.dao.ModuleDao
+import com.unamentis.data.local.dao.QueuedMetricsDao
+import com.unamentis.data.local.dao.ReadingListDao
 import com.unamentis.data.local.dao.SessionDao
 import com.unamentis.data.local.dao.TodoDao
 import com.unamentis.data.local.dao.TopicProgressDao
 import com.unamentis.data.local.entity.CurriculumEntity
 import com.unamentis.data.local.entity.DownloadedModuleEntity
+import com.unamentis.data.local.entity.ReadingBookmarkEntity
+import com.unamentis.data.local.entity.ReadingChunkEntity
+import com.unamentis.data.local.entity.ReadingListItemEntity
+import com.unamentis.data.local.entity.QueuedMetricsEntity
+import com.unamentis.data.local.entity.ReadingVisualAssetEntity
 import com.unamentis.data.local.entity.SessionEntity
 import com.unamentis.data.local.entity.TopicProgressEntity
 import com.unamentis.data.local.entity.TranscriptEntryEntity
@@ -38,8 +45,13 @@ import com.unamentis.data.model.Todo
         TopicProgressEntity::class,
         Todo::class,
         DownloadedModuleEntity::class,
+        ReadingListItemEntity::class,
+        ReadingChunkEntity::class,
+        ReadingBookmarkEntity::class,
+        ReadingVisualAssetEntity::class,
+        QueuedMetricsEntity::class,
     ],
-    version = 5,
+    version = 7,
     exportSchema = false,
 )
 @TypeConverters(Converters::class)
@@ -53,6 +65,10 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun todoDao(): TodoDao
 
     abstract fun moduleDao(): ModuleDao
+
+    abstract fun readingListDao(): ReadingListDao
+
+    abstract fun queuedMetricsDao(): QueuedMetricsDao
 
     companion object {
         @Volatile
@@ -108,6 +124,141 @@ abstract class AppDatabase : RoomDatabase() {
             }
 
         /**
+         * Migration from version 5 to 6: Add reading list tables.
+         */
+        private val MIGRATION_5_6 =
+            object : Migration(5, 6) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    createReadingListItemsTable(db)
+                    createReadingChunksTable(db)
+                    createReadingBookmarksTable(db)
+                    createReadingVisualAssetsTable(db)
+                }
+            }
+
+        /**
+         * Migration from version 6 to 7: Add queued_metrics table.
+         */
+        private val MIGRATION_6_7 =
+            object : Migration(6, 7) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL(
+                        """
+                        CREATE TABLE IF NOT EXISTS queued_metrics (
+                            id TEXT PRIMARY KEY NOT NULL,
+                            payloadJson TEXT NOT NULL,
+                            queuedAt INTEGER NOT NULL,
+                            retryCount INTEGER NOT NULL DEFAULT 0
+                        )
+                        """.trimIndent(),
+                    )
+                }
+            }
+
+        private fun createReadingListItemsTable(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS reading_list_items (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    title TEXT NOT NULL,
+                    author TEXT,
+                    sourceType TEXT NOT NULL DEFAULT 'text',
+                    status TEXT NOT NULL DEFAULT 'unread',
+                    fileUrl TEXT,
+                    fileHash TEXT,
+                    fileSizeBytes INTEGER NOT NULL DEFAULT 0,
+                    currentChunkIndex INTEGER NOT NULL DEFAULT 0,
+                    percentComplete REAL NOT NULL DEFAULT 0.0,
+                    addedAt INTEGER NOT NULL,
+                    lastReadAt INTEGER,
+                    completedAt INTEGER,
+                    audioPreGenStatus TEXT NOT NULL DEFAULT 'none'
+                )
+                """.trimIndent(),
+            )
+        }
+
+        private fun createReadingChunksTable(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS reading_chunks (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    readingListItemId TEXT NOT NULL,
+                    `index` INTEGER NOT NULL,
+                    text TEXT NOT NULL,
+                    characterOffset INTEGER NOT NULL DEFAULT 0,
+                    estimatedDurationSeconds REAL NOT NULL DEFAULT 0.0,
+                    cachedAudioSampleRate REAL NOT NULL DEFAULT 0.0,
+                    FOREIGN KEY (readingListItemId)
+                        REFERENCES reading_list_items(id)
+                        ON DELETE CASCADE
+                )
+                """.trimIndent(),
+            )
+            db.execSQL(
+                """
+                CREATE INDEX IF NOT EXISTS
+                    index_reading_chunks_readingListItemId
+                    ON reading_chunks(readingListItemId)
+                """.trimIndent(),
+            )
+        }
+
+        private fun createReadingBookmarksTable(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS reading_bookmarks (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    readingListItemId TEXT NOT NULL,
+                    chunkIndex INTEGER NOT NULL,
+                    note TEXT,
+                    snippetPreview TEXT,
+                    createdAt INTEGER NOT NULL,
+                    FOREIGN KEY (readingListItemId)
+                        REFERENCES reading_list_items(id)
+                        ON DELETE CASCADE
+                )
+                """.trimIndent(),
+            )
+            db.execSQL(
+                """
+                CREATE INDEX IF NOT EXISTS
+                    index_reading_bookmarks_readingListItemId
+                    ON reading_bookmarks(readingListItemId)
+                """.trimIndent(),
+            )
+        }
+
+        private fun createReadingVisualAssetsTable(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS reading_visual_assets (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    readingListItemId TEXT NOT NULL,
+                    chunkIndex INTEGER NOT NULL DEFAULT 0,
+                    pageIndex INTEGER NOT NULL DEFAULT 0,
+                    positionOnPage REAL NOT NULL DEFAULT 0.0,
+                    mimeType TEXT,
+                    width INTEGER NOT NULL DEFAULT 0,
+                    height INTEGER NOT NULL DEFAULT 0,
+                    altText TEXT,
+                    localPath TEXT,
+                    FOREIGN KEY (readingListItemId)
+                        REFERENCES reading_list_items(id)
+                        ON DELETE CASCADE
+                )
+                """.trimIndent(),
+            )
+            db.execSQL(
+                """
+                CREATE INDEX IF NOT EXISTS
+                    index_reading_visual_assets_readingListItemId
+                    ON reading_visual_assets(readingListItemId)
+                """.trimIndent(),
+            )
+        }
+
+        /**
          * Get the singleton database instance.
          *
          * @param context Application context
@@ -121,7 +272,7 @@ abstract class AppDatabase : RoomDatabase() {
                         AppDatabase::class.java,
                         "unamentis.db",
                     )
-                        .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                        .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
                         .fallbackToDestructiveMigration()
                         .build()
                 INSTANCE = instance

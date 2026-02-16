@@ -1198,4 +1198,76 @@
 
     <!-- STT Service -->
     <string name="stt_stub_transcript">[Stub: Audio transcription would appear here]</string>
+
+    <!-- Formula Renderer -->
+    <string name="formula_loading">Loading formula…</string>
+    <string name="formula_latex_rendering">LaTeX rendering</string>
+    <string name="formula_mathematical_formula">Mathematical formula</string>
+    <string name="cd_formula_display">Mathematical formula: %1$s</string>
+    <string name="formula_fullscreen_title">Formula</string>
+    <string name="formula_name_label">Name</string>
+    <string name="formula_category_label">Category</string>
+    <string name="formula_variables_label">Variables</string>
+    <string name="formula_latex_source_label">LaTeX Source</string>
+    <string name="cd_formula_fullscreen_hint">Double tap to view fullscreen</string>
+    <string name="formula_close">Close</string>
+    <string name="formula_equals">=</string>
+
+    <!-- Voice Activity Feedback -->
+    <string name="voice_feedback_countdown_start">%1$s. %2$d seconds.</string>
+    <string name="voice_feedback_countdown_milestone">%1$d seconds</string>
+    <string name="voice_feedback_countdown_complete">Time. %1$s</string>
+    <string name="voice_feedback_answer_received">Answer received</string>
+    <string name="voice_feedback_correct">Correct!</string>
+    <string name="voice_feedback_incorrect">Incorrect</string>
+    <string name="voice_feedback_incorrect_with_answer">The answer was %1$s</string>
+    <string name="voice_feedback_activity_started">%1$s started</string>
+    <string name="voice_feedback_next_question">Question %1$d of %2$d</string>
+
+    <!-- Voice Command Display Names -->
+    <string name="voice_command_ready">Ready</string>
+    <string name="voice_command_submit">Submit</string>
+    <string name="voice_command_next">Next</string>
+    <string name="voice_command_skip">Skip</string>
+    <string name="voice_command_repeat">Repeat</string>
+    <string name="voice_command_quit">Exit</string>
+
+    <!-- Reading List -->
+    <string name="reading_list_title">Reading List</string>
+    <string name="reading_list_empty">No items in your reading list</string>
+    <string name="reading_list_empty_hint">Import documents, articles, or paste text to get started</string>
+    <string name="reading_list_import_document">Import Document</string>
+    <string name="reading_list_import_url">Import from URL</string>
+    <string name="reading_list_import_clipboard">Import from Clipboard</string>
+    <string name="reading_list_import_manual">Add Text</string>
+    <string name="reading_list_error_unsupported_file">Unsupported file type: .%1$s. Supported types: PDF, TXT, MD</string>
+    <string name="reading_list_error_duplicate">This document has already been imported: %1$s</string>
+    <string name="reading_list_error_no_text">No readable text could be extracted from this document</string>
+    <string name="reading_list_error_not_found">Reading list item not found</string>
+    <string name="reading_list_status_unread">Unread</string>
+    <string name="reading_list_status_in_progress">In Progress</string>
+    <string name="reading_list_status_completed">Completed</string>
+    <string name="reading_list_status_archived">Archived</string>
+    <string name="reading_list_chunk_count">%1$d chunks</string>
+    <string name="reading_list_progress_percent">%1$s complete</string>
+    <string name="reading_list_delete_item_title">Delete Item?</string>
+    <string name="reading_list_delete_item_message">This will permanently remove the item and its associated files.</string>
+    <string name="reading_list_delete_archived_title">Delete All Archived?</string>
+    <string name="reading_list_delete_archived_message">This will permanently remove all archived items and their files.</string>
+    <string name="reading_list_bookmark_added">Bookmark added</string>
+    <string name="reading_list_bookmark_removed">Bookmark removed</string>
+    <string name="reading_list_stats_unread">Unread: %1$d</string>
+    <string name="reading_list_stats_in_progress">In Progress: %1$d</string>
+    <string name="reading_list_stats_completed">Completed: %1$d</string>
+    <string name="reading_list_stats_archived">Archived: %1$d</string>
+
+    <!-- Server Discovery -->
+    <string name="discovery_tier_cached">Checking saved server</string>
+    <string name="discovery_tier_nsd">Scanning local network</string>
+    <string name="discovery_tier_subnet_scan">Deep network scan</string>
+    <string name="discovery_method_cached">Cached</string>
+    <string name="discovery_method_nsd">Network Discovery</string>
+    <string name="discovery_method_subnet_scan">Network Scan</string>
+    <string name="discovery_method_manual">Manual</string>
+    <string name="discovery_method_qr_code">QR Code</string>
 </resources>

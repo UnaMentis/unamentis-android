@@ -96,6 +96,7 @@ class ProviderConfig(
         const val ELEVENLABS_API_KEY = "elevenlabs_api_key"
         const val OPENAI_API_KEY = "openai_api_key"
         const val ANTHROPIC_API_KEY = "anthropic_api_key"
+        const val BRAVE_SEARCH_API_KEY = "brave_search_api_key"
     }
 
     /**
@@ -694,6 +695,20 @@ class ProviderConfig(
      */
     fun setAnthropicApiKey(apiKey: String) {
         encryptedPrefs.edit().putString(ApiKeyKeys.ANTHROPIC_API_KEY, apiKey).apply()
+    }
+
+    /**
+     * Get Brave Search API key.
+     */
+    fun getBraveSearchApiKey(): String? {
+        return encryptedPrefs.getString(ApiKeyKeys.BRAVE_SEARCH_API_KEY, null)
+    }
+
+    /**
+     * Set Brave Search API key.
+     */
+    fun setBraveSearchApiKey(apiKey: String) {
+        encryptedPrefs.edit().putString(ApiKeyKeys.BRAVE_SEARCH_API_KEY, apiKey).apply()
     }
 
     /**
