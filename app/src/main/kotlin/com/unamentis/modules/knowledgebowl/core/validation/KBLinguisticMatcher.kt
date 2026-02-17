@@ -14,6 +14,7 @@ import javax.inject.Singleton
  *
  * Ported from iOS KBLinguisticMatcher for feature parity.
  */
+@Suppress("TooManyFunctions")
 @Singleton
 class KBLinguisticMatcher
     @Inject
@@ -160,6 +161,7 @@ class KBLinguisticMatcher
         /**
          * Step 1b: Handle past tenses and gerunds (-eed, -ed, -ing).
          */
+        @Suppress("CyclomaticComplexMethod")
         private fun stemStep1b(word: String): String {
             if (word.endsWith("eed")) {
                 return if (measureGreaterThan(word.dropLast(3), 0)) {

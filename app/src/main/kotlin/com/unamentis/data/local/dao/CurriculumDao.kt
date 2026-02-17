@@ -57,6 +57,14 @@ interface CurriculumDao {
     suspend fun deleteCurriculum(id: String)
 
     /**
+     * Get all curricula as a one-time list (non-Flow).
+     *
+     * @return List of all curriculum entities
+     */
+    @Query("SELECT * FROM curricula ORDER BY lastAccessedAt DESC")
+    suspend fun getAllCurriculaList(): List<CurriculumEntity>
+
+    /**
      * Delete all curricula.
      */
     @Query("DELETE FROM curricula")

@@ -140,8 +140,7 @@ class CurriculumDownloadManager
          * @param curriculumId The curriculum ID to query
          * @return Current progress or null if no active download
          */
-        fun getProgress(curriculumId: String): CurriculumDownloadProgress? =
-            _activeDownloads.value[curriculumId]
+        fun getProgress(curriculumId: String): CurriculumDownloadProgress? = _activeDownloads.value[curriculumId]
 
         /**
          * Check whether a download is currently active for the given curriculum.
@@ -149,8 +148,7 @@ class CurriculumDownloadManager
          * @param curriculumId The curriculum ID to check
          * @return true if the curriculum is being downloaded
          */
-        fun isDownloading(curriculumId: String): Boolean =
-            _activeDownloads.value[curriculumId]?.state?.isActive == true
+        fun isDownloading(curriculumId: String): Boolean = _activeDownloads.value[curriculumId]?.state?.isActive == true
 
         /**
          * Cancel an active download for the given curriculum.

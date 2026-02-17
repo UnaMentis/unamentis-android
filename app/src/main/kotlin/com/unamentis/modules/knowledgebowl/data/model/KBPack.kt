@@ -65,11 +65,12 @@ data class KBPack(
      * Top domains in this pack (up to 4), sorted by question count descending.
      */
     val topDomains: List<KBDomain>
-        get() = domainDistribution
-            .entries
-            .sortedByDescending { it.value }
-            .take(TOP_DOMAIN_LIMIT)
-            .mapNotNull { KBDomain.fromSerialName(it.key) }
+        get() =
+            domainDistribution
+                .entries
+                .sortedByDescending { it.value }
+                .take(TOP_DOMAIN_LIMIT)
+                .mapNotNull { KBDomain.fromSerialName(it.key) }
 
     companion object {
         private const val TOP_DOMAIN_LIMIT = 4

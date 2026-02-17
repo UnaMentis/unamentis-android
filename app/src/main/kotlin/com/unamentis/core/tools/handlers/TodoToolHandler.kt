@@ -10,6 +10,8 @@ import com.unamentis.core.tools.ToolParameters
 import com.unamentis.core.tools.ToolProperty
 import com.unamentis.data.local.dao.TodoDao
 import com.unamentis.data.model.Todo
+import com.unamentis.data.model.TodoItemSource
+import com.unamentis.data.model.TodoItemType
 import com.unamentis.data.model.TodoPriority
 import com.unamentis.data.model.TodoStatus
 import java.util.UUID
@@ -178,6 +180,14 @@ class TodoToolHandler
                     else -> TodoPriority.MEDIUM
                 }
 
+            // Determine item type from the type string
+            val itemType =
+                when (type) {
+                    "learning_target" -> TodoItemType.LEARNING_TARGET
+                    "reinforcement" -> TodoItemType.REINFORCEMENT
+                    else -> TodoItemType.LEARNING_TARGET
+                }
+
             // Create the todo
             val todo =
                 Todo(
@@ -186,6 +196,8 @@ class TodoToolHandler
                     notes = buildTodoNotes(type!!, notes, context),
                     priority = priority,
                     status = TodoStatus.ACTIVE,
+                    itemType = itemType,
+                    source = TodoItemSource.VOICE,
                     sessionId = context.sessionId,
                     topicId = context.topicId,
                     createdAt = System.currentTimeMillis(),
@@ -233,6 +245,8 @@ class TodoToolHandler
                     notes = buildReviewNotes(reason, context),
                     priority = TodoPriority.MEDIUM,
                     status = TodoStatus.ACTIVE,
+                    itemType = TodoItemType.REINFORCEMENT,
+                    source = TodoItemSource.VOICE,
                     sessionId = context.sessionId,
                     topicId = context.topicId,
                     createdAt = System.currentTimeMillis(),

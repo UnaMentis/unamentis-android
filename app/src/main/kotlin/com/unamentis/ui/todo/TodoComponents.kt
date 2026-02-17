@@ -59,6 +59,7 @@ fun TodoStatusIcon(
     val (icon, color) =
         when (status) {
             TodoStatus.ACTIVE -> Icons.Default.Circle to iOSGray
+            TodoStatus.IN_PROGRESS -> Icons.Outlined.ChecklistRtl to iOSBlue
             TodoStatus.COMPLETED -> Icons.Default.CheckCircle to iOSGreen
             TodoStatus.ARCHIVED -> Icons.Default.Archive to iOSPurple
         }

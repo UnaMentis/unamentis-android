@@ -16,10 +16,10 @@ import com.unamentis.data.local.dao.TodoDao
 import com.unamentis.data.local.dao.TopicProgressDao
 import com.unamentis.data.local.entity.CurriculumEntity
 import com.unamentis.data.local.entity.DownloadedModuleEntity
+import com.unamentis.data.local.entity.QueuedMetricsEntity
 import com.unamentis.data.local.entity.ReadingBookmarkEntity
 import com.unamentis.data.local.entity.ReadingChunkEntity
 import com.unamentis.data.local.entity.ReadingListItemEntity
-import com.unamentis.data.local.entity.QueuedMetricsEntity
 import com.unamentis.data.local.entity.ReadingVisualAssetEntity
 import com.unamentis.data.local.entity.SessionEntity
 import com.unamentis.data.local.entity.TopicProgressEntity
@@ -51,7 +51,7 @@ import com.unamentis.data.model.Todo
         ReadingVisualAssetEntity::class,
         QueuedMetricsEntity::class,
     ],
-    version = 7,
+    version = 8,
     exportSchema = false,
 )
 @TypeConverters(Converters::class)
@@ -259,6 +259,29 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         /**
+         * Migration from version 7 to 8: Add enhanced todo fields for iOS parity.
+         *
+         * Adds: sortOrder, itemType, source, curriculumId, granularity,
+         * resumeTopicId, resumeSegmentIndex, resumeConversationContext,
+         * suggestedCurriculumIds, archivedAt.
+         */
+        private val MIGRATION_7_8 =
+            object : Migration(7, 8) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    db.execSQL("ALTER TABLE todos ADD COLUMN sortOrder INTEGER NOT NULL DEFAULT 0")
+                    db.execSQL("ALTER TABLE todos ADD COLUMN itemType TEXT NOT NULL DEFAULT 'LEARNING_TARGET'")
+                    db.execSQL("ALTER TABLE todos ADD COLUMN source TEXT NOT NULL DEFAULT 'MANUAL'")
+                    db.execSQL("ALTER TABLE todos ADD COLUMN curriculumId TEXT DEFAULT NULL")
+                    db.execSQL("ALTER TABLE todos ADD COLUMN granularity TEXT DEFAULT NULL")
+                    db.execSQL("ALTER TABLE todos ADD COLUMN resumeTopicId TEXT DEFAULT NULL")
+                    db.execSQL("ALTER TABLE todos ADD COLUMN resumeSegmentIndex INTEGER NOT NULL DEFAULT 0")
+                    db.execSQL("ALTER TABLE todos ADD COLUMN resumeConversationContext TEXT DEFAULT NULL")
+                    db.execSQL("ALTER TABLE todos ADD COLUMN suggestedCurriculumIds TEXT DEFAULT NULL")
+                    db.execSQL("ALTER TABLE todos ADD COLUMN archivedAt INTEGER DEFAULT NULL")
+                }
+            }
+
+        /**
          * Get the singleton database instance.
          *
          * @param context Application context
@@ -272,7 +295,14 @@ abstract class AppDatabase : RoomDatabase() {
                         AppDatabase::class.java,
                         "unamentis.db",
                     )
-                        .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+                        .addMigrations(
+                            MIGRATION_2_3,
+                            MIGRATION_3_4,
+                            MIGRATION_4_5,
+                            MIGRATION_5_6,
+                            MIGRATION_6_7,
+                            MIGRATION_7_8,
+                        )
                         .fallbackToDestructiveMigration()
                         .build()
                 INSTANCE = instance

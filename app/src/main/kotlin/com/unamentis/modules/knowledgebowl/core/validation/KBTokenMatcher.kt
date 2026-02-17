@@ -42,6 +42,7 @@ class KBTokenMatcher
          * @param str2 Second string
          * @return Jaccard similarity (0.0-1.0)
          */
+        @Suppress("ReturnCount")
         fun jaccardSimilarity(
             str1: String,
             str2: String,
@@ -77,6 +78,7 @@ class KBTokenMatcher
          * @param str2 Second string
          * @return Dice similarity (0.0-1.0)
          */
+        @Suppress("ReturnCount")
         fun diceSimilarity(
             str1: String,
             str2: String,

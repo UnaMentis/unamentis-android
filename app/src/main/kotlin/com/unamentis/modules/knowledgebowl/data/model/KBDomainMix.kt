@@ -67,7 +67,10 @@ data class KBDomainMix(
      * @param newWeight The new weight (0.0 to 1.0)
      * @return A new [KBDomainMix] with adjusted weights
      */
-    fun withWeight(domain: KBDomain, newWeight: Double): KBDomainMix {
+    fun withWeight(
+        domain: KBDomain,
+        newWeight: Double,
+    ): KBDomainMix {
         val clampedNew = max(0.0, min(1.0, newWeight))
         val oldWeight = weights[domain] ?: 0.0
         val delta = clampedNew - oldWeight
@@ -121,17 +124,19 @@ data class KBDomainMix(
      * Domains and weights sorted by weight descending.
      */
     val sortedByWeight: List<Pair<KBDomain, Double>>
-        get() = weights.entries
-            .map { it.key to it.value }
-            .sortedByDescending { it.second }
+        get() =
+            weights.entries
+                .map { it.key to it.value }
+                .sortedByDescending { it.second }
 
     /**
      * Domains with non-zero weight.
      */
     val activeDomains: List<KBDomain>
-        get() = weights.entries
-            .filter { it.value > MIN_THRESHOLD }
-            .map { it.key }
+        get() =
+            weights.entries
+                .filter { it.value > MIN_THRESHOLD }
+                .map { it.key }
 
     /**
      * Weights for domains with non-zero weight (for question selection).

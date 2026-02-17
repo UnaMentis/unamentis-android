@@ -22,6 +22,7 @@ class KBNGramMatcher
             private const val TAG = "KBNGramMatcher"
 
             // Weights for single-word combined score
+
             /** Weight for character unigram similarity in single-word scoring. */
             const val SINGLE_WORD_UNIGRAM_WEIGHT = 0.3f
 
@@ -32,6 +33,7 @@ class KBNGramMatcher
             const val SINGLE_WORD_TRIGRAM_WEIGHT = 0.35f
 
             // Weights for multi-word combined score
+
             /** Weight for character unigram similarity in multi-word scoring. */
             const val MULTI_WORD_UNIGRAM_WEIGHT = 0.2f
 

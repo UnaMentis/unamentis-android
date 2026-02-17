@@ -30,6 +30,73 @@ interface TodoDao {
     suspend fun getById(id: String): Todo?
 
     /**
+     * Get all active (non-archived, non-completed) todos sorted by sortOrder.
+     */
+    @Query(
+        """
+        SELECT * FROM todos
+        WHERE status NOT IN ('ARCHIVED', 'COMPLETED')
+        ORDER BY sortOrder ASC
+        """,
+    )
+    fun getActiveTodos(): Flow<List<Todo>>
+
+    /**
+     * Get all active todos as a list (non-Flow, for one-time queries).
+     */
+    @Query(
+        """
+        SELECT * FROM todos
+        WHERE status NOT IN ('ARCHIVED', 'COMPLETED')
+        ORDER BY sortOrder ASC
+        """,
+    )
+    suspend fun getActiveTodosList(): List<Todo>
+
+    /**
+     * Get completed todos sorted by update date descending.
+     */
+    @Query("SELECT * FROM todos WHERE status = 'COMPLETED' ORDER BY updatedAt DESC")
+    fun getCompletedTodos(): Flow<List<Todo>>
+
+    /**
+     * Get archived todos sorted by archivedAt date descending.
+     */
+    @Query("SELECT * FROM todos WHERE status = 'ARCHIVED' ORDER BY archivedAt DESC")
+    fun getArchivedTodos(): Flow<List<Todo>>
+
+    /**
+     * Get todos by item type, sorted by sortOrder.
+     */
+    @Query("SELECT * FROM todos WHERE itemType = :itemType ORDER BY sortOrder ASC")
+    fun getTodosByType(itemType: String): Flow<List<Todo>>
+
+    /**
+     * Get auto-resume todo for a specific topic.
+     */
+    @Query(
+        """
+        SELECT * FROM todos
+        WHERE itemType = 'AUTO_RESUME' AND resumeTopicId = :topicId
+        LIMIT 1
+        """,
+    )
+    suspend fun getAutoResumeForTopic(topicId: String): Todo?
+
+    /**
+     * Get the maximum sortOrder value among all todos.
+     */
+    @Query("SELECT MAX(sortOrder) FROM todos")
+    suspend fun getMaxSortOrder(): Int?
+
+    /**
+     * Increment sortOrder for all items with sortOrder >= startIndex.
+     * Used when inserting a new item at a specific position.
+     */
+    @Query("UPDATE todos SET sortOrder = sortOrder + 1 WHERE sortOrder >= :startIndex")
+    suspend fun shiftSortOrdersDown(startIndex: Int)
+
+    /**
      * Get all AI-suggested todos.
      */
     @Query("SELECT * FROM todos WHERE isAISuggested = 1 ORDER BY suggestionConfidence DESC")
@@ -109,10 +176,22 @@ interface TodoDao {
     suspend fun delete(todo: Todo)
 
     /**
+     * Delete todo by ID.
+     */
+    @Query("DELETE FROM todos WHERE id = :id")
+    suspend fun deleteById(id: String)
+
+    /**
      * Delete multiple todos by IDs.
      */
     @Query("DELETE FROM todos WHERE id IN (:ids)")
     suspend fun deleteByIds(ids: List<String>)
+
+    /**
+     * Delete all completed todos.
+     */
+    @Query("DELETE FROM todos WHERE status = 'COMPLETED'")
+    suspend fun deleteAllCompleted()
 
     /**
      * Delete all AI-suggested todos that were not accepted.
@@ -145,4 +224,10 @@ interface TodoDao {
         completedAt: Long,
         updatedAt: Long,
     )
+
+    /**
+     * Count of all active todos.
+     */
+    @Query("SELECT COUNT(*) FROM todos WHERE status NOT IN ('ARCHIVED', 'COMPLETED')")
+    fun getActiveCount(): Flow<Int>
 }

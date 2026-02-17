@@ -178,6 +178,7 @@ class VisualAssetCache
          * @return Downloaded (or cached) asset bytes
          * @throws VisualAssetCacheException if the download or cache operation fails
          */
+        @Suppress("ThrowsCount")
         suspend fun downloadAndCache(
             assetId: String,
             url: String,
@@ -338,8 +339,7 @@ class VisualAssetCache
          *
          * Replaces non-alphanumeric characters with underscores.
          */
-        private fun sanitizeFilename(assetId: String): String =
-            assetId.replace(Regex("[^a-zA-Z0-9._-]"), "_")
+        private fun sanitizeFilename(assetId: String): String = assetId.replace(Regex("[^a-zA-Z0-9._-]"), "_")
     }
 
 /**

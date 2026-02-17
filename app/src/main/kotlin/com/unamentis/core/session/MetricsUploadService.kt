@@ -8,7 +8,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import java.io.IOException
 import java.util.UUID
 import javax.inject.Inject
@@ -75,8 +74,11 @@ class MetricsUploadService
             /** Maximum number of items to upload in a single batch drain. */
             const val MAX_BATCH_SIZE = 50
 
-            /** Shared preferences key for persisted client ID. */
+            /** Shared preferences key for persisted client ID (used in future persistence). */
+            @Suppress("UnusedPrivateProperty")
             private const val PREFS_NAME = "MetricsUploadService"
+
+            @Suppress("UnusedPrivateProperty")
             private const val KEY_CLIENT_ID = "clientId"
         }
 

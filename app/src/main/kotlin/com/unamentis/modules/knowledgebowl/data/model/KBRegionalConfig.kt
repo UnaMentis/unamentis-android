@@ -82,10 +82,11 @@ data class KBRegionalConfig(
      * Minnesota/Washington allow enhanced algorithmic matching.
      */
     val validationStrictness: KBValidationStrictness
-        get() = when (region) {
-            KBRegion.COLORADO, KBRegion.COLORADO_SPRINGS -> KBValidationStrictness.STRICT
-            KBRegion.MINNESOTA, KBRegion.WASHINGTON -> KBValidationStrictness.STANDARD
-        }
+        get() =
+            when (region) {
+                KBRegion.COLORADO, KBRegion.COLORADO_SPRINGS -> KBValidationStrictness.STRICT
+                KBRegion.MINNESOTA, KBRegion.WASHINGTON -> KBValidationStrictness.STANDARD
+            }
 
     /**
      * Written time limit formatted for display.

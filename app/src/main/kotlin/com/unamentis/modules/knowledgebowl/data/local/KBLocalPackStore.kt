@@ -12,7 +12,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.File
@@ -45,10 +44,11 @@ class KBLocalPackStore
         val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
         private val mutex = Mutex()
-        private val json = Json {
-            ignoreUnknownKeys = true
-            prettyPrint = true
-        }
+        private val json =
+            Json {
+                ignoreUnknownKeys = true
+                prettyPrint = true
+            }
 
         private val packFile: File
             get() = File(context.filesDir, PACK_FILE_NAME)
@@ -86,41 +86,43 @@ class KBLocalPackStore
             name: String,
             description: String?,
             questions: List<KBQuestion>,
-        ): KBPack = mutex.withLock {
-            val domainDistribution = mutableMapOf<String, Int>()
-            val difficultyDistribution = mutableMapOf<Int, Int>()
+        ): KBPack =
+            mutex.withLock {
+                val domainDistribution = mutableMapOf<String, Int>()
+                val difficultyDistribution = mutableMapOf<Int, Int>()
 
-            for (question in questions) {
-                val domainKey = question.domain.name.lowercase()
-                domainDistribution[domainKey] =
-                    (domainDistribution[domainKey] ?: 0) + 1
+                for (question in questions) {
+                    val domainKey = question.domain.name.lowercase()
+                    domainDistribution[domainKey] =
+                        (domainDistribution[domainKey] ?: 0) + 1
 
-                val difficultyKey = question.difficulty.level
-                difficultyDistribution[difficultyKey] =
-                    (difficultyDistribution[difficultyKey] ?: 0) + 1
+                    val difficultyKey = question.difficulty.level
+                    difficultyDistribution[difficultyKey] =
+                        (difficultyDistribution[difficultyKey] ?: 0) + 1
+                }
+
+                val pack =
+                    KBPack(
+                        id = "local-${UUID.randomUUID().toString().take(LOCAL_ID_PREFIX_LENGTH)}",
+                        name = name,
+                        description = description ?: DEFAULT_DESCRIPTION,
+                        questionCount = questions.size,
+                        domainDistribution = domainDistribution,
+                        difficultyDistribution = difficultyDistribution,
+                        packType = KBPack.PackType.CUSTOM,
+                        isLocal = true,
+                        questionIds = questions.map { it.id },
+                        createdAtMillis = System.currentTimeMillis(),
+                        updatedAtMillis = null,
+                    )
+
+                val updatedPacks = _localPacks.value + pack
+                _localPacks.value = updatedPacks
+                saveToDisk(updatedPacks)
+
+                Log.i(TAG, "Created local pack '$name' with ${questions.size} questions")
+                pack
             }
-
-            val pack = KBPack(
-                id = "local-${UUID.randomUUID().toString().take(LOCAL_ID_PREFIX_LENGTH)}",
-                name = name,
-                description = description ?: DEFAULT_DESCRIPTION,
-                questionCount = questions.size,
-                domainDistribution = domainDistribution,
-                difficultyDistribution = difficultyDistribution,
-                packType = KBPack.PackType.CUSTOM,
-                isLocal = true,
-                questionIds = questions.map { it.id },
-                createdAtMillis = System.currentTimeMillis(),
-                updatedAtMillis = null,
-            )
-
-            val updatedPacks = _localPacks.value + pack
-            _localPacks.value = updatedPacks
-            saveToDisk(updatedPacks)
-
-            Log.i(TAG, "Created local pack '$name' with ${questions.size} questions")
-            pack
-        }
 
         /**
          * Update an existing local pack.
@@ -137,56 +139,58 @@ class KBLocalPackStore
             name: String? = null,
             description: String? = null,
             questions: List<KBQuestion>? = null,
-        ): Boolean = mutex.withLock {
-            val packs = _localPacks.value.toMutableList()
-            val index = packs.indexOfFirst { it.id == id }
+        ): Boolean =
+            mutex.withLock {
+                val packs = _localPacks.value.toMutableList()
+                val index = packs.indexOfFirst { it.id == id }
 
-            if (index < 0) {
-                Log.w(TAG, "Pack not found for update: $id")
-                return false
-            }
-
-            val existing = packs[index]
-            var domainDistribution = existing.domainDistribution
-            var difficultyDistribution = existing.difficultyDistribution
-            var questionIds = existing.questionIds
-            var questionCount = existing.questionCount
-
-            if (questions != null) {
-                val newDomainDist = mutableMapOf<String, Int>()
-                val newDiffDist = mutableMapOf<Int, Int>()
-
-                for (question in questions) {
-                    val domainKey = question.domain.name.lowercase()
-                    newDomainDist[domainKey] = (newDomainDist[domainKey] ?: 0) + 1
-
-                    val difficultyKey = question.difficulty.level
-                    newDiffDist[difficultyKey] = (newDiffDist[difficultyKey] ?: 0) + 1
+                if (index < 0) {
+                    Log.w(TAG, "Pack not found for update: $id")
+                    return false
                 }
 
-                domainDistribution = newDomainDist
-                difficultyDistribution = newDiffDist
-                questionIds = questions.map { it.id }
-                questionCount = questions.size
+                val existing = packs[index]
+                var domainDistribution = existing.domainDistribution
+                var difficultyDistribution = existing.difficultyDistribution
+                var questionIds = existing.questionIds
+                var questionCount = existing.questionCount
+
+                if (questions != null) {
+                    val newDomainDist = mutableMapOf<String, Int>()
+                    val newDiffDist = mutableMapOf<Int, Int>()
+
+                    for (question in questions) {
+                        val domainKey = question.domain.name.lowercase()
+                        newDomainDist[domainKey] = (newDomainDist[domainKey] ?: 0) + 1
+
+                        val difficultyKey = question.difficulty.level
+                        newDiffDist[difficultyKey] = (newDiffDist[difficultyKey] ?: 0) + 1
+                    }
+
+                    domainDistribution = newDomainDist
+                    difficultyDistribution = newDiffDist
+                    questionIds = questions.map { it.id }
+                    questionCount = questions.size
+                }
+
+                val updated =
+                    existing.copy(
+                        name = name ?: existing.name,
+                        description = description ?: existing.description,
+                        questionCount = questionCount,
+                        domainDistribution = domainDistribution,
+                        difficultyDistribution = difficultyDistribution,
+                        questionIds = questionIds,
+                        updatedAtMillis = System.currentTimeMillis(),
+                    )
+
+                packs[index] = updated
+                _localPacks.value = packs
+                saveToDisk(packs)
+
+                Log.i(TAG, "Updated local pack '${updated.name}'")
+                true
             }
-
-            val updated = existing.copy(
-                name = name ?: existing.name,
-                description = description ?: existing.description,
-                questionCount = questionCount,
-                domainDistribution = domainDistribution,
-                difficultyDistribution = difficultyDistribution,
-                questionIds = questionIds,
-                updatedAtMillis = System.currentTimeMillis(),
-            )
-
-            packs[index] = updated
-            _localPacks.value = packs
-            saveToDisk(packs)
-
-            Log.i(TAG, "Updated local pack '${updated.name}'")
-            true
-        }
 
         /**
          * Delete a local pack.
@@ -194,22 +198,23 @@ class KBLocalPackStore
          * @param id ID of the pack to delete
          * @return true if the pack was found and deleted
          */
-        suspend fun deletePack(id: String): Boolean = mutex.withLock {
-            val packs = _localPacks.value.toMutableList()
-            val index = packs.indexOfFirst { it.id == id }
+        suspend fun deletePack(id: String): Boolean =
+            mutex.withLock {
+                val packs = _localPacks.value.toMutableList()
+                val index = packs.indexOfFirst { it.id == id }
 
-            if (index < 0) {
-                Log.w(TAG, "Pack not found for deletion: $id")
-                return false
+                if (index < 0) {
+                    Log.w(TAG, "Pack not found for deletion: $id")
+                    return false
+                }
+
+                val pack = packs.removeAt(index)
+                _localPacks.value = packs
+                saveToDisk(packs)
+
+                Log.i(TAG, "Deleted local pack '${pack.name}'")
+                true
             }
-
-            val pack = packs.removeAt(index)
-            _localPacks.value = packs
-            saveToDisk(packs)
-
-            Log.i(TAG, "Deleted local pack '${pack.name}'")
-            true
-        }
 
         /**
          * Get a pack by ID.
@@ -221,20 +226,22 @@ class KBLocalPackStore
             return _localPacks.value.firstOrNull { it.id == id }
         }
 
-        private suspend fun loadFromDisk(): List<KBPack> = withContext(Dispatchers.IO) {
-            if (!packFile.exists()) return@withContext emptyList()
-            val data = packFile.readText()
-            val container = json.decodeFromString<LocalPacksContainer>(data)
-            container.packs
-        }
+        private suspend fun loadFromDisk(): List<KBPack> =
+            withContext(Dispatchers.IO) {
+                if (!packFile.exists()) return@withContext emptyList()
+                val data = packFile.readText()
+                val container = json.decodeFromString<LocalPacksContainer>(data)
+                container.packs
+            }
 
         private suspend fun saveToDisk(packs: List<KBPack>) {
             withContext(Dispatchers.IO) {
                 try {
-                    val container = LocalPacksContainer(
-                        version = CONTAINER_VERSION,
-                        packs = packs,
-                    )
+                    val container =
+                        LocalPacksContainer(
+                            version = CONTAINER_VERSION,
+                            packs = packs,
+                        )
                     val data = json.encodeToString(LocalPacksContainer.serializer(), container)
                     packFile.writeText(data)
                     Log.d(TAG, "Saved ${packs.size} local packs to disk")

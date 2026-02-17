@@ -9,10 +9,14 @@ import kotlinx.serialization.Serializable
  *
  * Features:
  * - Task description and notes
- * - Priority levels
+ * - Priority ordering for drag-drop reordering
  * - Status tracking (ACTIVE, COMPLETED, ARCHIVED)
- * - Context linking to sessions or topics
- * - Timestamps for creation and completion
+ * - Item types (curriculum, module, topic, learning target, reinforcement, auto-resume)
+ * - Source tracking (manual, voice, auto-resume, reinforcement)
+ * - Context linking to sessions, topics, and curricula
+ * - Auto-resume support with segment index and conversation context
+ * - Curriculum suggestion links for learning targets
+ * - Timestamps for creation, completion, and archival
  * - AI-suggested items with confidence and reasoning
  * - Due dates for time-sensitive tasks
  */
@@ -30,13 +34,25 @@ data class Todo(
      */
     val notes: String? = null,
     /**
-     * Priority level.
+     * Priority level (used for legacy sorting).
      */
     val priority: TodoPriority = TodoPriority.MEDIUM,
+    /**
+     * Ordering index for drag-drop reordering (lower = higher priority).
+     */
+    val sortOrder: Int = 0,
     /**
      * Current status.
      */
     val status: TodoStatus = TodoStatus.ACTIVE,
+    /**
+     * Type of todo item.
+     */
+    val itemType: TodoItemType = TodoItemType.LEARNING_TARGET,
+    /**
+     * How this item was created.
+     */
+    val source: TodoItemSource = TodoItemSource.MANUAL,
     /**
      * Optional session ID context.
      */
@@ -45,6 +61,30 @@ data class Todo(
      * Optional topic ID context.
      */
     val topicId: String? = null,
+    /**
+     * Optional curriculum ID for curriculum-linked items.
+     */
+    val curriculumId: String? = null,
+    /**
+     * Granularity level for curriculum items (curriculum, module, topic).
+     */
+    val granularity: String? = null,
+    /**
+     * Topic ID for auto-resume items (the topic to resume).
+     */
+    val resumeTopicId: String? = null,
+    /**
+     * Segment index to resume from for auto-resume items.
+     */
+    val resumeSegmentIndex: Int = 0,
+    /**
+     * Serialized conversation context for auto-resume items (JSON string).
+     */
+    val resumeConversationContext: String? = null,
+    /**
+     * Suggested curriculum IDs for learning target items (JSON-encoded list).
+     */
+    val suggestedCurriculumIds: String? = null,
     /**
      * Creation timestamp (milliseconds since epoch).
      */
@@ -57,6 +97,10 @@ data class Todo(
      * Last updated timestamp.
      */
     val updatedAt: Long = System.currentTimeMillis(),
+    /**
+     * Archived timestamp (null if not archived).
+     */
+    val archivedAt: Long? = null,
     /**
      * Due date timestamp (null if no due date).
      */
@@ -88,7 +132,73 @@ enum class TodoPriority {
  * Todo status values.
  */
 enum class TodoStatus {
+    /** Not yet started, visible in the main list. */
     ACTIVE,
+
+    /** Currently being worked on. */
+    IN_PROGRESS,
+
+    /** Finished. */
     COMPLETED,
+
+    /** Archived (kept permanently but hidden from main list). */
     ARCHIVED,
+    ;
+
+    /**
+     * Whether the item is considered active (visible in main list).
+     */
+    val isActive: Boolean
+        get() = this == ACTIVE || this == IN_PROGRESS
+}
+
+/**
+ * Type of todo item, matching iOS TodoItemType.
+ */
+enum class TodoItemType {
+    /** Full curriculum to study. */
+    CURRICULUM,
+
+    /** Module within a curriculum. */
+    MODULE,
+
+    /** Specific topic. */
+    TOPIC,
+
+    /** User-defined learning goal. */
+    LEARNING_TARGET,
+
+    /** Captured during voice session for review. */
+    REINFORCEMENT,
+
+    /** Mid-session resume point. */
+    AUTO_RESUME,
+    ;
+
+    /**
+     * Whether this type links to curriculum content.
+     */
+    val isLinkedToCurriculum: Boolean
+        get() =
+            when (this) {
+                CURRICULUM, MODULE, TOPIC, AUTO_RESUME -> true
+                LEARNING_TARGET, REINFORCEMENT -> false
+            }
+}
+
+/**
+ * How a todo item was created, matching iOS TodoItemSource.
+ */
+enum class TodoItemSource {
+    /** User manually added via UI. */
+    MANUAL,
+
+    /** Created via voice command/LLM tool call. */
+    VOICE,
+
+    /** Auto-created when stopping mid-session. */
+    AUTO_RESUME,
+
+    /** Captured during voice session as review item. */
+    REINFORCEMENT,
 }

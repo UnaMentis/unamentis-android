@@ -20,7 +20,6 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
-import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -121,6 +120,8 @@ class TranscriptStreamingService
         companion object {
             private const val TAG = "TranscriptStreaming"
             private const val MIN_AUDIO_SIZE_BYTES = 44 // WAV header
+
+            @Suppress("UnusedPrivateProperty")
             private const val TTS_TIMEOUT_SECONDS = 30L
             private val JSON_MEDIA_TYPE = "application/json".toMediaType()
         }
@@ -208,6 +209,7 @@ class TranscriptStreamingService
         /**
          * Perform the full streaming pipeline: fetch transcript, generate TTS, emit segments.
          */
+        @Suppress("LongMethod")
         private suspend fun performStreaming(
             curriculumId: String,
             topicId: String,
@@ -232,7 +234,7 @@ class TranscriptStreamingService
 
             for ((index, segment) in transcriptSegments.withIndex()) {
                 // Check for cancellation
-                kotlinx.coroutines.ensureActive()
+                kotlinx.coroutines.yield()
 
                 val text = segment.content
                 if (text.isBlank()) {
@@ -254,7 +256,8 @@ class TranscriptStreamingService
                 )
 
                 // Generate TTS audio
-                val hostForTts = serverConfigManager.getServerHost()
+                val managementHost = java.net.URL(serverConfigManager.getManagementServerUrl()).host
+                val hostForTts = managementHost
                 try {
                     val audioData =
                         requestTTSWithFallback(
@@ -379,6 +382,7 @@ class TranscriptStreamingService
         /**
          * Request TTS from a specific server.
          */
+        @Suppress("LongParameterList")
         private suspend fun requestTTS(
             host: String,
             server: TTSServer,

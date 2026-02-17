@@ -35,6 +35,7 @@ import javax.inject.Singleton
  * @property repository Reading list data repository
  * @property context Application context for file operations
  */
+@Suppress("TooManyFunctions")
 @Singleton
 class ReadingListManager
     @Inject
@@ -64,7 +65,8 @@ class ReadingListManager
             }
         }
 
-        /** Directory for storing extracted images. */
+        /** Directory for storing extracted images (used for future visual asset extraction). */
+        @Suppress("UnusedPrivateProperty")
         private val imagesDirectory: File by lazy {
             File(documentsDirectory, IMAGES_DIR).also { dir ->
                 if (!dir.exists()) {
@@ -461,7 +463,8 @@ class ReadingListManager
                 }.coerceIn(0.0f, 1.0f)
 
             repository.updateReadingPosition(itemId, chunkIndex, percentComplete)
-            Log.d(TAG, "Updated position for item $itemId to chunk $chunkIndex (${"%.0f".format(percentComplete * 100)}%)")
+            val pct = "%.0f".format(percentComplete * 100)
+            Log.d(TAG, "Updated position for item $itemId to chunk $chunkIndex ($pct%)")
         }
 
         /**

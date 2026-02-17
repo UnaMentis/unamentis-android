@@ -17,7 +17,6 @@ import javax.inject.Singleton
 class KBSynonymMatcher
     @Inject
     constructor() {
-
         /**
          * Find all synonyms for a given text in a specific domain.
          *
@@ -29,11 +28,16 @@ class KBSynonymMatcher
          * @param answerType Answer type to determine which dictionary to use
          * @return Set of synonyms (always includes the normalized original text)
          */
-        fun findSynonyms(text: String, answerType: KBAnswerType): Set<String> {
+        @Suppress("ReturnCount")
+        fun findSynonyms(
+            text: String,
+            answerType: KBAnswerType,
+        ): Set<String> {
             val normalized = text.lowercase().trim()
 
-            val dictionary = KBSynonymDictionaries.dictionaryForType(answerType)
-                ?: return setOf(normalized)
+            val dictionary =
+                KBSynonymDictionaries.dictionaryForType(answerType)
+                    ?: return setOf(normalized)
 
             // Check if text is a dictionary key
             dictionary[normalized]?.let { synonyms ->
@@ -63,7 +67,11 @@ class KBSynonymMatcher
          * @param answerType Answer type to determine which dictionary to use
          * @return True if the strings are synonyms or identical
          */
-        fun areSynonyms(str1: String, str2: String, answerType: KBAnswerType): Boolean {
+        fun areSynonyms(
+            str1: String,
+            str2: String,
+            answerType: KBAnswerType,
+        ): Boolean {
             val normalized1 = str1.lowercase().trim()
             val normalized2 = str2.lowercase().trim()
 

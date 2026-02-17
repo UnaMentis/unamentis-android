@@ -15,6 +15,7 @@ import javax.inject.Singleton
  * Ported from iOS KBPhoneticMatcher for feature parity. All encoding rules
  * match the iOS implementation exactly.
  */
+@Suppress("TooManyFunctions")
 @Singleton
 class KBPhoneticMatcher
     @Inject
@@ -55,6 +56,7 @@ class KBPhoneticMatcher
          * @param str2 Second string
          * @return True if strings match phonetically
          */
+        @Suppress("ReturnCount")
         fun arePhoneticMatch(
             str1: String,
             str2: String,
@@ -120,7 +122,7 @@ class KBPhoneticMatcher
             }
         }
 
-        @Suppress("CyclomaticComplexity")
+        @Suppress("CyclomaticComplexity", "CyclomaticComplexMethod")
         private fun processCharacter(
             ch: Char,
             pos: Int,
@@ -269,6 +271,7 @@ class KBPhoneticMatcher
             context: MetaphoneContext,
         ) {
             val next = context.charAt(1)
+            @Suppress("ComplexCondition")
             if (next != null && isVowel(next) && (pos == 0 || !isVowel(context.charAt(-1)))) {
                 context.appendBoth("H")
             }
