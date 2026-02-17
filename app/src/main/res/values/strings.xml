@@ -1260,6 +1260,23 @@
     <string name="reading_list_stats_in_progress">In Progress: %1$d</string>
     <string name="reading_list_stats_completed">Completed: %1$d</string>
     <string name="reading_list_stats_archived">Archived: %1$d</string>
+    <string name="reading_list_filter_active">Active</string>
+    <string name="reading_list_filter_completed">Completed</string>
+    <string name="reading_list_filter_archived">Archived</string>
+    <string name="reading_list_empty_completed">No completed items</string>
+    <string name="reading_list_empty_archived">No archived items</string>
+    <string name="reading_list_url_instructions">Enter the URL of a web article to import into your reading list.</string>
+    <string name="reading_list_url_placeholder">https://example.com/article</string>
+    <string name="reading_list_url_field_label">Article URL</string>
+    <string name="reading_list_import_url_action">Import Article</string>
+    <string name="reading_list_section_of">Section %1$d of %2$d</string>
+    <string name="reading_list_chunk_of">Section %1$d</string>
+    <string name="reading_list_skip_forward">Skip forward</string>
+    <string name="reading_list_skip_back">Skip backward</string>
+    <string name="reading_list_listen_from_here">Listen from here</string>
+    <string name="reading_list_bookmark_action">Toggle bookmark</string>
+    <string name="reading_list_preparing_audio">Preparing audio…</string>
+    <string name="reading_list_buffering">Buffering…</string>
 
     <!-- Server Discovery -->
     <string name="discovery_tier_cached">Checking saved server</string>

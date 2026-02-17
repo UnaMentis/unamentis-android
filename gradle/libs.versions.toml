@@ -26,6 +26,7 @@ hiltWork = "1.2.0"
 room = "2.6.1"
 
 # Networking
+jsoup = "1.17.2"
 okhttp = "4.12.0"
 retrofit = "2.11.0"
 kotlinxSerialization = "1.7.3"
@@ -108,6 +109,7 @@ androidx-room-compiler = { group = "androidx.room", name = "room-compiler", vers
 androidx-room-testing = { group = "androidx.room", name = "room-testing", version.ref = "room" }
 
 # Networking
+jsoup = { group = "org.jsoup", name = "jsoup", version.ref = "jsoup" }
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 okhttp-logging = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okhttp" }
 retrofit = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }

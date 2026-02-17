@@ -115,6 +115,10 @@ android {
         unitTests {
             isIncludeAndroidResources = true
             isReturnDefaultValues = true
+            all {
+                it.maxHeapSize = "4g"
+                it.jvmArgs("-XX:+UseG1GC")
+            }
         }
     }
 }
@@ -152,6 +156,7 @@ dependencies {
     ksp(libs.androidx.room.compiler)
 
     // Networking
+    implementation(libs.jsoup)
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging)
     implementation(libs.retrofit)

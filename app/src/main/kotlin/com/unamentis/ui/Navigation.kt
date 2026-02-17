@@ -53,6 +53,9 @@ import com.unamentis.ui.components.OfflineBanner
 import com.unamentis.ui.curriculum.CurriculumScreen
 import com.unamentis.ui.history.HistoryScreen
 import com.unamentis.ui.onboarding.OnboardingScreen
+import com.unamentis.ui.readinglist.ReadingListScreen
+import com.unamentis.ui.readinglist.ReadingPlaybackScreen
+import com.unamentis.ui.readinglist.ReadingReaderScreen
 import com.unamentis.ui.session.SessionActivityState
 import com.unamentis.ui.session.SessionScreen
 import com.unamentis.ui.settings.AboutScreen
@@ -106,6 +109,9 @@ object Routes {
     const val SERVER_SETTINGS = "settings/servers"
     const val ABOUT = "settings/about"
     const val DEBUG = "settings/debug"
+    const val READING_LIST = "reading_list"
+    const val READING_READER = "reading_list/reader/{itemId}"
+    const val READING_PLAYBACK = "reading_list/playback/{itemId}"
 }
 
 /**
@@ -433,6 +439,51 @@ fun UnaMentisNavHost(
                     // Debug Tools (sub-screen of Settings, debug builds only)
                     composable(route = Routes.DEBUG) {
                         DebugScreen(
+                            onNavigateBack = { navController.popBackStack() },
+                        )
+                    }
+
+                    // Reading List
+                    composable(route = Routes.READING_LIST) {
+                        ReadingListScreen(
+                            onNavigateToReader = { itemId ->
+                                navController.navigate("reading_list/reader/$itemId")
+                            },
+                            onNavigateToPlayback = { itemId ->
+                                navController.navigate("reading_list/playback/$itemId")
+                            },
+                        )
+                    }
+
+                    // Reading Reader (full text view)
+                    composable(
+                        route = Routes.READING_READER,
+                        arguments =
+                            listOf(
+                                navArgument("itemId") { type = NavType.StringType },
+                            ),
+                    ) { backStackEntry ->
+                        val itemId = backStackEntry.arguments?.getString("itemId") ?: ""
+                        ReadingReaderScreen(
+                            itemId = itemId,
+                            onNavigateBack = { navController.popBackStack() },
+                            onNavigateToPlayback = { id ->
+                                navController.navigate("reading_list/playback/$id")
+                            },
+                        )
+                    }
+
+                    // Reading Playback (audio-focused)
+                    composable(
+                        route = Routes.READING_PLAYBACK,
+                        arguments =
+                            listOf(
+                                navArgument("itemId") { type = NavType.StringType },
+                            ),
+                    ) { backStackEntry ->
+                        val itemId = backStackEntry.arguments?.getString("itemId") ?: ""
+                        ReadingPlaybackScreen(
+                            itemId = itemId,
                             onNavigateBack = { navController.popBackStack() },
                         )
                     }
