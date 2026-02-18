@@ -5,7 +5,7 @@
     <!-- Tab Navigation -->
     <string name="tab_session">Session</string>
     <string name="tab_curriculum">Learning</string>
-    <string name="tab_todo">To-Do</string>
+    <string name="tab_todo">Assistant</string>
     <string name="tab_history">History</string>
     <string name="tab_analytics">Analytics</string>
     <string name="tab_settings">Settings</string>
@@ -40,6 +40,11 @@
     <string name="cd_stop_button">Stop session</string>
     <string name="cd_start_session">Start session</string>
     <string name="cd_add_todo">Add todo</string>
+    <string name="cd_assistant_tab_selector">Switch between To-Do and Reading</string>
+
+    <!-- Assistant Screen -->
+    <string name="assistant_tab_todo">To-Do</string>
+    <string name="assistant_tab_reading">Reading</string>
 
     <!-- Settings Screen -->
     <string name="settings_api_providers">API Providers</string>

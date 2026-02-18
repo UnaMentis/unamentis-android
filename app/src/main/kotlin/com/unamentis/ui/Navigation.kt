@@ -10,10 +10,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.Book
-import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -49,6 +49,7 @@ import com.unamentis.data.local.OnboardingPreferences
 import com.unamentis.navigation.DeepLinkDestination
 import com.unamentis.navigation.DeepLinkRoutes
 import com.unamentis.ui.analytics.AnalyticsScreen
+import com.unamentis.ui.assistant.AssistantScreen
 import com.unamentis.ui.components.OfflineBanner
 import com.unamentis.ui.curriculum.CurriculumScreen
 import com.unamentis.ui.history.HistoryScreen
@@ -62,7 +63,6 @@ import com.unamentis.ui.settings.AboutScreen
 import com.unamentis.ui.settings.DebugScreen
 import com.unamentis.ui.settings.ServerSettingsScreen
 import com.unamentis.ui.settings.SettingsScreen
-import com.unamentis.ui.todo.TodoScreen
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -83,7 +83,7 @@ sealed class Screen(
 
     data object Curriculum : Screen("curriculum", R.string.tab_curriculum, Icons.Default.Book)
 
-    data object Todo : Screen("todo", R.string.tab_todo, Icons.Default.Checklist)
+    data object Todo : Screen("todo", R.string.tab_todo, Icons.Outlined.AutoAwesome)
 
     data object History : Screen("history", R.string.tab_history, Icons.Default.History)
 
@@ -338,7 +338,7 @@ fun UnaMentisNavHost(
                         )
                     }
 
-                    // To-Do tab with deep link support
+                    // Assistant tab (To-Do + Reading) with deep link support
                     composable(
                         route = Routes.TODO,
                         deepLinks =
@@ -346,7 +346,14 @@ fun UnaMentisNavHost(
                                 navDeepLink { uriPattern = DeepLinkRoutes.URI_TODO },
                             ),
                     ) {
-                        TodoScreen()
+                        AssistantScreen(
+                            onNavigateToReader = { itemId ->
+                                navController.navigate("reading_list/reader/$itemId")
+                            },
+                            onNavigateToPlayback = { itemId ->
+                                navController.navigate("reading_list/playback/$itemId")
+                            },
+                        )
                     }
 
                     // History tab with deep link support
