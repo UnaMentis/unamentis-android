@@ -1078,6 +1078,11 @@
     <string name="provider_on_device_llm">OnDevice</string>
     <string name="provider_mediapipe">MediaPipe</string>
     <string name="provider_executorch">ExecuTorch</string>
+    <string name="provider_kyutai_pocket_tts">KyutaiPocket</string>
+
+    <!-- Kyutai Pocket TTS -->
+    <string name="kyutai_pocket_model_not_available">Kyutai Pocket model is not available</string>
+    <string name="kyutai_pocket_jni_not_implemented">JNI bindings not yet implemented</string>
 
     <!-- LLM Backend display names -->
     <string name="backend_mediapipe_gpu">MediaPipe (GPU)</string>
