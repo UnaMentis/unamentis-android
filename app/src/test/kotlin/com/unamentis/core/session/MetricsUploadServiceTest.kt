@@ -492,8 +492,17 @@ class MetricsUploadServiceTest {
             coEvery { apiClient.uploadMetrics(any()) } returns MetricsUploadResponse(status = "ok")
             coEvery { queue.markCompleted(any()) } just Runs
 
+            // Use backgroundScope so the infinite loop is cancelled automatically when the
+            // test ends, avoiding UncompletedCoroutinesError.
+            val bgService =
+                MetricsUploadService(
+                    queue = queue,
+                    apiClient = apiClient,
+                    scope = backgroundScope,
+                )
+
             // Schedule with a short interval
-            service.schedulePeriodicDrain(intervalMs = 1000L)
+            bgService.schedulePeriodicDrain(intervalMs = 1000L)
 
             // Advance past the interval
             testDispatcher.scheduler.advanceTimeBy(1500L)
@@ -508,7 +517,16 @@ class MetricsUploadServiceTest {
         testScope.runTest {
             coEvery { queue.count() } returns 0
 
-            service.schedulePeriodicDrain(intervalMs = 500L)
+            // Use backgroundScope so the infinite loop is cancelled automatically when the
+            // test ends, avoiding UncompletedCoroutinesError.
+            val bgService =
+                MetricsUploadService(
+                    queue = queue,
+                    apiClient = apiClient,
+                    scope = backgroundScope,
+                )
+
+            bgService.schedulePeriodicDrain(intervalMs = 500L)
 
             // Advance past interval
             testDispatcher.scheduler.advanceTimeBy(600L)

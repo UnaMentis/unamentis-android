@@ -2,7 +2,6 @@ package com.unamentis.services.curriculum
 
 import android.content.Context
 import android.util.Log
-import android.util.LruCache
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
@@ -12,6 +11,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
 import java.io.IOException
+import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -58,18 +58,33 @@ class VisualAssetCache
         }
 
         /**
-         * In-memory LRU cache. Keys are sanitized asset IDs; values are raw bytes.
+         * In-memory LRU cache backed by a [LinkedHashMap] in access order.
+         *
+         * Uses pure Java/Kotlin collections to ensure correct behaviour during
+         * JVM unit tests where Android framework stubs may return default values.
+         * Keys are sanitized asset IDs; values are raw bytes.
          * Max size is measured in bytes.
          */
-        private val memoryCache: LruCache<String, ByteArray> =
-            object : LruCache<String, ByteArray>((MAX_MEMORY_CACHE_BYTES / 1024).toInt()) {
-                override fun sizeOf(
-                    key: String,
-                    value: ByteArray,
-                ): Int = (value.size / 1024).coerceAtLeast(1)
+        private val memoryCacheLock = Any()
+        private var memoryCacheSizeBytes = 0L
+        private val memoryCacheMap: LinkedHashMap<String, ByteArray> =
+            object : LinkedHashMap<String, ByteArray>(16, 0.75f, true) {
+                override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, ByteArray>): Boolean {
+                    if (memoryCacheSizeBytes > MAX_MEMORY_CACHE_BYTES) {
+                        memoryCacheSizeBytes -= eldest.value.size.coerceAtLeast(1)
+                        return true
+                    }
+                    return false
+                }
             }
 
         private val diskMutex = Mutex()
+
+        /** Tracks the number of memory cache hits for diagnostics. */
+        private val memoryHits = AtomicInteger(0)
+
+        /** Tracks the number of memory cache misses for diagnostics. */
+        private val memoryMisses = AtomicInteger(0)
 
         /**
          * Cache asset data under the given asset ID.
@@ -87,8 +102,12 @@ class VisualAssetCache
         ) {
             val key = sanitizeFilename(assetId)
 
-            // Memory cache (synchronous, thread-safe internally)
-            memoryCache.put(key, data)
+            // Memory cache
+            synchronized(memoryCacheLock) {
+                val old = memoryCacheMap.put(key, data)
+                memoryCacheSizeBytes -= old?.size?.coerceAtLeast(1) ?: 0
+                memoryCacheSizeBytes += data.size.coerceAtLeast(1)
+            }
 
             // Disk cache
             diskMutex.withLock {
@@ -120,10 +139,12 @@ class VisualAssetCache
             val key = sanitizeFilename(assetId)
 
             // Check memory cache first
-            memoryCache.get(key)?.let { data ->
+            synchronized(memoryCacheLock) { memoryCacheMap[key] }?.let { data ->
+                memoryHits.incrementAndGet()
                 Log.d(TAG, "Memory cache hit for $assetId")
                 return data
             }
+            memoryMisses.incrementAndGet()
 
             // Check disk cache
             return diskMutex.withLock {
@@ -133,7 +154,11 @@ class VisualAssetCache
                         try {
                             val data = file.readBytes()
                             // Promote to memory cache
-                            memoryCache.put(key, data)
+                            synchronized(memoryCacheLock) {
+                                val old = memoryCacheMap.put(key, data)
+                                memoryCacheSizeBytes -= old?.size?.coerceAtLeast(1) ?: 0
+                                memoryCacheSizeBytes += data.size.coerceAtLeast(1)
+                            }
                             // Touch the file to update access time for LRU
                             file.setLastModified(System.currentTimeMillis())
                             Log.d(TAG, "Disk cache hit for $assetId")
@@ -158,7 +183,7 @@ class VisualAssetCache
          */
         suspend fun isCached(assetId: String): Boolean {
             val key = sanitizeFilename(assetId)
-            if (memoryCache.get(key) != null) return true
+            if (synchronized(memoryCacheLock) { memoryCacheMap.containsKey(key) }) return true
 
             return diskMutex.withLock {
                 withContext(Dispatchers.IO) {
@@ -197,10 +222,17 @@ class VisualAssetCache
                                     "Download failed for $assetId: HTTP ${response.code}",
                                 )
                             }
-                            response.body?.bytes()
-                                ?: throw VisualAssetCacheException(
+                            val bytes =
+                                response.body?.bytes()
+                                    ?: throw VisualAssetCacheException(
+                                        "Empty response body for asset $assetId",
+                                    )
+                            if (bytes.isEmpty()) {
+                                throw VisualAssetCacheException(
                                     "Empty response body for asset $assetId",
                                 )
+                            }
+                            bytes
                         }
                     } catch (e: VisualAssetCacheException) {
                         throw e
@@ -223,7 +255,10 @@ class VisualAssetCache
          * The disk cache is preserved. Useful for responding to low-memory conditions.
          */
         fun clearMemoryCache() {
-            memoryCache.evictAll()
+            synchronized(memoryCacheLock) {
+                memoryCacheMap.clear()
+                memoryCacheSizeBytes = 0L
+            }
             Log.i(TAG, "Memory cache cleared")
         }
 
@@ -231,7 +266,10 @@ class VisualAssetCache
          * Clear all cached data (memory and disk).
          */
         suspend fun clearAllCache() {
-            memoryCache.evictAll()
+            synchronized(memoryCacheLock) {
+                memoryCacheMap.clear()
+                memoryCacheSizeBytes = 0L
+            }
 
             diskMutex.withLock {
                 withContext(Dispatchers.IO) {
@@ -251,7 +289,10 @@ class VisualAssetCache
          */
         suspend fun remove(assetId: String) {
             val key = sanitizeFilename(assetId)
-            memoryCache.remove(key)
+            synchronized(memoryCacheLock) {
+                val removed = memoryCacheMap.remove(key)
+                memoryCacheSizeBytes -= removed?.size?.coerceAtLeast(1) ?: 0
+            }
 
             diskMutex.withLock {
                 withContext(Dispatchers.IO) {
@@ -291,15 +332,20 @@ class VisualAssetCache
                 }
             val diskSize = diskCacheSize()
 
+            val (memCount, memSize) =
+                synchronized(memoryCacheLock) {
+                    Pair(memoryCacheMap.size, memoryCacheSizeBytes)
+                }
+
             return CacheStats(
-                memoryItemCount = memoryCache.size(),
-                memorySizeBytes = memoryCache.size().toLong() * 1024,
+                memoryItemCount = memCount,
+                memorySizeBytes = memSize,
                 diskItemCount = diskFiles,
                 diskSizeBytes = diskSize,
                 maxMemorySizeBytes = MAX_MEMORY_CACHE_BYTES,
                 maxDiskSizeBytes = MAX_DISK_CACHE_BYTES,
-                memoryHitCount = memoryCache.hitCount(),
-                memoryMissCount = memoryCache.missCount(),
+                memoryHitCount = memoryHits.get(),
+                memoryMissCount = memoryMisses.get(),
             )
         }
 
@@ -324,7 +370,10 @@ class VisualAssetCache
                         val fileSize = file.length()
                         if (file.delete()) {
                             freed += fileSize
-                            memoryCache.remove(file.name)
+                            synchronized(memoryCacheLock) {
+                                val removed = memoryCacheMap.remove(file.name)
+                                memoryCacheSizeBytes -= removed?.size?.coerceAtLeast(1) ?: 0
+                            }
                             Log.d(TAG, "Evicted ${file.name} ($fileSize bytes)")
                         }
                     }

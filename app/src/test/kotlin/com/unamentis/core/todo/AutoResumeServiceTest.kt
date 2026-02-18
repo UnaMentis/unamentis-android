@@ -241,10 +241,11 @@ class AutoResumeServiceTest {
 
         val encoded = autoResumeService.encodeConversationContext(messages)
 
-        // Should only contain the last MAX_CONVERSATION_CONTEXT messages
+        // Should only contain the last MAX_CONVERSATION_CONTEXT messages (messages 11-20)
+        // "Message 10" is excluded (10th message, not in last 10) and is not a substring of any kept message
         assertTrue(encoded.contains("Message 11"))
         assertTrue(encoded.contains("Message 20"))
-        assertFalse(encoded.contains("Message 1"))
+        assertFalse(encoded.contains("Message 10"))
     }
 
     @Test

@@ -56,8 +56,6 @@ class CurriculumSuggestionService
 
             return try {
                 fetchFromServer(query)
-            } catch (e: CurriculumSuggestionError.ServerError) {
-                throw e
             } catch (e: Exception) {
                 Log.w(TAG, "Server suggestions failed, falling back to local search", e)
                 localSuggestions(query)

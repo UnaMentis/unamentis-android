@@ -1191,6 +1191,15 @@
     <!-- Match progress -->
     <string name="kb_progress_format">%1$d / %2$d</string>
 
+    <!-- KB Progress Screen -->
+    <string name="kb_progress_title">Progress</string>
+    <string name="kb_progress_total_sessions">Total Sessions</string>
+    <string name="kb_progress_questions_answered">Questions Answered</string>
+    <string name="kb_progress_overall_accuracy">Overall Accuracy</string>
+    <string name="kb_progress_current_streak">Current Streak</string>
+    <string name="kb_progress_accuracy_trend">Accuracy Trend</string>
+    <string name="kb_progress_recent_sessions">Recent Sessions</string>
+
     <!-- Opponent Team Names -->
     <string name="kb_team_alpha">Team Alpha</string>
     <string name="kb_team_beta">Team Beta</string>
@@ -1287,4 +1296,77 @@
     <string name="discovery_method_subnet_scan">Network Scan</string>
     <string name="discovery_method_manual">Manual</string>
     <string name="discovery_method_qr_code">QR Code</string>
+
+    <!-- Knowledge Bowl Help -->
+    <string name="kb_help_title">Knowledge Bowl Help</string>
+    <string name="kb_help_overview">Learn how to use Knowledge Bowl to practice and improve your competitive knowledge bowl skills.</string>
+    <string name="kb_help_getting_started">Getting Started</string>
+    <string name="kb_help_getting_started_desc">Learn the basics of Knowledge Bowl practice</string>
+    <string name="kb_help_training_modes">Training Modes</string>
+    <string name="kb_help_training_modes_desc">Explore different ways to practice</string>
+    <string name="kb_help_strategy">Competition Strategy</string>
+    <string name="kb_help_strategy_desc">Tips for performing your best in competitions</string>
+    <string name="kb_help_regional_rules">Regional Rules</string>
+    <string name="kb_help_regional_rules_desc">Understand rules for different regions</string>
+    <string name="kb_help_tips_title">Tips for Success</string>
+    <string name="kb_help_tip_1">Practice consistently with short daily sessions rather than long infrequent ones.</string>
+    <string name="kb_help_tip_2">Focus on your weak domains to maximize improvement.</string>
+    <string name="kb_help_tip_3">Use oral mode to simulate real competition pressure.</string>
+    <string name="kb_help_tip_4">Review incorrect answers to understand the correct response.</string>
+    <string name="kb_help_tip_5">Track your accuracy trends to measure progress over time.</string>
+    <string name="kb_help_step_1">Select a domain or use mixed practice to get started.</string>
+    <string name="kb_help_step_2">Choose a training mode that matches your current goal.</string>
+    <string name="kb_help_step_3">Answer questions within the time limit.</string>
+    <string name="kb_help_step_4">Review your results and see which areas need work.</string>
+    <string name="kb_help_step_5">Track your progress on the Progress screen.</string>
+    <string name="kb_help_mode_written">Written Mode</string>
+    <string name="kb_help_mode_written_desc">Answer questions in writing, simulating the written round format.</string>
+    <string name="kb_help_mode_oral">Oral Mode</string>
+    <string name="kb_help_mode_oral_desc">Answer questions verbally using voice recognition.</string>
+    <string name="kb_help_mode_match">Match Simulation</string>
+    <string name="kb_help_mode_match_desc">Practice in a simulated head-to-head match format.</string>
+    <string name="kb_help_mode_conference">Conference Training</string>
+    <string name="kb_help_mode_conference_desc">Multi-team practice using the conference format.</string>
+    <string name="kb_help_mode_rebound">Rebound Training</string>
+    <string name="kb_help_mode_rebound_desc">Practice quickly rebounding after missed questions.</string>
+    <string name="kb_help_mode_drill">Domain Drill</string>
+    <string name="kb_help_mode_drill_desc">Focused practice on a single knowledge domain.</string>
+    <string name="kb_help_strategy_written">Written Round Strategy</string>
+    <string name="kb_help_strategy_written_desc">Pace yourself and answer every question; unanswered questions score zero.</string>
+    <string name="kb_help_strategy_oral">Oral Round Strategy</string>
+    <string name="kb_help_strategy_oral_desc">Listen carefully to the full question before answering to avoid errors.</string>
+    <string name="kb_help_strategy_buzzing">Buzzing Strategy</string>
+    <string name="kb_help_strategy_buzzing_desc">Buzz in as soon as you know the answer to prevent opponents from answering first.</string>
+    <string name="kb_help_strategy_time">Time Management</string>
+    <string name="kb_help_strategy_time_desc">Allocate time wisely across questions and skip uncertain ones to return to later.</string>
+    <string name="kb_help_regional_comparison">Regional Rule Comparison</string>
+    <string name="kb_help_written_qs">Written Qs</string>
+    <string name="kb_help_written_time">Written Time</string>
+    <string name="kb_help_conferring">Conferring</string>
+    <string name="kb_help_hand_signals">Hand signals</string>
+    <string name="kb_help_verbal">Verbal</string>
+
+    <!-- Knowledge Bowl Mastery Levels -->
+    <string name="kb_mastery_not_started">Not Started</string>
+    <string name="kb_mastery_beginner">Beginner</string>
+    <string name="kb_mastery_intermediate">Intermediate</string>
+    <string name="kb_mastery_advanced">Advanced</string>
+    <string name="kb_mastery_mastered">Mastered</string>
+
+    <!-- Knowledge Bowl Pack Picker -->
+    <string name="kb_pack_picker_title">Select Question Pack</string>
+    <string name="kb_pack_picker_refresh">Refresh packs</string>
+    <string name="kb_pack_picker_retry">Retry</string>
+    <string name="kb_pack_all_questions">All Questions</string>
+    <string name="kb_pack_all_questions_desc">Practice with the full question library</string>
+    <string name="kb_pack_server_packs">Server Packs</string>
+    <string name="kb_pack_question_count">%1$d questions</string>
+
+    <!-- Knowledge Bowl Region Abbreviations -->
+    <string name="kb_region_colorado_short">CO</string>
+    <string name="kb_region_minnesota_short">MN</string>
+    <string name="kb_region_washington_short">WA</string>
+
+    <!-- Knowledge Bowl Progress -->
+    <string name="kb_progress_avg_time">Avg Time</string>
 </resources>
