@@ -32,6 +32,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -84,6 +86,9 @@ fun AssetCarousel(
                     Modifier
                         .fillMaxWidth()
                         .aspectRatio(aspectRatio)
+                        .semantics {
+                            contentDescription = "Visual asset ${page + 1}"
+                        }
                         .clickable(enabled = onAssetClick != null) {
                             onAssetClick?.invoke(asset, page)
                         },
@@ -232,6 +237,10 @@ fun AssetGrid(
                             Modifier
                                 .weight(1f)
                                 .aspectRatio(aspectRatio)
+                                .semantics {
+                                    contentDescription =
+                                        "Visual asset ${globalIndex + 1}"
+                                }
                                 .clickable(enabled = onAssetClick != null) {
                                     onAssetClick?.invoke(asset, globalIndex)
                                 },

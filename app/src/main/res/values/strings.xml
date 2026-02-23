@@ -41,6 +41,17 @@
     <string name="cd_start_session">Start session</string>
     <string name="cd_add_todo">Add todo</string>
     <string name="cd_assistant_tab_selector">Switch between To-Do and Reading</string>
+    <string name="cd_add_to_reading_list">Add to reading list</string>
+    <string name="cd_import_from_url">Import from URL</string>
+    <string name="cd_import_from_clipboard">Import from clipboard</string>
+    <string name="cd_delete_action">Delete</string>
+    <string name="cd_reading_list_item">%1$s. %2$s</string>
+    <string name="cd_connection_status">Connection status: %1$s</string>
+    <string name="cd_server_tab">Server curricula</string>
+    <string name="cd_local_tab">Downloaded curricula</string>
+    <string name="cd_modules_tab">Modules</string>
+    <string name="cd_settings_row">%1$s</string>
+    <string name="cd_asset_item">Visual asset %1$d</string>
 
     <!-- Assistant Screen -->
     <string name="assistant_tab_todo">To-Do</string>

@@ -83,7 +83,7 @@ fun OfflineBannerContent(
         ) {
             Icon(
                 imageVector = icon,
-                contentDescription = null,
+                contentDescription = message,
                 modifier = Modifier.size(16.dp),
                 tint = MaterialTheme.colorScheme.onError,
             )

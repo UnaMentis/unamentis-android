@@ -130,7 +130,10 @@ fun ReadingListScreen(
                             contentDescription = "Add content to reading list"
                         },
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = null)
+                    Icon(
+                        Icons.Default.Add,
+                        contentDescription = stringResource(R.string.cd_add_to_reading_list),
+                    )
                 }
                 DropdownMenu(
                     expanded = uiState.showImportMenu,
@@ -138,7 +141,12 @@ fun ReadingListScreen(
                 ) {
                     DropdownMenuItem(
                         text = { Text(stringResource(R.string.reading_list_import_url)) },
-                        leadingIcon = { Icon(Icons.Default.Link, contentDescription = null) },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Default.Link,
+                                contentDescription = stringResource(R.string.cd_import_from_url),
+                            )
+                        },
                         onClick = {
                             viewModel.dismissImportMenu()
                             viewModel.showUrlImportSheet()
@@ -147,7 +155,13 @@ fun ReadingListScreen(
                     DropdownMenuItem(
                         text = { Text(stringResource(R.string.reading_list_import_clipboard)) },
                         leadingIcon = {
-                            Icon(Icons.Default.ContentPaste, contentDescription = null)
+                            Icon(
+                                Icons.Default.ContentPaste,
+                                contentDescription =
+                                    stringResource(
+                                        R.string.cd_import_from_clipboard,
+                                    ),
+                            )
                         },
                         onClick = { viewModel.dismissImportMenu() },
                     )
@@ -286,7 +300,7 @@ private fun ReadingListItemRow(
                         Alignment.CenterStart
                     },
             ) {
-                Icon(icon, contentDescription = null)
+                Icon(icon, contentDescription = stringResource(R.string.cd_delete_action))
             }
         },
     ) {
@@ -295,6 +309,10 @@ private fun ReadingListItemRow(
                 Modifier
                     .fillMaxWidth()
                     .background(MaterialTheme.colorScheme.surface)
+                    .semantics {
+                        contentDescription =
+                            "${item.title} - ${item.sourceType}"
+                    }
                     .clickable(onClick = onTap)
                     .padding(horizontal = 16.dp, vertical = 12.dp),
         ) {

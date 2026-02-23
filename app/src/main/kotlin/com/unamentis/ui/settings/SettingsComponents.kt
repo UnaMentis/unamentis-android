@@ -140,6 +140,9 @@ fun SettingsRow(
             modifier =
                 Modifier
                     .fillMaxWidth()
+                    .semantics(mergeDescendants = true) {
+                        contentDescription = title + (subtitle?.let { ", $it" } ?: "")
+                    }
                     .clickable(onClick = onClick)
                     .padding(
                         horizontal = Dimensions.SpacingLarge,
@@ -147,7 +150,7 @@ fun SettingsRow(
                     ),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Leading icon
+            // Leading icon (decorative — row has merged semantics)
             icon?.let {
                 Icon(
                     imageVector = it,
@@ -176,7 +179,7 @@ fun SettingsRow(
             // Trailing content
             trailingContent?.invoke()
 
-            // Chevron
+            // Chevron (decorative)
             Spacer(modifier = Modifier.width(Dimensions.SpacingSmall))
             Icon(
                 imageVector = Icons.Default.ChevronRight,
@@ -694,6 +697,9 @@ fun ProviderPickerRow(
             modifier =
                 Modifier
                     .fillMaxWidth()
+                    .semantics(mergeDescendants = true) {
+                        contentDescription = "$title: $selectedValue"
+                    }
                     .clickable(onClick = onClick)
                     .padding(
                         horizontal = Dimensions.SpacingLarge,
@@ -701,7 +707,7 @@ fun ProviderPickerRow(
                     ),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Leading icon
+            // Leading icon (decorative — row has merged semantics)
             icon?.let {
                 Icon(
                     imageVector = it,
@@ -726,7 +732,7 @@ fun ProviderPickerRow(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
-            // Chevron
+            // Chevron (decorative)
             Spacer(modifier = Modifier.width(Dimensions.SpacingSmall))
             Icon(
                 imageVector = Icons.Default.ChevronRight,

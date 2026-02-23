@@ -2,7 +2,12 @@ package com.unamentis.ui
 
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -243,6 +248,18 @@ fun UnaMentisNavHost(
                     navController = navController,
                     startDestination = startDestination,
                     modifier = Modifier.weight(1f),
+                    enterTransition = {
+                        fadeIn(animationSpec = tween(300))
+                    },
+                    exitTransition = {
+                        fadeOut(animationSpec = tween(300))
+                    },
+                    popEnterTransition = {
+                        fadeIn(animationSpec = tween(300))
+                    },
+                    popExitTransition = {
+                        fadeOut(animationSpec = tween(300))
+                    },
                 ) {
                     // Onboarding (shown on first launch)
                     composable(route = Routes.ONBOARDING) {
@@ -438,7 +455,21 @@ fun UnaMentisNavHost(
                     }
 
                     // Server Settings (sub-screen of Settings)
-                    composable(route = Routes.SERVER_SETTINGS) {
+                    composable(
+                        route = Routes.SERVER_SETTINGS,
+                        enterTransition = {
+                            slideInHorizontally(
+                                initialOffsetX = { it },
+                                animationSpec = tween(300),
+                            )
+                        },
+                        popExitTransition = {
+                            slideOutHorizontally(
+                                targetOffsetX = { it },
+                                animationSpec = tween(300),
+                            )
+                        },
+                    ) {
                         ServerSettingsScreen(
                             onNavigateBack = { navController.popBackStack() },
                             onNavigateToQRScanner = {
@@ -448,7 +479,21 @@ fun UnaMentisNavHost(
                     }
 
                     // QR Code Scanner (sub-screen of Server Settings)
-                    composable(route = Routes.QR_CODE_SCANNER) {
+                    composable(
+                        route = Routes.QR_CODE_SCANNER,
+                        enterTransition = {
+                            slideInHorizontally(
+                                initialOffsetX = { it },
+                                animationSpec = tween(300),
+                            )
+                        },
+                        popExitTransition = {
+                            slideOutHorizontally(
+                                targetOffsetX = { it },
+                                animationSpec = tween(300),
+                            )
+                        },
+                    ) {
                         QRCodeScannerScreen(
                             onScanned = { _, _ ->
                                 navController.popBackStack()
@@ -463,21 +508,63 @@ fun UnaMentisNavHost(
                     }
 
                     // About (sub-screen of Settings)
-                    composable(route = Routes.ABOUT) {
+                    composable(
+                        route = Routes.ABOUT,
+                        enterTransition = {
+                            slideInHorizontally(
+                                initialOffsetX = { it },
+                                animationSpec = tween(300),
+                            )
+                        },
+                        popExitTransition = {
+                            slideOutHorizontally(
+                                targetOffsetX = { it },
+                                animationSpec = tween(300),
+                            )
+                        },
+                    ) {
                         AboutScreen(
                             onNavigateBack = { navController.popBackStack() },
                         )
                     }
 
                     // Debug Tools (sub-screen of Settings, debug builds only)
-                    composable(route = Routes.DEBUG) {
+                    composable(
+                        route = Routes.DEBUG,
+                        enterTransition = {
+                            slideInHorizontally(
+                                initialOffsetX = { it },
+                                animationSpec = tween(300),
+                            )
+                        },
+                        popExitTransition = {
+                            slideOutHorizontally(
+                                targetOffsetX = { it },
+                                animationSpec = tween(300),
+                            )
+                        },
+                    ) {
                         DebugScreen(
                             onNavigateBack = { navController.popBackStack() },
                         )
                     }
 
                     // Chatterbox TTS Settings (sub-screen of Settings)
-                    composable(route = Routes.CHATTERBOX_SETTINGS) {
+                    composable(
+                        route = Routes.CHATTERBOX_SETTINGS,
+                        enterTransition = {
+                            slideInHorizontally(
+                                initialOffsetX = { it },
+                                animationSpec = tween(300),
+                            )
+                        },
+                        popExitTransition = {
+                            slideOutHorizontally(
+                                targetOffsetX = { it },
+                                animationSpec = tween(300),
+                            )
+                        },
+                    ) {
                         ChatterboxSettingsScreen(
                             onNavigateBack = { navController.popBackStack() },
                         )
@@ -502,6 +589,18 @@ fun UnaMentisNavHost(
                             listOf(
                                 navArgument("itemId") { type = NavType.StringType },
                             ),
+                        enterTransition = {
+                            slideInHorizontally(
+                                initialOffsetX = { it },
+                                animationSpec = tween(300),
+                            )
+                        },
+                        popExitTransition = {
+                            slideOutHorizontally(
+                                targetOffsetX = { it },
+                                animationSpec = tween(300),
+                            )
+                        },
                     ) { backStackEntry ->
                         val itemId = backStackEntry.arguments?.getString("itemId") ?: ""
                         ReadingReaderScreen(
@@ -520,6 +619,18 @@ fun UnaMentisNavHost(
                             listOf(
                                 navArgument("itemId") { type = NavType.StringType },
                             ),
+                        enterTransition = {
+                            slideInHorizontally(
+                                initialOffsetX = { it },
+                                animationSpec = tween(300),
+                            )
+                        },
+                        popExitTransition = {
+                            slideOutHorizontally(
+                                targetOffsetX = { it },
+                                animationSpec = tween(300),
+                            )
+                        },
                     ) { backStackEntry ->
                         val itemId = backStackEntry.arguments?.getString("itemId") ?: ""
                         ReadingPlaybackScreen(
