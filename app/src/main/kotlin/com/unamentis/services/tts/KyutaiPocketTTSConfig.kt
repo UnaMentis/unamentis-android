@@ -207,8 +207,7 @@ enum class KyutaiPocketVoice(
          * @param index Voice index (0-7)
          * @return Matching voice, or null if index is out of range
          */
-        fun fromIndex(index: Int): KyutaiPocketVoice? =
-            entries.find { it.index == index }
+        fun fromIndex(index: Int): KyutaiPocketVoice? = entries.find { it.index == index }
     }
 }
 

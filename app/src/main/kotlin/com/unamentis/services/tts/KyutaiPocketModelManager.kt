@@ -51,9 +51,6 @@ class KyutaiPocketModelManager
             /** Voice embeddings subdirectory. */
             private const val VOICES_DIR = "voices"
 
-            /** Expected number of built-in voices. */
-            private const val EXPECTED_VOICE_COUNT = 8
-
             /** Total model size in bytes (~230MB). */
             private const val MODEL_SIZE_BYTES = 241_172_480L
         }

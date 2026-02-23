@@ -39,6 +39,10 @@ onnxRuntime = "1.17.0"
 # MediaPipe
 mediapipe = "0.10.32"
 
+# CameraX & ML Kit
+camerax = "1.4.1"
+mlkitBarcodeScanning = "17.3.0"
+
 # Audio
 oboe = "1.8.0"
 
@@ -124,6 +128,15 @@ onnxruntime-android = { group = "com.microsoft.onnxruntime", name = "onnxruntime
 
 # MediaPipe LLM Inference (GPU acceleration)
 mediapipe-tasks-genai = { group = "com.google.mediapipe", name = "tasks-genai", version.ref = "mediapipe" }
+
+# CameraX (QR code scanning)
+androidx-camera-core = { group = "androidx.camera", name = "camera-core", version.ref = "camerax" }
+androidx-camera-camera2 = { group = "androidx.camera", name = "camera-camera2", version.ref = "camerax" }
+androidx-camera-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", version.ref = "camerax" }
+androidx-camera-view = { group = "androidx.camera", name = "camera-view", version.ref = "camerax" }
+
+# ML Kit Barcode Scanning
+mlkit-barcode-scanning = { group = "com.google.mlkit", name = "barcode-scanning", version.ref = "mlkitBarcodeScanning" }
 
 # Audio (Oboe - low-latency native audio)
 oboe = { group = "com.google.oboe", name = "oboe", version.ref = "oboe" }

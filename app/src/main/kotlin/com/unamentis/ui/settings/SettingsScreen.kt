@@ -5,6 +5,8 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -118,6 +120,7 @@ fun SettingsScreen(
     onNavigateToServerSettings: () -> Unit = {},
     onNavigateToAbout: () -> Unit = {},
     onNavigateToDebug: () -> Unit = {},
+    onNavigateToChatterboxSettings: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -228,8 +231,13 @@ fun SettingsScreen(
                     title = stringResource(R.string.settings_speech_to_text_title),
                     providers =
                         listOf(
-                            stringResource(R.string.provider_deepgram),
                             stringResource(R.string.provider_android),
+                            stringResource(R.string.provider_deepgram),
+                            stringResource(R.string.provider_assemblyai),
+                            stringResource(R.string.provider_groq_whisper),
+                            stringResource(R.string.provider_glm_asr),
+                            stringResource(R.string.provider_glm_asr_on_device),
+                            stringResource(R.string.provider_self_hosted),
                         ),
                     selectedProvider = uiState.selectedSTTProvider,
                     onProviderSelected = { viewModel.setSTTProvider(it) },
@@ -239,17 +247,45 @@ fun SettingsScreen(
 
             // TTS Provider
             item {
+                val chatterboxName = stringResource(R.string.provider_chatterbox)
                 ProviderCard(
                     title = stringResource(R.string.settings_text_to_speech_title),
                     providers =
                         listOf(
-                            stringResource(R.string.provider_elevenlabs),
                             stringResource(R.string.provider_android),
+                            stringResource(R.string.provider_elevenlabs),
+                            stringResource(R.string.provider_deepgram_aura),
+                            stringResource(R.string.provider_kyutai_pocket_tts),
+                            chatterboxName,
+                            stringResource(R.string.provider_self_hosted),
                         ),
                     selectedProvider = uiState.selectedTTSProvider,
                     onProviderSelected = { viewModel.setTTSProvider(it) },
                     icon = Icons.Default.VolumeUp,
                 )
+
+                // Show "Configure Chatterbox" when Chatterbox is selected
+                if (uiState.selectedTTSProvider == chatterboxName) {
+                    TextButton(
+                        onClick = onNavigateToChatterboxSettings,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = stringResource(R.string.chatterbox_configure),
+                                style = IOSTypography.body,
+                            )
+                            Icon(
+                                Icons.Default.KeyboardArrowRight,
+                                contentDescription = null,
+                            )
+                        }
+                    }
+                }
             }
 
             // LLM Provider
@@ -261,6 +297,8 @@ fun SettingsScreen(
                             stringResource(R.string.provider_patchpanel),
                             stringResource(R.string.provider_openai),
                             stringResource(R.string.provider_anthropic),
+                            stringResource(R.string.provider_on_device_llm),
+                            stringResource(R.string.provider_self_hosted),
                         ),
                     selectedProvider = uiState.selectedLLMProvider,
                     onProviderSelected = { viewModel.setLLMProvider(it) },
@@ -690,7 +728,9 @@ private fun PresetChip(
 /**
  * Provider selection card.
  * Uses iOS-style card with 12dp corner radius.
+ * FlowRow wraps chips to multiple lines when there are many providers.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ProviderCard(
     title: String,
@@ -714,9 +754,10 @@ private fun ProviderCard(
                 )
             }
 
-            Row(
+            FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
+                verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingXSmall),
             ) {
                 providers.forEach { provider ->
                     FilterChip(

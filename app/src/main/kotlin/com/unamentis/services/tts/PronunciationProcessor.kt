@@ -394,8 +394,7 @@ class PronunciationProcessor
          *
          * Years 0-99 are mapped to 2000-2099 for two-digit input.
          */
-        private fun normalizeYear(year: Int): Int =
-            if (year < 100) year + 2000 else year
+        private fun normalizeYear(year: Int): Int = if (year < 100) year + 2000 else year
 
         /**
          * Convert a four-digit year to its spoken English form.

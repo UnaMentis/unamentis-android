@@ -106,24 +106,25 @@ fun DeviceMetricsView(onNavigateBack: () -> Unit) {
 
     // Periodic refresh
     DisposableEffect(isMonitoring) {
-        val job = scope.launch {
-            while (isActive && isMonitoring) {
-                withContext(Dispatchers.IO) {
-                    val metrics = collectDeviceMetrics(context)
-                    jvmUsedMemory = metrics.jvmUsedMemory
-                    jvmTotalMemory = metrics.jvmTotalMemory
-                    jvmMaxMemory = metrics.jvmMaxMemory
-                    systemAvailableMemory = metrics.systemAvailableMemory
-                    systemTotalMemory = metrics.systemTotalMemory
-                    batteryLevel = metrics.batteryLevel
-                    isCharging = metrics.isCharging
-                    storageAvailable = metrics.storageAvailable
-                    storageTotal = metrics.storageTotal
-                    networkType = metrics.networkType
+        val job =
+            scope.launch {
+                while (isActive && isMonitoring) {
+                    withContext(Dispatchers.IO) {
+                        val metrics = collectDeviceMetrics(context)
+                        jvmUsedMemory = metrics.jvmUsedMemory
+                        jvmTotalMemory = metrics.jvmTotalMemory
+                        jvmMaxMemory = metrics.jvmMaxMemory
+                        systemAvailableMemory = metrics.systemAvailableMemory
+                        systemTotalMemory = metrics.systemTotalMemory
+                        batteryLevel = metrics.batteryLevel
+                        isCharging = metrics.isCharging
+                        storageAvailable = metrics.storageAvailable
+                        storageTotal = metrics.storageTotal
+                        networkType = metrics.networkType
+                    }
+                    delay(REFRESH_INTERVAL_MS)
                 }
-                delay(REFRESH_INTERVAL_MS)
             }
-        }
         onDispose { job.cancel() }
     }
 
@@ -144,9 +145,10 @@ fun DeviceMetricsView(onNavigateBack: () -> Unit) {
                         onClick = {
                             isMonitoring = !isMonitoring
                         },
-                        modifier = Modifier.semantics {
-                            contentDescription = if (isMonitoring) "Stop monitoring" else "Start monitoring"
-                        },
+                        modifier =
+                            Modifier.semantics {
+                                contentDescription = if (isMonitoring) "Stop monitoring" else "Start monitoring"
+                            },
                     ) {
                         Icon(
                             Icons.Default.Refresh,
@@ -192,18 +194,20 @@ fun DeviceMetricsView(onNavigateBack: () -> Unit) {
                 MetricCard(
                     icon = Icons.Default.Memory,
                     title = stringResource(R.string.debug_metrics_heap_usage),
-                    value = stringResource(
-                        R.string.debug_metrics_memory_of,
-                        Formatter.formatFileSize(context, jvmUsedMemory),
-                        Formatter.formatFileSize(context, jvmMaxMemory),
-                    ),
+                    value =
+                        stringResource(
+                            R.string.debug_metrics_memory_of,
+                            Formatter.formatFileSize(context, jvmUsedMemory),
+                            Formatter.formatFileSize(context, jvmMaxMemory),
+                        ),
                     progress = memoryUsagePercent,
                     progressColor = getStatusColor(memoryUsagePercent),
-                    accessibilityDescription = stringResource(
-                        R.string.cd_debug_memory_usage,
-                        Formatter.formatFileSize(context, jvmUsedMemory),
-                        Formatter.formatFileSize(context, jvmMaxMemory),
-                    ),
+                    accessibilityDescription =
+                        stringResource(
+                            R.string.cd_debug_memory_usage,
+                            Formatter.formatFileSize(context, jvmUsedMemory),
+                            Formatter.formatFileSize(context, jvmMaxMemory),
+                        ),
                 )
             }
 
@@ -228,17 +232,19 @@ fun DeviceMetricsView(onNavigateBack: () -> Unit) {
                 MetricCard(
                     icon = Icons.Default.Memory,
                     title = stringResource(R.string.debug_metrics_system_ram),
-                    value = stringResource(
-                        R.string.debug_metrics_memory_of,
-                        Formatter.formatFileSize(context, systemUsed),
-                        Formatter.formatFileSize(context, systemTotalMemory),
-                    ),
+                    value =
+                        stringResource(
+                            R.string.debug_metrics_memory_of,
+                            Formatter.formatFileSize(context, systemUsed),
+                            Formatter.formatFileSize(context, systemTotalMemory),
+                        ),
                     progress = systemUsagePercent,
                     progressColor = getStatusColor(systemUsagePercent),
-                    accessibilityDescription = stringResource(
-                        R.string.cd_debug_system_memory,
-                        Formatter.formatFileSize(context, systemAvailableMemory),
-                    ),
+                    accessibilityDescription =
+                        stringResource(
+                            R.string.cd_debug_system_memory,
+                            Formatter.formatFileSize(context, systemAvailableMemory),
+                        ),
                 )
             }
 
@@ -295,17 +301,19 @@ fun DeviceMetricsView(onNavigateBack: () -> Unit) {
                 MetricCard(
                     icon = Icons.Default.SdStorage,
                     title = stringResource(R.string.debug_metrics_internal_storage),
-                    value = stringResource(
-                        R.string.debug_metrics_storage_available,
-                        Formatter.formatFileSize(context, storageAvailable),
-                        Formatter.formatFileSize(context, storageTotal),
-                    ),
+                    value =
+                        stringResource(
+                            R.string.debug_metrics_storage_available,
+                            Formatter.formatFileSize(context, storageAvailable),
+                            Formatter.formatFileSize(context, storageTotal),
+                        ),
                     progress = storagePercent,
                     progressColor = getStatusColor(storagePercent),
-                    accessibilityDescription = stringResource(
-                        R.string.cd_debug_storage,
-                        Formatter.formatFileSize(context, storageAvailable),
-                    ),
+                    accessibilityDescription =
+                        stringResource(
+                            R.string.cd_debug_storage,
+                            Formatter.formatFileSize(context, storageAvailable),
+                        ),
                 )
             }
 
@@ -546,23 +554,24 @@ private fun collectDeviceMetrics(context: Context): DeviceMetricsSnapshot {
 
     // Storage
     val stat = StatFs(Environment.getDataDirectory().path)
-    val storageAvail = stat.availableBlocksLong * stat.blockSizeLong
-    val storageTot = stat.totalBlocksLong * stat.blockSizeLong
+    val storageAvail = stat.availableBytes
+    val storageTot = stat.totalBytes
 
     // Network
     val connManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     val network = connManager.activeNetwork
     val capabilities = network?.let { connManager.getNetworkCapabilities(it) }
-    val netType = when {
-        capabilities == null -> context.getString(R.string.debug_metrics_network_none)
-        capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ->
-            context.getString(R.string.debug_metrics_network_wifi)
-        capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ->
-            context.getString(R.string.debug_metrics_network_cellular)
-        capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) ->
-            context.getString(R.string.debug_metrics_network_ethernet)
-        else -> context.getString(R.string.debug_metrics_network_other)
-    }
+    val netType =
+        when {
+            capabilities == null -> context.getString(R.string.debug_metrics_network_none)
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ->
+                context.getString(R.string.debug_metrics_network_wifi)
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ->
+                context.getString(R.string.debug_metrics_network_cellular)
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) ->
+                context.getString(R.string.debug_metrics_network_ethernet)
+            else -> context.getString(R.string.debug_metrics_network_other)
+        }
 
     return DeviceMetricsSnapshot(
         jvmUsedMemory = jvmUsed,

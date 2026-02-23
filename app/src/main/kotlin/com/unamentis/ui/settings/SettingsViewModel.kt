@@ -155,6 +155,36 @@ class SettingsViewModel
             providerConfig.ttsPlaybackSpeed
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 1.0f)
 
+        // ==================== Chatterbox TTS Settings ====================
+
+        val chatterboxPreset: StateFlow<String> =
+            providerConfig.chatterboxPreset
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "DEFAULT")
+
+        val chatterboxExaggeration: StateFlow<Float> =
+            providerConfig.chatterboxExaggeration
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.5f)
+
+        val chatterboxCfgWeight: StateFlow<Float> =
+            providerConfig.chatterboxCfgWeight
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.5f)
+
+        val chatterboxSpeed: StateFlow<Float> =
+            providerConfig.chatterboxSpeed
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 1.0f)
+
+        val chatterboxLanguage: StateFlow<String> =
+            providerConfig.chatterboxLanguage
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "en")
+
+        val chatterboxParalinguisticTags: StateFlow<Boolean> =
+            providerConfig.chatterboxParalinguisticTags
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+        val chatterboxStreaming: StateFlow<Boolean> =
+            providerConfig.chatterboxStreaming
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
         // ==================== Curriculum Settings ====================
 
         val autoContinueTopics: StateFlow<Boolean> =
@@ -390,6 +420,65 @@ class SettingsViewModel
         fun setTtsPlaybackSpeed(speed: Float) {
             viewModelScope.launch {
                 providerConfig.setTtsPlaybackSpeed(speed)
+            }
+        }
+
+        // ==================== Chatterbox TTS Settings Setters ====================
+
+        fun setChatterboxPreset(preset: String) {
+            viewModelScope.launch {
+                providerConfig.setChatterboxPreset(preset)
+            }
+        }
+
+        fun setChatterboxExaggeration(value: Float) {
+            viewModelScope.launch {
+                providerConfig.setChatterboxExaggeration(value)
+            }
+        }
+
+        fun setChatterboxCfgWeight(value: Float) {
+            viewModelScope.launch {
+                providerConfig.setChatterboxCfgWeight(value)
+            }
+        }
+
+        fun setChatterboxSpeed(value: Float) {
+            viewModelScope.launch {
+                providerConfig.setChatterboxSpeed(value)
+            }
+        }
+
+        fun setChatterboxLanguage(code: String) {
+            viewModelScope.launch {
+                providerConfig.setChatterboxLanguage(code)
+            }
+        }
+
+        fun setChatterboxParalinguisticTags(enabled: Boolean) {
+            viewModelScope.launch {
+                providerConfig.setChatterboxParalinguisticTags(enabled)
+            }
+        }
+
+        fun setChatterboxStreaming(enabled: Boolean) {
+            viewModelScope.launch {
+                providerConfig.setChatterboxStreaming(enabled)
+            }
+        }
+
+        /**
+         * Reset all Chatterbox settings to defaults.
+         */
+        fun resetChatterboxSettings() {
+            viewModelScope.launch {
+                providerConfig.setChatterboxPreset("DEFAULT")
+                providerConfig.setChatterboxExaggeration(0.5f)
+                providerConfig.setChatterboxCfgWeight(0.5f)
+                providerConfig.setChatterboxSpeed(1.0f)
+                providerConfig.setChatterboxLanguage("en")
+                providerConfig.setChatterboxParalinguisticTags(true)
+                providerConfig.setChatterboxStreaming(true)
             }
         }
 

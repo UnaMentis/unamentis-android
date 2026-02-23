@@ -121,7 +121,11 @@ class SelfHostedTTSService(
                         }
 
                         val totalTime = System.currentTimeMillis() - startTime
-                        Log.i(TAG, "Synthesis complete: ${text.length} chars -> ${audioData.size} bytes in ${totalTime}ms")
+                        Log.i(
+                            TAG,
+                            "Synthesis complete: ${text.length} chars -> " +
+                                "${audioData.size} bytes in ${totalTime}ms",
+                        )
 
                         trySend(
                             TTSAudioChunk(

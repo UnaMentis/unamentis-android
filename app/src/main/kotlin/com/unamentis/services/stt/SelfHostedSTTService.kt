@@ -198,57 +198,76 @@ class SelfHostedSTTService(
         latencyMs: Long,
     ): STTResult? {
         try {
-            // Try Format 1: OpenAI-style { "text": "...", "is_final": true }
-            try {
-                val openAiResponse = json.decodeFromString<OpenAIWhisperResponse>(jsonString)
-                if (openAiResponse.text != null) {
-                    return STTResult(
-                        text = openAiResponse.text,
-                        isFinal = openAiResponse.isFinal ?: openAiResponse.is_final ?: true,
-                        confidence = openAiResponse.confidence?.toFloat() ?: 0.9f,
-                        latencyMs = latencyMs,
-                    )
-                }
-            } catch (_: Exception) {
-                // Not this format, try next
-            }
-
-            // Try Format 2: whisper.cpp { "result": { "text": "..." } }
-            try {
-                val whisperCppResponse = json.decodeFromString<WhisperCppResponse>(jsonString)
-                if (whisperCppResponse.result?.text != null) {
-                    return STTResult(
-                        text = whisperCppResponse.result.text,
-                        isFinal = whisperCppResponse.is_final ?: true,
-                        confidence = 0.9f,
-                        latencyMs = latencyMs,
-                    )
-                }
-            } catch (_: Exception) {
-                // Not this format, try next
-            }
-
-            // Try Format 3: faster-whisper { "transcript": "...", "partial": false }
-            try {
-                val fasterWhisperResponse = json.decodeFromString<FasterWhisperResponse>(jsonString)
-                if (fasterWhisperResponse.transcript != null) {
-                    return STTResult(
-                        text = fasterWhisperResponse.transcript,
-                        isFinal = !(fasterWhisperResponse.partial ?: false),
-                        confidence = fasterWhisperResponse.confidence?.toFloat() ?: 0.9f,
-                        latencyMs = latencyMs,
-                    )
-                }
-            } catch (_: Exception) {
-                // Not this format either
-            }
-
+            val result = tryParseFormats(jsonString, latencyMs)
+            if (result != null) return result
             Log.w(TAG, "Could not parse response in any known format: ${jsonString.take(200)}")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to parse streaming response", e)
         }
         return null
     }
+
+    private fun tryParseFormats(
+        jsonString: String,
+        latencyMs: Long,
+    ): STTResult? =
+        tryParseOpenAI(jsonString, latencyMs)
+            ?: tryParseWhisperCpp(jsonString, latencyMs)
+            ?: tryParseFasterWhisper(jsonString, latencyMs)
+
+    private fun tryParseOpenAI(
+        jsonString: String,
+        latencyMs: Long,
+    ): STTResult? =
+        try {
+            val r = json.decodeFromString<OpenAIWhisperResponse>(jsonString)
+            r.text?.let {
+                STTResult(
+                    text = it,
+                    isFinal = r.isFinal ?: r.is_final ?: true,
+                    confidence = r.confidence?.toFloat() ?: 0.9f,
+                    latencyMs = latencyMs,
+                )
+            }
+        } catch (_: Exception) {
+            null
+        }
+
+    private fun tryParseWhisperCpp(
+        jsonString: String,
+        latencyMs: Long,
+    ): STTResult? =
+        try {
+            val r = json.decodeFromString<WhisperCppResponse>(jsonString)
+            r.result?.text?.let {
+                STTResult(
+                    text = it,
+                    isFinal = r.is_final ?: true,
+                    confidence = 0.9f,
+                    latencyMs = latencyMs,
+                )
+            }
+        } catch (_: Exception) {
+            null
+        }
+
+    private fun tryParseFasterWhisper(
+        jsonString: String,
+        latencyMs: Long,
+    ): STTResult? =
+        try {
+            val r = json.decodeFromString<FasterWhisperResponse>(jsonString)
+            r.transcript?.let {
+                STTResult(
+                    text = it,
+                    isFinal = !(r.partial ?: false),
+                    confidence = r.confidence?.toFloat() ?: 0.9f,
+                    latencyMs = latencyMs,
+                )
+            }
+        } catch (_: Exception) {
+            null
+        }
 
     // Server response models supporting multiple formats
 
