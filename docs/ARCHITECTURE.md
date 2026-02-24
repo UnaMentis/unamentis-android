@@ -241,7 +241,12 @@ class SessionRepository(
         CurriculumEntity::class,
         TopicEntity::class,
         TopicProgressEntity::class,
-        TodoEntity::class
+        TodoEntity::class,
+        ReadingListItemEntity::class,
+        ReadingChunkEntity::class,
+        ReadingBookmarkEntity::class,
+        ReadingVisualAssetEntity::class,
+        QueuedMetricsEntity::class
     ],
     version = 2
 )
@@ -1224,6 +1229,60 @@ class AuthRepository(
 2. **Background Sync** — Changes are queued and synced to server when connected
 3. **Conflict Resolution** — Server timestamp wins for conflicting changes
 4. **Offline Support** — App remains fully functional without network
+
+---
+
+## Knowledge Bowl Module
+
+The Knowledge Bowl module is a self-contained feature module with its own core, data, and UI layers:
+
+```
+modules/knowledgebowl/
+├── core/
+│   ├── engine/     — KBSessionManager, KBTransformer
+│   ├── match/      — KBMatchEngine, KBMatchState, KBOpponentSimulator
+│   ├── rebound/    — KBReboundSimulator, KBReboundConfig
+│   ├── conference/ — KBConferenceManager, KBConferenceConfig
+│   ├── audio/      — KBOnDeviceSTT, KBOnDeviceTTS
+│   ├── ml/         — KBEmbeddingsService, KBLLMValidator
+│   ├── stats/      — KBAnalyticsService, KBSessionStore
+│   └── validation/ — AnswerNormalizer, Phonetic/NGram/Linguistic/Token matchers
+├── data/
+│   ├── model/      — KBQuestion, KBPack, KBDomain, KBTeamModels, synonyms
+│   ├── local/      — KBLocalPackStore, KBTeamStore, KBLocalTeamSync
+│   └── remote/     — KBPackService
+└── ui/
+    ├── dashboard/  — KBDashboardScreen
+    ├── drill/      — KBDomainDrillScreen + ViewModel
+    ├── match/      — KBMatchSimulationScreen + ViewModel
+    ├── rebound/    — KBReboundTrainingScreen + ViewModel
+    ├── conference/ — KBConferenceTrainingScreen + ViewModel
+    ├── progress/   — KBProgressScreen, KBDomainMasteryScreen
+    ├── packs/      — KBPackPickerScreen
+    └── help/       — KBHelpSheet
+```
+
+---
+
+## Reading List Architecture
+
+The reading list feature spans core, services, data, and UI layers:
+
+- **Core**: `ReadingListManager` orchestrates import, chunking, and management
+- **Services**: `ReadingPlaybackService` handles TTS-based audio playback, `ReadingAudioPreGenerator` pre-generates upcoming chunks
+- **Data**: `ReadingListRepository` with Room entities for items, chunks, bookmarks, and visual assets
+- **UI**: `ReadingListScreen`, `ReadingPlaybackScreen`, `ReadingReaderScreen`, `URLImportSheet`
+
+---
+
+## Server Discovery Architecture
+
+Tiered discovery strategy for finding UnaMentis servers on the local network:
+
+1. **Tier 1**: Android NSD (mDNS/DNS-SD) via `NsdDiscovery`
+2. **Tier 2**: Subnet scanning via `SubnetScanDiscovery`
+3. **Caching**: `CachedServerDiscovery` persists discovered servers
+4. **Integration**: `ServerConfigManagerDiscovery` bridges discovery with server config
 
 ---
 

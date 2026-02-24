@@ -12,39 +12,66 @@ UnaMentis Android is a Kotlin/Jetpack Compose voice AI tutoring app. It enables 
 
 ```
 app/src/main/kotlin/com/unamentis/
-├── core/           # Core business logic
-│   ├── audio/      # Audio pipeline, VAD integration
-│   ├── session/    # SessionManager, state machine
-│   ├── curriculum/ # Curriculum management, progress tracking
-│   ├── routing/    # PatchPanel LLM routing
-│   ├── telemetry/  # Metrics, cost tracking
-│   └── config/     # API keys, server config
-├── services/       # External service integrations
-│   ├── stt/        # Speech-to-text providers
-│   ├── tts/        # Text-to-speech providers
-│   ├── llm/        # Language model providers
-│   └── vad/        # Voice activity detection
-├── data/           # Data layer
-│   ├── local/      # Room database
-│   ├── remote/     # API clients
-│   └── repository/ # Data repositories
-├── ui/             # Jetpack Compose UI
-│   ├── session/    # Main voice session
-│   ├── curriculum/ # Content browser
-│   ├── settings/   # Configuration
-│   └── theme/      # Material 3 theming
-└── di/             # Hilt dependency injection
+├── core/               # Core business logic
+│   ├── audio/          # Audio pipeline, VAD integration
+│   ├── session/        # SessionManager, MetricsUpload
+│   ├── curriculum/     # Curriculum management, progress tracking
+│   ├── routing/        # PatchPanel LLM routing
+│   ├── telemetry/      # MetricsExporter, TTFAInstrumentation
+│   ├── config/         # API keys, ServerConfig, ProviderConfig
+│   ├── todo/           # TodoManager, AutoResume, CurriculumSuggestions
+│   ├── readinglist/    # ReadingListManager, HTMLExtractor, TextChunker
+│   ├── fov/            # ReadingFOVContextManager
+│   ├── discovery/      # DeviceDiscoveryManager, NSD, SubnetScan
+│   ├── device/         # DeviceCapabilityDetector
+│   ├── accessibility/  # AccessibilityChecker
+│   └── tools/handlers/ # TodoToolHandler, WebSearchToolHandler
+├── modules/
+│   └── knowledgebowl/  # Full Knowledge Bowl module
+│       ├── core/       # Engine, match, rebound, conference, validation
+│       ├── data/       # Models, packs, teams, local storage
+│       └── ui/         # All KB screens and ViewModels
+├── services/           # External service integrations
+│   ├── stt/            # Deepgram, Android, GLM-ASR, Self-hosted
+│   ├── tts/            # ElevenLabs, Android, Kyutai Pocket, Self-hosted
+│   ├── llm/            # OpenAI, Anthropic, Ollama, llama.cpp, ExecuTorch, MediaPipe
+│   ├── vad/            # Silero TFLite, Silero ONNX, Simple RMS
+│   ├── embeddings/     # OpenAI Embedding Service
+│   ├── readingplayback/# ReadingPlaybackService, AudioPreGenerator
+│   ├── voice/          # VoiceCommandRecognizer, VoiceActivityFeedback
+│   ├── websearch/      # BraveSearchService, WebSearchProvider
+│   └── curriculum/     # DownloadManager, TranscriptStreaming, VisualAssetCache
+├── data/               # Data layer
+│   ├── local/          # Room database, DAOs, entities
+│   ├── remote/         # ApiClient, WebSocket, AudioWebSocket
+│   ├── repository/     # Curriculum, ReadingList, Session repositories
+│   └── model/          # UMCFModels, UMCFParser, Todo, ReadingList models
+├── ui/                 # Jetpack Compose UI
+│   ├── session/        # Main voice session
+│   ├── curriculum/     # Content browser, ModulesSection
+│   ├── learning/       # LearningScreen, ModulesScreen
+│   ├── assistant/      # AssistantScreen (Todo + Reading tabs)
+│   ├── readinglist/    # ReadingList, Playback, Reader, URLImport
+│   ├── settings/       # Settings, Server, Chatterbox, About, Debug, QR
+│   ├── todo/           # TodoScreen, TodoComponents
+│   ├── debug/          # DeviceMetricsView
+│   ├── components/     # FormulaRenderer, AssetCarousel, OfflineBanner
+│   └── theme/          # Material 3 theming
+├── di/                 # Hilt modules (App, Core, Provider, Discovery, Tools)
+├── navigation/         # DeepLinkRoutes
+└── service/            # TodoReminderWorker
 
-app/src/test/kotlin/com/unamentis/
-├── core/           # Unit tests for core logic
-├── data/           # Data layer tests
-├── services/       # Service tests
-└── helpers/        # Test utilities, mock services
+app/src/test/kotlin/com/unamentis/          # 81 test files, 1700+ tests
+├── core/               # Core logic tests (session, todo, discovery, reading, etc.)
+├── data/               # Data layer tests
+├── services/           # Service tests (STT, TTS, embeddings, voice, websearch, etc.)
+├── modules/knowledgebowl/  # KB module tests (engine, validation, packs, etc.)
+└── helpers/            # Test utilities, mock services
 
-app/src/androidTest/kotlin/com/unamentis/
-├── ui/             # Compose UI tests
-├── data/local/     # Room database tests
-└── benchmark/      # Performance benchmarks
+app/src/androidTest/kotlin/com/unamentis/  # 11 test files, 76+ tests
+├── ui/                 # Compose UI tests
+├── data/local/         # Room database tests
+└── benchmark/          # Performance benchmarks
 ```
 
 ---
