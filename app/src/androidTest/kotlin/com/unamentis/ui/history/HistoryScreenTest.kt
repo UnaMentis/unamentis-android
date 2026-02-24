@@ -8,6 +8,7 @@ import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.unamentis.CiTestConfig
 import com.unamentis.MainActivity
 import com.unamentis.R
 import com.unamentis.SkipOnboardingRule
@@ -36,11 +37,6 @@ class HistoryScreenTest {
     @get:Rule(order = 2)
     val composeTestRule = createAndroidComposeRule<MainActivity>()
 
-    companion object {
-        private const val DEFAULT_TIMEOUT = 10_000L
-        private const val LONG_TIMEOUT = 15_000L
-    }
-
     @Before
     fun setup() {
         hiltRule.inject()
@@ -50,11 +46,12 @@ class HistoryScreenTest {
      * Navigate to History tab using testTag.
      */
     private fun navigateToHistory() {
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithTag("nav_history")
                 .fetchSemanticsNodes().isNotEmpty()
         }
         composeTestRule.onNodeWithTag("nav_history").performClick()
+        composeTestRule.waitForIdle()
     }
 
     @Test
@@ -65,7 +62,7 @@ class HistoryScreenTest {
 
         // Wait for the History screen to load - check for either the title or empty state
         // Note: Empty state title is hardcoded as "No Sessions Yet" in HistoryScreen
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             val hasHistoryTitle =
                 composeTestRule.onAllNodesWithText(historyTitle)
                     .fetchSemanticsNodes().isNotEmpty()
@@ -94,7 +91,7 @@ class HistoryScreenTest {
 
         // Wait for screen to load - should either show sessions or empty state
         // Note: Empty state title is hardcoded as "No Sessions Yet" in HistoryScreen
-        composeTestRule.waitUntil(LONG_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.LONG_TIMEOUT) {
             val hasEmptyState =
                 composeTestRule.onAllNodesWithText("No Sessions Yet")
                     .fetchSemanticsNodes().isNotEmpty()

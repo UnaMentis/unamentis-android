@@ -41,11 +41,6 @@ class NavigationFlowTest {
     @get:Rule(order = 2)
     val composeTestRule = createAndroidComposeRule<MainActivity>()
 
-    companion object {
-        private const val DEFAULT_TIMEOUT = 15_000L
-        private const val LONG_TIMEOUT = 20_000L
-    }
-
     @Before
     fun init() {
         hiltRule.inject()
@@ -69,7 +64,7 @@ class NavigationFlowTest {
             )
 
         // Wait for app to load
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithTag("nav_session")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -88,7 +83,7 @@ class NavigationFlowTest {
         val noSessionsText = composeTestRule.activity.getString(R.string.history_no_sessions)
         val startSessionText = composeTestRule.activity.getString(R.string.cd_start_session)
 
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithTag("nav_session")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -96,7 +91,7 @@ class NavigationFlowTest {
         primaryTabs.forEach { route ->
             navigateToTab(route)
             // Wait for destination-specific UI element to appear, not just the nav tab
-            composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+            composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
                 when (route) {
                     "curriculum" ->
                         composeTestRule.onAllNodesWithText(serverCurriculumText)
@@ -128,14 +123,14 @@ class NavigationFlowTest {
         // Navigate to Analytics and Settings tabs
         val analyticsText = composeTestRule.activity.getString(R.string.tab_analytics)
 
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithTag("nav_analytics")
                 .fetchSemanticsNodes().isNotEmpty()
         }
 
         // Navigate to Analytics tab
         navigateToTab("analytics")
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithText(analyticsText)
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -143,7 +138,7 @@ class NavigationFlowTest {
         // Navigate to Settings tab
         navigateToTab("settings")
         // Use testTag for settings screen detection (actual text is "Providers")
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithTag("settings_providers_header")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -158,7 +153,7 @@ class NavigationFlowTest {
             )
         val startSessionText = composeTestRule.activity.getString(R.string.cd_start_session)
 
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithTag("nav_session")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -169,7 +164,7 @@ class NavigationFlowTest {
         // Switch to Settings via More menu
         navigateToTab("settings")
         // Use testTag for settings screen detection
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithTag("settings_providers_header")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -179,7 +174,7 @@ class NavigationFlowTest {
         navigateToTab("session")
 
         // Verify session screen is still rendered correctly
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithContentDescription(startSessionText)
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -190,7 +185,7 @@ class NavigationFlowTest {
     fun navigation_curriculumToCurriculum_preservesScrollPosition() {
         val serverCurriculumText = composeTestRule.activity.getString(R.string.curriculum_server)
 
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithTag("nav_curriculum")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -199,7 +194,7 @@ class NavigationFlowTest {
         navigateToTab("curriculum")
 
         // Wait for curriculum list to load
-        composeTestRule.waitUntil(LONG_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.LONG_TIMEOUT) {
             composeTestRule.onAllNodesWithText(serverCurriculumText)
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -210,7 +205,7 @@ class NavigationFlowTest {
         // Navigate to Settings and back
         navigateToTab("settings")
         // Use testTag for settings screen detection
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithTag("settings_providers_header")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -218,7 +213,7 @@ class NavigationFlowTest {
         navigateToTab("curriculum")
 
         // Verify curriculum is still displayed
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithText(serverCurriculumText)
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -234,7 +229,7 @@ class NavigationFlowTest {
             )
         val analyticsText = composeTestRule.activity.getString(R.string.tab_analytics)
 
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithTag("nav_session")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -244,7 +239,7 @@ class NavigationFlowTest {
 
         // Navigate to Analytics via More menu
         navigateToTab("analytics")
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithText(analyticsText)
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -264,7 +259,7 @@ class NavigationFlowTest {
         val speechToTextText = composeTestRule.activity.getString(R.string.settings_speech_to_text)
         val textToSpeechText = composeTestRule.activity.getString(R.string.settings_text_to_speech)
 
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithTag("nav_settings")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -273,13 +268,13 @@ class NavigationFlowTest {
         navigateToTab("settings")
 
         // Wait for screen to load using testTag
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithTag("settings_providers_header")
                 .fetchSemanticsNodes().isNotEmpty()
         }
 
         // Verify provider cards are displayed (Speech-to-Text and Text-to-Speech are provider cards)
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithText(speechToTextText)
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -292,7 +287,7 @@ class NavigationFlowTest {
         val historyText = composeTestRule.activity.getString(R.string.tab_history)
         val noSessionsText = composeTestRule.activity.getString(R.string.history_no_sessions)
 
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithTag("nav_history")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -301,7 +296,7 @@ class NavigationFlowTest {
         navigateToTab("history")
 
         // Wait for history screen to load - should either show sessions or empty state
-        composeTestRule.waitUntil(LONG_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.LONG_TIMEOUT) {
             val hasHistoryTitle =
                 composeTestRule.onAllNodesWithText(historyText)
                     .fetchSemanticsNodes().isNotEmpty()
@@ -317,7 +312,7 @@ class NavigationFlowTest {
         val analyticsText = composeTestRule.activity.getString(R.string.tab_analytics)
         val startSessionText = composeTestRule.activity.getString(R.string.cd_start_session)
 
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithTag("nav_analytics")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -326,20 +321,20 @@ class NavigationFlowTest {
         navigateToTab("analytics")
 
         // Wait for screen to load
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithText(analyticsText)
                 .fetchSemanticsNodes().isNotEmpty()
         }
 
         // Navigate away and back
         navigateToTab("session")
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithContentDescription(startSessionText)
                 .fetchSemanticsNodes().isNotEmpty()
         }
 
         navigateToTab("analytics")
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithText(analyticsText)
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -349,7 +344,7 @@ class NavigationFlowTest {
     fun navigation_todoScreen_displaysContent() {
         val addTodoText = composeTestRule.activity.getString(R.string.cd_add_todo)
 
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithTag("nav_todo")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -358,7 +353,7 @@ class NavigationFlowTest {
         navigateToTab("todo")
 
         // Wait for todo screen to load - check for screen-specific element
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithContentDescription(addTodoText)
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -368,7 +363,7 @@ class NavigationFlowTest {
     fun navigation_allTabsAccessible_fromBottomNav() {
         val allTabs = listOf("session", "curriculum", "todo", "history", "analytics", "settings")
 
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithTag("nav_session")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -387,7 +382,7 @@ class NavigationFlowTest {
                 composeTestRule.activity.getString(R.string.tab_session),
             )
 
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithTag("nav_session")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -412,7 +407,7 @@ class NavigationFlowTest {
                 composeTestRule.activity.getString(R.string.tab_session),
             )
 
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithTag("nav_session")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -426,7 +421,7 @@ class NavigationFlowTest {
         }
 
         // Verify Session tab is still selected after recreation
-        composeTestRule.waitUntil(LONG_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.LONG_TIMEOUT) {
             composeTestRule.onAllNodesWithContentDescription(sessionTabText)
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -447,7 +442,7 @@ class NavigationFlowTest {
     fun navigation_settingsChanges_reflectInSession() {
         val startSessionText = composeTestRule.activity.getString(R.string.cd_start_session)
 
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithTag("nav_settings")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -456,7 +451,7 @@ class NavigationFlowTest {
         navigateToTab("settings")
 
         // Wait for screen to load using testTag
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithTag("settings_providers_header")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -465,7 +460,7 @@ class NavigationFlowTest {
         navigateToTab("session")
 
         // Verify session screen is displayed - check for screen-specific element
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithContentDescription(startSessionText)
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -473,7 +468,7 @@ class NavigationFlowTest {
 
     @Test
     fun navigation_multipleBackPresses_handlesCorrectly() {
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithTag("nav_session")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -501,7 +496,7 @@ class NavigationFlowTest {
         val saveText = composeTestRule.activity.getString(R.string.todo_save)
         val startSessionText = composeTestRule.activity.getString(R.string.cd_start_session)
 
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithTag("nav_todo")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -510,16 +505,17 @@ class NavigationFlowTest {
         navigateToTab("todo")
 
         // Wait for screen to load
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithContentDescription(addTodoText)
                 .fetchSemanticsNodes().isNotEmpty()
         }
 
         // Create a new todo
         composeTestRule.onNodeWithContentDescription(addTodoText).performClick()
+        composeTestRule.waitForIdle()
 
         // Wait for dialog
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithText(titleText)
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -527,10 +523,11 @@ class NavigationFlowTest {
         composeTestRule.onNodeWithText(titleText)
             .performTextInput("Test navigation todo")
         composeTestRule.onNodeWithText(saveText).performClick()
+        composeTestRule.waitForIdle()
 
         // Navigate away and back
         navigateToTab("session")
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithContentDescription(startSessionText)
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -538,7 +535,7 @@ class NavigationFlowTest {
         navigateToTab("todo")
 
         // Verify todo persists
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithText("Test navigation todo")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -554,7 +551,7 @@ class NavigationFlowTest {
         val startSessionText = composeTestRule.activity.getString(R.string.cd_start_session)
         val listeningText = composeTestRule.activity.getString(R.string.session_listening)
 
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithContentDescription(startSessionText)
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -564,7 +561,7 @@ class NavigationFlowTest {
             .performClick()
 
         // Wait for session to start
-        composeTestRule.waitUntil(LONG_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.LONG_TIMEOUT) {
             composeTestRule.onAllNodesWithText(listeningText)
                 .fetchSemanticsNodes().isNotEmpty()
         }

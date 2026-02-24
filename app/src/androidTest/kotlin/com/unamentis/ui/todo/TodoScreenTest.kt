@@ -10,6 +10,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.unamentis.CiTestConfig
 import com.unamentis.MainActivity
 import com.unamentis.SkipOnboardingRule
 import dagger.hilt.android.testing.HiltAndroidRule
@@ -37,10 +38,6 @@ class TodoScreenTest {
     @get:Rule(order = 2)
     val composeTestRule = createAndroidComposeRule<MainActivity>()
 
-    companion object {
-        private const val DEFAULT_TIMEOUT = 10_000L
-    }
-
     @Before
     fun setup() {
         hiltRule.inject()
@@ -50,11 +47,12 @@ class TodoScreenTest {
      * Navigate to To-Do tab using testTag.
      */
     private fun navigateToTodo() {
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithTag("nav_todo")
                 .fetchSemanticsNodes().isNotEmpty()
         }
         composeTestRule.onNodeWithTag("nav_todo").performClick()
+        composeTestRule.waitForIdle()
     }
 
     @Test
@@ -62,7 +60,7 @@ class TodoScreenTest {
         navigateToTodo()
 
         // Verify the screen is displayed
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithContentDescription("To-Do tab")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -73,7 +71,7 @@ class TodoScreenTest {
         navigateToTodo()
 
         // Wait for screen to load
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithText("Active")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -89,7 +87,7 @@ class TodoScreenTest {
         navigateToTodo()
 
         // Wait for screen to load and verify FAB exists
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithContentDescription("Add todo")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -102,13 +100,14 @@ class TodoScreenTest {
         navigateToTodo()
 
         // Wait for screen to load
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithText("Active")
                 .fetchSemanticsNodes().isNotEmpty()
         }
 
         // Click on Completed tab
         composeTestRule.onNodeWithText("Completed").performClick()
+        composeTestRule.waitForIdle()
 
         // Tab should be clickable (no assertion failure means success)
     }
@@ -118,13 +117,14 @@ class TodoScreenTest {
         navigateToTodo()
 
         // Wait for screen to load
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithText("Active")
                 .fetchSemanticsNodes().isNotEmpty()
         }
 
         // Click on Archived tab
         composeTestRule.onNodeWithText("Archived").performClick()
+        composeTestRule.waitForIdle()
 
         // Tab should be clickable (no assertion failure means success)
     }
@@ -134,16 +134,17 @@ class TodoScreenTest {
         navigateToTodo()
 
         // Wait for screen to load
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithContentDescription("Add todo")
                 .fetchSemanticsNodes().isNotEmpty()
         }
 
         // Click add button
         composeTestRule.onNodeWithContentDescription("Add todo").performClick()
+        composeTestRule.waitForIdle()
 
         // Verify create dialog appears
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithText("Create Todo")
                 .fetchSemanticsNodes().isNotEmpty()
         }

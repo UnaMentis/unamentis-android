@@ -10,6 +10,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.unamentis.CiTestConfig
 import com.unamentis.MainActivity
 import com.unamentis.SkipOnboardingRule
 import dagger.hilt.android.testing.HiltAndroidRule
@@ -37,10 +38,6 @@ class SessionScreenTest {
     @get:Rule(order = 2)
     val composeTestRule = createAndroidComposeRule<MainActivity>()
 
-    companion object {
-        private const val DEFAULT_TIMEOUT = 10_000L
-    }
-
     @Before
     fun setup() {
         hiltRule.inject()
@@ -50,7 +47,7 @@ class SessionScreenTest {
      * Navigate to Settings via the Settings tab.
      */
     private fun navigateToSettings() {
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithTag("nav_settings")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -62,18 +59,19 @@ class SessionScreenTest {
      * Navigate to Session tab.
      */
     private fun navigateToSession() {
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithTag("nav_session")
                 .fetchSemanticsNodes().isNotEmpty()
         }
         composeTestRule.onNodeWithTag("nav_session").performClick()
+        composeTestRule.waitForIdle()
     }
 
     @Test
     fun sessionScreen_initialState_displaysScreen() {
         // Session tab should be the default tab
         // Verify the session tab is displayed using content description
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithContentDescription("Session tab")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -84,7 +82,7 @@ class SessionScreenTest {
     @Test
     fun sessionScreen_displaysStartButton() {
         // Wait for screen to load - button has content description, not visible text
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithContentDescription("Start session")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -96,7 +94,7 @@ class SessionScreenTest {
     @Test
     fun sessionScreen_displaysEmptyState() {
         // Wait for screen to load
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithText("Start a session to begin")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -108,7 +106,7 @@ class SessionScreenTest {
     @Test
     fun sessionScreen_displaysStateIndicator() {
         // Wait for screen to load - production shows "Ready" for IDLE state
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithText("Ready")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -123,8 +121,7 @@ class SessionScreenTest {
         navigateToSettings()
 
         // Wait for Settings screen to load using testTag (more reliable)
-        // Use longer timeout for initial screen load
-        composeTestRule.waitUntil(15_000L) {
+        composeTestRule.waitUntil(CiTestConfig.LONG_TIMEOUT) {
             composeTestRule.onAllNodesWithTag("settings_providers_header")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -133,7 +130,7 @@ class SessionScreenTest {
         navigateToSession()
 
         // Verify Session screen is displayed - use content description for button
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithContentDescription("Start session")
                 .fetchSemanticsNodes().isNotEmpty()
         }

@@ -9,6 +9,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.unamentis.CiTestConfig
 import com.unamentis.MainActivity
 import com.unamentis.R
 import com.unamentis.SkipOnboardingRule
@@ -37,10 +38,6 @@ class CurriculumScreenTest {
     @get:Rule(order = 2)
     val composeTestRule = createAndroidComposeRule<MainActivity>()
 
-    companion object {
-        private const val DEFAULT_TIMEOUT = 10_000L
-    }
-
     @Before
     fun setup() {
         hiltRule.inject()
@@ -50,11 +47,12 @@ class CurriculumScreenTest {
      * Navigate to Curriculum tab using testTag.
      */
     private fun navigateToCurriculum() {
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithTag("nav_curriculum")
                 .fetchSemanticsNodes().isNotEmpty()
         }
         composeTestRule.onNodeWithTag("nav_curriculum").performClick()
+        composeTestRule.waitForIdle()
     }
 
     @Test
@@ -65,7 +63,7 @@ class CurriculumScreenTest {
             composeTestRule.activity.getString(R.string.curriculum_server)
 
         // Verify the screen is displayed
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithText(serverCurriculumText)
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -84,7 +82,7 @@ class CurriculumScreenTest {
             composeTestRule.activity.getString(R.string.curriculum_server)
 
         // Wait for screen to load
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithText(serverCurriculumText)
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -101,7 +99,7 @@ class CurriculumScreenTest {
             composeTestRule.activity.getString(R.string.curriculum_downloaded)
 
         // Wait for screen to load
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithText(downloadedText)
                 .fetchSemanticsNodes().isNotEmpty()
         }

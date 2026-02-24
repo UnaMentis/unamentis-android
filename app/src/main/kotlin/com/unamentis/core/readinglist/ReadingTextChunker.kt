@@ -218,7 +218,7 @@ object ReadingTextChunker {
         if (currentSentences.isNotEmpty()) {
             if (chunks.isNotEmpty() && currentWordCount < config.minWords) {
                 // Merge with previous chunk if too small
-                val lastChunk = chunks.removeLast()
+                val lastChunk = chunks.removeAt(chunks.lastIndex)
                 val mergedSentences = mutableListOf<Pair<Int, Int>>()
                 // Reconstruct previous sentences by using the offset range
                 mergedSentences.addAll(currentSentences)
