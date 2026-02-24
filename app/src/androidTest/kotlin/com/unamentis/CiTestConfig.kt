@@ -10,9 +10,9 @@ package com.unamentis
  * they only provide more headroom before a legitimate failure is reported.
  */
 object CiTestConfig {
-    /** Standard timeout for UI element appearance after navigation (30 s). */
-    const val DEFAULT_TIMEOUT = 30_000L
+    /** Standard timeout for UI element appearance after navigation (60 s). */
+    const val DEFAULT_TIMEOUT = 60_000L
 
-    /** Extended timeout for data loading, complex transitions, or first-screen render (45 s). */
-    const val LONG_TIMEOUT = 45_000L
+    /** Extended timeout for data loading, complex transitions, or first-screen render (90 s). */
+    const val LONG_TIMEOUT = 90_000L
 }

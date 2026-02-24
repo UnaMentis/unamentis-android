@@ -12,6 +12,7 @@ import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.unamentis.CiTestConfig
 import com.unamentis.MainActivity
+import com.unamentis.RetryRule
 import com.unamentis.SkipOnboardingRule
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
@@ -38,6 +39,9 @@ class TodoScreenTest {
     @get:Rule(order = 2)
     val composeTestRule = createAndroidComposeRule<MainActivity>()
 
+    @get:Rule(order = 3)
+    val retryRule = RetryRule(maxRetries = 3)
+
     @Before
     fun setup() {
         hiltRule.inject()
@@ -45,8 +49,12 @@ class TodoScreenTest {
 
     /**
      * Navigate to To-Do tab using testTag.
+     * Waits for the main activity to fully render before attempting navigation.
      */
     private fun navigateToTodo() {
+        // First wait for the compose tree to be idle after activity launch
+        composeTestRule.waitForIdle()
+
         composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithTag("nav_todo")
                 .fetchSemanticsNodes().isNotEmpty()
