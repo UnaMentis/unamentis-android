@@ -195,14 +195,7 @@ jobs:
           adb shell input keyevent 82
           adb shell wm dismiss-keyguard || true
 
-          # Set locale via Activity Manager (no runtime restart needed)
-          # This is safe on all API levels and does not require root/setprop
-          adb shell am broadcast \
-            -a com.android.intent.action.SET_LOCALE \
-            --es com.android.intent.extra.LOCALE "en_US" \
-            com.android.providers.settings 2>/dev/null || true
-
-          # Fallback: try setprop if available, but never stop/start the runtime
+          # Set locale via system property (safe on all API levels, no restart needed)
           adb shell "setprop persist.sys.locale en-US" 2>/dev/null || true
 
           # Explicitly disable all animations via settings (belt and suspenders)
