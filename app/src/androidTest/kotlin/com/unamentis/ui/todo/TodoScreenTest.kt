@@ -67,9 +67,11 @@ class TodoScreenTest {
     fun todoScreen_navigateToTodoTab_displaysScreen() {
         navigateToTodo()
 
-        // Verify the screen is displayed
+        // Verify the screen is displayed by checking for screen-specific content.
+        // The tab's content description is "Assistant tab" (from R.string.tab_todo = "Assistant"),
+        // so we check for an element unique to the TodoScreen instead.
         composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
-            composeTestRule.onAllNodesWithContentDescription("To-Do tab")
+            composeTestRule.onAllNodesWithContentDescription("Add todo")
                 .fetchSemanticsNodes().isNotEmpty()
         }
     }
