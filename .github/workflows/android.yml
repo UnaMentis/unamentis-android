@@ -211,9 +211,7 @@ jobs:
           echo "--- Running tests ---"
 
           # Run instrumented tests with retry on infrastructure failures
-          ./gradlew connectedAndroidTest \
-            --console=plain \
-            -Pandroid.testInstrumentationRunnerArguments.timeout_msec=120000
+          ./gradlew connectedAndroidTest --console=plain -Pandroid.testInstrumentationRunnerArguments.timeout_msec=120000
 
     - name: Upload Instrumented Test Results
       uses: actions/upload-artifact@v4
