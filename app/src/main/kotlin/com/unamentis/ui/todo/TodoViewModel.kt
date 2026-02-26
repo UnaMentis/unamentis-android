@@ -67,10 +67,10 @@ class TodoViewModel
             ) { filter, todos ->
                 val now = System.currentTimeMillis()
                 when (filter) {
-                    TodoFilter.ACTIVE -> todos.filter { it.status == TodoStatus.ACTIVE }
+                    TodoFilter.ACTIVE -> todos.filter { it.status.isActive }
                     TodoFilter.COMPLETED -> todos.filter { it.status == TodoStatus.COMPLETED }
                     TodoFilter.ARCHIVED -> todos.filter { it.status == TodoStatus.ARCHIVED }
-                    TodoFilter.AI_SUGGESTED -> todos.filter { it.isAISuggested && it.status == TodoStatus.ACTIVE }
+                    TodoFilter.AI_SUGGESTED -> todos.filter { it.isAISuggested && it.status.isActive }
                 }.sortedWith(
                     // Overdue items first
                     compareBy<Todo> { todo ->
@@ -98,7 +98,7 @@ class TodoViewModel
          */
         private val aiSuggestedCount: Flow<Int> =
             allTodos.map { todos ->
-                todos.count { it.isAISuggested && it.status == TodoStatus.ACTIVE }
+                todos.count { it.isAISuggested && it.status.isActive }
             }
 
         /**
@@ -108,7 +108,7 @@ class TodoViewModel
             allTodos.map { todos ->
                 val now = System.currentTimeMillis()
                 todos.count {
-                    it.status == TodoStatus.ACTIVE &&
+                    it.status.isActive &&
                         it.dueDate != null &&
                         it.dueDate < now
                 }

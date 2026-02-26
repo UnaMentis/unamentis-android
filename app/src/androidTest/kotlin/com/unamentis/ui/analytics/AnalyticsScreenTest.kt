@@ -10,6 +10,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.unamentis.CiTestConfig
 import com.unamentis.MainActivity
 import com.unamentis.SkipOnboardingRule
 import dagger.hilt.android.testing.HiltAndroidRule
@@ -39,10 +40,6 @@ class AnalyticsScreenTest {
     @get:Rule(order = 2)
     val composeTestRule = createAndroidComposeRule<MainActivity>()
 
-    companion object {
-        private const val DEFAULT_TIMEOUT = 15_000L
-    }
-
     @Before
     fun setup() {
         hiltRule.inject()
@@ -53,7 +50,7 @@ class AnalyticsScreenTest {
      */
     private fun navigateToAnalytics() {
         // Wait for Analytics tab to be visible
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithTag("nav_analytics")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -69,7 +66,7 @@ class AnalyticsScreenTest {
         navigateToAnalytics()
 
         // Verify the screen title is displayed
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithText("Analytics")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -80,7 +77,7 @@ class AnalyticsScreenTest {
         navigateToAnalytics()
 
         // Wait for screen to load
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithText("Time Range")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -94,7 +91,7 @@ class AnalyticsScreenTest {
         navigateToAnalytics()
 
         // Wait for screen to load
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithText("Overview")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -108,7 +105,7 @@ class AnalyticsScreenTest {
         navigateToAnalytics()
 
         // Wait for screen to load
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithText("Latency Breakdown")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -122,7 +119,7 @@ class AnalyticsScreenTest {
         navigateToAnalytics()
 
         // Wait for LazyColumn to be available
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithTag("AnalyticsLazyColumn")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -140,7 +137,7 @@ class AnalyticsScreenTest {
         navigateToAnalytics()
 
         // Wait for LazyColumn to be available
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithTag("AnalyticsLazyColumn")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -158,16 +155,20 @@ class AnalyticsScreenTest {
         navigateToAnalytics()
 
         // Wait for screen to load
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithText("7 Days")
                 .fetchSemanticsNodes().isNotEmpty()
         }
 
         // Click on different time range options
         composeTestRule.onNodeWithText("7 Days").performClick()
+        composeTestRule.waitForIdle()
         composeTestRule.onNodeWithText("30 Days").performClick()
+        composeTestRule.waitForIdle()
         composeTestRule.onNodeWithText("90 Days").performClick()
+        composeTestRule.waitForIdle()
         composeTestRule.onNodeWithText("All Time").performClick()
+        composeTestRule.waitForIdle()
 
         // No assertion failure means success
     }

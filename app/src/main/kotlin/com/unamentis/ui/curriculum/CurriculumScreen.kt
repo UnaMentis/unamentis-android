@@ -145,19 +145,34 @@ fun CurriculumScreen(
                     selected = uiState.selectedTab == CurriculumTab.SERVER,
                     onClick = { viewModel.selectTab(CurriculumTab.SERVER) },
                     text = { Text(stringResource(R.string.curriculum_server)) },
-                    icon = { Icon(Icons.Default.Cloud, contentDescription = null) },
+                    icon = {
+                        Icon(
+                            Icons.Default.Cloud,
+                            contentDescription = stringResource(R.string.cd_server_tab),
+                        )
+                    },
                 )
                 Tab(
                     selected = uiState.selectedTab == CurriculumTab.LOCAL,
                     onClick = { viewModel.selectTab(CurriculumTab.LOCAL) },
                     text = { Text(stringResource(R.string.curriculum_downloaded)) },
-                    icon = { Icon(Icons.Default.Storage, contentDescription = null) },
+                    icon = {
+                        Icon(
+                            Icons.Default.Storage,
+                            contentDescription = stringResource(R.string.cd_local_tab),
+                        )
+                    },
                 )
                 Tab(
                     selected = uiState.selectedTab == CurriculumTab.MODULES,
                     onClick = { viewModel.selectTab(CurriculumTab.MODULES) },
                     text = { Text(stringResource(R.string.curriculum_modules)) },
-                    icon = { Icon(Icons.Default.Apps, contentDescription = null) },
+                    icon = {
+                        Icon(
+                            Icons.Default.Apps,
+                            contentDescription = stringResource(R.string.cd_modules_tab),
+                        )
+                    },
                 )
             }
 

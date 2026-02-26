@@ -252,36 +252,54 @@ Do NOT commit if this command fails. Fix the issues first.
 ```
 app/
 ├── src/main/kotlin/com/unamentis/
-│   ├── core/           # Business logic
-│   │   ├── audio/      # AudioEngine, VAD
-│   │   ├── session/    # SessionManager
-│   │   ├── curriculum/ # CurriculumEngine
-│   │   ├── routing/    # PatchPanel LLM routing
-│   │   ├── telemetry/  # Metrics, costs
-│   │   └── config/     # API keys, server config
-│   ├── services/       # External integrations
-│   │   ├── stt/        # Speech-to-text providers
-│   │   ├── tts/        # Text-to-speech providers
-│   │   ├── llm/        # Language model providers
-│   │   └── vad/        # Voice activity detection
-│   ├── data/           # Persistence layer
-│   │   ├── local/      # Room database
-│   │   ├── remote/     # API clients
-│   │   └── repository/ # Data repositories
-│   ├── ui/             # Jetpack Compose UI
-│   │   ├── session/    # Main voice session
-│   │   ├── curriculum/ # Content browser
-│   │   ├── settings/   # Configuration
-│   │   └── theme/      # Material 3 theming
-│   └── di/             # Hilt dependency injection
-├── src/main/cpp/       # Native code (Oboe, llama.cpp)
+│   ├── core/               # Business logic
+│   │   ├── audio/          # AudioEngine, VAD
+│   │   ├── session/        # SessionManager, MetricsUpload
+│   │   ├── curriculum/     # CurriculumEngine
+│   │   ├── routing/        # PatchPanel LLM routing
+│   │   ├── telemetry/      # MetricsExporter, TTFAInstrumentation
+│   │   ├── config/         # API keys, ServerConfig, ProviderConfig
+│   │   ├── todo/           # TodoManager, AutoResume, CurriculumSuggestions
+│   │   ├── readinglist/    # ReadingListManager, HTMLExtractor, TextChunker
+│   │   ├── fov/            # ReadingFOVContextManager
+│   │   ├── discovery/      # DeviceDiscoveryManager, NSD, SubnetScan
+│   │   └── tools/handlers/ # TodoToolHandler, WebSearchToolHandler
+│   ├── modules/
+│   │   └── knowledgebowl/  # Full KB module (core, data, ui)
+│   ├── services/           # External integrations
+│   │   ├── stt/            # Deepgram, Android, GLM-ASR, Self-hosted
+│   │   ├── tts/            # ElevenLabs, Android, Kyutai Pocket, Self-hosted
+│   │   ├── llm/            # OpenAI, Anthropic, Ollama, llama.cpp, ExecuTorch, MediaPipe
+│   │   ├── vad/            # Silero TFLite, Silero ONNX, Simple RMS
+│   │   ├── embeddings/     # OpenAI Embedding Service
+│   │   ├── readingplayback/# ReadingPlaybackService
+│   │   ├── voice/          # VoiceCommandRecognizer, VoiceActivityFeedback
+│   │   ├── websearch/      # BraveSearchService
+│   │   └── curriculum/     # DownloadManager, TranscriptStreaming, VisualAssetCache
+│   ├── data/               # Persistence layer
+│   │   ├── local/          # Room database, DAOs, entities
+│   │   ├── remote/         # ApiClient, WebSocket, AudioWebSocket
+│   │   ├── repository/     # Curriculum, ReadingList, Session repositories
+│   │   └── model/          # UMCFModels, UMCFParser, Todo, ReadingList models
+│   ├── ui/                 # Jetpack Compose UI
+│   │   ├── session/        # Main voice session
+│   │   ├── curriculum/     # Content browser, ModulesSection
+│   │   ├── learning/       # LearningScreen, ModulesScreen
+│   │   ├── assistant/      # AssistantScreen (Todo + Reading tabs)
+│   │   ├── readinglist/    # ReadingList, Playback, Reader, URLImport
+│   │   ├── settings/       # Settings, Server, Chatterbox, About, Debug, QR
+│   │   ├── components/     # FormulaRenderer, AssetCarousel, OfflineBanner
+│   │   └── theme/          # Material 3 theming
+│   └── di/                 # Hilt DI modules
+├── src/main/cpp/           # Native code (Oboe, llama.cpp, GLM-ASR)
 ├── src/test/kotlin/com/unamentis/
-│   ├── core/           # Unit tests for core logic
-│   ├── data/           # Data layer tests
-│   ├── services/       # Service tests
-│   └── helpers/        # Test utilities (MockServices, TestDataFactory)
+│   ├── core/               # Unit tests (session, todo, discovery, reading, etc.)
+│   ├── data/               # Data layer tests
+│   ├── services/           # Service tests (STT, TTS, embeddings, voice, etc.)
+│   ├── modules/knowledgebowl/ # KB module tests
+│   └── helpers/            # Test utilities (MockServices, TestDataFactory)
 └── src/androidTest/kotlin/com/unamentis/
-    ├── ui/             # Compose UI tests
-    ├── data/local/     # Room database tests
-    └── benchmark/      # Performance benchmarks
+    ├── ui/                 # Compose UI tests
+    ├── data/local/         # Room database tests
+    └── benchmark/          # Performance benchmarks
 ```

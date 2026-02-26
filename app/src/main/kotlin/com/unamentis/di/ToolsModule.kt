@@ -1,14 +1,21 @@
 package com.unamentis.di
 
+import com.unamentis.core.config.ProviderConfig
 import com.unamentis.core.tools.ToolHandler
 import com.unamentis.core.tools.handlers.ContextExpansionToolHandler
 import com.unamentis.core.tools.handlers.MarkForReviewToolHandler
 import com.unamentis.core.tools.handlers.TodoToolHandler
+import com.unamentis.core.tools.handlers.WebSearchToolHandler
+import com.unamentis.services.websearch.BraveSearchService
+import com.unamentis.services.websearch.WebSearchProvider
 import dagger.Binds
 import dagger.Module
+import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import dagger.multibindings.IntoSet
+import okhttp3.OkHttpClient
+import javax.inject.Singleton
 
 /**
  * Hilt module for LLM tool system dependencies.
@@ -44,4 +51,33 @@ abstract class ToolsModule {
     @Binds
     @IntoSet
     abstract fun bindContextExpansionToolHandler(handler: ContextExpansionToolHandler): ToolHandler
+
+    /**
+     * Binds the web_search tool handler.
+     */
+    @Binds
+    @IntoSet
+    abstract fun bindWebSearchToolHandler(handler: WebSearchToolHandler): ToolHandler
+
+    companion object {
+        /**
+         * Provides the web search provider (Brave Search).
+         *
+         * Uses the Brave Search API key from ProviderConfig.
+         * The service gracefully handles missing API keys by
+         * throwing [WebSearchException.ApiKeyMissing] at search time.
+         */
+        @Provides
+        @Singleton
+        fun provideWebSearchProvider(
+            config: ProviderConfig,
+            client: OkHttpClient,
+        ): WebSearchProvider {
+            val apiKey = config.getBraveSearchApiKey() ?: ""
+            return BraveSearchService(
+                apiKey = apiKey,
+                client = client,
+            )
+        }
+    }
 }

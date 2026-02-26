@@ -10,6 +10,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.unamentis.CiTestConfig
 import com.unamentis.MainActivity
 import com.unamentis.SkipOnboardingRule
 import dagger.hilt.android.testing.HiltAndroidRule
@@ -39,10 +40,6 @@ class SettingsScreenTest {
     @get:Rule(order = 2)
     val composeTestRule = createAndroidComposeRule<MainActivity>()
 
-    companion object {
-        private const val DEFAULT_TIMEOUT = 15_000L
-    }
-
     @Before
     fun setup() {
         hiltRule.inject()
@@ -53,7 +50,7 @@ class SettingsScreenTest {
      */
     private fun navigateToSettings() {
         // Wait for Settings tab to be visible
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithTag("nav_settings")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -69,7 +66,7 @@ class SettingsScreenTest {
         navigateToSettings()
 
         // Verify the screen content is displayed - actual header is "Providers"
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithTag("settings_providers_header")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -82,7 +79,7 @@ class SettingsScreenTest {
         navigateToSettings()
 
         // Wait for screen to load - actual header is "Providers"
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithTag("settings_providers_header")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -96,7 +93,7 @@ class SettingsScreenTest {
         navigateToSettings()
 
         // Wait for screen to load
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithTag("SettingsLazyColumn")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -115,7 +112,7 @@ class SettingsScreenTest {
         navigateToSettings()
 
         // Wait for screen to load
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithTag("SettingsLazyColumn")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -132,7 +129,7 @@ class SettingsScreenTest {
         navigateToSettings()
 
         // Wait for LazyColumn to be available
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithTag("SettingsLazyColumn")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -150,7 +147,7 @@ class SettingsScreenTest {
         navigateToSettings()
 
         // Wait for LazyColumn to be available
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithTag("SettingsLazyColumn")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -168,7 +165,7 @@ class SettingsScreenTest {
         navigateToSettings()
 
         // Wait for LazyColumn to be available
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithTag("SettingsLazyColumn")
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -187,7 +184,7 @@ class SettingsScreenTest {
         navigateToSettings()
 
         // Wait for LazyColumn to be available
-        composeTestRule.waitUntil(DEFAULT_TIMEOUT) {
+        composeTestRule.waitUntil(CiTestConfig.DEFAULT_TIMEOUT) {
             composeTestRule.onAllNodesWithTag("SettingsLazyColumn")
                 .fetchSemanticsNodes().isNotEmpty()
         }

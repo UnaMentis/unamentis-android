@@ -26,27 +26,38 @@ Only use simple test doubles when necessary:
 
 ```
 app/src/
-├── test/kotlin/com/unamentis/          # Unit tests (JVM) - 100+ tests
+├── test/kotlin/com/unamentis/          # Unit tests (JVM) - 81 files, 1700+ @Test methods
 │   ├── core/
-│   │   ├── audio/AudioEngineTest.kt    # Audio capture, VAD
-│   │   ├── session/SessionManagerTest.kt
-│   │   ├── curriculum/CurriculumEngineTest.kt
-│   │   └── device/DeviceCapabilityDetectorTest.kt
+│   │   ├── audio/                      # Audio capture, VAD
+│   │   ├── session/                    # SessionManager, MetricsUpload tests
+│   │   ├── discovery/                  # Server discovery tests (6 files)
+│   │   ├── fov/                        # ReadingFOVContextManager tests
+│   │   ├── readinglist/                # ReadingListManager, TextChunker, MarkdownStripper tests
+│   │   ├── todo/                       # TodoManager, AutoResume, CurriculumSuggestion tests
+│   │   └── device/                     # DeviceCapabilityDetector tests
 │   ├── data/
-│   │   ├── model/                      # Data model tests
-│   │   ├── remote/                     # API client tests
-│   │   │   └── CertificatePinningTest.kt  # Certificate validation
-│   │   └── local/                      # Database tests
+│   │   ├── model/                      # Data model tests (ReadingList, UMCF)
+│   │   ├── remote/                     # API client, certificate pinning tests
+│   │   └── repository/                 # ReadingListRepository tests
 │   ├── services/
-│   │   ├── llm/PatchPanelServiceTest.kt
-│   │   ├── stt/STTProviderRouterTest.kt
-│   │   └── tts/TTSProviderRouterTest.kt
+│   │   ├── curriculum/                 # DownloadManager, TranscriptStreaming, VisualAssetCache tests
+│   │   ├── embeddings/                 # OpenAI Embedding Service tests
+│   │   ├── readingplayback/            # PlaybackService, AudioPreGenerator tests
+│   │   ├── stt/                        # GLM-ASR ONNX, On-device STT tests
+│   │   ├── voice/                      # VoiceCommandRecognizer, VoiceActivityFeedback tests
+│   │   └── websearch/                  # BraveSearchService tests
+│   ├── modules/knowledgebowl/
+│   │   ├── core/engine/                # KBSessionManager, KBTransformer tests
+│   │   ├── core/stats/                 # KBAnalyticsService, KBSessionStore tests
+│   │   ├── data/local/                 # KBLocalPackStore tests
+│   │   └── data/model/                 # KBDomainMix, KBPack, KBSynonym, KBValidation tests
+│   ├── ui/components/                  # FormulaRenderer tests
 │   └── helpers/                        # Test utilities
 │       ├── MockServices.kt             # Faithful mocks for paid APIs
 │       └── TestDataFactory.kt          # Test data creation
 │
-├── androidTest/kotlin/com/unamentis/   # Instrumented tests - 172+ tests
-│   ├── ui/                             # Compose UI tests (142 tests)
+├── androidTest/kotlin/com/unamentis/   # Instrumented tests - 11 files, 76+ tests
+│   ├── ui/                             # Compose UI tests
 │   │   ├── session/SessionScreenTest.kt
 │   │   ├── curriculum/CurriculumScreenTest.kt
 │   │   ├── settings/SettingsScreenTest.kt
@@ -56,10 +67,10 @@ app/src/
 │   ├── data/
 │   │   ├── local/AppDatabaseTest.kt    # Room database tests
 │   │   └── remote/CertificatePinningIntegrationTest.kt
-│   ├── benchmark/                      # Performance benchmarks (14 tests)
+│   ├── benchmark/                      # Performance benchmarks
 │   │   ├── SessionBenchmarkTest.kt
 │   │   └── MemoryProfilingTest.kt
-│   └── NavigationFlowTest.kt           # Navigation tests (18 tests)
+│   └── NavigationFlowTest.kt           # Navigation tests
 ```
 
 ### Test Categories
@@ -706,12 +717,13 @@ open app/build/reports/tests/testDebugUnitTest/index.html
 
 | Category | Target | Current |
 |----------|--------|---------|
-| Unit Tests | >80% line coverage | 100+ tests |
-| Integration Tests | Critical paths covered | 29+ tests |
-| UI Tests | All screens, key flows | 142 tests (all 6 screens) |
-| Navigation Tests | Tab switching, deep links | 18 tests |
-| Benchmark Tests | Performance baselines | 14 tests |
-| **Total** | **272+ tests** | ✅ Exceeds target |
+| Unit Tests | >80% line coverage | 1700+ @Test methods across 81 files |
+| Instrumented Tests | Critical paths covered | 76+ tests across 11 files |
+| UI Tests | All screens, key flows | All primary screens covered |
+| Knowledge Bowl Tests | All modes and validation | Engine, transformer, analytics, packs, synonyms, validation |
+| Reading List Tests | Import, chunk, playback | Manager, repository, chunker, playback tests |
+| Discovery Tests | All tiers | NSD, subnet scan, caching, integration |
+| **Total** | **1780+ @Test methods** | ✅ Exceeds target |
 
 ---
 

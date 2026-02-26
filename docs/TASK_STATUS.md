@@ -32,6 +32,8 @@ This document is the single source of truth for what's being worked on. **All AI
 
 | Task | Agent | Completed | Notes |
 |------|-------|-----------|-------|
+| Full iOS feature parity (all 36 chunks) | Claude Code | 2026-02-23 | KB module, Reading List, Todo, Discovery, new providers, navigation transitions, accessibility. 1780+ tests, health check passing. |
+| Documentation update for parity branch | Claude Code | 2026-02-23 | Updated PORT_SPEC, CLIENT_FEATURE_LIST, AGENTS, ARCHITECTURE, TESTING, TASK_STATUS |
 | Documentation update | Claude Code | 2026-01-19 | Updated all docs with Phase 7, test counts, placeholder URLs |
 | Quality infrastructure setup | Claude Code | 2026-01-15 | Added CI/CD, testing guides, style guides, AGENTS.md, test helpers |
 

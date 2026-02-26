@@ -22,6 +22,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Computer
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
@@ -83,6 +84,7 @@ import com.unamentis.ui.theme.iOSRed
 @Composable
 fun ServerSettingsScreen(
     onNavigateBack: () -> Unit,
+    onNavigateToQRScanner: () -> Unit = {},
     viewModel: ServerSettingsViewModel = hiltViewModel(),
 ) {
     val servers by viewModel.servers.collectAsStateWithLifecycle()
@@ -217,6 +219,7 @@ fun ServerSettingsScreen(
                     isDiscovering = isDiscovering,
                     onDiscover = { viewModel.discoverServers() },
                     onAddDefault = { viewModel.addDefaultServer() },
+                    onScanQR = onNavigateToQRScanner,
                 )
             }
 
@@ -450,11 +453,40 @@ private fun QuickSetupSection(
     isDiscovering: Boolean,
     onDiscover: () -> Unit,
     onAddDefault: () -> Unit,
+    onScanQR: () -> Unit,
 ) {
     IOSCard(modifier = Modifier.fillMaxWidth()) {
         Column(
             verticalArrangement = Arrangement.spacedBy(Dimensions.SpacingMedium),
         ) {
+            // Scan QR code button
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(Dimensions.SpacingSmall),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        Icons.Default.QrCodeScanner,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                    Text(
+                        text = stringResource(R.string.qr_scanner_scan_qr),
+                        style = IOSTypography.body,
+                    )
+                }
+
+                TextButton(onClick = onScanQR) {
+                    Text(stringResource(R.string.server_settings_scan))
+                }
+            }
+
+            HorizontalDivider()
+
             // Discover servers button
             Row(
                 modifier = Modifier.fillMaxWidth(),

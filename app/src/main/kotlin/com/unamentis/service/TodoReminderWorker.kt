@@ -12,7 +12,6 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.unamentis.data.local.AppDatabase
-import com.unamentis.data.model.TodoStatus
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.util.concurrent.TimeUnit
@@ -54,7 +53,7 @@ class TodoReminderWorker
             var overdueCount = 0
             for (todo in activeTodos) {
                 val dueDate = todo.dueDate ?: continue
-                if (todo.status != TodoStatus.ACTIVE) continue
+                if (!todo.status.isActive) continue
 
                 val timeUntilDue = dueDate - now
                 if (timeUntilDue < 0) overdueCount++

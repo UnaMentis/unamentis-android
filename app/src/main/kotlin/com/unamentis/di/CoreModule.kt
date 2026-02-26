@@ -3,6 +3,7 @@ package com.unamentis.di
 import android.content.Context
 import com.unamentis.core.audio.AudioEngine
 import com.unamentis.core.curriculum.CurriculumEngine
+import com.unamentis.core.readinglist.ReadingListManager
 import com.unamentis.core.session.SessionDependencies
 import com.unamentis.core.session.SessionManager
 import com.unamentis.data.model.LLMService
@@ -11,6 +12,8 @@ import com.unamentis.data.model.TTSService
 import com.unamentis.data.model.VADService
 import com.unamentis.data.repository.CurriculumRepository
 import com.unamentis.data.repository.TopicProgressRepository
+import com.unamentis.services.readingplayback.ReadingAudioPreGenerator
+import com.unamentis.services.readingplayback.ReadingPlaybackService
 import com.unamentis.services.vad.SimpleVADService
 import dagger.Module
 import dagger.Provides
@@ -104,6 +107,33 @@ object CoreModule {
     @Singleton
     fun provideApplicationScope(): CoroutineScope {
         return CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    }
+
+    /**
+     * Provides the ReadingAudioPreGenerator for background TTS pre-generation.
+     */
+    @Provides
+    @Singleton
+    fun provideReadingAudioPreGenerator(
+        ttsService: TTSService,
+        readingListManager: ReadingListManager,
+        scope: CoroutineScope,
+    ): ReadingAudioPreGenerator {
+        return ReadingAudioPreGenerator(ttsService, readingListManager, scope)
+    }
+
+    /**
+     * Provides the ReadingPlaybackService for reading list TTS playback.
+     */
+    @Provides
+    @Singleton
+    fun provideReadingPlaybackService(
+        ttsService: TTSService,
+        audioEngine: AudioEngine,
+        readingListManager: ReadingListManager,
+        scope: CoroutineScope,
+    ): ReadingPlaybackService {
+        return ReadingPlaybackService(ttsService, audioEngine, readingListManager, scope)
     }
 
     /**

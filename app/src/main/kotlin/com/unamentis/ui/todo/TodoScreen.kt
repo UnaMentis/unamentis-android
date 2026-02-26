@@ -475,7 +475,7 @@ private fun TodoCard(
     var showMenu by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
     val now = System.currentTimeMillis()
-    val isOverdue = todo.dueDate != null && todo.dueDate < now && todo.status == TodoStatus.ACTIVE
+    val isOverdue = todo.dueDate != null && todo.dueDate < now && todo.status.isActive
 
     Card(
         modifier =

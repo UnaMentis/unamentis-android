@@ -27,6 +27,7 @@ object DeepLinkRoutes {
     const val HISTORY = "history"
     const val ANALYTICS = "analytics"
     const val SETTINGS = "settings"
+    const val READING_LIST = "reading_list"
 
     // Query parameter keys
     const val PARAM_CURRICULUM_ID = "curriculum_id"
@@ -43,6 +44,7 @@ object DeepLinkRoutes {
     const val ROUTE_HISTORY_DETAIL = "history/{id}"
     const val ROUTE_ANALYTICS = "analytics"
     const val ROUTE_SETTINGS = "settings?section={section}"
+    const val ROUTE_READING_LIST = "reading_list"
 
     // Deep link URI patterns
     const val URI_SESSION = "$SCHEME://session"
@@ -54,6 +56,7 @@ object DeepLinkRoutes {
     const val URI_HISTORY_DETAIL = "$SCHEME://history/{id}"
     const val URI_ANALYTICS = "$SCHEME://analytics"
     const val URI_SETTINGS = "$SCHEME://settings"
+    const val URI_READING_LIST = "$SCHEME://reading_list"
 }
 
 /**
@@ -81,6 +84,8 @@ sealed class DeepLinkDestination {
 
     data class Settings(val section: String? = null) : DeepLinkDestination()
 
+    data object ReadingList : DeepLinkDestination()
+
     data object Unknown : DeepLinkDestination()
 
     /**
@@ -97,6 +102,7 @@ sealed class DeepLinkDestination {
             is HistoryDetail -> "history/$id"
             is Analytics -> DeepLinkRoutes.ROUTE_ANALYTICS
             is Settings -> buildSettingsRoute(section)
+            is ReadingList -> DeepLinkRoutes.ROUTE_READING_LIST
             is Unknown -> DeepLinkRoutes.ROUTE_SESSION
         }
 

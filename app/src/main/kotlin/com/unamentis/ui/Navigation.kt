@@ -2,7 +2,12 @@ package com.unamentis.ui
 
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,10 +15,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.Book
-import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -49,17 +54,23 @@ import com.unamentis.data.local.OnboardingPreferences
 import com.unamentis.navigation.DeepLinkDestination
 import com.unamentis.navigation.DeepLinkRoutes
 import com.unamentis.ui.analytics.AnalyticsScreen
+import com.unamentis.ui.assistant.AssistantScreen
 import com.unamentis.ui.components.OfflineBanner
 import com.unamentis.ui.curriculum.CurriculumScreen
 import com.unamentis.ui.history.HistoryScreen
+import com.unamentis.ui.learning.LearningScreen
 import com.unamentis.ui.onboarding.OnboardingScreen
+import com.unamentis.ui.readinglist.ReadingListScreen
+import com.unamentis.ui.readinglist.ReadingPlaybackScreen
+import com.unamentis.ui.readinglist.ReadingReaderScreen
 import com.unamentis.ui.session.SessionActivityState
 import com.unamentis.ui.session.SessionScreen
 import com.unamentis.ui.settings.AboutScreen
+import com.unamentis.ui.settings.ChatterboxSettingsScreen
 import com.unamentis.ui.settings.DebugScreen
+import com.unamentis.ui.settings.QRCodeScannerScreen
 import com.unamentis.ui.settings.ServerSettingsScreen
 import com.unamentis.ui.settings.SettingsScreen
-import com.unamentis.ui.todo.TodoScreen
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -80,7 +91,7 @@ sealed class Screen(
 
     data object Curriculum : Screen("curriculum", R.string.tab_curriculum, Icons.Default.Book)
 
-    data object Todo : Screen("todo", R.string.tab_todo, Icons.Default.Checklist)
+    data object Todo : Screen("todo", R.string.tab_todo, Icons.Outlined.AutoAwesome)
 
     data object History : Screen("history", R.string.tab_history, Icons.Default.History)
 
@@ -106,6 +117,11 @@ object Routes {
     const val SERVER_SETTINGS = "settings/servers"
     const val ABOUT = "settings/about"
     const val DEBUG = "settings/debug"
+    const val CHATTERBOX_SETTINGS = "settings/chatterbox"
+    const val QR_CODE_SCANNER = "settings/qr_scanner"
+    const val READING_LIST = "reading_list"
+    const val READING_READER = "reading_list/reader/{itemId}"
+    const val READING_PLAYBACK = "reading_list/playback/{itemId}"
 }
 
 /**
@@ -232,6 +248,18 @@ fun UnaMentisNavHost(
                     navController = navController,
                     startDestination = startDestination,
                     modifier = Modifier.weight(1f),
+                    enterTransition = {
+                        fadeIn(animationSpec = tween(300))
+                    },
+                    exitTransition = {
+                        fadeOut(animationSpec = tween(300))
+                    },
+                    popEnterTransition = {
+                        fadeIn(animationSpec = tween(300))
+                    },
+                    popExitTransition = {
+                        fadeOut(animationSpec = tween(300))
+                    },
                 ) {
                     // Onboarding (shown on first launch)
                     composable(route = Routes.ONBOARDING) {
@@ -290,7 +318,7 @@ fun UnaMentisNavHost(
                         )
                     }
 
-                    // Curriculum tab with deep link support
+                    // Learning tab (Curriculum + Modules) with deep link support
                     composable(
                         route = Routes.CURRICULUM,
                         deepLinks =
@@ -298,7 +326,7 @@ fun UnaMentisNavHost(
                                 navDeepLink { uriPattern = DeepLinkRoutes.URI_CURRICULUM },
                             ),
                     ) {
-                        CurriculumScreen(
+                        LearningScreen(
                             onNavigateToSession = { curriculumId, topicId ->
                                 val route =
                                     "session/start?curriculum_id=$curriculumId" +
@@ -332,7 +360,7 @@ fun UnaMentisNavHost(
                         )
                     }
 
-                    // To-Do tab with deep link support
+                    // Assistant tab (To-Do + Reading) with deep link support
                     composable(
                         route = Routes.TODO,
                         deepLinks =
@@ -340,7 +368,14 @@ fun UnaMentisNavHost(
                                 navDeepLink { uriPattern = DeepLinkRoutes.URI_TODO },
                             ),
                     ) {
-                        TodoScreen()
+                        AssistantScreen(
+                            onNavigateToReader = { itemId ->
+                                navController.navigate("reading_list/reader/$itemId")
+                            },
+                            onNavigateToPlayback = { itemId ->
+                                navController.navigate("reading_list/playback/$itemId")
+                            },
+                        )
                     }
 
                     // History tab with deep link support
@@ -413,26 +448,193 @@ fun UnaMentisNavHost(
                             onNavigateToDebug = {
                                 navController.navigate(Routes.DEBUG)
                             },
+                            onNavigateToChatterboxSettings = {
+                                navController.navigate(Routes.CHATTERBOX_SETTINGS)
+                            },
                         )
                     }
 
                     // Server Settings (sub-screen of Settings)
-                    composable(route = Routes.SERVER_SETTINGS) {
+                    composable(
+                        route = Routes.SERVER_SETTINGS,
+                        enterTransition = {
+                            slideInHorizontally(
+                                initialOffsetX = { it },
+                                animationSpec = tween(300),
+                            )
+                        },
+                        popExitTransition = {
+                            slideOutHorizontally(
+                                targetOffsetX = { it },
+                                animationSpec = tween(300),
+                            )
+                        },
+                    ) {
                         ServerSettingsScreen(
                             onNavigateBack = { navController.popBackStack() },
+                            onNavigateToQRScanner = {
+                                navController.navigate(Routes.QR_CODE_SCANNER)
+                            },
+                        )
+                    }
+
+                    // QR Code Scanner (sub-screen of Server Settings)
+                    composable(
+                        route = Routes.QR_CODE_SCANNER,
+                        enterTransition = {
+                            slideInHorizontally(
+                                initialOffsetX = { it },
+                                animationSpec = tween(300),
+                            )
+                        },
+                        popExitTransition = {
+                            slideOutHorizontally(
+                                targetOffsetX = { it },
+                                animationSpec = tween(300),
+                            )
+                        },
+                    ) {
+                        QRCodeScannerScreen(
+                            onScanned = { _, _ ->
+                                navController.popBackStack()
+                            },
+                            onManualEntry = {
+                                navController.popBackStack()
+                            },
+                            onNavigateBack = {
+                                navController.popBackStack()
+                            },
                         )
                     }
 
                     // About (sub-screen of Settings)
-                    composable(route = Routes.ABOUT) {
+                    composable(
+                        route = Routes.ABOUT,
+                        enterTransition = {
+                            slideInHorizontally(
+                                initialOffsetX = { it },
+                                animationSpec = tween(300),
+                            )
+                        },
+                        popExitTransition = {
+                            slideOutHorizontally(
+                                targetOffsetX = { it },
+                                animationSpec = tween(300),
+                            )
+                        },
+                    ) {
                         AboutScreen(
                             onNavigateBack = { navController.popBackStack() },
                         )
                     }
 
                     // Debug Tools (sub-screen of Settings, debug builds only)
-                    composable(route = Routes.DEBUG) {
+                    composable(
+                        route = Routes.DEBUG,
+                        enterTransition = {
+                            slideInHorizontally(
+                                initialOffsetX = { it },
+                                animationSpec = tween(300),
+                            )
+                        },
+                        popExitTransition = {
+                            slideOutHorizontally(
+                                targetOffsetX = { it },
+                                animationSpec = tween(300),
+                            )
+                        },
+                    ) {
                         DebugScreen(
+                            onNavigateBack = { navController.popBackStack() },
+                        )
+                    }
+
+                    // Chatterbox TTS Settings (sub-screen of Settings)
+                    composable(
+                        route = Routes.CHATTERBOX_SETTINGS,
+                        enterTransition = {
+                            slideInHorizontally(
+                                initialOffsetX = { it },
+                                animationSpec = tween(300),
+                            )
+                        },
+                        popExitTransition = {
+                            slideOutHorizontally(
+                                targetOffsetX = { it },
+                                animationSpec = tween(300),
+                            )
+                        },
+                    ) {
+                        ChatterboxSettingsScreen(
+                            onNavigateBack = { navController.popBackStack() },
+                        )
+                    }
+
+                    // Reading List
+                    composable(route = Routes.READING_LIST) {
+                        ReadingListScreen(
+                            onNavigateToReader = { itemId ->
+                                navController.navigate("reading_list/reader/$itemId")
+                            },
+                            onNavigateToPlayback = { itemId ->
+                                navController.navigate("reading_list/playback/$itemId")
+                            },
+                        )
+                    }
+
+                    // Reading Reader (full text view)
+                    composable(
+                        route = Routes.READING_READER,
+                        arguments =
+                            listOf(
+                                navArgument("itemId") { type = NavType.StringType },
+                            ),
+                        enterTransition = {
+                            slideInHorizontally(
+                                initialOffsetX = { it },
+                                animationSpec = tween(300),
+                            )
+                        },
+                        popExitTransition = {
+                            slideOutHorizontally(
+                                targetOffsetX = { it },
+                                animationSpec = tween(300),
+                            )
+                        },
+                    ) { backStackEntry ->
+                        val itemId = backStackEntry.arguments?.getString("itemId") ?: ""
+                        ReadingReaderScreen(
+                            itemId = itemId,
+                            onNavigateBack = { navController.popBackStack() },
+                            onNavigateToPlayback = { id ->
+                                navController.navigate("reading_list/playback/$id")
+                            },
+                        )
+                    }
+
+                    // Reading Playback (audio-focused)
+                    composable(
+                        route = Routes.READING_PLAYBACK,
+                        arguments =
+                            listOf(
+                                navArgument("itemId") { type = NavType.StringType },
+                            ),
+                        enterTransition = {
+                            slideInHorizontally(
+                                initialOffsetX = { it },
+                                animationSpec = tween(300),
+                            )
+                        },
+                        popExitTransition = {
+                            slideOutHorizontally(
+                                targetOffsetX = { it },
+                                animationSpec = tween(300),
+                            )
+                        },
+                    ) { backStackEntry ->
+                        val itemId = backStackEntry.arguments?.getString("itemId") ?: ""
+                        ReadingPlaybackScreen(
+                            itemId = itemId,
                             onNavigateBack = { navController.popBackStack() },
                         )
                     }

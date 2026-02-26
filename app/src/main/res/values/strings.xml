@@ -5,7 +5,7 @@
     <!-- Tab Navigation -->
     <string name="tab_session">Session</string>
     <string name="tab_curriculum">Learning</string>
-    <string name="tab_todo">To-Do</string>
+    <string name="tab_todo">Assistant</string>
     <string name="tab_history">History</string>
     <string name="tab_analytics">Analytics</string>
     <string name="tab_settings">Settings</string>
@@ -40,6 +40,22 @@
     <string name="cd_stop_button">Stop session</string>
     <string name="cd_start_session">Start session</string>
     <string name="cd_add_todo">Add todo</string>
+    <string name="cd_assistant_tab_selector">Switch between To-Do and Reading</string>
+    <string name="cd_add_to_reading_list">Add to reading list</string>
+    <string name="cd_import_from_url">Import from URL</string>
+    <string name="cd_import_from_clipboard">Import from clipboard</string>
+    <string name="cd_delete_action">Delete</string>
+    <string name="cd_reading_list_item">%1$s. %2$s</string>
+    <string name="cd_connection_status">Connection status: %1$s</string>
+    <string name="cd_server_tab">Server curricula</string>
+    <string name="cd_local_tab">Downloaded curricula</string>
+    <string name="cd_modules_tab">Modules</string>
+    <string name="cd_settings_row">%1$s</string>
+    <string name="cd_asset_item">Visual asset %1$d</string>
+
+    <!-- Assistant Screen -->
+    <string name="assistant_tab_todo">To-Do</string>
+    <string name="assistant_tab_reading">Reading</string>
 
     <!-- Settings Screen -->
     <string name="settings_api_providers">API Providers</string>
@@ -122,6 +138,66 @@
     <string name="debug_build_type">Build Type</string>
     <string name="debug_application_id">Application ID</string>
     <string name="debug_mode">Debug Mode</string>
+
+    <!-- Device Metrics View -->
+    <string name="debug_device_metrics_title">Device Metrics</string>
+    <string name="debug_metrics_jvm_memory">JVM Memory</string>
+    <string name="debug_metrics_heap_usage">Heap Usage</string>
+    <string name="debug_metrics_memory_of">%1$s of %2$s</string>
+    <string name="debug_metrics_system_memory">System Memory</string>
+    <string name="debug_metrics_system_ram">System RAM</string>
+    <string name="debug_metrics_battery">Battery</string>
+    <string name="debug_metrics_battery_charging">%1$d%% (Charging)</string>
+    <string name="debug_metrics_battery_level">%1$d%%</string>
+    <string name="debug_metrics_battery_unknown">Unknown</string>
+    <string name="debug_metrics_battery_status">Battery Status</string>
+    <string name="debug_metrics_storage">Storage</string>
+    <string name="debug_metrics_internal_storage">Internal Storage</string>
+    <string name="debug_metrics_storage_available">%1$s available of %2$s</string>
+    <string name="debug_metrics_network">Network</string>
+    <string name="debug_metrics_network_type">Network Type</string>
+    <string name="debug_metrics_network_none">No Connection</string>
+    <string name="debug_metrics_network_wifi">Wi-Fi</string>
+    <string name="debug_metrics_network_cellular">Cellular</string>
+    <string name="debug_metrics_network_ethernet">Ethernet</string>
+    <string name="debug_metrics_network_other">Other</string>
+    <string name="cd_debug_memory_usage">Memory usage: %1$s of %2$s</string>
+    <string name="cd_debug_system_memory">System memory available: %1$s</string>
+    <string name="cd_debug_storage">Storage available: %1$s</string>
+
+    <!-- Chatterbox Settings -->
+    <string name="chatterbox_settings_title">Chatterbox TTS Settings</string>
+    <string name="chatterbox_preset_label">Preset</string>
+    <string name="chatterbox_preset_default">Default</string>
+    <string name="chatterbox_preset_natural">Natural</string>
+    <string name="chatterbox_preset_expressive">Expressive</string>
+    <string name="chatterbox_preset_low_latency">Low Latency</string>
+    <string name="chatterbox_preset_tutor">Tutor</string>
+    <string name="chatterbox_emotion_section">Emotion Control</string>
+    <string name="chatterbox_exaggeration">Exaggeration</string>
+    <string name="chatterbox_exaggeration_hint">Controls emotional intensity. Higher values produce more expressive speech.</string>
+    <string name="chatterbox_cfg_weight">CFG Weight</string>
+    <string name="chatterbox_cfg_weight_hint">Controls generation fidelity. Higher values stay closer to the target.</string>
+    <string name="chatterbox_speed_section">Speed Control</string>
+    <string name="chatterbox_speed_label">Speed</string>
+    <string name="chatterbox_speed_hint">Speaking rate multiplier for synthesized speech.</string>
+    <string name="chatterbox_paralinguistic_section">Paralinguistic Tags</string>
+    <string name="chatterbox_paralinguistic_toggle">Enable Paralinguistic Tags</string>
+    <string name="chatterbox_paralinguistic_desc">Enables processing of non-verbal expressions like [laugh], [sigh], and [gasp] embedded in text.</string>
+    <string name="chatterbox_supported_tags">Supported: %1$s</string>
+    <string name="chatterbox_language_section">Language</string>
+    <string name="chatterbox_language_label">Language</string>
+    <string name="chatterbox_streaming_section">Performance</string>
+    <string name="chatterbox_streaming_toggle">Streaming Mode</string>
+    <string name="chatterbox_streaming_desc">Enables streaming synthesis for lower time-to-first-byte. Disable for higher quality.</string>
+    <string name="chatterbox_reset">Reset to Defaults</string>
+    <string name="chatterbox_reset_confirm">Reset all Chatterbox settings to their default values?</string>
+    <string name="chatterbox_configure">Configure Chatterbox</string>
+    <string name="chatterbox_show_all_languages">Show all languages</string>
+    <string name="cd_chatterbox_exaggeration">Exaggeration: %1$s</string>
+    <string name="cd_chatterbox_cfg_weight">CFG weight: %1$s</string>
+    <string name="cd_chatterbox_speed">Speed: %1$s</string>
+
     <string name="debug_enabled">Enabled</string>
     <string name="debug_disabled">Disabled</string>
     <string name="settings_version">Version</string>
@@ -159,6 +235,36 @@
     <!-- Modules Section -->
     <string name="modules_section_title">Training Modules</string>
     <string name="modules_section_subtitle">Specialized practice for competitions and exams</string>
+    <string name="learning_tab_curriculum">Curriculum</string>
+    <string name="learning_tab_modules">Modules</string>
+    <string name="modules_section_installed">Installed</string>
+    <string name="modules_section_downloaded">Downloaded</string>
+    <string name="modules_section_available">Available on Server</string>
+    <string name="modules_empty_state">No modules available</string>
+    <string name="modules_feature_team">Team</string>
+    <string name="modules_feature_speed">Speed</string>
+    <string name="modules_feature_competition">Competition</string>
+    <string name="modules_start_practicing">Start Practicing</string>
+    <string name="modules_download">Download</string>
+    <string name="modules_no_download_required">No download required</string>
+    <string name="modules_ready_to_practice">Ready to practice</string>
+    <string name="modules_server_connecting">Connecting to server\u2026</string>
+    <string name="modules_server_error">Could not connect to server</string>
+    <string name="modules_delete_confirm">Delete this downloaded module?</string>
+    <string name="cd_module_feature_badge">Feature: %1$s</string>
+
+    <!-- QR Code Scanner -->
+    <string name="qr_scanner_title">Scan QR Code</string>
+    <string name="qr_scanner_instructions">Point your camera at the QR code displayed on your Mac\'s UnaMentis Server Manager</string>
+    <string name="qr_scanner_manual_entry">Enter Manually Instead</string>
+    <string name="qr_scanner_permission_required">Camera permission is required to scan QR codes</string>
+    <string name="qr_scanner_permission_denied">Camera permission denied. Please enable it in Settings.</string>
+    <string name="qr_scanner_grant_permission">Grant Permission</string>
+    <string name="qr_scanner_invalid_code">Invalid QR code. Expected server configuration with host and port.</string>
+    <string name="qr_scanner_success">Server added successfully</string>
+    <string name="qr_scanner_scan_qr">Scan QR Code</string>
+    <string name="cd_qr_scanner_viewfinder">QR code viewfinder</string>
+
     <string name="module_knowledge_bowl_title">Knowledge Bowl</string>
     <string name="module_knowledge_bowl_description">Academic competition prep across 12 subject domains</string>
     <string name="module_kb_feature_domains">12 knowledge domains (Science, Math, Literature, History, and more)</string>
@@ -1073,6 +1179,12 @@
     <string name="provider_on_device_llm">OnDevice</string>
     <string name="provider_mediapipe">MediaPipe</string>
     <string name="provider_executorch">ExecuTorch</string>
+    <string name="provider_kyutai_pocket_tts">KyutaiPocket</string>
+    <string name="provider_self_hosted">SelfHosted</string>
+
+    <!-- Kyutai Pocket TTS -->
+    <string name="kyutai_pocket_model_not_available">Kyutai Pocket model is not available</string>
+    <string name="kyutai_pocket_jni_not_implemented">JNI bindings not yet implemented</string>
 
     <!-- LLM Backend display names -->
     <string name="backend_mediapipe_gpu">MediaPipe (GPU)</string>
@@ -1191,6 +1303,15 @@
     <!-- Match progress -->
     <string name="kb_progress_format">%1$d / %2$d</string>
 
+    <!-- KB Progress Screen -->
+    <string name="kb_progress_title">Progress</string>
+    <string name="kb_progress_total_sessions">Total Sessions</string>
+    <string name="kb_progress_questions_answered">Questions Answered</string>
+    <string name="kb_progress_overall_accuracy">Overall Accuracy</string>
+    <string name="kb_progress_current_streak">Current Streak</string>
+    <string name="kb_progress_accuracy_trend">Accuracy Trend</string>
+    <string name="kb_progress_recent_sessions">Recent Sessions</string>
+
     <!-- Opponent Team Names -->
     <string name="kb_team_alpha">Team Alpha</string>
     <string name="kb_team_beta">Team Beta</string>
@@ -1198,4 +1319,166 @@
 
     <!-- STT Service -->
     <string name="stt_stub_transcript">[Stub: Audio transcription would appear here]</string>
+
+    <!-- Formula Renderer -->
+    <string name="formula_loading">Loading formula…</string>
+    <string name="formula_latex_rendering">LaTeX rendering</string>
+    <string name="formula_mathematical_formula">Mathematical formula</string>
+    <string name="cd_formula_display">Mathematical formula: %1$s</string>
+    <string name="formula_fullscreen_title">Formula</string>
+    <string name="formula_name_label">Name</string>
+    <string name="formula_category_label">Category</string>
+    <string name="formula_variables_label">Variables</string>
+    <string name="formula_latex_source_label">LaTeX Source</string>
+    <string name="cd_formula_fullscreen_hint">Double tap to view fullscreen</string>
+    <string name="formula_close">Close</string>
+    <string name="formula_equals">=</string>
+
+    <!-- Voice Activity Feedback -->
+    <string name="voice_feedback_countdown_start">%1$s. %2$d seconds.</string>
+    <string name="voice_feedback_countdown_milestone">%1$d seconds</string>
+    <string name="voice_feedback_countdown_complete">Time. %1$s</string>
+    <string name="voice_feedback_answer_received">Answer received</string>
+    <string name="voice_feedback_correct">Correct!</string>
+    <string name="voice_feedback_incorrect">Incorrect</string>
+    <string name="voice_feedback_incorrect_with_answer">The answer was %1$s</string>
+    <string name="voice_feedback_activity_started">%1$s started</string>
+    <string name="voice_feedback_next_question">Question %1$d of %2$d</string>
+
+    <!-- Voice Command Display Names -->
+    <string name="voice_command_ready">Ready</string>
+    <string name="voice_command_submit">Submit</string>
+    <string name="voice_command_next">Next</string>
+    <string name="voice_command_skip">Skip</string>
+    <string name="voice_command_repeat">Repeat</string>
+    <string name="voice_command_quit">Exit</string>
+
+    <!-- Reading List -->
+    <string name="reading_list_title">Reading List</string>
+    <string name="reading_list_empty">No items in your reading list</string>
+    <string name="reading_list_empty_hint">Import documents, articles, or paste text to get started</string>
+    <string name="reading_list_import_document">Import Document</string>
+    <string name="reading_list_import_url">Import from URL</string>
+    <string name="reading_list_import_clipboard">Import from Clipboard</string>
+    <string name="reading_list_import_manual">Add Text</string>
+    <string name="reading_list_error_unsupported_file">Unsupported file type: .%1$s. Supported types: PDF, TXT, MD</string>
+    <string name="reading_list_error_duplicate">This document has already been imported: %1$s</string>
+    <string name="reading_list_error_no_text">No readable text could be extracted from this document</string>
+    <string name="reading_list_error_not_found">Reading list item not found</string>
+    <string name="reading_list_status_unread">Unread</string>
+    <string name="reading_list_status_in_progress">In Progress</string>
+    <string name="reading_list_status_completed">Completed</string>
+    <string name="reading_list_status_archived">Archived</string>
+    <string name="reading_list_chunk_count">%1$d chunks</string>
+    <string name="reading_list_progress_percent">%1$s complete</string>
+    <string name="reading_list_delete_item_title">Delete Item?</string>
+    <string name="reading_list_delete_item_message">This will permanently remove the item and its associated files.</string>
+    <string name="reading_list_delete_archived_title">Delete All Archived?</string>
+    <string name="reading_list_delete_archived_message">This will permanently remove all archived items and their files.</string>
+    <string name="reading_list_bookmark_added">Bookmark added</string>
+    <string name="reading_list_bookmark_removed">Bookmark removed</string>
+    <string name="reading_list_stats_unread">Unread: %1$d</string>
+    <string name="reading_list_stats_in_progress">In Progress: %1$d</string>
+    <string name="reading_list_stats_completed">Completed: %1$d</string>
+    <string name="reading_list_stats_archived">Archived: %1$d</string>
+    <string name="reading_list_filter_active">Active</string>
+    <string name="reading_list_filter_completed">Completed</string>
+    <string name="reading_list_filter_archived">Archived</string>
+    <string name="reading_list_empty_completed">No completed items</string>
+    <string name="reading_list_empty_archived">No archived items</string>
+    <string name="reading_list_url_instructions">Enter the URL of a web article to import into your reading list.</string>
+    <string name="reading_list_url_placeholder">https://example.com/article</string>
+    <string name="reading_list_url_field_label">Article URL</string>
+    <string name="reading_list_import_url_action">Import Article</string>
+    <string name="reading_list_section_of">Section %1$d of %2$d</string>
+    <string name="reading_list_chunk_of">Section %1$d</string>
+    <string name="reading_list_skip_forward">Skip forward</string>
+    <string name="reading_list_skip_back">Skip backward</string>
+    <string name="reading_list_listen_from_here">Listen from here</string>
+    <string name="reading_list_bookmark_action">Toggle bookmark</string>
+    <string name="reading_list_preparing_audio">Preparing audio…</string>
+    <string name="reading_list_buffering">Buffering…</string>
+
+    <!-- Server Discovery -->
+    <string name="discovery_tier_cached">Checking saved server</string>
+    <string name="discovery_tier_nsd">Scanning local network</string>
+    <string name="discovery_tier_subnet_scan">Deep network scan</string>
+    <string name="discovery_method_cached">Cached</string>
+    <string name="discovery_method_nsd">Network Discovery</string>
+    <string name="discovery_method_subnet_scan">Network Scan</string>
+    <string name="discovery_method_manual">Manual</string>
+    <string name="discovery_method_qr_code">QR Code</string>
+
+    <!-- Knowledge Bowl Help -->
+    <string name="kb_help_title">Knowledge Bowl Help</string>
+    <string name="kb_help_overview">Learn how to use Knowledge Bowl to practice and improve your competitive knowledge bowl skills.</string>
+    <string name="kb_help_getting_started">Getting Started</string>
+    <string name="kb_help_getting_started_desc">Learn the basics of Knowledge Bowl practice</string>
+    <string name="kb_help_training_modes">Training Modes</string>
+    <string name="kb_help_training_modes_desc">Explore different ways to practice</string>
+    <string name="kb_help_strategy">Competition Strategy</string>
+    <string name="kb_help_strategy_desc">Tips for performing your best in competitions</string>
+    <string name="kb_help_regional_rules">Regional Rules</string>
+    <string name="kb_help_regional_rules_desc">Understand rules for different regions</string>
+    <string name="kb_help_tips_title">Tips for Success</string>
+    <string name="kb_help_tip_1">Practice consistently with short daily sessions rather than long infrequent ones.</string>
+    <string name="kb_help_tip_2">Focus on your weak domains to maximize improvement.</string>
+    <string name="kb_help_tip_3">Use oral mode to simulate real competition pressure.</string>
+    <string name="kb_help_tip_4">Review incorrect answers to understand the correct response.</string>
+    <string name="kb_help_tip_5">Track your accuracy trends to measure progress over time.</string>
+    <string name="kb_help_step_1">Select a domain or use mixed practice to get started.</string>
+    <string name="kb_help_step_2">Choose a training mode that matches your current goal.</string>
+    <string name="kb_help_step_3">Answer questions within the time limit.</string>
+    <string name="kb_help_step_4">Review your results and see which areas need work.</string>
+    <string name="kb_help_step_5">Track your progress on the Progress screen.</string>
+    <string name="kb_help_mode_written">Written Mode</string>
+    <string name="kb_help_mode_written_desc">Answer questions in writing, simulating the written round format.</string>
+    <string name="kb_help_mode_oral">Oral Mode</string>
+    <string name="kb_help_mode_oral_desc">Answer questions verbally using voice recognition.</string>
+    <string name="kb_help_mode_match">Match Simulation</string>
+    <string name="kb_help_mode_match_desc">Practice in a simulated head-to-head match format.</string>
+    <string name="kb_help_mode_conference">Conference Training</string>
+    <string name="kb_help_mode_conference_desc">Multi-team practice using the conference format.</string>
+    <string name="kb_help_mode_rebound">Rebound Training</string>
+    <string name="kb_help_mode_rebound_desc">Practice quickly rebounding after missed questions.</string>
+    <string name="kb_help_mode_drill">Domain Drill</string>
+    <string name="kb_help_mode_drill_desc">Focused practice on a single knowledge domain.</string>
+    <string name="kb_help_strategy_written">Written Round Strategy</string>
+    <string name="kb_help_strategy_written_desc">Pace yourself and answer every question; unanswered questions score zero.</string>
+    <string name="kb_help_strategy_oral">Oral Round Strategy</string>
+    <string name="kb_help_strategy_oral_desc">Listen carefully to the full question before answering to avoid errors.</string>
+    <string name="kb_help_strategy_buzzing">Buzzing Strategy</string>
+    <string name="kb_help_strategy_buzzing_desc">Buzz in as soon as you know the answer to prevent opponents from answering first.</string>
+    <string name="kb_help_strategy_time">Time Management</string>
+    <string name="kb_help_strategy_time_desc">Allocate time wisely across questions and skip uncertain ones to return to later.</string>
+    <string name="kb_help_regional_comparison">Regional Rule Comparison</string>
+    <string name="kb_help_written_qs">Written Qs</string>
+    <string name="kb_help_written_time">Written Time</string>
+    <string name="kb_help_conferring">Conferring</string>
+    <string name="kb_help_hand_signals">Hand signals</string>
+    <string name="kb_help_verbal">Verbal</string>
+
+    <!-- Knowledge Bowl Mastery Levels -->
+    <string name="kb_mastery_not_started">Not Started</string>
+    <string name="kb_mastery_beginner">Beginner</string>
+    <string name="kb_mastery_intermediate">Intermediate</string>
+    <string name="kb_mastery_advanced">Advanced</string>
+    <string name="kb_mastery_mastered">Mastered</string>
+
+    <!-- Knowledge Bowl Pack Picker -->
+    <string name="kb_pack_picker_title">Select Question Pack</string>
+    <string name="kb_pack_picker_refresh">Refresh packs</string>
+    <string name="kb_pack_picker_retry">Retry</string>
+    <string name="kb_pack_all_questions">All Questions</string>
+    <string name="kb_pack_all_questions_desc">Practice with the full question library</string>
+    <string name="kb_pack_server_packs">Server Packs</string>
+    <string name="kb_pack_question_count">%1$d questions</string>
+
+    <!-- Knowledge Bowl Region Abbreviations -->
+    <string name="kb_region_colorado_short">CO</string>
+    <string name="kb_region_minnesota_short">MN</string>
+    <string name="kb_region_washington_short">WA</string>
+
+    <!-- Knowledge Bowl Progress -->
+    <string name="kb_progress_avg_time">Avg Time</string>
 </resources>

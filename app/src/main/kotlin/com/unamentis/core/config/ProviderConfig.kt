@@ -84,6 +84,15 @@ class ProviderConfig(
         val TTS_SPEAKING_RATE = stringPreferencesKey("tts_speaking_rate")
         val TTS_PLAYBACK_SPEED = stringPreferencesKey("tts_playback_speed")
 
+        // Chatterbox TTS settings
+        val CHATTERBOX_PRESET = stringPreferencesKey("chatterbox_preset")
+        val CHATTERBOX_EXAGGERATION = stringPreferencesKey("chatterbox_exaggeration")
+        val CHATTERBOX_CFG_WEIGHT = stringPreferencesKey("chatterbox_cfg_weight")
+        val CHATTERBOX_SPEED = stringPreferencesKey("chatterbox_speed")
+        val CHATTERBOX_LANGUAGE = stringPreferencesKey("chatterbox_language")
+        val CHATTERBOX_PARALINGUISTIC_TAGS = stringPreferencesKey("chatterbox_paralinguistic_tags")
+        val CHATTERBOX_STREAMING = stringPreferencesKey("chatterbox_streaming")
+
         // Curriculum playback
         val AUTO_CONTINUE_TOPICS = stringPreferencesKey("auto_continue_topics")
     }
@@ -96,6 +105,7 @@ class ProviderConfig(
         const val ELEVENLABS_API_KEY = "elevenlabs_api_key"
         const val OPENAI_API_KEY = "openai_api_key"
         const val ANTHROPIC_API_KEY = "anthropic_api_key"
+        const val BRAVE_SEARCH_API_KEY = "brave_search_api_key"
     }
 
     /**
@@ -579,6 +589,92 @@ class ProviderConfig(
         }
     }
 
+    // ==================== Chatterbox TTS Settings ====================
+
+    /** Chatterbox preset name (DEFAULT, NATURAL, EXPRESSIVE, LOW_LATENCY, TUTOR). */
+    val chatterboxPreset: Flow<String> =
+        dataStore.data.map { prefs ->
+            prefs[PreferenceKeys.CHATTERBOX_PRESET] ?: "DEFAULT"
+        }
+
+    /** Chatterbox exaggeration (0.0-1.5). */
+    val chatterboxExaggeration: Flow<Float> =
+        dataStore.data.map { prefs ->
+            prefs[PreferenceKeys.CHATTERBOX_EXAGGERATION]?.toFloatOrNull() ?: 0.5f
+        }
+
+    /** Chatterbox CFG weight (0.0-1.0). */
+    val chatterboxCfgWeight: Flow<Float> =
+        dataStore.data.map { prefs ->
+            prefs[PreferenceKeys.CHATTERBOX_CFG_WEIGHT]?.toFloatOrNull() ?: 0.5f
+        }
+
+    /** Chatterbox speed (0.5-2.0). */
+    val chatterboxSpeed: Flow<Float> =
+        dataStore.data.map { prefs ->
+            prefs[PreferenceKeys.CHATTERBOX_SPEED]?.toFloatOrNull() ?: 1.0f
+        }
+
+    /** Chatterbox language code. */
+    val chatterboxLanguage: Flow<String> =
+        dataStore.data.map { prefs ->
+            prefs[PreferenceKeys.CHATTERBOX_LANGUAGE] ?: "en"
+        }
+
+    /** Chatterbox paralinguistic tags enabled. */
+    val chatterboxParalinguisticTags: Flow<Boolean> =
+        dataStore.data.map { prefs ->
+            prefs[PreferenceKeys.CHATTERBOX_PARALINGUISTIC_TAGS]?.toBoolean() ?: true
+        }
+
+    /** Chatterbox streaming mode enabled. */
+    val chatterboxStreaming: Flow<Boolean> =
+        dataStore.data.map { prefs ->
+            prefs[PreferenceKeys.CHATTERBOX_STREAMING]?.toBoolean() ?: true
+        }
+
+    suspend fun setChatterboxPreset(preset: String) {
+        dataStore.edit { prefs ->
+            prefs[PreferenceKeys.CHATTERBOX_PRESET] = preset
+        }
+    }
+
+    suspend fun setChatterboxExaggeration(value: Float) {
+        dataStore.edit { prefs ->
+            prefs[PreferenceKeys.CHATTERBOX_EXAGGERATION] = value.toString()
+        }
+    }
+
+    suspend fun setChatterboxCfgWeight(value: Float) {
+        dataStore.edit { prefs ->
+            prefs[PreferenceKeys.CHATTERBOX_CFG_WEIGHT] = value.toString()
+        }
+    }
+
+    suspend fun setChatterboxSpeed(value: Float) {
+        dataStore.edit { prefs ->
+            prefs[PreferenceKeys.CHATTERBOX_SPEED] = value.toString()
+        }
+    }
+
+    suspend fun setChatterboxLanguage(code: String) {
+        dataStore.edit { prefs ->
+            prefs[PreferenceKeys.CHATTERBOX_LANGUAGE] = code
+        }
+    }
+
+    suspend fun setChatterboxParalinguisticTags(enabled: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[PreferenceKeys.CHATTERBOX_PARALINGUISTIC_TAGS] = enabled.toString()
+        }
+    }
+
+    suspend fun setChatterboxStreaming(enabled: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[PreferenceKeys.CHATTERBOX_STREAMING] = enabled.toString()
+        }
+    }
+
     // ==================== Curriculum Settings Setters ====================
 
     /**
@@ -694,6 +790,20 @@ class ProviderConfig(
      */
     fun setAnthropicApiKey(apiKey: String) {
         encryptedPrefs.edit().putString(ApiKeyKeys.ANTHROPIC_API_KEY, apiKey).apply()
+    }
+
+    /**
+     * Get Brave Search API key.
+     */
+    fun getBraveSearchApiKey(): String? {
+        return encryptedPrefs.getString(ApiKeyKeys.BRAVE_SEARCH_API_KEY, null)
+    }
+
+    /**
+     * Set Brave Search API key.
+     */
+    fun setBraveSearchApiKey(apiKey: String) {
+        encryptedPrefs.edit().putString(ApiKeyKeys.BRAVE_SEARCH_API_KEY, apiKey).apply()
     }
 
     /**

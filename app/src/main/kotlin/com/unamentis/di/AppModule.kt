@@ -7,6 +7,8 @@ import com.unamentis.data.local.AppDatabase
 import com.unamentis.data.local.SecureTokenStorage
 import com.unamentis.data.local.dao.CurriculumDao
 import com.unamentis.data.local.dao.ModuleDao
+import com.unamentis.data.local.dao.QueuedMetricsDao
+import com.unamentis.data.local.dao.ReadingListDao
 import com.unamentis.data.local.dao.SessionDao
 import com.unamentis.data.local.dao.TodoDao
 import com.unamentis.data.local.dao.TopicProgressDao
@@ -85,6 +87,24 @@ object AppModule {
     @Singleton
     fun provideModuleDao(database: AppDatabase): ModuleDao {
         return database.moduleDao()
+    }
+
+    /**
+     * Provides the ReadingListDao.
+     */
+    @Provides
+    @Singleton
+    fun provideReadingListDao(database: AppDatabase): ReadingListDao {
+        return database.readingListDao()
+    }
+
+    /**
+     * Provides the QueuedMetricsDao for persistent metrics queue storage.
+     */
+    @Provides
+    @Singleton
+    fun provideQueuedMetricsDao(database: AppDatabase): QueuedMetricsDao {
+        return database.queuedMetricsDao()
     }
 
     /**

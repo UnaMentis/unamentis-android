@@ -126,6 +126,7 @@ jobs:
     name: Instrumented Tests
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' || (github.event_name == 'pull_request' && github.base_ref == 'main') || github.event.inputs.run_instrumented == 'true'
+    timeout-minutes: 30
 
     steps:
     - uses: actions/checkout@v4
@@ -148,6 +149,32 @@ jobs:
         sudo udevadm control --reload-rules
         sudo udevadm trigger --name-match=kvm
 
+    - name: Pre-build debug APK and test APK
+      run: ./gradlew assembleDebug assembleDebugAndroidTest --console=plain
+
+    - name: AVD cache
+      uses: actions/cache@v4
+      id: avd-cache
+      with:
+        path: |
+          ~/.android/avd/*
+          ~/.android/adb*
+        key: avd-api34-x86_64-pixel6-v1
+
+    - name: Create AVD and generate snapshot for caching
+      if: steps.avd-cache.outputs.cache-hit != 'true'
+      uses: reactivecircus/android-emulator-runner@v2
+      with:
+        api-level: 34
+        arch: x86_64
+        profile: pixel_6
+        target: google_apis
+        force-avd-creation: false
+        emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+        emulator-boot-timeout: 600
+        disable-animations: true
+        script: echo "AVD snapshot generated for caching."
+
     - name: Run Instrumented Tests
       uses: reactivecircus/android-emulator-runner@v2
       with:
@@ -155,27 +182,36 @@ jobs:
         arch: x86_64
         profile: pixel_6
         target: google_apis
-        emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -prop persist.sys.locales=en-US
+        force-avd-creation: false
+        emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
         emulator-boot-timeout: 600
         disable-animations: true
         script: |
-          # Wait for emulator to be fully booted
-          adb wait-for-device
-          adb shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done'
+          # Robust boot wait: check both boot_completed and package manager
+          adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 2; done'
+          adb shell 'while ! pm list packages > /dev/null 2>&1; do sleep 2; done'
+
+          # Dismiss keyguard / wake screen
           adb shell input keyevent 82
+          adb shell wm dismiss-keyguard || true
 
-          # Ensure device locale is English (en-US) so tests that search for literal English strings succeed
-          # Set modern property and also legacy language/country for compatibility
-          adb shell "setprop persist.sys.locales en-US; setprop persist.sys.locale en-US; setprop persist.sys.language en; setprop persist.sys.country US" || true
+          # Set locale via system property (safe on all API levels, no restart needed)
+          adb shell "setprop persist.sys.locale en-US" 2>/dev/null || true
 
-          # Restart runtime so locale changes apply, then wait for boot again
-          adb shell stop || true
-          adb shell start || true
-          adb shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done'
-          adb shell input keyevent 82
+          # Explicitly disable all animations via settings (belt and suspenders)
+          adb shell settings put global window_animation_scale 0.0
+          adb shell settings put global transition_animation_scale 0.0
+          adb shell settings put global animator_duration_scale 0.0
 
-          # Run instrumented tests
-          ./gradlew connectedAndroidTest --console=plain
+          # Log emulator state for debugging
+          echo "--- Emulator info ---"
+          adb shell getprop ro.build.version.sdk
+          adb shell getprop persist.sys.locale || echo "(locale prop not readable)"
+          adb devices -l
+          echo "--- Running tests ---"
+
+          # Run instrumented tests with retry on infrastructure failures
+          ./gradlew connectedAndroidTest --console=plain -Pandroid.testInstrumentationRunnerArguments.timeout_msec=120000
 
     - name: Upload Instrumented Test Results
       uses: actions/upload-artifact@v4

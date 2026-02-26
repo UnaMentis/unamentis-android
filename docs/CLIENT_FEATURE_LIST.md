@@ -2,7 +2,7 @@
 
 > **Document Purpose**: This document catalogs all features implemented in the UnaMentis Android client. It serves as a reference for maintaining feature parity across clients and provides sufficient detail for Claude Code to implement features in other clients.
 >
-> **Last Updated**: 2026-01-19
+> **Last Updated**: 2026-02-23
 > **Maintainers**: Update this document with each feature addition, modification, or removal.
 
 ---
@@ -24,7 +24,13 @@
 13. [Security](#13-security)
 14. [Background Processing](#14-background-processing)
 15. [Server Synchronization](#15-server-synchronization)
-16. [Testing Infrastructure](#16-testing-infrastructure)
+16. [Knowledge Bowl Module](#16-knowledge-bowl-module)
+17. [Reading List](#17-reading-list)
+18. [Todo Management](#18-todo-management)
+19. [Server Discovery](#19-server-discovery)
+20. [Embeddings & Web Search](#20-embeddings--web-search)
+21. [Voice Commands & Feedback](#21-voice-commands--feedback)
+22. [Testing Infrastructure](#22-testing-infrastructure)
 
 ---
 
@@ -130,6 +136,8 @@ interface VADService {
 **Key Files**:
 - [DeepgramSTTService.kt](../app/src/main/kotlin/com/unamentis/services/stt/DeepgramSTTService.kt)
 - [AndroidSTTService.kt](../app/src/main/kotlin/com/unamentis/services/stt/AndroidSTTService.kt)
+- [GLMASROnDeviceSTTService.kt](../app/src/main/kotlin/com/unamentis/services/stt/GLMASROnDeviceSTTService.kt)
+- [SelfHostedSTTService.kt](../app/src/main/kotlin/com/unamentis/services/stt/SelfHostedSTTService.kt)
 
 ### Providers
 
@@ -137,6 +145,8 @@ interface VADService {
 |----------|------|-------|------|
 | Deepgram | Cloud | nova-3 | Paid API |
 | Android Native | On-device | SpeechRecognizer | Free |
+| GLM-ASR ONNX | On-device | GLM ASR via ONNX + JNI | Free |
+| Self-hosted | Self-hosted | Custom server | Free |
 
 **Interface**:
 ```kotlin
@@ -171,6 +181,9 @@ data class STTResult(
 **Key Files**:
 - [ElevenLabsTTSService.kt](../app/src/main/kotlin/com/unamentis/services/tts/ElevenLabsTTSService.kt)
 - [AndroidTTSService.kt](../app/src/main/kotlin/com/unamentis/services/tts/AndroidTTSService.kt)
+- [KyutaiPocketTTSService.kt](../app/src/main/kotlin/com/unamentis/services/tts/KyutaiPocketTTSService.kt)
+- [SelfHostedTTSService.kt](../app/src/main/kotlin/com/unamentis/services/tts/SelfHostedTTSService.kt)
+- [PronunciationProcessor.kt](../app/src/main/kotlin/com/unamentis/services/tts/PronunciationProcessor.kt)
 
 ### Providers
 
@@ -178,6 +191,8 @@ data class STTResult(
 |----------|------|---------|------|
 | ElevenLabs | Cloud | High (natural) | Paid API |
 | Android Native | On-device | Standard | Free |
+| Kyutai Pocket | On-device | High (neural) | Free |
+| Self-hosted | Self-hosted | Variable | Free |
 
 **Interface**:
 ```kotlin
@@ -219,6 +234,10 @@ data class TTSAudioChunk(
 |----------|--------|-----------|
 | OpenAI | GPT-4o, GPT-4o-mini | SSE |
 | Anthropic | Claude 3.5 Sonnet | SSE |
+| Ollama | Qwen, Llama, Mistral | SSE (self-hosted) |
+| llama.cpp | Ministral-3B | JNI (on-device) |
+| ExecuTorch | Llama 3.2 | Meta ExecuTorch (on-device) |
+| MediaPipe | Gemma 2B | Google MediaPipe (on-device) |
 
 **Interface**:
 ```kotlin
@@ -356,21 +375,44 @@ data class CostRecord(
 **Key Files**:
 - [SessionScreen.kt](../app/src/main/kotlin/com/unamentis/ui/session/SessionScreen.kt)
 - [CurriculumScreen.kt](../app/src/main/kotlin/com/unamentis/ui/curriculum/CurriculumScreen.kt)
+- [LearningScreen.kt](../app/src/main/kotlin/com/unamentis/ui/learning/LearningScreen.kt)
+- [ModulesScreen.kt](../app/src/main/kotlin/com/unamentis/ui/learning/ModulesScreen.kt)
+- [AssistantScreen.kt](../app/src/main/kotlin/com/unamentis/ui/assistant/AssistantScreen.kt)
 - [TodoScreen.kt](../app/src/main/kotlin/com/unamentis/ui/todo/TodoScreen.kt)
+- [ReadingListScreen.kt](../app/src/main/kotlin/com/unamentis/ui/readinglist/ReadingListScreen.kt)
+- [ReadingPlaybackScreen.kt](../app/src/main/kotlin/com/unamentis/ui/readinglist/ReadingPlaybackScreen.kt)
+- [ReadingReaderScreen.kt](../app/src/main/kotlin/com/unamentis/ui/readinglist/ReadingReaderScreen.kt)
 - [HistoryScreen.kt](../app/src/main/kotlin/com/unamentis/ui/history/HistoryScreen.kt)
 - [AnalyticsScreen.kt](../app/src/main/kotlin/com/unamentis/ui/analytics/AnalyticsScreen.kt)
 - [SettingsScreen.kt](../app/src/main/kotlin/com/unamentis/ui/settings/SettingsScreen.kt)
+- [ServerSettingsScreen.kt](../app/src/main/kotlin/com/unamentis/ui/settings/ServerSettingsScreen.kt)
+- [ChatterboxSettingsScreen.kt](../app/src/main/kotlin/com/unamentis/ui/settings/ChatterboxSettingsScreen.kt)
+- [AboutScreen.kt](../app/src/main/kotlin/com/unamentis/ui/settings/AboutScreen.kt)
+- [DebugScreen.kt](../app/src/main/kotlin/com/unamentis/ui/settings/DebugScreen.kt)
+- [QRCodeScannerScreen.kt](../app/src/main/kotlin/com/unamentis/ui/settings/QRCodeScannerScreen.kt)
 
 ### Screen Overview
 
 | Screen | Purpose |
 |--------|---------|
 | **Session** | Active voice tutoring with transcript display |
+| **Learning** | Browse curricula, modules, and Knowledge Bowl |
+| **Modules** | Module details, Knowledge Bowl entry points |
 | **Curriculum** | Browse/search curricula and topics |
-| **Todo** | Task management (manual + curriculum-generated) |
+| **Assistant** | Combined Todo + Reading List tabs |
+| **Todo** | Task management (manual + auto-resume + curriculum suggestions) |
+| **Reading List** | Import, browse, and manage reading articles |
+| **Reading Playback** | Audio playback of reading list articles |
+| **Reading Reader** | Full-text reader with bookmark support |
 | **History** | Past session review with transcripts |
 | **Analytics** | Performance metrics and cost breakdown |
 | **Settings** | Provider config, audio settings, preferences |
+| **Server Settings** | Server discovery, manual server configuration |
+| **Chatterbox Settings** | Chatterbox-specific provider and voice settings |
+| **About** | App version, build info, licenses |
+| **Debug** | Device metrics, log viewer, diagnostic tools |
+| **QR Code Scanner** | Scan QR codes for server configuration |
+| **Knowledge Bowl** | Dashboard, drill, match, rebound, conference screens |
 
 ### Session Screen Features
 
@@ -391,6 +433,12 @@ data class CostRecord(
 | `SessionControlBar` | Start/pause/resume/stop controls |
 | `VisualAssetView` | Curriculum image overlay |
 | `AudioLevelVisualization` | Real-time audio feedback |
+| `FormulaRenderer` | LaTeX/math formula rendering |
+| `AssetCarousel` | Swipeable visual asset carousel |
+| `OfflineBanner` | Network connectivity indicator |
+| `DeviceMetricsView` | Real-time device performance metrics |
+| `URLImportSheet` | Bottom sheet for importing URLs to reading list |
+| `ModulesSection` | Curriculum modules grid layout |
 
 ### Theming (Material Design 3)
 
@@ -421,6 +469,11 @@ Error: #D32F2F (Red)
 | `TopicProgressEntity` | Learning progress per topic |
 | `TodoEntity` | Task list items |
 | `SettingsEntity` | User preferences |
+| `ReadingListItemEntity` | Reading list article metadata |
+| `ReadingChunkEntity` | Chunked article text for playback |
+| `ReadingBookmarkEntity` | Reading progress bookmarks |
+| `ReadingVisualAssetEntity` | Visual assets for reading items |
+| `QueuedMetricsEntity` | Metrics queued for server upload |
 
 ### Repository Pattern
 
@@ -609,7 +662,179 @@ Modifier.semantics {
 
 ---
 
-## 16. Testing Infrastructure
+## 16. Knowledge Bowl Module
+
+**Purpose**: Competitive quiz-style learning module with multiple training modes.
+
+**Key Files**:
+- `app/src/main/kotlin/com/unamentis/modules/knowledgebowl/`
+
+### Training Modes
+
+| Mode | Purpose |
+|------|---------|
+| **Domain Drill** | Practice questions by domain with configurable difficulty |
+| **Match Simulation** | Competitive quiz with simulated opponent |
+| **Rebound Training** | Practice on previously missed questions |
+| **Conference Training** | Team-based conference-style competition |
+
+### Core Components
+
+| Component | Purpose |
+|-----------|---------|
+| `KBSessionManager` | Manages KB session lifecycle |
+| `KBMatchEngine` | Match state machine with scoring and timing |
+| `KBTransformer` | Transforms questions for different modes |
+| `KBAnalyticsService` | Tracks KB performance metrics |
+| `KBSessionStore` | Persists KB session results |
+| `KBOpponentSimulator` | Simulates opponent behavior in matches |
+
+### Validation System
+
+| Validator | Purpose |
+|-----------|---------|
+| `AnswerNormalizer` | Normalizes answers for comparison |
+| `KBLinguisticMatcher` | NLP-based answer matching |
+| `KBPhoneticMatcher` | Phonetic similarity matching |
+| `KBNGramMatcher` | N-gram based fuzzy matching |
+| `KBTokenMatcher` | Token-level answer comparison |
+| `KBLLMValidator` | LLM-based answer validation |
+| `KBSynonymDictionaries` | Domain-specific synonym support |
+
+### Data
+
+| Component | Purpose |
+|-----------|---------|
+| `KBLocalPackStore` | Local question pack storage |
+| `KBPackService` | Remote pack download and management |
+| `KBTeamStore` | Team data persistence |
+| `KBDomainMix` | Configurable domain mixing for questions |
+
+### UI Screens
+
+- `KBDashboardScreen` — Entry point with mode selection
+- `KBDomainDrillScreen` — Domain-specific practice
+- `KBMatchSimulationScreen` — Competitive match view
+- `KBReboundTrainingScreen` — Missed question review
+- `KBConferenceTrainingScreen` — Conference-style competition
+- `KBProgressScreen` — Overall progress tracking
+- `KBDomainMasteryScreen` — Per-domain mastery view
+- `KBPackPickerScreen` — Question pack selection
+- `KBHelpSheet` — In-app help and rules
+
+---
+
+## 17. Reading List
+
+**Purpose**: Import, manage, and listen to web articles and reading material.
+
+**Key Files**:
+- [ReadingListManager.kt](../app/src/main/kotlin/com/unamentis/core/readinglist/ReadingListManager.kt)
+- [ReadingListRepository.kt](../app/src/main/kotlin/com/unamentis/data/repository/ReadingListRepository.kt)
+- [ReadingPlaybackService.kt](../app/src/main/kotlin/com/unamentis/services/readingplayback/ReadingPlaybackService.kt)
+
+### Components
+
+| Component | Purpose |
+|-----------|---------|
+| `ReadingListManager` | Full CRUD for reading list items |
+| `ReadingListRepository` | Data persistence for reading items |
+| `HTMLArticleExtractor` | Extracts article text from HTML |
+| `MarkdownStripper` | Strips markdown formatting |
+| `ReadingTextChunker` | Splits articles into TTS-friendly chunks |
+| `WebArticleFetcher` | Fetches article content from URLs |
+| `ReadingFOVContextManager` | Field-of-view context for reading sessions |
+| `ReadingPlaybackService` | Audio playback of articles via TTS |
+| `ReadingAudioPreGenerator` | Pre-generates audio for upcoming chunks |
+
+### UI Screens
+
+- `ReadingListScreen` — Browse and manage reading items
+- `ReadingPlaybackScreen` — Audio playback with progress
+- `ReadingReaderScreen` — Full-text reader with bookmarks
+- `URLImportSheet` — Import articles via URL
+
+---
+
+## 18. Todo Management
+
+**Purpose**: Enhanced task management with auto-resume and curriculum-driven suggestions.
+
+**Key Files**:
+- [TodoManager.kt](../app/src/main/kotlin/com/unamentis/core/todo/TodoManager.kt)
+- [AutoResumeService.kt](../app/src/main/kotlin/com/unamentis/core/todo/AutoResumeService.kt)
+- [CurriculumSuggestionService.kt](../app/src/main/kotlin/com/unamentis/core/todo/CurriculumSuggestionService.kt)
+
+### Components
+
+| Component | Purpose |
+|-----------|---------|
+| `TodoManager` | Full CRUD with filtering, sorting, search |
+| `AutoResumeService` | Suggests resuming interrupted sessions |
+| `CurriculumSuggestionService` | Suggests tasks based on curriculum progress |
+| `TodoReminderWorker` | WorkManager-based reminder notifications |
+| `TodoToolHandler` | Tool-use handler for AI-generated todos |
+
+---
+
+## 19. Server Discovery
+
+**Purpose**: Automatically discover UnaMentis servers on the local network.
+
+**Key Files**:
+- [DeviceDiscoveryManager.kt](../app/src/main/kotlin/com/unamentis/core/discovery/DeviceDiscoveryManager.kt)
+
+### Components
+
+| Component | Purpose |
+|-----------|---------|
+| `DeviceDiscoveryManager` | Orchestrates discovery across tiers |
+| `NsdDiscovery` | Android NSD (mDNS/DNS-SD) discovery |
+| `SubnetScanDiscovery` | Subnet scanning fallback |
+| `CachedServerDiscovery` | Caches discovered servers |
+| `ServerConfigManagerDiscovery` | Integrates discovery with server config |
+| `DiscoveryTier` | Tiered discovery strategy |
+
+---
+
+## 20. Embeddings & Web Search
+
+**Purpose**: Text embeddings for semantic search and web search for research.
+
+**Key Files**:
+- [OpenAIEmbeddingService.kt](../app/src/main/kotlin/com/unamentis/services/embeddings/OpenAIEmbeddingService.kt)
+- [BraveSearchService.kt](../app/src/main/kotlin/com/unamentis/services/websearch/BraveSearchService.kt)
+
+### Components
+
+| Component | Purpose |
+|-----------|---------|
+| `OpenAIEmbeddingService` | Text embeddings via OpenAI API |
+| `EmbeddingProvider` | Provider interface for embeddings |
+| `BraveSearchService` | Web search via Brave Search API |
+| `WebSearchProvider` | Provider interface for web search |
+| `WebSearchToolHandler` | Tool-use handler for AI-triggered searches |
+
+---
+
+## 21. Voice Commands & Feedback
+
+**Purpose**: Voice command recognition and real-time voice activity feedback.
+
+**Key Files**:
+- [VoiceCommandRecognizer.kt](../app/src/main/kotlin/com/unamentis/services/voice/VoiceCommandRecognizer.kt)
+- [VoiceActivityFeedback.kt](../app/src/main/kotlin/com/unamentis/services/voice/VoiceActivityFeedback.kt)
+
+### Components
+
+| Component | Purpose |
+|-----------|---------|
+| `VoiceCommandRecognizer` | Recognizes voice commands during sessions |
+| `VoiceActivityFeedback` | Provides visual/haptic feedback for voice activity |
+
+---
+
+## 22. Testing Infrastructure
 
 **Purpose**: Ensure code quality and prevent regressions.
 
@@ -617,21 +842,21 @@ Modifier.semantics {
 
 | Category | Count | Framework |
 |----------|-------|-----------|
-| Unit Tests | 100+ | JUnit 5 |
-| UI Tests | 142+ | Compose Test |
-| Navigation Tests | 18+ | Compose Navigation |
-| Integration Tests | 29+ | JUnit + Room |
-| Performance Benchmarks | 14+ | Microbenchmark |
-| Memory Tests | 6+ | LeakCanary/Custom |
-| **Total** | **272+** | |
+| Unit Tests | 1700+ | JUnit 5 |
+| UI Tests | 76+ | Compose Test |
+| Test Files | 92 | JUnit 5 + Compose |
+| **Total @Test methods** | **1780+** | |
 
 ### Testing Philosophy
 
 - **Real over Mock**: Only mock paid external APIs
 - **In-memory Room**: Use real database with in-memory backing
 - **Real services**: Use actual service implementations
-- **Coverage**: All screens, all state transitions
+- **Coverage**: All screens, all state transitions, all new modules
 - **Certificate Pinning**: Validated with unit and integration tests
+- **Knowledge Bowl**: Full validation suite (phonetic, n-gram, synonym, LLM)
+- **Reading List**: Manager, repository, chunker, playback tests
+- **Server Discovery**: Discovery tiers, caching, subnet scan tests
 
 ---
 
@@ -639,15 +864,16 @@ Modifier.semantics {
 
 | Category | Feature Count |
 |----------|---------------|
-| UI Screens | 6 + Onboarding |
-| LLM Providers | 4 (OpenAI, Anthropic, Ollama, Self-hosted) |
-| STT Providers | 4 (Deepgram, AssemblyAI, Groq Whisper, Android) |
-| TTS Providers | 3 (ElevenLabs, Deepgram Aura, Android) |
+| UI Screens | 20+ (Session, Learning, Modules, Assistant, Reading List/Playback/Reader, Todo, History, Analytics, Settings/Server/Chatterbox/About/Debug/QR, Onboarding, KB Dashboard/Drill/Match/Rebound/Conference/Progress) |
+| LLM Providers | 6 (OpenAI, Anthropic, Ollama, llama.cpp, ExecuTorch, MediaPipe) |
+| STT Providers | 4 (Deepgram, Android, GLM-ASR ONNX, Self-hosted) |
+| TTS Providers | 4 (ElevenLabs, Android, Kyutai Pocket, Self-hosted) |
 | VAD Implementations | 3 (Silero TFLite, Silero ONNX, Simple RMS) |
-| Database Entities | 6 |
+| Knowledge Bowl Modes | 4 (Drill, Match, Rebound, Conference) |
+| Database Entities | 10+ |
 | REST Endpoints | 10+ |
 | WebSocket Clients | 2 |
-| Test Suites | 6 (272+ tests) |
+| Test Methods | 1780+ across 92 test files |
 
 ---
 
@@ -655,6 +881,7 @@ Modifier.semantics {
 
 | Date | Change | Author |
 |------|--------|--------|
+| 2026-02-23 | Major update: KB module, Reading List, Todo, Discovery, new providers, voice commands, 1780+ tests | Claude Code |
 | 2026-01-19 | Added Server Synchronization section, updated test counts | Claude Code |
 | 2026-01-13 | Initial feature list created | Claude Code |
 

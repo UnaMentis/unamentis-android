@@ -1,8 +1,8 @@
 # UnaMentis Android Port Specification
 
-**Version:** 1.0
-**Date:** January 2026
-**Status:** Planning
+**Version:** 2.0
+**Date:** February 2026
+**Status:** Feature Parity Complete
 **Target Platform:** Android 14+ (API 34+)
 
 ---
@@ -269,7 +269,8 @@ Must support all iOS providers:
 | AssemblyAI | Cloud (WebSocket) | wss://api.assemblyai.com | Secondary |
 | Groq Whisper | Cloud (REST) | api.groq.com | Free tier |
 | Android SpeechRecognizer | On-device | Android SDK | Offline |
-| GLM-ASR | Self-hosted | HTTP/WebSocket | Custom server |
+| GLM-ASR ONNX | On-device | ONNX Runtime + JNI | Offline, on-device |
+| Self-hosted STT | Self-hosted | HTTP/WebSocket | Custom server |
 
 **Android-Specific Implementation:**
 ```kotlin
@@ -304,7 +305,8 @@ Must support all iOS providers:
 | ElevenLabs | Cloud (WebSocket) | wss://api.elevenlabs.io | Primary |
 | Deepgram Aura-2 | Cloud (WebSocket) | wss://api.deepgram.com | Secondary |
 | Android TTS | On-device | Android SDK | Offline |
-| Piper/VibeVoice | Self-hosted | HTTP | Custom server |
+| Kyutai Pocket TTS | On-device | ONNX Runtime | Offline, high quality |
+| Self-hosted TTS | Self-hosted | HTTP | Custom server |
 
 **Android-Specific Implementation:**
 ```kotlin
@@ -342,6 +344,8 @@ Must support all iOS providers:
 | Anthropic | Cloud (SSE) | api.anthropic.com | Claude 3.5 Sonnet/Haiku |
 | Ollama | Self-hosted | localhost:11434 | Qwen, Llama, Mistral |
 | llama.cpp | On-device | JNI | Ministral-3B |
+| ExecuTorch | On-device | Meta ExecuTorch | Llama 3.2 |
+| MediaPipe | On-device | Google MediaPipe | Gemma 2B |
 
 **On-Device LLM via llama.cpp:**
 ```kotlin
@@ -563,14 +567,20 @@ enum class LLMTaskType {
 
 ### 6.1 Navigation Structure
 
-**6 Primary Tabs (identical to iOS):**
+**5 Primary Tabs + More Menu (identical to iOS):**
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                        UnaMentis                                 │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
-│   [Session] [Curriculum] [To-Do] [History] [Analytics] [Settings]│
+│   [Session] [Learning] [History] [To-Do] [More ▾]               │
+│                                                                  │
+│   More menu items: Analytics, Settings                           │
+│                                                                  │
+│   Sub-screens: Assistant, Reading List, Knowledge Bowl,          │
+│   About, Debug, Server Settings, Chatterbox Settings,            │
+│   QR Code Scanner, Modules                                       │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -1235,50 +1245,59 @@ fun AnimatedComponent() {
 
 ## 12. Implementation Roadmap
 
-### Phase 1: Foundation (Weeks 1-3)
+### Phase 1: Foundation (Weeks 1-3) -- COMPLETE
 
-- [ ] Project setup (Kotlin, Compose, Hilt, Room)
-- [ ] Core data models and Room entities
-- [ ] API client and networking layer
-- [ ] Basic navigation structure
+- [x] Project setup (Kotlin, Compose, Hilt, Room)
+- [x] Core data models and Room entities
+- [x] API client and networking layer
+- [x] Basic navigation structure
 
-### Phase 2: Audio Pipeline (Weeks 4-5)
+### Phase 2: Audio Pipeline (Weeks 4-5) -- COMPLETE
 
-- [ ] Oboe audio engine integration
-- [ ] VAD service (Silero TFLite)
-- [ ] Audio level monitoring
-- [ ] Basic recording/playback
+- [x] Oboe audio engine integration
+- [x] VAD service (Silero TFLite + ONNX)
+- [x] Audio level monitoring
+- [x] Basic recording/playback
 
-### Phase 3: Provider Integration (Weeks 6-8)
+### Phase 3: Provider Integration (Weeks 6-8) -- COMPLETE
 
-- [ ] STT providers (Deepgram, AssemblyAI, Android Speech)
-- [ ] TTS providers (ElevenLabs, Deepgram, Android TTS)
-- [ ] LLM providers (OpenAI, Anthropic, self-hosted)
-- [ ] Provider routing (Patch Panel)
+- [x] STT providers (Deepgram, AssemblyAI, Android Speech, GLM-ASR, Self-hosted)
+- [x] TTS providers (ElevenLabs, Deepgram, Android TTS, Kyutai Pocket, Self-hosted)
+- [x] LLM providers (OpenAI, Anthropic, Ollama, llama.cpp, ExecuTorch, MediaPipe)
+- [x] Provider routing (Patch Panel + LLM Backend Selector)
 
-### Phase 4: Session Management (Weeks 9-10)
+### Phase 4: Session Management (Weeks 9-10) -- COMPLETE
 
-- [ ] SessionManager state machine
-- [ ] Conversation history
-- [ ] Turn-taking logic
-- [ ] Barge-in handling
-- [ ] Session persistence
+- [x] SessionManager state machine
+- [x] Conversation history
+- [x] Turn-taking logic
+- [x] Barge-in handling
+- [x] Session persistence
 
-### Phase 5: UI Implementation (Weeks 11-14)
+### Phase 5: UI Implementation (Weeks 11-14) -- COMPLETE
 
-- [ ] Session screen
-- [ ] Curriculum browser
-- [ ] Settings screens
-- [ ] Analytics dashboard
-- [ ] Onboarding flow
+- [x] Session screen
+- [x] Curriculum browser with modules section
+- [x] Settings screens (main, server, chatterbox, about, debug)
+- [x] Analytics dashboard
+- [x] Onboarding flow
 
-### Phase 6: Polish & Testing (Weeks 15-16)
+### Phase 6: Feature Parity (Weeks 15-20) -- COMPLETE
 
-- [ ] Performance optimization
-- [ ] Accessibility audit
-- [ ] 90-minute stability testing
-- [ ] Memory leak detection
-- [ ] Thermal management
+- [x] Knowledge Bowl module (drill, match, rebound, conference modes)
+- [x] Reading List (import, playback, reader, FOV context)
+- [x] Todo Manager (auto-resume, curriculum suggestions)
+- [x] Server Discovery (NSD, subnet scan, caching)
+- [x] Web Search (Brave integration)
+- [x] Embeddings service (OpenAI)
+- [x] Voice Command Recognition
+- [x] Metrics Upload Queue and Service
+- [x] Navigation transitions (fade, slide)
+- [x] Accessibility audit and fixes
+- [x] UMCF parser and models
+- [x] Formula renderer component
+- [x] QR code scanner for server config
+- [x] Assistant screen (Todo + Reading tabs)
 
 ---
 
@@ -2411,87 +2430,74 @@ suspend fun <T> safeApiCall(call: suspend () -> T): ApiResult<T> {
 
 ---
 
-## Appendix A: File Structure (Proposed)
+## Appendix A: File Structure
 
 ```
 app/
 ├── src/main/
 │   ├── kotlin/com/unamentis/
 │   │   ├── core/
-│   │   │   ├── audio/
-│   │   │   │   ├── AudioEngine.kt
-│   │   │   │   └── AudioConfig.kt
-│   │   │   ├── session/
-│   │   │   │   ├── SessionManager.kt
-│   │   │   │   └── SessionState.kt
-│   │   │   ├── curriculum/
-│   │   │   │   ├── CurriculumEngine.kt
-│   │   │   │   └── ProgressTracker.kt
-│   │   │   ├── routing/
-│   │   │   │   ├── PatchPanelService.kt
-│   │   │   │   └── RoutingTable.kt
-│   │   │   ├── telemetry/
-│   │   │   │   └── TelemetryEngine.kt
-│   │   │   └── config/
-│   │   │       ├── ApiKeyManager.kt
-│   │   │       └── ServerConfig.kt
+│   │   │   ├── audio/              # AudioEngine, VAD integration
+│   │   │   ├── session/            # SessionManager, MetricsUpload
+│   │   │   ├── curriculum/         # CurriculumEngine, progress tracking
+│   │   │   ├── routing/            # PatchPanel LLM routing
+│   │   │   ├── telemetry/          # MetricsExporter, TTFAInstrumentation
+│   │   │   ├── config/             # API keys, ServerConfig, ProviderConfig
+│   │   │   ├── todo/               # TodoManager, AutoResumeService, CurriculumSuggestionService
+│   │   │   ├── readinglist/        # ReadingListManager, HTMLArticleExtractor, TextChunker
+│   │   │   ├── fov/                # ReadingFOVContextManager
+│   │   │   ├── discovery/          # DeviceDiscoveryManager, NSD, SubnetScan
+│   │   │   ├── device/             # DeviceCapabilityDetector
+│   │   │   ├── accessibility/      # AccessibilityChecker
+│   │   │   └── tools/handlers/     # TodoToolHandler, WebSearchToolHandler
+│   │   ├── modules/
+│   │   │   └── knowledgebowl/      # Full Knowledge Bowl module
+│   │   │       ├── core/           # Engine, match, rebound, conference, validation
+│   │   │       ├── data/           # Models, packs, teams, local storage
+│   │   │       └── ui/             # Dashboard, drill, match, rebound, conference, progress
 │   │   ├── services/
-│   │   │   ├── stt/
-│   │   │   │   ├── STTService.kt
-│   │   │   │   ├── DeepgramSTTService.kt
-│   │   │   │   ├── AssemblyAISTTService.kt
-│   │   │   │   └── AndroidSTTService.kt
-│   │   │   ├── tts/
-│   │   │   │   ├── TTSService.kt
-│   │   │   │   ├── ElevenLabsTTSService.kt
-│   │   │   │   └── AndroidTTSService.kt
-│   │   │   ├── llm/
-│   │   │   │   ├── LLMService.kt
-│   │   │   │   ├── OpenAILLMService.kt
-│   │   │   │   └── AnthropicLLMService.kt
-│   │   │   └── vad/
-│   │   │       └── SileroVADService.kt
+│   │   │   ├── stt/                # Deepgram, Android, GLM-ASR ONNX, Self-hosted
+│   │   │   ├── tts/                # ElevenLabs, Android, Kyutai Pocket, Self-hosted
+│   │   │   ├── llm/                # OpenAI, Anthropic, Ollama, llama.cpp, ExecuTorch, MediaPipe
+│   │   │   ├── vad/                # Silero TFLite, Silero ONNX, Simple RMS
+│   │   │   ├── embeddings/         # OpenAI Embedding Service
+│   │   │   ├── readingplayback/    # ReadingPlaybackService, AudioPreGenerator
+│   │   │   ├── voice/              # VoiceActivityFeedback, VoiceCommandRecognizer
+│   │   │   ├── websearch/          # BraveSearchService, WebSearchProvider
+│   │   │   └── curriculum/         # DownloadManager, TranscriptStreaming, VisualAssetCache
 │   │   ├── data/
-│   │   │   ├── local/
-│   │   │   │   ├── AppDatabase.kt
-│   │   │   │   ├── dao/
-│   │   │   │   └── entities/
-│   │   │   ├── remote/
-│   │   │   │   ├── ApiClient.kt
-│   │   │   │   └── dto/
-│   │   │   └── repository/
-│   │   │       ├── CurriculumRepository.kt
-│   │   │       └── SessionRepository.kt
+│   │   │   ├── local/              # AppDatabase, DAOs, entities
+│   │   │   │   ├── dao/            # Curriculum, ReadingList, Todo, QueuedMetrics DAOs
+│   │   │   │   └── entity/         # Reading, metrics, bookmark entities
+│   │   │   ├── remote/             # ApiClient, WebSocketClient, AudioWebSocketClient
+│   │   │   ├── repository/         # Curriculum, ReadingList, Session repositories
+│   │   │   └── model/              # UMCFModels, UMCFParser, Todo, ReadingList models
 │   │   ├── ui/
-│   │   │   ├── session/
-│   │   │   │   ├── SessionScreen.kt
-│   │   │   │   └── SessionViewModel.kt
-│   │   │   ├── curriculum/
-│   │   │   │   ├── CurriculumScreen.kt
-│   │   │   │   └── CurriculumViewModel.kt
-│   │   │   ├── settings/
-│   │   │   │   ├── SettingsScreen.kt
-│   │   │   │   └── SettingsViewModel.kt
-│   │   │   ├── analytics/
-│   │   │   │   └── AnalyticsScreen.kt
-│   │   │   ├── components/
-│   │   │   │   ├── SlideToStopButton.kt
-│   │   │   │   ├── TranscriptBubble.kt
-│   │   │   │   └── SessionControlBar.kt
-│   │   │   └── theme/
-│   │   │       ├── Theme.kt
-│   │   │       ├── Color.kt
-│   │   │       └── Typography.kt
-│   │   ├── di/
-│   │   │   └── AppModule.kt
-│   │   └── UnaMentisApp.kt
+│   │   │   ├── session/            # SessionScreen, SessionViewModel, controls
+│   │   │   ├── curriculum/         # CurriculumScreen, ModulesSection
+│   │   │   ├── learning/           # LearningScreen, ModulesScreen
+│   │   │   ├── assistant/          # AssistantScreen (Todo + Reading tabs)
+│   │   │   ├── readinglist/        # ReadingList, Playback, Reader, URLImport
+│   │   │   ├── settings/           # Settings, Server, Chatterbox, About, Debug, QR
+│   │   │   ├── analytics/          # AnalyticsScreen
+│   │   │   ├── todo/               # TodoScreen, TodoComponents
+│   │   │   ├── debug/              # DeviceMetricsView
+│   │   │   ├── onboarding/         # OnboardingScreen
+│   │   │   ├── components/         # FormulaRenderer, AssetCarousel, OfflineBanner
+│   │   │   └── theme/              # Theme, Color, Typography
+│   │   ├── di/                     # AppModule, CoreModule, ProviderModule, DiscoveryModule, ToolsModule
+│   │   ├── navigation/             # DeepLinkRoutes
+│   │   └── service/                # TodoReminderWorker
 │   ├── cpp/
 │   │   ├── audio_engine.cpp
-│   │   └── llama_jni.cpp
+│   │   ├── llama_jni.cpp
+│   │   ├── glm_asr_decoder.cpp     # GLM-ASR on-device inference
+│   │   └── glm_asr_decoder_jni.cpp
 │   └── res/
 │       ├── values/
-│       │   ├── strings.xml
-│       │   └── themes.xml
+│       │   ├── strings.xml         # 700+ string resources
+│       │   └── arrays.xml
+│       ├── xml/actions.xml         # App Actions for Google Assistant
 │       └── drawable/
 └── build.gradle.kts
 ```
@@ -2545,4 +2551,4 @@ dependencies {
 ---
 
 *Document created: January 2026*
-*Last updated: January 2026*
+*Last updated: February 2026*
