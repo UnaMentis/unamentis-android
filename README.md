@@ -360,9 +360,26 @@ chore:    Maintenance tasks
 
 ---
 
+## Shared Documentation
+
+Cross-cutting documentation (client specs, module designs, testing philosophy) lives in the [main UnaMentis repository](https://github.com/UnaMentis/unamentis). See [docs/README.md](docs/README.md) for the full index with links.
+
+## Related Repositories
+
+| Repo | Purpose |
+|------|---------|
+| [unamentis](https://github.com/UnaMentis/unamentis) | Server infrastructure, documentation, curriculum |
+| [unamentis-ios](https://github.com/UnaMentis/unamentis-ios) | iOS client |
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) in this repo, and [CODE_OF_CONDUCT.md](https://github.com/UnaMentis/unamentis/blob/main/CODE_OF_CONDUCT.md) in the main repository.
+
+---
+
 ## License
 
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License, see the [LICENSE](LICENSE) file for details.
 
 ---
 
